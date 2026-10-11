@@ -54,7 +54,7 @@ gcinclude.WeaponItemMap = {
 | `/def [off\|dt\|mdt\|aminon\|sird]` | Sets one (or none); no arg cycles none → DT → MDT → Aminon → SIRD → none (Ctrl+Shift+grave) |
 | `/dt` `/mdt` `/aminon` | Toggle one. `/aminon` uses `mdt` if the job has no `Aminon` set, and locks Main/Sub (the set's items, else what you wear) plus Range/Ammo when the set names them, until off; other slots still swap for actions |
 | `/sir` | `SIR` set over every midcast. `SIRSkip` exempts spells; engaged or not |
-| `/hoxne` | Off → On → Locked (Alt+grave). On keeps the ampulla in Ammo and keeps bows/guns/crossbows out of Range (they need matching ammo); Locked also locks Ammo and Range (an instrument in Range would knock the ampulla off). `/hoxne use` goes Locked and uses it. While On/Locked it is used when it is in Ammo and the Enchantment status isn't up (BG-Wiki: Double Attack +100% for 30 min as Enchantment, 60s recast, 5s use delay, lost when unequipped or zoning); Enchantment up, it is never used; it waits until Enchantment has been gone 3s (it drops as you cross a zone line). Zoning sets it back to Off. `HoxneAutoUse = false` stops the automatic use |
+| `/hoxne` | Off → Locked (Alt+grave). Locked keeps the ampulla in Ammo and locks Ammo and Range (any action set's Ammo would knock it off and end the Enchantment; an instrument in Range would too), and keeps bows/guns/crossbows out of Range (they need matching ammo). `/hoxne use` goes Locked and uses it. While Locked it is used when it is in Ammo and the Enchantment status isn't up (BG-Wiki: Double Attack +100% for 30 min as Enchantment, 60s recast, 5s use delay, lost when unequipped or zoning); Enchantment up, it is never used; it waits until Enchantment has been gone 3s (it drops as you cross a zone line). Zoning sets it back to Off. `HoxneAutoUse = false` stops the automatic use |
 | `/hoxne use` | Locked, equip, wait its delay, use |
 | `/lock` | Lock Main, Sub, Ammo |
 | `/lock ear1 back` | Lock any slots by name |
@@ -297,16 +297,18 @@ Change per job: `gcinclude.settings.dem_Ring = 'Teleport Ring: Dem'`.
 | `XIRoll` | Idle only, with a roll on you at 11 (default Roller's Ring) |
 | `Absorb` | Absorb-TP and every other Absorb- spell, over midcast |
 | `Absorb_TP` | Optional, Absorb-TP only, on top of `Absorb` |
+| `Hoxne_Tp`, `Hoxne_Idle`, `Hoxne_Dt` | While `/hoxne` is Locked and Enchantment is up: `Hoxne_Tp` engaged, `Hoxne_Idle` idle and not moving, `Hoxne_Dt` in place of both while `/dt` is on (none: your Dt set stays); none while `/kite` is on. Over your job sets (Tp, Impetus...), under every engine layer. Each takes its `/meleeset` variant (`Hoxne_Tp_Hybrid`) |
+| `Hoxne_Ws`, `Hoxne_<ws name>` | Same gate, over every weaponskill, then that WS, e.g. `['Hoxne_Victory Smite'] = {...}` |
 | `Buffs = { Name = {...} }` | While that buff is up (idle/engaged) |
 | `Buffs_Ws`, `Buffs_Midcast` | Same, over every weaponskill / every spell's midcast, e.g. `Buffs_Ws = { ['Aftermath: Lv.3'] = {...} }`. Name the buff as the buff list shows it |
 | `*_Received` | See below |
 
 Moonshade goes in Ear2 on WS below `MoonshadeTP` (1750), except `MoonshadeSkip`.
 
-Layer order: your sets → weapons (+ `TH` weapons while `/th` is on) → mdt/Aminon → Hoxne → TH → received → buff sets → XIRoll →
+Layer order: your sets → Hoxne sets → weapons (+ `TH` weapons while `/th` is on) → mdt/Aminon → Hoxne → TH → received → buff sets → XIRoll →
 debuff (Incapacitated/Sleeping/Doom/Weakness) and craft/zeni/fish/rr sets.
 Midcast: job sets → TH → `Buffs_Midcast` → Absorb → LightBonus → obi/Orpheus/back/ring → SIR.
-WS: job sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
+WS: job sets → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
 
 Sub vs Main (FFXIclopedia Grips): a two-handed main (Great Sword, Great Axe, Scythe, Polearm, Great Katana,
 Staff) takes only a grip in Sub, and a grip needs a two-handed main. After each handler a Sub that can't go

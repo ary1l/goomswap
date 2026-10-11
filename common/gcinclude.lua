@@ -183,7 +183,7 @@
 		AmmoWarn = 20; -- warn when the ammo in use (inventory + wardrobes) is at or under this, 0 = never
 		NinjaToolWarn = 10; -- warn when Utsusemi tools (Shihei, + Shikanofuda on NIN) are at or under this, 0 = never
 		SleepCancelStoneskin = true; -- asleep with Stoneskin up: /cancel Stoneskin so damage can wake you (FFXIclopedia Sleep)
-		HoxneAutoUse = true; -- Hoxne On/Locked: use the Ampulla when it is in ammo and Enchantment isn't up
+		HoxneAutoUse = true; -- Hoxne Locked: use the Ampulla when it is in ammo and Enchantment isn't up
 	};
 
 	--[[
@@ -336,7 +336,7 @@ function gcinclude.SetVariables()
     gcdisplay.CreateToggle('MDTset', false);
     gcdisplay.CreateToggle('Aminon', false);
     gcdisplay.CreateToggle('SIR', false);
-    gcdisplay.CreateCycle('Hoxne', {[1] = 'Off', [2] = 'On', [3] = 'Locked'});
+    gcdisplay.CreateCycle('Hoxne', {[1] = 'Off', [2] = 'Locked'});
     gcdisplay.CreateToggle('Kite', false);
     gcdisplay.CreateToggle('TH', false);
     gcdisplay.CreateCycle('MeleeSet', {[1] = 'Default', [2] = 'Hybrid', [3] = 'Acc'});
@@ -662,7 +662,7 @@ end
 		if (cname == 'Sub') then return gcinclude.SubModes end
 		if (cname == 'Range') then return gcinclude.RangeModes end
 		if (cname == 'Ammo') then return gcinclude.AmmoModes end
-		if (cname == 'Hoxne') then return T{'Off', 'On', 'Locked'} end
+		if (cname == 'Hoxne') then return T{'Off', 'Locked'} end
 		return nil;
 	end
 
@@ -1738,6 +1738,7 @@ end
 				gcaction.TraceStart();
 				local result, trail = gcinclude.TrackEars(function(...)
 					local r = ws(...);
+					gcinclude.CheckHoxneWs();
 					gcinclude.CheckBuffSets('Buffs_Ws');
 					return r;
 				end, ...);
@@ -1985,7 +1986,7 @@ end
 	gcinclude.HoxneOwned = T{};
 
 	-- Bows, guns and crossbows (Archery 25 / Marksmanship 26) need matching ammo, so the ampulla can't sit with
-	-- them. While Hoxne is On or Locked, any set asking for one in Range has that entry dropped.
+	-- them. While Hoxne is Locked, any set asking for one in Range has that entry dropped.
 	gcinclude.AmmoSkills = T{25, 26};
 	local ammoWeapon = {};
 	function gcinclude.NeedsAmmo(item)
@@ -2000,8 +2001,33 @@ end
 	end
 
 	function gcinclude.HoxneOn()
-		local state = gcdisplay.GetCycle('Hoxne');
-		return (state == 'On') or (state == 'Locked');
+		return (gcdisplay.GetCycle('Hoxne') == 'Locked');
+	end
+
+	-- Hoxne sets (per job), worn while /hoxne is Locked and Enchantment is up (the Ampulla's Double Attack +100%,
+	-- FFXIclopedia Hoxne Ampulla): Hoxne_Tp engaged, Hoxne_Idle idle and not moving, Hoxne_Dt in place of both
+	-- while /dt is on (none: the Dt set stays), none while /kite is on. WS: Hoxne_Ws, then Hoxne_<ws name>.
+	-- Each also takes its /meleeset variant (Hoxne_Tp_Hybrid). Over job sets (Tp, Impetus...), under engine layers.
+	function gcinclude.HoxneActive()
+		return gcinclude.HoxneOn() and (gcinclude.BuffCount('Enchantment') > 0);
+	end
+
+	function gcinclude.CheckHoxneSets(player)
+		if (player == nil) or (not gcinclude.HoxneActive()) or (gcdisplay.GetToggle('Kite') == true) then return end
+		if (gcdisplay.GetToggle('DTset') == true) then
+			gcinclude.ByName('Hoxne_Dt');
+		elseif (player.Status == 'Engaged') then
+			gcinclude.ByName('Hoxne_Tp');
+		elseif (player.Status == 'Idle') and (player.IsMoving ~= true) then
+			gcinclude.ByName('Hoxne_Idle');
+		end
+	end
+
+	function gcinclude.CheckHoxneWs()
+		if not gcinclude.HoxneActive() then return end
+		gcinclude.ByName('Hoxne_Ws');
+		local ws = gData.GetAction();
+		if (ws ~= nil) and (ws.Name ~= nil) then gcinclude.ByName('Hoxne_' .. ws.Name) end
 	end
 
 	function gcinclude.DropAmmoWeapon(set)
@@ -2129,7 +2155,7 @@ end
 			if (#gcinclude.HoxneOwned > 0) then gcinclude.UnlockSlots(gcinclude.HoxneOwned) end
 			gcinclude.HoxneOwned = T{};
 		end
-		if (state ~= 'On') and (state ~= 'Locked') then return end
+		if (state ~= 'Locked') then return end
 		local set = { Ammo = gcinclude.settings.HoxneItem };
 		local range = gData.GetEquipment().Range;
 		if (range ~= nil) and gcinclude.NeedsAmmo(range.Name) then set.Range = 'displaced' end -- the game drops it for the Ampulla
@@ -2269,7 +2295,7 @@ end
 
 	-- Hoxne Ampulla (BG-Wiki): Double Attack +100% for 30 min as the Enchantment status (BG-Wiki Category:Enchantment;
 	-- id 162 in Windower's buff resources), 60s recast, 5s use delay, lost when unequipped or on zoning.
-	-- While /hoxne is On or Locked and the Ampulla is in ammo with no Enchantment up, it is used (the use delay
+	-- While /hoxne is Locked and the Ampulla is in ammo with no Enchantment up, it is used (the use delay
 	-- counted from when it went on). Enchantment up: never used. /hoxne use uses it now. One go a minute.
 	-- Enchantment has to be gone 3s straight first: it drops as you cross a zone line, a moment before the
 	-- server's zone reply (0x000B) marks you as zoning.
@@ -2334,7 +2360,7 @@ end
 		local lines = T{
 			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset',
 			'defense: /def (cycle DT > MDT > Aminon > SIRD > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set) /sir, /lock [slots] /unlock [slots]',
-			'hoxne  : /hoxne (Off > On > Locked)',
+			'hoxne  : /hoxne (Off > Locked), /hoxne use',
 			'toggles: /th (TH gear until the target is tagged; TH-set weapons while on), /kite, /meleeset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
 			'hud    : /gchud [on|off|pos x y|debug]',
@@ -2971,11 +2997,13 @@ function gcinclude.CheckDefault()
     end
 
     -- Auto Regen/Refresh/DT/Pet_Dt and Town sets count as "your sets", so they go under the engine layers
-    -- (README layer order: your sets -> weapons (+ TH weapons while /th is on) -> mdt/Aminon -> Hoxne -> TH -> received -> buffs -> XIRoll).
+    -- (README layer order: your sets -> Hoxne sets -> weapons (+ TH weapons while /th is on) -> mdt/Aminon -> Hoxne -> TH -> received -> buffs -> XIRoll).
+    -- Hoxne sets go first: over the job layers (Tp, Impetus...), under auto Dt and every engine layer.
     -- Awake again with a slot still let go for the Sleeping set: hold it now, not at the next 0.1s HoldTick,
     -- so this handler's job-set weapon can't cost the TP (LAC checks gState.Disabled when the buffer goes out).
     if (next(gcinclude.SleepFreed) ~= nil) and (gcinclude.BuffCount('Sleep') == 0) then gcinclude.UpdateHold() end
     local me = gData.GetPlayer(); -- one read for the auto sets, the combat check and XIRoll
+    gcinclude.CheckHoxneSets(me);
     gcinclude.SetRegenRefreshGear(me);
     gcinclude.SetTownGear();
     gcinclude.CheckWeapons(me);

@@ -178,6 +178,12 @@ local sets = {
 		Ear2 = 'dedition earring',
         Body = 'Bhikku Cyclas +3',
     },
+    Hoxne_Tp = {--/hoxne Locked + Enchantment up (Double Attack +100%): over Tp/Impetus/Footwork
+    },
+    Hoxne_Idle = {},
+    Hoxne_Dt = {},--used instead of the two above while /dt is on
+    Hoxne_Ws = {},--every WS
+    ['Hoxne_Victory Smite'] = {},--that WS, over Hoxne_Ws
     Focus = {
         Head = 'Anchor. Crown +4',
     },

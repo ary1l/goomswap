@@ -59,7 +59,7 @@ Full reference: `COMMANDS.md`.
   Can't dual wield: uses the `_1h` version of the mode. Dual Wield = main or sub NIN Lv10+, DNC Lv20+, THF Lv83+ at
   the *effective* level, so a restricted support job (Sheol Gaol, SJ Restriction) counts as none; losing it swaps to
   `_1h` at once, even at 1000+ TP. `/dw` shows why; `/dw on|off|auto` overrides.
-- **Layers**, lowest to highest: your sets → weapons (+ `TH`-set weapons while `/th` is on) → MDT/Aminon → Hoxne →
+- **Layers**, lowest to highest: your sets → Hoxne sets → weapons (+ `TH`-set weapons while `/th` is on) → MDT/Aminon → Hoxne →
   TH → received gear → buff sets → XIRoll → debuff and craft/zeni/fish/rr sets. Midcast: job sets → TH → `Buffs_Midcast` → Absorb → LightBonus → obi/Orpheus/back/ring → SIR.
 - **Automatic**: obi/Orpheus/Twilight Cape/Zodiac Ring by day, weather and distance (nukes, helixes, elemental ninjutsu,
   Quick Draw, cures, elemental WS); a Sub that can't go with the Main (2-handed/grip) is dropped;
