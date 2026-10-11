@@ -685,6 +685,16 @@ local sets = {
         Legs = { Name = 'cab. breeches +4', Priority = 82 },--9
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
 		},
+    -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
+    -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
+    Hoxne_Tp = {},
+    Hoxne_Idle = {},
+    Hoxne_Dt = {}, -- instead of Hoxne_Tp/Hoxne_Idle while /dt is on
+    Hoxne_Ws = {}, -- every WS
+    ['Hoxne_Savage Blade'] = {}, -- that WS, over Hoxne_Ws
+
     TH = {
         Ammo = 'Per. Lucky Egg',
 		Waist = 'Chaac Belt',

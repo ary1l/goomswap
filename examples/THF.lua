@@ -312,6 +312,23 @@ local sets = {
     Flee = {
         Feet = 'Pill. Poulaines +2',
     },
+    -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
+    -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
+    Hoxne_Tp = {},
+    Hoxne_Idle = {},
+    Hoxne_Dt = {}, -- instead of Hoxne_Tp/Hoxne_Idle while /dt is on
+    Hoxne_Ws = {}, -- every WS
+    ['Hoxne_Tp_Sneak Attack'] = {},
+    ['Hoxne_Tp_Trick Attack'] = {},
+    ['Hoxne_Tp_Sneak Attack&Trick Attack'] = {}, -- SATA: over the two above
+    ['Hoxne_Savage Blade'] = {}, -- that WS, over Hoxne_Ws
+    ['Hoxne_Ws_Sneak Attack'] = {}, -- buff combos go over the WS sets
+    ['Hoxne_Ws_Trick Attack'] = {},
+    ['Hoxne_Ws_Sneak Attack&Trick Attack'] = {},
+    ['Hoxne_Savage Blade_Sneak Attack'] = {}, -- one WS with one buff
+
     Movement = {
         Feet = 'Pill. Poulaines +2',
 	},
