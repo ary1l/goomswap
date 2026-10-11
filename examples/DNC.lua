@@ -66,6 +66,18 @@ local sets = {
     mdt = {},
     Aminon = {},
     SIR = {},
+    -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Goes over your job sets, so leave out slots to keep.
+    -- Each takes /meleeset variants (Hoxne_Tp_Hybrid), then buff combos: <set>_<buff>, <set>_<buff>&<buff> (all up).
+    Hoxne_Tp = {},
+    Hoxne_Idle = {},
+    Hoxne_Dt = {}, -- instead of Hoxne_Tp/Hoxne_Idle while /dt is on
+    Hoxne_Ws = {}, -- every WS
+    ['Hoxne_Tp_Climactic Flourish'] = {},
+    ['Hoxne_Pyrrhic Kleos'] = {}, -- that WS, over Hoxne_Ws
+    ['Hoxne_Ws_Climactic Flourish'] = {}, -- buff combos go over the WS sets
+    ['Hoxne_Ws_Striking Flourish'] = {},
+    ['Hoxne_Ws_Climactic Flourish&Striking Flourish'] = {}, -- both up (singles go A-Z, so Striking is on top)
+
     TH = { -- /th: until the target is tagged; Main/Sub/Range here stay on while /th is on
         Ammo = 'Per. Lucky Egg',
         Waist = 'Chaac Belt',

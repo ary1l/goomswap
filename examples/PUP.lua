@@ -79,6 +79,14 @@ local sets = {
     mdt = {},
     Aminon = {},
     SIR = {},
+    -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Goes over your job sets, so leave out slots to keep.
+    -- Each takes /meleeset variants (Hoxne_Tp_Hybrid), then buff combos: <set>_<buff>, <set>_<buff>&<buff> (all up).
+    Hoxne_Tp = {},
+    Hoxne_Idle = {},
+    Hoxne_Dt = {}, -- instead of Hoxne_Tp/Hoxne_Idle while /dt is on
+    Hoxne_Ws = {}, -- every WS
+    ['Hoxne_Shijin Spiral'] = {}, -- that WS, over Hoxne_Ws
+
     TH = { -- /th: until the target is tagged; Main/Sub/Range here stay on while /th is on
         Waist = 'Chaac Belt',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Potency of "Cure" effect received+5%', [2] = 'Mag. Acc.+19', [3] = 'Accuracy+21', [4] = '"Mag. Atk. Bns."+19', [5] = '"Treasure Hunter"+2' } },

@@ -444,6 +444,14 @@ local sets = {
         Ring1 = 'Eihwaz Ring',
     },
 
+    -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Goes over your job sets, so leave out slots to keep.
+    -- Each takes /meleeset variants (Hoxne_Tp_Hybrid), then buff combos: <set>_<buff>, <set>_<buff>&<buff> (all up).
+    Hoxne_Tp = {},
+    Hoxne_Idle = {},
+    Hoxne_Dt = {}, -- instead of Hoxne_Tp/Hoxne_Idle while /dt is on
+    Hoxne_Ws = {}, -- every WS
+    ['Hoxne_Savage Blade'] = {}, -- that WS, over Hoxne_Ws
+
     TH = {
 	    Head = { Name = 'Herculean Helm', Augment = { [1] = 'Accuracy+30', [2] = 'Attack+18', [3] = '"Fast Cast"+3', [4] = '"Treasure Hunter"+2' } },
 		Waist = 'Chaac Belt',

@@ -71,6 +71,14 @@ local sets = {
     mdt = {},
     Aminon = {},
     SIR = {},
+    -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Goes over your job sets, so leave out slots to keep.
+    -- Each takes /meleeset variants (Hoxne_Tp_Hybrid), then buff combos: <set>_<buff>, <set>_<buff>&<buff> (all up).
+    Hoxne_Tp = {},
+    Hoxne_Idle = {},
+    Hoxne_Dt = {}, -- instead of Hoxne_Tp/Hoxne_Idle while /dt is on
+    Hoxne_Ws = {}, -- every WS
+    -- ['Hoxne_<ws name>'] = {}, -- one WS, over Hoxne_Ws
+
     TH = { -- /th: until the target is tagged; Main/Sub/Range here stay on while /th is on
         Ammo = 'Per. Lucky Egg',
         Waist = 'Chaac Belt',

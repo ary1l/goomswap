@@ -2007,27 +2007,80 @@ end
 	-- Hoxne sets (per job), worn while /hoxne is Locked and Enchantment is up (the Ampulla's Double Attack +100%,
 	-- FFXIclopedia Hoxne Ampulla): Hoxne_Tp engaged, Hoxne_Idle idle and not moving, Hoxne_Dt in place of both
 	-- while /dt is on (none: the Dt set stays), none while /kite is on. WS: Hoxne_Ws, then Hoxne_<ws name>.
-	-- Each also takes its /meleeset variant (Hoxne_Tp_Hybrid). Over job sets (Tp, Impetus...), under engine layers.
+	-- Each also takes its /meleeset variant (Hoxne_Tp_Hybrid), then its buff combos: Hoxne_Tp_Impetus while
+	-- Impetus is up, ['Hoxne_Ws_Sneak Attack&Trick Attack'] while both are (fewest buffs first, then A-Z).
+	-- Over job sets, under engine layers.
 	function gcinclude.HoxneActive()
 		return gcinclude.HoxneOn() and (gcinclude.BuffCount('Enchantment') > 0);
+	end
+
+	-- Combos by base set, read from the set names once per profile: 'hoxne_tp' -> { {buffs, set}, ... }, fewest
+	-- buffs first, then by name. No buff name has '_' or '&' (Windower resources buffs.lua), so they split cleanly.
+	local hoxneCombos, hoxneCombosOf = {}, nil;
+	local function hoxneCombosFor(base)
+		if (type(gProfile.Sets) ~= 'table') then return nil end
+		if (hoxneCombosOf ~= gProfile.Sets) then
+			hoxneCombos, hoxneCombosOf = {}, gProfile.Sets;
+			for key, set in pairs(gProfile.Sets) do
+				local b, suffix;
+				if (type(key) == 'string') and (type(set) == 'table') then b, suffix = string.match(key, '^(.+)_([^_]+)$') end
+				if (b ~= nil) and (string.sub(string.lower(b), 1, 6) == 'hoxne_') then
+					local buffs = T{};
+					for name in string.gmatch(suffix, '[^&]+') do buffs:append(name) end
+					local list = hoxneCombos[string.lower(b)] or T{};
+					list:append({ buffs = buffs, set = set, key = string.lower(suffix) });
+					hoxneCombos[string.lower(b)] = list;
+				end
+			end
+			for _, list in pairs(hoxneCombos) do
+				table.sort(list, function(x, y)
+					if (#x.buffs ~= #y.buffs) then return #x.buffs < #y.buffs end
+					return x.key < y.key;
+				end);
+			end
+		end
+		return hoxneCombos[string.lower(base)];
+	end
+
+	-- Each combo of a Hoxne set whose buffs are all up.
+	local function wearHoxneCombos(name)
+		local list = hoxneCombosFor(name);
+		if (list == nil) then return end
+		for _, c in ipairs(list) do
+			local up = true;
+			for _, b in ipairs(c.buffs) do
+				if (gcinclude.BuffCount(b) == 0) then up = false; break end
+			end
+			if up then gFunc.EquipSet(c.set) end
+		end
+	end
+
+	-- A Hoxne set, its /meleeset variant, then its combos.
+	function gcinclude.WearHoxne(name)
+		gcinclude.ByName(name);
+		wearHoxneCombos(name);
 	end
 
 	function gcinclude.CheckHoxneSets(player)
 		if (player == nil) or (not gcinclude.HoxneActive()) or (gcdisplay.GetToggle('Kite') == true) then return end
 		if (gcdisplay.GetToggle('DTset') == true) then
-			gcinclude.ByName('Hoxne_Dt');
+			gcinclude.WearHoxne('Hoxne_Dt');
 		elseif (player.Status == 'Engaged') then
-			gcinclude.ByName('Hoxne_Tp');
+			gcinclude.WearHoxne('Hoxne_Tp');
 		elseif (player.Status == 'Idle') and (player.IsMoving ~= true) then
-			gcinclude.ByName('Hoxne_Idle');
+			gcinclude.WearHoxne('Hoxne_Idle');
 		end
 	end
 
 	function gcinclude.CheckHoxneWs()
 		if not gcinclude.HoxneActive() then return end
-		gcinclude.ByName('Hoxne_Ws');
+		-- Buff combos go over both WS sets, as job files put buff sets over the WS set.
 		local ws = gData.GetAction();
-		if (ws ~= nil) and (ws.Name ~= nil) then gcinclude.ByName('Hoxne_' .. ws.Name) end
+		local name = (ws ~= nil) and (ws.Name ~= nil) and ('Hoxne_' .. ws.Name) or nil;
+		gcinclude.ByName('Hoxne_Ws');
+		if (name ~= nil) then gcinclude.ByName(name) end
+		wearHoxneCombos('Hoxne_Ws');
+		if (name ~= nil) then wearHoxneCombos(name) end
 	end
 
 	function gcinclude.DropAmmoWeapon(set)

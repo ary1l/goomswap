@@ -299,6 +299,7 @@ Change per job: `gcinclude.settings.dem_Ring = 'Teleport Ring: Dem'`.
 | `Absorb_TP` | Optional, Absorb-TP only, on top of `Absorb` |
 | `Hoxne_Tp`, `Hoxne_Idle`, `Hoxne_Dt` | While `/hoxne` is Locked and Enchantment is up: `Hoxne_Tp` engaged, `Hoxne_Idle` idle and not moving, `Hoxne_Dt` in place of both while `/dt` is on (none: your Dt set stays); none while `/kite` is on. Over your job sets (Tp, Impetus...), under every engine layer. Each takes its `/meleeset` variant (`Hoxne_Tp_Hybrid`) |
 | `Hoxne_Ws`, `Hoxne_<ws name>` | Same gate, over every weaponskill, then that WS, e.g. `['Hoxne_Victory Smite'] = {...}` |
+| `Hoxne_<set>_<buff>` | A Hoxne set's buff combo, over it while that buff is up: `Hoxne_Tp_Impetus`, `['Hoxne_Victory Smite_Impetus']`. `&` joins buffs that must all be up: `['Hoxne_Ws_Sneak Attack&Trick Attack']`. Fewest buffs first, then A-Z. On a WS every combo goes over both `Hoxne_Ws` and `Hoxne_<ws name>`. Examples in each melee job file |
 | `Buffs = { Name = {...} }` | While that buff is up (idle/engaged) |
 | `Buffs_Ws`, `Buffs_Midcast` | Same, over every weaponskill / every spell's midcast, e.g. `Buffs_Ws = { ['Aftermath: Lv.3'] = {...} }`. Name the buff as the buff list shows it |
 | `*_Received` | See below |

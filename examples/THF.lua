@@ -312,6 +312,21 @@ local sets = {
     Flee = {
         Feet = 'Pill. Poulaines +2',
     },
+    -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Goes over your job sets, so leave out slots to keep.
+    -- Each takes /meleeset variants (Hoxne_Tp_Hybrid), then buff combos: <set>_<buff>, <set>_<buff>&<buff> (all up).
+    Hoxne_Tp = {},
+    Hoxne_Idle = {},
+    Hoxne_Dt = {}, -- instead of Hoxne_Tp/Hoxne_Idle while /dt is on
+    Hoxne_Ws = {}, -- every WS
+    ['Hoxne_Tp_Sneak Attack'] = {},
+    ['Hoxne_Tp_Trick Attack'] = {},
+    ['Hoxne_Tp_Sneak Attack&Trick Attack'] = {}, -- SATA: over the two above
+    ['Hoxne_Savage Blade'] = {}, -- that WS, over Hoxne_Ws
+    ['Hoxne_Ws_Sneak Attack'] = {}, -- buff combos go over the WS sets
+    ['Hoxne_Ws_Trick Attack'] = {},
+    ['Hoxne_Ws_Sneak Attack&Trick Attack'] = {},
+    ['Hoxne_Savage Blade_Sneak Attack'] = {}, -- one WS with one buff
+
     Movement = {
         Feet = 'Pill. Poulaines +2',
 	},

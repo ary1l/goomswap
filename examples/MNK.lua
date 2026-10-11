@@ -178,12 +178,17 @@ local sets = {
 		Ear2 = 'dedition earring',
         Body = 'Bhikku Cyclas +3',
     },
-    Hoxne_Tp = {--/hoxne Locked + Enchantment up (Double Attack +100%): over Tp/Impetus/Footwork
-    },
+    -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Goes over your job sets, so leave out slots to keep.
+    -- Each takes /meleeset variants (Hoxne_Tp_Hybrid), then buff combos: <set>_<buff>, <set>_<buff>&<buff> (all up).
+    Hoxne_Tp = {},
     Hoxne_Idle = {},
-    Hoxne_Dt = {},--used instead of the two above while /dt is on
-    Hoxne_Ws = {},--every WS
-    ['Hoxne_Victory Smite'] = {},--that WS, over Hoxne_Ws
+    Hoxne_Dt = {}, -- instead of Hoxne_Tp/Hoxne_Idle while /dt is on
+    Hoxne_Ws = {}, -- every WS
+    Hoxne_Tp_Impetus = {},
+    Hoxne_Tp_Footwork = {},
+    ['Hoxne_Victory Smite'] = {}, -- that WS, over Hoxne_Ws
+    ['Hoxne_Victory Smite_Impetus'] = {}, -- Victory Smite with Impetus up (Victory_Imp)
+
     Focus = {
         Head = 'Anchor. Crown +4',
     },
