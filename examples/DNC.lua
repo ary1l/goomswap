@@ -66,8 +66,10 @@ local sets = {
     mdt = {},
     Aminon = {},
     SIR = {},
-    -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Goes over your job sets, so leave out slots to keep.
-    -- Each takes /meleeset variants (Hoxne_Tp_Hybrid), then buff combos: <set>_<buff>, <set>_<buff>&<buff> (all up).
+    -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
+    -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
     Hoxne_Tp = {},
     Hoxne_Idle = {},
     Hoxne_Dt = {}, -- instead of Hoxne_Tp/Hoxne_Idle while /dt is on

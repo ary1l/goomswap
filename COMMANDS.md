@@ -306,10 +306,31 @@ Change per job: `gcinclude.settings.dem_Ring = 'Teleport Ring: Dem'`.
 
 Moonshade goes in Ear2 on WS below `MoonshadeTP` (1750), except `MoonshadeSkip`.
 
-Layer order: your sets → Hoxne sets → weapons (+ `TH` weapons while `/th` is on) → mdt/Aminon → Hoxne → TH → received → buff sets → XIRoll →
+Layer order: your sets → Hoxne sets → weapons (+ `TH` weapons while `/th` is on) → mdt/Aminon → Hoxne Ampulla (Ammo) → TH → received → buff sets → XIRoll →
 debuff (Incapacitated/Sleeping/Doom/Weakness) and craft/zeni/fish/rr sets.
 Midcast: job sets → TH → `Buffs_Midcast` → Absorb → LightBonus → obi/Orpheus/back/ring → SIR.
 WS: job sets → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
+
+### Hoxne layering
+
+Lowest to highest; per slot the later set wins, so a slot left out of a set keeps the piece under it. Ammo is locked while
+`/hoxne` is Locked, so Ammo in any set is ignored. Hoxne sets need `/hoxne` Locked and Enchantment up.
+
+Idle/engaged:
+1. Your job sets, in your job file's order, e.g. `Idle` → `Tp_Default` → `Tp_<meleeset>` → job buff sets (`Impetus`, `Footwork`...) → `Dt` (`/dt`) → `Movement` (`/kite`).
+2. One Hoxne set: `Hoxne_Dt` while `/dt` is on, else `Hoxne_Tp` engaged, else `Hoxne_Idle` idle and not moving. None while `/kite` is on.
+3. That set's `/meleeset` variant (`Hoxne_Tp_Hybrid`), then its combos (`Hoxne_Tp_Impetus`), fewest buffs first, then A-Z.
+4. Auto `Idle_Regen`/`Idle_Refresh`/`Dt` (low HP/MP), `Town`.
+5. Engine layers: weapons → mdt/Aminon → Hoxne Ampulla → TH → received → `Buffs` → XIRoll → debuff and craft/zeni/fish/rr sets.
+
+Weaponskill:
+1. Your job sets, in your job file's order, e.g. `Ws_Default` → `Ws_<meleeset>` → that WS's set → job buff sets (`Victory_Imp`, `Sekkanoki`...).
+2. `Hoxne_Ws` → `Hoxne_Ws_<meleeset>` → `Hoxne_<ws name>` → `Hoxne_<ws name>_<meleeset>`.
+3. Combos of `Hoxne_Ws`, then combos of `Hoxne_<ws name>` (each fewest buffs first, then A-Z), so buff combos go over both WS sets.
+4. `Buffs_Ws` → Moonshade → obi/Orpheus/back.
+
+MNK Victory Smite, Impetus up, `/meleeset` Default: `Ws_Default` → `Victory_Default` → `Victory_Imp` → `Hoxne_Ws` →
+`['Hoxne_Victory Smite']` → `['Hoxne_Victory Smite_Impetus']` → `Buffs_Ws` → Moonshade.
 
 Sub vs Main (FFXIclopedia Grips): a two-handed main (Great Sword, Great Axe, Scythe, Polearm, Great Katana,
 Staff) takes only a grip in Sub, and a grip needs a two-handed main. After each handler a Sub that can't go
