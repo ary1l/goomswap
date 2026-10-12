@@ -229,7 +229,7 @@ All boxes: `/mss /meleeset hybrid` (Multisend), Windower `//send @all gs c melee
 
 | Command | Does |
 |---|---|
-| `/meleeset [value]` | MeleeSet: Default → Hybrid → Acc. Wears `Tp_`/`Ws_Hybrid` or `_Acc` over `Tp_`/`Ws_Default`, and `<Name>_Hybrid`/`_Acc` over a named set |
+| `/meleeset [value]` (`/mset`) | MeleeSet: Default → Hybrid → Acc. Wears `Tp_`/`Ws_Hybrid` or `_Acc` over `Tp_`/`Ws_Default`, and `<Name>_Hybrid`/`_Acc` over a named set |
 | `/kite` | Kite toggle |
 | `/th` | TH toggle: `TH` set until the target is tagged; its Main/Sub/Range the whole time it's on |
 | `/setcycle <name> <value>` | Set any cycle; name and value in any case (`/setcycle meleeset acc`) |

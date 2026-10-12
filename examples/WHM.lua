@@ -160,26 +160,26 @@ local sets = {
     },
 
 
-    -- Cure/Cura/Curaga midcast, lowest to highest (HandleMidcast):
+    -- Cure/Cura/Curaga midcast, lowest to highest (later wins per slot):
     --   Cure -> Self_Cure (on you) -> Cure_LowMP or Cure_LowMP_Storm (MP <= 50%) -> Cure_Dt (/dt on)
-    --   -> engine: Hachirin-no-Obi on Light day/weather, SIR set with /sir.
+    --   -> engine: Hachirin-no-Obi (Light day/weather) -> SIR set (/sir on) last, over all of it.
     -- MP above 50%: Cure's own Main/Sub stay (Raetic Rod +1 / Thuellaic Ecu +1).
     Cure = {--I cap is 50, II cap is 30
         Main = 'raetic rod +1',
 		Sub = 'thuellaic ecu +1',
-        Ammo = 'staunch tathlum +1',
-		Head = 'nyame helm',
+        Ammo = 'impatiens',
+		Head = 'theo. cap +4',
         Neck = 'Clr. Torque +2',
-        Ear1 = 'alabaster earring',
+        Ear1 = 'mendi. earring',
         Ear2 = 'ebers earring +1',
 		Body = 'ebers bliaut +2',
         Hands = 'theo. mitts +4',
         Ring1 = 'weather. ring',
-		Ring2 = 'murky ring',
+		Ring2 = 'lebeche ring',
 		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
         Waist = 'witful belt',
 		Legs = 'ebers pant. +3',--I 11
-        Feet = 'nyame sollerets',
+        Feet = 'regal pumps +1',
     },
     Self_Cure = {--cap 30
         Waist = 'Gishdubar Sash',
@@ -190,12 +190,13 @@ local sets = {
     },
     Cure_LowMP_Storm = { -- MP <= 50%, Light weather: Aurorastorm I/II or natural Light weather
         Main = 'Chatoyant Staff', -- or 'Iridal Staff': "Cure" potency +10%, Iridescence (+10% weather roll)
-        -- Sub = 'your grip',
+        Sub = 'Enki Strap',
     },
-    Cure_Dt = { -- /dt on: goes over the cure sets above, so list only the DT pieces to trade in (example from Dt)
-        Neck = 'loricate torque +1',
-        Body = 'nyame mail',
-        Ring2 = 'defending ring',
+    Cure_Dt = { -- /dt on: goes over the cure sets above, so list only the DT pieces to trade in
+        Head = 'nyame helm',
+        Ear1 = 'alabaster earring',
+        Ring2 = 'murky ring',
+        Feet = 'nyame sollerets',
     },
     Regen = {
         Main = 'Bolelabunga',
