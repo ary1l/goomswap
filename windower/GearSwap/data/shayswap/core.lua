@@ -245,6 +245,15 @@ end
 ---------------------------------------------------------------------------------------------------
 -- gFunc
 ---------------------------------------------------------------------------------------------------
+-- LuAshitacast's gFunc/gData functions (ThornyFFXI/LuAshitacast func.lua, data.lua) this file does not provide.
+local UNSUPPORTED = {
+    gFunc = { AddSet = true, ApplyBaseSets = true, ChangeActionId = true, ChangeActionTarget = true, CompareItem = true,
+        EvaluateLevels = true, InterimEquip = true, InterimEquipSet = true, LockStyle = true, SetMidDelay = true },
+    gData = { CheckForNomad = true, CheckInMogHouse = true, GetAccountFlags = true, GetAlliance = true,
+        GetAugmentPath = true, GetAugmentResource = true, GetAugmentSingle = true, GetContainerAvailable = true,
+        GetCurrentSet = true, GetEquipScreen = true, GetTimestamp = true, GetWeather = true, ResolveString = true },
+};
+
 local function equip_one(slot, item)
     local n = slot_index(slot);
     if (n == 0) then print(chat.header('LuAshitacast') .. chat.error('Invalid slot specified: ' .. tostring(slot))); return end
@@ -254,18 +263,50 @@ local function equip_one(slot, item)
     buffer[n] = t;
 end
 
-local function load_file(path)
-    local p = string.gsub(tostring(path), '\\', '/');
+local function short_path(f) -- for chat: from GearSwap's data/ on
+    local base = windower.addon_path .. 'data/';
+    return (string.sub(f, 1, #base) == base) and ('data/' .. string.sub(f, #base + 1)) or f;
+end
+
+-- Folders LoadFile looks in, first hit wins: data/shayswap/<Name>/, an Ashita-style data/shayswap/<Name>_<id>/
+-- (the folder name luashitacast/ uses, if copied over as is), then data/shayswap/.
+local function search_dirs()
     local me = ffxi.get_player();
     local name = me and me.name or '';
-    local tries = { ROOT .. name .. '/' .. p, ROOT .. name .. '/' .. p .. '.lua', ROOT .. p, ROOT .. p .. '.lua' };
-    local file = nil;
-    for _, f in ipairs(tries) do
-        if windower.file_exists(f) then file = f; break end
+    local dirs = {};
+    if (name ~= '') then
+        dirs[1] = ROOT .. name .. '/';
+        local ok, list = pcall(windower.get_dir, ROOT);
+        if ok and (type(list) == 'table') then
+            local want = string.lower(name) .. '_';
+            for _, e in ipairs(list) do
+                local d = string.gsub(tostring(e), '[/\\]$', '');
+                if (string.sub(string.lower(d), 1, #want) == want) and (string.match(string.sub(d, #want + 1), '^%d+$') ~= nil)
+                    and windower.dir_exists(ROOT .. d) then
+                    dirs[#dirs + 1] = ROOT .. d .. '/';
+                end
+            end
+        end
+    end
+    dirs[#dirs + 1] = ROOT;
+    return dirs;
+end
+
+-- Returns the file's value, nil, its path; or nil plus 'missing' when no file matched (the folders looked in are printed).
+local function load_file(path)
+    local p = string.gsub(tostring(path), '\\', '/');
+    local file, looked = nil, {};
+    for _, d in ipairs(search_dirs()) do
+        looked[#looked + 1] = short_path(d);
+        for _, f in ipairs({ d .. p, d .. p .. '.lua' }) do
+            if (file == nil) and windower.file_exists(f) then file = f end
+        end
+        if (file ~= nil) then break end
     end
     if (file == nil) then
-        print(chat.header('LuAshitacast') .. chat.error('File not found matching: ' .. tostring(path)));
-        return nil;
+        local hint = (string.sub(string.lower(p), 1, 7) == 'common/') and '; copy the repo\'s common/ folder to data/shayswap/common/' or '';
+        print(chat.header('LuAshitacast') .. chat.error('File not found: ' .. p .. ' (looked in ' .. table.concat(looked, ', ') .. ')' .. hint));
+        return nil, 'missing';
     end
     local fn, err = gearswap.loadfile(file);
     if (fn == nil) then
@@ -280,7 +321,7 @@ local function load_file(path)
         print(chat.header('LuAshitacast') .. chat.error(tostring(value)));
         return nil;
     end
-    return value;
+    return value, nil, file;
 end
 
 gFunc = setmetatable({
@@ -345,7 +386,8 @@ gFunc = setmetatable({
     Echo = function(_, text) print(chat.header('LuAshitacast') .. tostring(text)) end,
     Error = function(text) print(chat.header('LuAshitacast') .. chat.error(tostring(text))) end,
 }, { __index = function(_, k)
-    return function() A.Unsupported('gFunc.' .. tostring(k)) end
+    -- LAC functions not done here warn once; any other name is nil, as on LAC (common/ tests gFunc.X ~= nil).
+    if UNSUPPORTED.gFunc[k] then return function() A.Unsupported('gFunc.' .. tostring(k)) end end
 end });
 
 ---------------------------------------------------------------------------------------------------
@@ -527,6 +569,20 @@ gData = setmetatable({
         return (max < 1) and 0 or math.min(max, 80);
     end,
     GetBuffCount = buff_count,
+    -- LAC decodes augments from extdata; Windower's extdata lib gives strings like 'Cap. Point+48%'
+    -- (libs/extdata.lua string_augment). Returned as LAC's Augs[stat] = { Stat, Value }.
+    GetAugment = function(item)
+        local none = { Type = 'Unaugmented' };
+        if (type(item) ~= 'table') or (item.Id == nil) or (type(item.Extra) ~= 'string') then return none end
+        local ok, d = pcall(gearswap.extdata.decode, { id = item.Id, extdata = item.Extra });
+        if (not ok) or (type(d) ~= 'table') or (type(d.augments) ~= 'table') then return none end
+        local augs = {};
+        for _, a in ipairs(d.augments) do
+            local stat, value = string.match(tostring(a), '^(.-)([+-]%d+)%%?$');
+            if (stat ~= nil) and (stat ~= '') and (augs[stat] == nil) then augs[stat] = { Stat = stat, Value = tonumber(value) } end
+        end
+        return { Type = 'Augmented', Augs = augs };
+    end,
     GetCurrentCall = function() return gState.CurrentCall end,
     GetTargetIndex = target_index,
     GetEntity = entity_table,
@@ -570,7 +626,7 @@ gData = setmetatable({
         return out;
     end,
 }, { __index = function(_, k)
-    return function() A.Unsupported('gData.' .. tostring(k)) end
+    if UNSUPPORTED.gData[k] then return function() A.Unsupported('gData.' .. tostring(k)) end end
 end });
 
 -- LAC's equip module, only GetCurrentEquip (gcinclude.CheckLockingRings).
@@ -781,10 +837,7 @@ local function cancel_buff(name)
             if (buff_name(b) == want) then ids[b] = true end
         end
     end
-    for id in pairs(ids) do
-        -- The game's own cancel packet (Rahvin GS monitor.lua).
-        windower.packets.inject_outgoing(0xF1, string.char(0xF1, 0x04, 0, 0, id % 256, math.floor(id / 256), 0, 0));
-    end
+    for id in pairs(ids) do windower.ffxi.cancel_buff(id) end -- Windower API (wiki FFXI-Functions)
 end
 
 queue_command = function(cmd)
@@ -968,14 +1021,24 @@ function get_sets()
     A.Install(ctx);
     I.Install(ctx);
     local job = player and player.main_job;
-    local profile = (type(job) == 'string') and load_file(job .. '.lua') or nil;
+    local profile, why, file = nil, nil, nil;
+    if (type(job) == 'string') then profile, why, file = load_file(job .. '.lua') end
     if (type(profile) ~= 'table') then
-        print(chat.header('ShaySwap') .. chat.error('No job file for ' .. tostring(job) .. ': put it at data/shayswap/<Name>/' .. tostring(job) .. '.lua'));
+        local name = (player and player.name) or '<Name>';
+        if (why == 'missing') then
+            print(chat.header('ShaySwap') .. chat.error('No ' .. tostring(job) .. '.lua: put it at data/shayswap/' .. name .. '/'
+                .. tostring(job) .. '.lua (not in GearSwap\'s own data/' .. name .. '/ folder)'));
+        else
+            print(chat.header('ShaySwap') .. chat.error(tostring(job) .. '.lua did not load (see the error above); it must end with: return profile;'));
+        end
         return;
     end
+    print(chat.header('ShaySwap') .. 'Loaded ' .. short_path(file));
     gProfile = profile;
     -- GearSwap's own commands (//gs validate, //gs org) read 'sets' in GearSwap's item format.
+    local naked = (type(sets) == 'table') and sets.naked or nil; -- GearSwap seeds it for //gs equip naked
     sets = gs_sets(profile.Sets);
+    if (sets.naked == nil) then sets.naked = naked end
     -- profile.Packer -> Organizer (GearSwap's organizer-lib; needs the Organizer addon for //gs org).
     if (type(profile.Packer) == 'table') and (next(profile.Packer) ~= nil) then
         organizer_items = {};

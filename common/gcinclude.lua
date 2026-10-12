@@ -201,7 +201,7 @@
 		gcinclude.Err('HUD disabled: gchud.lua failed to load.');
 	end
 
-	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
+	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
 	'pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
@@ -424,7 +424,7 @@ end
 			gcinclude.FlipToggle('MDTset', args[2]);
 			toggle = 'MDT Set';
 			status = gcdisplay.GetToggle('MDTset');
-		elseif (args[1] == 'meleeset') then
+		elseif (args[1] == 'meleeset') or (args[1] == 'mset') then
 			gcinclude.PickCycle('MeleeSet', args[2]);
 			toggle = 'Melee Set';
 			status = gcdisplay.GetCycle('MeleeSet');
@@ -2414,7 +2414,7 @@ end
 			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset',
 			'defense: /def (cycle DT > MDT > Aminon > SIRD > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set) /sir, /lock [slots] /unlock [slots]',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
-			'toggles: /th (TH gear until the target is tagged; TH-set weapons while on), /kite, /meleeset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
+			'toggles: /th (TH gear until the target is tagged; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
 			'hud    : /gchud [on|off|pos x y|debug]',
 			'checks : /checksets, /xiroll, /mbinfo',

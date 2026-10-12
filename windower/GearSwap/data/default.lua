@@ -1,5 +1,6 @@
--- ShaySwap for Windower (GearSwap entry file).
--- GearSwap loads this for any job with no GearSwap file of its own. It runs your LuAshitacast job file
--- from data/shayswap/<Name>/<JOB>.lua (or data/shayswap/<JOB>.lua) with common/ from data/shayswap/common/.
--- Rename it to <Name>.lua if you already use default.lua for something else. Install: README.md (Windower).
+-- ShaySwap for Windower (GearSwap entry file). Goes in Windower/addons/GearSwap/data/default.lua.
+-- GearSwap loads it only for a job with no GearSwap file of its own (data/<Name>/<JOB>.lua, data/<Name>_<JOB>.lua,
+-- data/<Name>.lua, data/<JOB>.lua all win over it). It then runs your LuAshitacast job file from
+-- data/shayswap/<Name>/<JOB>.lua (or data/shayswap/<JOB>.lua for every character), common/ from data/shayswap/common/.
+-- Loaded OK = "[ShaySwap] Loaded data/shayswap/.../<JOB>.lua" in chat. Install: README.md.
 include('shayswap/core.lua');

@@ -8,18 +8,18 @@ local sets = {
         Main = 'Bolelabunga',
         Sub = 'genmei shield',
         Ammo = 'Staunch Tathlum +1',
-        Head = 'theo. cap +4',
+        Head = 'nyame helm',
         Neck = 'loricate torque +1',
         Ear1 = 'alabaster Earring',
         Ear2 = 'eabani earring',
-        Body = 'theo. bliaut +4',
-        Hands = 'theo. mitts +4',
+        Body = 'ebers bliaut +2',
+        Hands = 'nyame gauntlets',
         Ring1 = 'murky ring',
         Ring2 = 'gurebu\'s ring',
 		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
 		Waist = 'carrier\'s sash',
-		Legs = 'ebers pant. +2',
-        Feet = 'theo. duckbills +4',
+		Legs = 'nyame flanchard',
+        Feet = 'nyame sollerets',
     },
     Resting = {},
     Idle_Regen = {
@@ -47,8 +47,8 @@ local sets = {
 		--Ammo = 'Homiliary',
         Head = 'theo. cap +4',
 		Neck = 'sibyl scarf',
-		Body = 'theo. bliaut +4',
-        Hands = 'volte gloves',
+		Body = 'ebers bliaut +2',
+        Hands = 'ebers mitts +2',
         Ring1 = 'murky ring',
 		Ring2 = 'gurebu\'s ring',
         Waist = 'null belt',
@@ -59,18 +59,18 @@ local sets = {
     Dt = {
 		Sub = 'genmei shield',
         Ammo = 'Staunch Tathlum +1',
-        Head = 'bunzi\'s hat',
+        Head = 'nyame helm',
         Neck = 'loricate torque +1',
         Ear1 = 'alabaster earring',
         Ear2 = 'eabani Earring',
-        Body = 'bunzi\'s robe',
-        Hands = 'bunzi\'s gloves',
+        Body = 'nyame mail',
+        Hands = 'ebers mitts +2',
         Ring1 = 'murky Ring',
         Ring2 = 'defending ring',
 		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
 		Waist = 'carrier\'s sash',
-        Legs = 'ebers pant. +2',
-        Feet = 'bunzi\'s sabots',
+        Legs = 'ebers pant. +3',
+        Feet = 'nyame sollerets',
     },
     Sleeping = { -- worn while asleep over the /def set and Incapacitated, past the TP hold: stage 2 Lorg Mor "Slowly devours your soul" (HP/MP drain wakes you); stages 3+ don't drain
         Main = 'Lorg Mor',
@@ -87,10 +87,9 @@ local sets = {
         Ring2 = 'gurebu\'s ring',
 		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
 		Waist = 'carrier\'s sash',
-		Legs = 'ebers pant. +2',
+		Legs = 'ebers pant. +3',
         Feet = 'theo. duckbills +4',
     },
-
     Tp_Default = {
         Main = 'Maxentius',
         Sub = 'diamond aspis',
@@ -121,9 +120,8 @@ local sets = {
 		Main = 'gada',--5
 		Sub = 'chanter\'s shield',--3
         Ammo = 'Impatiens',
-        Head = 'vanya hood',--10
-		Neck = 'voltsurge torque',--4
-        --Neck = 'Clr. Torque +2',
+        Head = 'ebers cap +2',--10
+		Neck = 'Clr. Torque +2',--10
         Ear1 = 'alabaster earring',
         Ear2 = 'Malignance Earring',
 		Body = 'inyanga jubbah +2',--14
@@ -136,14 +134,13 @@ local sets = {
         Feet = 'regal pumps +1',--5
     },
     Cure_Precast = {
-		Main = 'gada',
-		Sub = 'chanter\'s shield',
+		Main = 'gada',--5
+		Sub = 'chanter\'s shield',--3
         Ammo = 'Impatiens',
-        Head = 'vanya hood',
-		Neck = 'voltsurge torque',
-        --Neck = 'Clr. Torque +2',
-        Ear1 = 'nourish. earring +1',
-        Ear2 = 'mendi. Earring',
+        Head = 'ebers cap +2',--10
+		Neck = 'Clr. Torque +2',--10
+        Ear1 = 'alabaster earring',
+        Ear2 = 'malignance earring',
 		Body = 'inyanga jubbah +2',
         Hands = 'egbesu mitts', --6
         Ring1 = 'lebeche Ring',--2
@@ -163,32 +160,50 @@ local sets = {
     },
 
 
+    -- Cure/Cura/Curaga midcast, lowest to highest (later wins per slot):
+    --   Cure -> Self_Cure (on you) -> Cure_LowMP or Cure_LowMP_Storm (MP <= 50%) -> Cure_Dt (/dt on)
+    --   -> engine: Hachirin-no-Obi (Light day/weather) -> SIR set (/sir on) last, over all of it.
+    -- MP above 50%: Cure's own Main/Sub stay (Raetic Rod +1 / Thuellaic Ecu +1).
     Cure = {--I cap is 50, II cap is 30
         Main = 'raetic rod +1',
 		Sub = 'thuellaic ecu +1',
-        Ammo = 'staunch tathlum +1',
+        Ammo = 'impatiens',
 		Head = 'theo. cap +4',
-        Neck = 'nodens gorget',--I 5
-        Ear1 = 'nourish. Earring +1',
-        Ear2 = 'mendi. Earring',
+        Neck = 'Clr. Torque +2',
+        Ear1 = 'mendi. earring',
+        Ear2 = 'ebers earring +1',
 		Body = 'ebers bliaut +2',
         Hands = 'theo. mitts +4',
-        Ring1 = 'lebeche ring',
-		Ring2 = 'Naji\'s loop',
+        Ring1 = 'weather. ring',
+		Ring2 = 'lebeche ring',
 		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
         Waist = 'witful belt',
-		Legs = 'ebers pant. +2',--I 11
-        Feet = 'egbesu clogs',--I 10
+		Legs = 'ebers pant. +3',--I 11
+        Feet = 'regal pumps +1',
     },
     Self_Cure = {--cap 30
         Waist = 'Gishdubar Sash',
+    },
+    Cure_LowMP = { -- MP <= 50%, no Light weather
+        Main = 'Daybreak',
+        Sub = 'thuellaic ecu +1',
+    },
+    Cure_LowMP_Storm = { -- MP <= 50%, Light weather: Aurorastorm I/II or natural Light weather
+        Main = 'Chatoyant Staff', -- or 'Iridal Staff': "Cure" potency +10%, Iridescence (+10% weather roll)
+        Sub = 'Enki Strap',
+    },
+    Cure_Dt = { -- /dt on: goes over the cure sets above, so list only the DT pieces to trade in
+        Head = 'nyame helm',
+        Ear1 = 'alabaster earring',
+        Ring2 = 'murky ring',
+        Feet = 'nyame sollerets',
     },
     Regen = {
         Main = 'Bolelabunga',
         Sub = 'Ammurapi Shield',
 		Head = 'inyanga tiara +2',
 		Body = 'Piety Bliaut +3',
-		Hands = 'ebers mitts +1',
+		Hands = 'ebers mitts +2',
         Waist = 'embla sash',
         Legs = 'theo. pant. +4',
 		Feet = 'theo. duckbills +4',
@@ -200,7 +215,7 @@ local sets = {
 		Neck = 'Clr. Torque +2',
 		Ear1 = 'alabaster earring',
 		Ear2 = 'malignance earring',
-		Hands = 'ebers mitts +1',
+		Hands = 'ebers mitts +2',
         Ring1 = 'kishar Ring',
 		Ring2 = 'weather. Ring',
 		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
@@ -373,6 +388,7 @@ profile.Sets = sets;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
+    gcinclude.settings.KeepWeaponsFor = T{}; -- cures pick Main/Sub by MP (HandleMidcast), so a worn Daybreak must not be kept
     gcinclude.Initialize();
 end
 
@@ -433,6 +449,8 @@ profile.HandlePrecast = function()
 end
 
 profile.HandleMidcast = function()
+    local player = gData.GetPlayer();
+    local weather = gData.GetEnvironment();
     local spell = gData.GetAction();
     local target = gData.GetActionTarget();
     local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
@@ -459,6 +477,17 @@ profile.HandleMidcast = function()
         gFunc.EquipSet(sets.Cure);
         if (target.Name == me) then
             gFunc.EquipSet(sets.Self_Cure);
+        end
+        if T{'Cure', 'Cura', 'Curaga'}:contains(gcinclude.Family(spell.Name)) then
+            if (player.MPP <= 50) then -- above 50%: Cure's Raetic Rod +1 / Ecu stay
+                -- Light weather: Aurorastorm counts (LAC GetEnvironment reads storm buffs as weather), so does natural Light
+                if (weather ~= nil) and (weather.WeatherElement == 'Light') then
+                    gFunc.EquipSet(sets.Cure_LowMP_Storm);
+                else
+                    gFunc.EquipSet(sets.Cure_LowMP);
+                end
+            end
+            if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Cure_Dt) end
         end
 		if string.match(spell.Name, 'Paralyna') or string.match(spell.Name, 'Erase') or string.match(spell.Name, 'Blindna') or (string.match(spell.Name, 'Silena') or string.match(spell.Name, 'Poisona') or string.match(spell.Name, 'Stona') or string.match(spell.Name, 'Viruna')) then
             gFunc.EquipSet(sets.erase);

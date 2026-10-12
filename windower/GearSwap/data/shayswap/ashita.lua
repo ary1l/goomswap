@@ -102,12 +102,22 @@ print = function(...)
     for line in string.gmatch(text, '[^\n]+') do windower.add_to_chat(red and 123 or 207, line) end
 end
 
+-- Ashita's struct library, for the two reads common/ makes (enchant timers, 0x00B). Windower's LPack
+-- s:unpack(fmt, pos) returns only the values, not the next position (wiki LPack-Library); callers use the first.
+struct = {
+    unpack = function(fmt, s, pos) return s:unpack(fmt, pos) end,
+    pack = function(fmt, ...) return fmt:pack(...) end,
+};
+
 -- Ashita's function:once(delay, ...): run once after delay seconds. Windower's functions library has no
--- 'once'; adding it does not change anything that library already defines.
-if (rawget(functions, 'once') == nil) then
+-- 'once'; adding it does not change anything that library already defines. 'functions' is GearSwap's and
+-- outlives //gs reload, so the installed once() calls the current load's Fresh, not the first load's.
+rawset(functions, '__ShaySwapFresh', A.Fresh);
+if (rawget(functions, 'once') == nil) or (rawget(functions, '__ShaySwapOnce') == true) then
+    rawset(functions, '__ShaySwapOnce', true);
     functions.once = function(fn, delay, ...)
         local args, n = { ... }, select('#', ...);
-        return coroutine.schedule(function() A.Fresh(); fn(unpack(args, 1, n)) end, tonumber(delay) or 0);
+        return coroutine.schedule(function() rawget(functions, '__ShaySwapFresh')(); fn(unpack(args, 1, n)) end, tonumber(delay) or 0);
     end
 end
 
@@ -125,11 +135,33 @@ local function once(cache, id, make)
     return v or nil;
 end
 
+-- Windower's resources library turns these bitmasks into Sets (libs/resources.lua bit_slots): jobs/slots hold
+-- bit positions, targets/flags hold names (values from the same file). Ashita gives the plain number.
+local TARGET_BITS = { Self = 0x01, Player = 0x02, Party = 0x04, Ally = 0x08, NPC = 0x10, Enemy = 0x20, Object = 0x60,
+    Corpse = 0x9D };
+local FLAG_BITS = { ['Wall-mounted'] = 0x0001, Flag01 = 0x0002, ['Obtainable from Goblin Box'] = 0x0004,
+    ['Usable inside Mog Garden'] = 0x0008, ['Can Send POL'] = 0x0010, Inscribable = 0x0020, ['No Auction'] = 0x0040,
+    Scroll = 0x0080, Linkshell = 0x0100, Usable = 0x0200, ['NPC Tradeable'] = 0x0400, Equippable = 0x0800,
+    ['No NPC Sale'] = 0x1000, ['No Delivery'] = 0x2000, ['No PC Trade'] = 0x4000, Rare = 0x8000, Exclusive = 0x6040 };
+local function bit_mask(v)
+    if (type(v) == 'number') then return v end
+    local m = 0;
+    if (type(v) == 'table') then for k in pairs(v) do if (type(k) == 'number') then m = m + 2 ^ k end end end
+    return m;
+end
+local function name_mask(v, bits)
+    if (type(v) == 'number') then return v end
+    local m = 0;
+    if (type(v) == 'table') then for k in pairs(v) do if (bits[k] ~= nil) then m = bit.bor(m, bits[k]) end end end
+    return m;
+end
+
 local function item_obj(r)
     if (r == nil) then return nil end
     return {
-        Id = r.id, Name = { r.en }, Skill = r.skill or 0, Slots = r.slots or 0, Jobs = r.jobs or 0,
-        Level = r.level or 0, Flags = r.flags or 0, Type = r.type or 0, StackSize = r.stack or 1,
+        Id = r.id, Name = { r.en }, Skill = r.skill or 0, Slots = bit_mask(r.slots), Jobs = bit_mask(r.jobs),
+        ShieldSize = r.shield_size or 0, -- only shields carry shield_size in Windower's items
+        Level = r.level or 0, Flags = name_mask(r.flags, FLAG_BITS), Type = r.type or 0, StackSize = r.stack or 1,
         CastDelay = r.cast_delay or 0, CastTime = (r.cast_time or 0) * 4, RecastDelay = (r.recast_delay or 0) * 4,
     };
 end
@@ -147,7 +179,7 @@ local function spell_obj(r)
         Index = r.id, Id = r.id, Name = { r.en }, Element = r.element or 0, Skill = r.skill or 0,
         Type = SPELL_TYPE[r.type] or 0, ManaCost = r.mp_cost or 0,
         CastTime = (r.cast_time or 0) * 4, RecastDelay = (r.recast or 0) * 4, RecastTimerId = r.recast_id or 0,
-        LevelRequired = req, JobPointMask = mask, Range = r.range or 0, Targets = r.targets or 0,
+        LevelRequired = req, JobPointMask = mask, Range = r.range or 0, Targets = name_mask(r.targets, TARGET_BITS),
     };
 end
 
@@ -158,12 +190,13 @@ local function ability_obj(id)
         local r = wres.job_abilities[id - 0x200];
         if (r == nil) then return nil end
         return { Id = id, Name = { r.en }, RecastTimerId = r.recast_id or 0, TPCost = r.tp_cost or 0,
-            ManaCost = r.mp_cost or 0, Element = r.element or 0, Range = r.range or 0, Targets = r.targets or 0 };
+            ManaCost = r.mp_cost or 0, Element = r.element or 0, Range = r.range or 0,
+            Targets = name_mask(r.targets, TARGET_BITS) };
     end
     local r = wres.weapon_skills[id];
     if (r == nil) then return nil end
     return { Id = id, Name = { r.en }, RecastTimerId = 0, TPCost = 0, ManaCost = 0, Element = r.element or 0,
-        Range = r.range or 0, Targets = r.targets or 0 };
+        Range = r.range or 0, Targets = name_mask(r.targets, TARGET_BITS) };
 end
 
 local function item_by_id(id)
@@ -302,6 +335,7 @@ local entity = object('IEntity', {
     GetPetTargetIndex = function(_, i) local m = mob(i); return m and m.pet_index or 0 end,
     GetLocalPositionX = function(_, i) local m = mob(i); return m and m.x or 0 end,
     GetLocalPositionY = function(_, i) local m = mob(i); return m and m.y or 0 end,
+    GetLocalPositionZ = function(_, i) local m = mob(i); return m and m.z or 0 end,
 });
 
 local target = object('ITarget', {
