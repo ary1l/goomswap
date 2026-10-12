@@ -22,6 +22,7 @@ On/off commands (`/automb`, `/burst`, `/kite`, `/th`, `/dt`, `/mdt`, `/aminon`, 
 | `/wm melee` | Role name from `gcinclude.WeaponRoles` |
 | `/wm leaden force` | Swap even at 1000+ TP |
 | `/mainset` `/subset` `/rangeset` `/ammoset` `[name\|N\|none]` | Per-slot cycles, on jobs that define them |
+| `/subset duban` | e.g. PLD shields: `/subset` cycles None → Aegis → Duban (list: `gcinclude.SubModes` in OnLoad); add `force` at 1000+ TP |
 
 - A weapon mode is what you return to at rest. Action sets that swap weapons still do.
 - Per-slot cycles override the mode for their slot. COR/RNG modes are named for the gun, so
@@ -398,6 +399,33 @@ Prefixes: `!` Alt, `^` Ctrl, `+` Shift, `@` Win, `#` Apps; combine them (`^+` = 
 unbound (too easy to hit; cleared on load unless a bind asks for it). `T{}` = none. Binds replace existing ones
 on that key and are removed on unload; check `/bind list`. `/bind block 1` stops them firing while
 typing. If Win+grave opens Start, try `/keyboard winkey 0` or another key.
+
+## Fast Cast
+
+Leave `gSettings.FastCast` at 0. Nothing here needs your Fast Cast number.
+
+- **Idle gear after a cast**: LAC puts it back when the game says your cast finished (or was interrupted),
+  not on a timer. `FastCast` only sets LAC's backup timer for a lost packet. At 0 the backup is the full
+  cast time, which is safe. Set too high, the backup fires early and idle gear goes on mid-cast.
+- **Will the burst land in time?** the engine times your real casts, from the game's
+  "starts casting" packet to "finished". So Fast Cast gear, buffs, traits and lag are all included,
+  with no setting to maintain. It keeps your last 5 casts per magic skill and plans with the slowest,
+  so one lucky Quick Cast doesn't make it think you're faster than you are. Interrupted casts are ignored.
+- Before your first cast of a skill it assumes the full base cast time (slow side = safe). Resets on `/lac reload`.
+
+## Gear tips
+
+- Slot keywords (LuAshitacast, per Thorny): `'remove'` forces the slot empty (sends an unequip); `'displaced'`
+  changes nothing but marks the slot empty, for a slot the game empties itself when the set goes on (a cloak
+  covers Head; a bell, instrument or throwing weapon in Range empties Ammo; a tathlum or the Hoxne Ampulla in Ammo
+  empties Range); `'ignore'` leaves the slot alone.
+- HP pieces: give them `Priority = <HP>` so max HP doesn't dip mid-swap.
+- Leave Moonshade out of WS sets; the engine adds it.
+- Weapons in `TH` (THF: Gandring Sub) stay on the whole time `/th` is on, tagged or not (a swap would reset TP).
+  `/th` off gives your weapon mode back.
+- `Absorb`: one set covers every Absorb- spell. `Absorb_TP` only if Absorb-TP needs different gear.
+- Dynamis RP: wear only what you're ranking, `/lock neck main sub range`, `/unlock` after. Kill RP splits
+  between every uncapped item worn, and only Divergence necks/weapons earn it (BG, Oboro).
 
 ## Job file
 

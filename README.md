@@ -1,8 +1,7 @@
 # ShaySwap
 
-LuAshitacast engine for multiboxing. You fill in sets; it picks the gear. Runs on Ashita v4, and on
-Windower 4 through the GearSwap adapter in `windower/`.
-Full reference: `COMMANDS.md`.
+LuAshitacast gear engine for multiboxing: you fill in sets, it picks the gear. Runs on Ashita v4, and on
+Windower 4 through the GearSwap adapter in `windower/`. Full reference: `COMMANDS.md`.
 
 ## Install
 
@@ -14,32 +13,39 @@ Full reference: `COMMANDS.md`.
 
 ### Windower 4 (GearSwap)
 
-1. Copy everything in `windower/GearSwap/data/` into `Windower/addons/GearSwap/data/`
-   (that is `default.lua` and the `shayswap/` folder).
-2. Copy `common/` to `Windower/addons/GearSwap/data/shayswap/common/`.
-3. Copy `examples/<JOB>.lua` to `Windower/addons/GearSwap/data/shayswap/<Name>/<JOB>.lua` and put in your gear.
-   A job file straight in `shayswap/` (no name folder) is used by every character.
-4. `//lua load gearswap`, then change job (or `//gs reload`).
+```
+Windower/addons/GearSwap/data/
+├── default.lua                  <- windower/GearSwap/data/default.lua
+└── shayswap/
+    ├── core.lua, ashita.lua, imgui.lua   <- windower/GearSwap/data/shayswap/
+    ├── common/                  <- common/
+    └── <Name>/<JOB>.lua         <- examples/<JOB>.lua, with your gear
+```
 
-- GearSwap only uses `default.lua` for jobs with no GearSwap file of their own. Already have a
-  `default.lua`? Rename this one to `<Name>.lua`.
-- Commands take two slashes: `//wm`, `//def`, `//gchud` (or `//gs c wm`). All boxes:
-  `//send @all gs c <command>` (Send addon). Keys are the same as Ashita.
-- Updating: replace `shayswap/common/` (and `shayswap/*.lua` if `windower/` changed).
-- Windower differences: the HUD and bar are display only (use commands; drag to move; boxes on one PC
-  share HUD state over IPC). Auto-nuke casts at the mob without targeting it. Packer list: `//gs org`
-  (needs the Organizer addon). The bar shows Atk/Def as 0.
+1. Copy as above. `shayswap/<JOB>.lua` (no name folder) is used by every character; an Ashita
+   `<Name>_<id>/` folder copied over as is works too.
+2. `//lua load gearswap`, then change job (or `//gs reload`). Chat: `[ShaySwap] Loaded data/shayswap/<Name>/<JOB>.lua`.
+
+- No `[ShaySwap]` line: GearSwap runs `default.lua` only for a job with no GearSwap file of its own.
+  `data/<Name>/<JOB>.lua`, `data/<Name>_<JOB>.lua`, `data/<Name>.lua` and `data/<JOB>.lua` all win. Never put a
+  ShaySwap job file there (GearSwap runs it itself and it fails on `gFunc`).
+- Already use `default.lua`? Save ours as `data/<Name>_<JOB>.lua` for each job that should run ShaySwap.
+- Commands take two slashes: `//wm` (or `//gs c wm`); all boxes `//send @all gs c <cmd>` (Send addon).
+- Updating: replace `shayswap/common/` and `shayswap/*.lua`.
+- Differences: HUD and bar are display only (commands; drag to move; boxes on one PC share HUD state over IPC).
+  Auto-nuke casts at the mob without targeting it. `//gs org` needs Organizer. The bar shows Atk/Def as 0.
 
 ## Quick start
 
-1. Fill `Idle`, `Tp_Default`, `Ws_Default`. Everything else can wait.
-2. Template jobs (BLM BST DNC DRG DRK NIN PUP RUN SAM SMN WAR): a set named after an ability, spell,
-   skill or WS (`['Savage Blade']`) is used for that action; a spell with no set uses its family's
-   (`['Cure']` for Cure IV). `_Hybrid`/`_Acc` follow `/meleeset`. Other jobs name their sets in the job file.
-   Their example gear comes from [GetAwayCoxn's Luashitacast-Profiles](https://github.com/GetAwayCoxn/Luashitacast-Profiles):
-   swap in your own (MIT, see `examples/LICENSE-GetAwayCoxn.txt`).
-3. Leave `gSettings.FastCast` at 0 (see Fast Cast below).
-4. `/checksets` finds empty sets and bad item names.
+1. Fill `Idle`, `Tp_Default`, `Ws_Default`. Everything else can wait. `/checksets` finds empty sets and bad item names.
+2. Template jobs (BLM BST DNC DRG DRK NIN PUP RUN SAM SMN WAR): a set named after an action (`['Savage Blade']`)
+   is used for it; a spell with no set uses its family's (`['Cure']` for Cure IV). `_Hybrid`/`_Acc` follow
+   `/meleeset`. Other jobs name their sets in the job file. Their example gear is from
+   [GetAwayCoxn's Luashitacast-Profiles](https://github.com/GetAwayCoxn/Luashitacast-Profiles) (MIT,
+   `examples/LICENSE-GetAwayCoxn.txt`): swap in your own.
+3. Leave `gSettings.FastCast` at 0 (`COMMANDS.md` Fast Cast).
+4. Worth copying: `WHM.lua` cures (weapons by MP and Light weather, `Cure_Dt` while `/dt` is on), `MNK.lua`
+   Hoxne sets, PLD shields with `/subset`.
 
 ## Keys
 
@@ -55,74 +61,26 @@ Full reference: `COMMANDS.md`.
 
 ## What it does
 
-- **Weapons**: weapon modes per job (`/wm`). At 1000+ TP, engaged or not, weapons don't change so you keep TP.
-  Can't dual wield: uses the `_1h` version of the mode. Dual Wield = main or sub NIN Lv10+, DNC Lv20+, THF Lv83+ at
-  the *effective* level, so a restricted support job (Sheol Gaol, SJ Restriction) counts as none; losing it swaps to
-  `_1h` at once, even at 1000+ TP. `/dw` shows why; `/dw on|off|auto` overrides.
-- **Layers**, lowest to highest: your sets → Hoxne sets → weapons (+ `TH`-set weapons while `/th` is on) → MDT/Aminon → Hoxne Ampulla →
-  TH → received gear → buff sets → XIRoll → debuff and craft/zeni/fish/rr sets (Hoxne sets in detail: COMMANDS.md Hoxne layering). Midcast: job sets → TH → `Buffs_Midcast` → Absorb → LightBonus → obi/Orpheus/back/ring → SIR.
-- **Automatic**: obi/Orpheus/Twilight Cape/Zodiac Ring by day, weather and distance (nukes, helixes, elemental ninjutsu,
-  Quick Draw, cures, elemental WS); a Sub that can't go with the Main (2-handed/grip) is dropped;
-  Hoxne Ampulla used when its Enchantment buff isn't up; low ammo / Utsusemi tool warnings; `/cancel Stoneskin` when asleep under it;
-  your /def set (else Dt) minus weapons + `Incapacitated` when slept/petrified/stunned/terrorized, `Sleeping` over it when asleep (its weapons past the TP hold, e.g. Lorg Mor to wake);
-  Moonshade under 1750 TP on every WS; Holy Water
-  on Doom; food and soda (both off on zoning); `/th`: TH gear at rest and on spells/shots at a mob until it is tagged (your hit, shot,
-  WS, ability, or a spell/step that lands; BLU: `BluMagTH` spells only), `TH`-set weapons the whole time; lockstyle on load if `LockstyleSet` is set.
-- **Action checks**: spells, abilities and WS that would fail are cancelled before any gear moves, with the
-  reason in chat. A recast back within 5s is queued and fires when ready, after the forced delay of your last action
-  (BG-Wiki: spell 3s, WS 2s, job ability 2s with other job abilities allowed after 1s).
-- **Holds**: `/naked` `/weaponsonly` `/abysseaproc` strip slots and keep them bare; `/capacity` `/jubilee`
-  `/dynamisrp` put on and keep your best capacity cape / Jubilee Ring / Dynamis - Divergence neck.
-- **Magic burst** (RDM BLM SCH GEO): the Burst set goes on by itself whenever a nuke will land inside a live
-  skillchain of its element on that target. `/automb` (Win+grave) makes the box cast the chain's nuke itself
-  (tier I/III/V by `/mbtier`; Transfixion/Compression: SCH helix). `/burst`: Burst set on every nuke.
-- **Received gear**: when anyone starts casting Cure/Cura/Curaga, Phalanx, Protect, Shell, Regen, Refresh or
-  Cursna on you (or Curaga/Cura/Protectra/Shellra near you from a party member), the matching `*_Received` set goes
-  on until that spell lands or is interrupted (8s max). Waltzes are instant abilities,
-  so there is nothing to see in advance: `Waltz_Received` only works when one of **your own boxes** uses Curing
-  Waltz on you (it tells your box by `/ms`; only your own boxes get told, never other players), and may still land after the heal. Divine Waltz (area, aimed at
-  the dancer) and anyone else's Waltz: no swap.
-- **Multibox**: `/mss /lac fwd <cmd>` runs a command on every box. HUD (`/gchud`): one line per box, click
-  a cell to change it on that box.
-
-```
-     wpn  ml   nk   def  mb     kt fd sd
-COR  Ana  Def       MDT         .  .  .
-RDM  Max  Def  Pow  -    AutoV  .  fd .
-```
-
-## Fast Cast
-
-Leave `gSettings.FastCast` at 0. Nothing here needs your Fast Cast number.
-
-- **Idle gear after a cast**: LAC puts it back when the game says your cast finished (or was interrupted),
-  not on a timer. `FastCast` only sets LAC's backup timer for a lost packet. At 0 the backup is the full
-  cast time, which is safe. Set too high, the backup fires early and idle gear goes on mid-cast.
-- **Will the burst land in time?** the engine times your real casts, from the game's
-  "starts casting" packet to "finished". So Fast Cast gear, buffs, traits and lag are all included,
-  with no setting to maintain. It keeps your last 5 casts per magic skill and plans with the slowest,
-  so one lucky Quick Cast doesn't make it think you're faster than you are. Interrupted casts are ignored.
-- Before your first cast of a skill it assumes the full base cast time (slow side = safe). Resets on `/lac reload`.
-
-## Gear tips
-
-- Slot keywords (LuAshitacast, per Thorny): `'remove'` forces the slot empty (sends an unequip); `'displaced'`
-  changes nothing but marks the slot empty, for a slot the game empties itself when the set goes on (a cloak
-  covers Head; a bell, instrument or throwing weapon in Range empties Ammo; a tathlum or the Hoxne Ampulla in Ammo
-  empties Range); `'ignore'` leaves the slot alone.
-- HP pieces: give them `Priority = <HP>` so max HP doesn't dip mid-swap.
-- Leave Moonshade out of WS sets; the engine adds it.
-- Weapons in `TH` (THF: Gandring Sub) stay on the whole time `/th` is on, tagged or not (a swap would reset TP).
-  `/th` off gives your weapon mode back.
-- `Absorb`: one set covers every Absorb- spell. `Absorb_TP` only if Absorb-TP needs different gear.
-- Dynamis RP: wear only what you're ranking, `/lock neck main sub range`, `/unlock` after. Kill RP splits
-  between every uncapped item worn, and only Divergence necks/weapons earn it (BG, Oboro).
+- **Weapons**: modes per job (`/wm`) and per slot (`/mainset` `/subset`...). Held at 1000+ TP; `_1h` sets when
+  you can't dual wield.
+- **Layers**, lowest to highest: your sets → Hoxne sets → weapons → MDT/Aminon → Hoxne Ampulla → TH → received
+  gear → buff sets → XIRoll → debuff and craft sets. Midcast: job sets → TH → `Buffs_Midcast` → Absorb →
+  LightBonus → obi/Orpheus/back/ring → SIR. Details: `COMMANDS.md` Sets the engine uses.
+- **Automatic**: obi/Orpheus/Twilight Cape/Zodiac Ring by day, weather and distance; a Sub that can't go with the
+  Main is dropped; Hoxne Ampulla use; ammo and tool warnings; `Incapacitated`/`Sleeping` sets; Moonshade on WS;
+  Holy Water on Doom; food and soda; `/th`; lockstyle.
+- **Action checks**: actions that would fail are cancelled before gear moves, with the reason in chat.
+- **Holds**: `/naked` `/weaponsonly` `/abysseaproc`, `/capacity` `/jubilee` `/dynamisrp`.
+- **Magic burst** (RDM BLM SCH GEO): Burst set inside a live skillchain; `/automb` casts the chain's nuke.
+- **Received gear**: `*_Received` sets while a Cure, Phalanx, Protect, Shell, Regen, Refresh or Cursna is on its way to you.
+- **Multibox**: `/mss /lac fwd <cmd>` on every box; `/gchud` shows one line per box.
 
 ## Something wrong
 
 | Problem | Check |
 |---|---|
-| Edit does nothing | `/lac reload` |
+| Edit does nothing | `/lac reload` (Windower: `//gs reload`) |
+| Windower: nothing loads | No `[ShaySwap] Loaded` line: see Install, Windower |
 | A slot won't change | `/unlock`, or it's a weapon held at 1000+ TP (`/wm <mode> force`), or a `TH`-set weapon while `/th` is on |
 | Weapon in Idle/TP/Town never shows | Weapon mode overrides it at rest; `/wm none` to manage weapons yourself. `/th` on: `TH`-set weapons override both |
 | Wrong/no gear | `/checksets`, then the item name spelling; `/gctrace` names each set used |

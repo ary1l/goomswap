@@ -754,7 +754,7 @@ profile.Sets = sets;
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
     gcinclude.MainModes = {'None', 'Burtgang', 'Caliburnus'};
-    gcinclude.SubModes = {'None', 'Aegis', 'Duban'};
+    gcinclude.SubModes = {'None', 'Aegis', 'Duban'}; -- shields: /subset cycles them, /subset duban picks one (add force at 1000+ TP)
     gcinclude.DefaultWeapons = { Main = 'Burtgang', Sub = 'Aegis' };
     gcinclude.Initialize();
 end
