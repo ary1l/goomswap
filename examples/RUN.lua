@@ -246,6 +246,8 @@ local sets = {
         Back = 'Solemnity Cape', -- 7
         Waist = 'Gishdubar Sash', --10rec
     },
+    ['Cure'] = { -- Cure I-IV from the sub job; worn over ['Healing Magic'], then SIR set (/sir on) last
+    },
     ['Blue Magic'] = {
         -- Foil and blue spells mostly
         Ammo = 'Staunch Tathlum', -- 10

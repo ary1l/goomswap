@@ -164,6 +164,16 @@ local sets = {
     Self_Cure = {--cap 30
         Waist = 'Gishdubar Sash',
     },
+    -- Cure/Cura/Curaga midcast, lowest to highest (later wins per slot):
+    --   Cure -> Self_Cure (on you) -> Cure_LowMP or Cure_LowMP_Storm (MP <= 50%) -> Cure_Dt (/dt on)
+    --   -> engine: Hachirin-no-Obi (Light day/weather) -> SIR set (/sir on) last. Empty sets change nothing.
+    -- Main/Sub in these? Add gcinclude.settings.KeepWeaponsFor = T{}; to OnLoad (see WHM.lua).
+    Cure_LowMP = { -- MP <= 50%, no Light weather
+    },
+    Cure_LowMP_Storm = { -- MP <= 50%, Light weather: your own Aurorastorm, another SCH's, or natural Light
+    },
+    Cure_Dt = { -- /dt on: DT pieces to trade in while curing
+    },
     Regen = {
         Main = 'Musa',
         Sub = 'Enki Strap',
@@ -528,6 +538,18 @@ profile.HandleMidcast = function()
         gFunc.EquipSet(sets.Cure);
         if (target.Name == me) then
             gFunc.EquipSet(sets.Self_Cure);
+        end
+        if T{'Cure', 'Cura', 'Curaga'}:contains(gcinclude.Family(spell.Name)) then
+            if (gData.GetPlayer().MPP <= 50) then
+                -- Light weather: Aurorastorm counts (LAC GetEnvironment reads storm buffs as weather), so does natural Light
+                local env = gData.GetEnvironment();
+                if (env ~= nil) and (env.WeatherElement == 'Light') then
+                    gFunc.EquipSet(sets.Cure_LowMP_Storm);
+                else
+                    gFunc.EquipSet(sets.Cure_LowMP);
+                end
+            end
+            if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Cure_Dt) end
         end
         if string.match(spell.Name, 'Cursna') then
             gFunc.EquipSet(sets.Cursna);
