@@ -57,7 +57,8 @@ On Windower, boxes on the same PC share HUD state over IPC, `/automb` casts at t
    template jobs is from [GetAwayCoxn](https://github.com/GetAwayCoxn/Luashitacast-Profiles) (MIT,
    `examples/LICENSE-GetAwayCoxn.txt`).
 
-Examples worth copying: `WHM.lua` cures (weapons by MP% and Light weather, `Cure_Dt` while `/dt` is on),
+Examples worth copying: `WHM.lua` cures (weapons by MP% and Light weather, `Cure_Dt` while `/dt` is on; same hooks,
+empty, in `SCH.lua`, `RDM.lua`, `GEO.lua`),
 `MNK.lua` Hoxne sets, `PLD.lua` shields with `/subset`.
 
 ## Everyday commands
