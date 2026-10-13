@@ -737,10 +737,13 @@ function precast(spell)
     in_event(function()
         local a = new_action(spell);
         if (a == nil) then return end
+        local before = gState.PlayerAction;
         gState.PlayerAction = a;
         handle(PRECAST[a.Type]);
         if (gState.PlayerAction ~= nil) and (gState.PlayerAction.Block == true) then
-            gState.PlayerAction = nil;
+            -- Cancelled while an earlier action still runs (a cast, on recast or queued): that one stays
+            -- pending, so idle gear doesn't replace its gear mid-cast.
+            gState.PlayerAction = ((before ~= nil) and ((before.Completion or 0) > os.clock())) and before or nil;
             cancel_spell();
             nextTick = 0;
         end

@@ -117,13 +117,23 @@ Spells, abilities and WS that would fail are cancelled before any gear moves, wi
 | Mute; Amnesia (abilities, WS) | Cancelled |
 | Silence | Cancelled; uses Echo Drops, else Remedy (Remedy first if paralyzed). `AutoRemedy`, not under Muddle |
 | Paralysis on an ability | Uses a Remedy instead, if carried |
-| Recast | Back within `MiniQueueMax` (5s): queued and sent when ready and past the forced delay (BG-Wiki: 3s after a spell, 2s after a WS, 2s after a job ability with job abilities allowed after 1s) (`<me>`, a player, or `<t>` if still targeted). Longer: shows `m:ss`. `MiniQueue = false` to only cancel |
+| Recast | Back within `MiniQueueMax` (5s): queued. Longer: shows `m:ss` |
+| While you cast | Another spell, ability or WS pressed mid-cast: queued for after the cast plus its 3s forced delay (if that's within `MiniQueueMax`), else cancelled so your cast keeps its gear. The spell you're casting pressed again is only cancelled |
+| Forced delay | Pressed in the forced delay after your last action (BG-Wiki: 3s after a spell, 2s after a WS, 2s after a job ability with job abilities allowed after 1s): queued. The same action pressed again (a double-tap) goes out as it would have |
 | MP short | Cost adjusted for Light/Dark Arts (own school -10% rounded down, other +20% rounded up). Skipped under Manafont, Manawell, Parsimony, Penury, Addenda, Tabula Rasa. Gear "MP cost -%" isn't counted: `ValidateMP = false` if it bites |
 | Stratagems at 0 | Cancelled, next charge time shown |
 | Waltz short on TP | Cancelled. Set `WaltzTPCut` to your gear's "Waltz TP cost" reduction |
 
-Charge-pool abilities (Ready, Sic, Quick Draw) skip the recast check. LAC only sees what the client sends,
-so anything the client refuses itself never gets here.
+**The queue** (`MiniQueue = false` turns it off; then recast and mid-cast presses only cancel, forced-delay presses go out as pressed):
+- Holds up to 3 actions. Once nothing is running, the oldest one whose recast is back and whose forced delay
+  is over goes out, one at a time. A 4th drops the oldest (said in chat). The same action pressed again replaces its entry.
+- Each waits its expected time + 2s; while you're busy with another action that clock stops (up to 10s more),
+  so it isn't dropped for waiting behind it. Dropped ones say `queue dropped`.
+- Target: `<me>`, a player by name, or `<t>` if that mob is still your target when it goes (else `target changed`).
+- Zoning clears it. A queued action that is still blocked when re-sent is not queued again.
+
+Charge-pool abilities (Ready, Sic, Quick Draw) and stratagems skip the recast check. LAC only sees what the client
+sends, so anything the client refuses itself never gets here (and can't be queued).
 
 ## Automation
 

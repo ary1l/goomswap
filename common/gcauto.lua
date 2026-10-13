@@ -391,6 +391,17 @@ local function cast_packet(P)
     castRatio[res.Skill] = list;
 end
 
+-- Seconds left on my cast in progress, and its spell id: its start packet was seen and no finish or
+-- interrupt yet. 0 when not casting. Past its learned cast time it stays at 0.1 for up to 2s (the finish
+-- packet is on its way), then the cast is taken as over (a missed packet).
+function gcauto.CastLeft()
+    local s = castStart;
+    if (s == nil) then return 0 end
+    local left = s.t + gcauto.CastTime(AshitaCore:GetResourceManager():GetSpellById(s.id)) - os.clock();
+    if (left < -2) then castStart = nil; return 0 end
+    return math.max(left, 0.1), s.id;
+end
+
 -- Seconds a spell resource takes to cast now: learned for its skill, else base less gSettings.FastCast.
 function gcauto.CastTime(res)
     if (res == nil) or (res.CastTime == nil) then return 0 end
