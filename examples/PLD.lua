@@ -1,6 +1,6 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
-gcinclude.SIRSkip = T{'Phalanx','Reprisal'}; -- /sir leaves these midcasts alone (adds to settings.SIRSkip, empty by default)
+gcinclude.SIRSkip = T{'Phalanx','Reprisal'}; -- /sir leaves these midcasts alone, on top of the default Absorb-TP and Stun
 
 
 local sets = {
@@ -296,7 +296,7 @@ local sets = {
         Feet = { Name = 'odyssean greaves', Priority = 20 },--20
     },
 
-    Absorb_TP = { -- /aminon turns /sir off, so this set stands there; /aminon's weapons stay
+    Absorb_TP = { -- /sir never goes over this (settings.SIRSkip); /aminon's weapons stay
         Head = { Name = 'Chev. Armet +3', Priority = 145 },
         Neck = { Name = 'Null Loop', Priority = 50 },
 		Ear1 = 'chev. earring +1',
