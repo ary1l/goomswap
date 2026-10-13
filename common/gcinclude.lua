@@ -2411,10 +2411,16 @@ end
 	end
 
 	function gcinclude.Help()
+		local skip = {};
+		for _, l in ipairs({ gcinclude.settings.SIRSkip, gcinclude.SIRSkip }) do -- same lists CheckSIR reads
+			if (type(l) == 'table') then
+				for _, n in ipairs(l) do skip[#skip + 1] = n end
+			end
+		end
 		local lines = T{
 			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset',
 			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set), /lock [slots] /unlock [slots]',
-			'casting: /sir (SIR set over every midcast except SIRSkip: Absorb-TP, Stun)',
+			'casting: /sir (SIR set over every midcast except SIRSkip: ' .. table.concat(skip, ', ') .. ')',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
 			'toggles: /th (TH gear until the target is tagged; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',

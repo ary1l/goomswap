@@ -69,7 +69,7 @@ empty, in `SCH.lua`, `RDM.lua`, `GEO.lua`),
 | `/mainset` `/subset` `[name]` | One slot's weapon, e.g. PLD `/subset duban`. Add `force` at 1000+ TP |
 | `/meleeset` or `/mset [hybrid\|acc\|default]` | Wear `_Hybrid` / `_Acc` versions of TP and WS sets |
 | `/def` | Defense: DT → MDT → Aminon → off (one at a time). `/dt` `/mdt` `/aminon` toggle one directly |
-| `/sir` | Casting mode: `SIR` set over every spell's midcast (not Absorb-TP or Stun). Works with any defense |
+| `/sir` | Casting mode: `SIR` set over every spell's midcast except `SIRSkip` (Absorb-TP, Stun, plus the job's own: PLD adds Phalanx, Reprisal). Works with any defense |
 | `/th` | TH gear until the mob is tagged |
 | `/kite` | Movement gear |
 | `/hoxne` | Off → Locked: Hoxne Ampulla kept in ammo and used |
@@ -102,7 +102,7 @@ Later wins, slot by slot. A set only changes the slots it lists.
 Cure → Self_Cure → Cure_LowMP or Cure_LowMP_Storm (MP <= 50%) → Cure_Dt (/dt) → Hachirin-no-Obi (Light) → SIR (/sir)
 ```
 
-`SIR` goes on last (never on Absorb-TP or Stun), so every slot it lists wins, even over `Cure_Dt` and the obi. Leave a slot out of `SIR`
+`SIR` goes on last (never on `SIRSkip` spells), so every slot it lists wins, even over `Cure_Dt` and the obi. Leave a slot out of `SIR`
 to keep the cure or DT piece. `/dt` only touches spells where the job file says so (WHM: `Cure_Dt`).
 
 **Weapon skills:** your job file → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
@@ -134,6 +134,14 @@ gcinclude.SIRSkip = T{'Phalanx', 'Reprisal'};
 
 Names are exact spell names in any case (`'Cure IV'`, not `'Cure'`). The job file's list adds to the shared one;
 it doesn't replace it.
+
+**Per-spell SIR sets.** The engine has one `SIR` set. When a spell needs SIR *and* its own stats, put the SIR gear
+in that spell's set in the job file and add the spell to `SIRSkip`, so `/sir` doesn't cover it. PLD does this:
+
+- `SIR`: worn by PLD.lua first on every spell, `/sir` or not.
+- `Reprisal` (105 SIR, Enmity) and `Phalanx` (potency): in PLD's `SIRSkip`, so their sets stay as built.
+- `Cure` (98% SIR, cure potency) and Protect (uses `Reprisal`): not in `SIRSkip`, so `/sir` still lays `SIR` over
+  them. Add `'Cure'`, `'Cure II'`, `'Cure III'`, `'Cure IV'`, `'Protect'` … to keep their own pieces.
 
 ## Auto magic burst tier (`/mbtier`)
 
