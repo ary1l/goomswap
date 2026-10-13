@@ -108,6 +108,65 @@ to keep the cure or DT piece. `/dt` only touches spells where the job file says 
 
 Full list of engine sets: `COMMANDS.md` Sets the engine uses.
 
+## SIR set and SIRSkip
+
+`/sir` is a casting mode (separate from `/def`, engaged or not). While it's on:
+
+- On every spell's **midcast**, the `SIR` set goes on **last**: after your job file's midcast sets and after every
+  engine layer (TH, `Buffs_Midcast`, Absorb, LightBonus, obi/Orpheus).
+- Only the slots `SIR` lists change, and those slots win for that cast (its waist replaces the obi, its ring
+  replaces your cure ring). Slots it leaves out keep the spell's own gear. Precast and idle are never touched.
+- Off: the engine never wears `SIR`. A job file can still use `sets.SIR` itself (PLD puts it on first for every
+  spell as a base, `/sir` or not).
+
+**`SIRSkip`** is the list of spells `/sir` leaves alone, so the spell's own set stands as the job file put it.
+Use it for spells where the set's own stats matter more than not being interrupted (Stun and Absorb-TP need
+magic accuracy; Phalanx needs its potency gear):
+
+```lua
+-- common/gcinclude.lua, every job:
+SIRSkip = T{'Absorb-TP', 'Stun'};
+
+-- top of a job file, that job only (adds to the list above):
+gcinclude.SIRSkip = T{'Phalanx', 'Reprisal'};
+```
+
+Names are exact spell names in any case (`'Cure IV'`, not `'Cure'`). The job file's list adds to the shared one;
+it doesn't replace it.
+
+## Settings: `common/gcinclude.lua`
+
+Two blocks at the top of the file are yours to edit; everything below them is the engine.
+
+- **`gcinclude.sets`**: sets every job shares. `Doomed`, `Holy_Water`, `Sleeping` (a job's own `Sleeping` wins),
+  `Reraise` (worn while Weakened), `Crafting` (`/craftset`), `Zeni` (`/zeniset`), `Fishing` (`/fishset`).
+- **`gcinclude.settings`**: options, one per line, each with a comment saying what it does.
+
+| Area | Settings |
+|---|---|
+| Auto idle sets | `AutoGear`, `RegenGearHPP`, `RefreshGearMPP`, `DTGearHPP`, `PetDTGearHPP` |
+| Weapons and TP | `WeaponTPGuard`, `HoldExemptSkills`, `HoldExemptAbilities`, `SmartSwap`, `SmartSwapTP`, `NoWeaponSpells`, `KeepWeaponsFor` |
+| Weapon skills | `WScheck`, `WSdistance`, `MoonshadeTP`, `MoonshadeSlot`, `MoonshadeSkip`, `ElementalWS` |
+| Casting | `SIRSkip`, `ElementGear` (obi, Orpheus, ring, back, cures), `ElementSkills`, `OrpheusPoints` |
+| Magic burst | `AutoNuke`, `MBTier`, `MBCasts`, `MBRotate`, `MBMinMP`, `MBWindow`, `MBFallback`, `MBSkills` |
+| Items and food | `AutoFood`, `AutoFoodItems`, `AutoSoda`, `SodaItem`, `AutoHolyWater`, `HolyWaterItem`, `AutoRevitalizer`, `AutoUseItems`, `EnchantDelays`, `EnchantWindow`, `ConsumableMaxTries` |
+| Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
+| Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
+| Action checks | `Validate`, `ValidateMP`, `AutoRemedy`, `WaltzTPCut`, `MiniQueue`, `MiniQueueMax` |
+| HUD and bar | `HUDOwners`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDPinned`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
+| Other | `Keybinds`, `Messages`, `Trace`, `LockstyleSet`, `CombatWindow`, `XIRollSet`, `CapacityCapes`, `JubileeSlot`, `AmmoWarn`, `NinjaToolWarn`, `SleepCancelStoneskin`, `ElementReport`, `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
+
+**Every job or one job:**
+
+- Every job: change the value in `gcinclude.lua`. Copying a newer `common/` over it erases your edits, so keep a
+  note of them (or set them per job instead).
+- One job: in that job file's `OnLoad`, before `gcinclude.Initialize()`, e.g. `gcinclude.settings.RefreshGearMPP = 50;`
+  (`WHM.lua` does `gcinclude.settings.KeepWeaponsFor = T{};`).
+- Per-job values on `gcinclude` itself win over the setting: `gcinclude.MBTier`, `gcinclude.AutoFood`,
+  `gcinclude.LockstyleSet`, `gcinclude.ElementGear`. `gcinclude.SIRSkip` adds to `settings.SIRSkip` (PLD adds
+  Phalanx and Reprisal).
+- Weapon modes, default weapons and the rest of job setup: `COMMANDS.md` Job file.
+
 ## Something wrong
 
 | Problem | Check |
