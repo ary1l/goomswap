@@ -108,6 +108,32 @@ to keep the cure or DT piece. `/dt` only touches spells where the job file says 
 
 Full list of engine sets: `COMMANDS.md` Sets the engine uses.
 
+## SIR set and SIRSkip
+
+`/sir` is a casting mode (separate from `/def`, engaged or not). While it's on:
+
+- On every spell's **midcast**, the `SIR` set goes on **last**: after your job file's midcast sets and after every
+  engine layer (TH, `Buffs_Midcast`, Absorb, LightBonus, obi/Orpheus).
+- Only the slots `SIR` lists change, and those slots win for that cast (its waist replaces the obi, its ring
+  replaces your cure ring). Slots it leaves out keep the spell's own gear. Precast and idle are never touched.
+- Off: the engine never wears `SIR`. A job file can still use `sets.SIR` itself (PLD puts it on first for every
+  spell as a base, `/sir` or not).
+
+**`SIRSkip`** is the list of spells `/sir` leaves alone, so the spell's own set stands as the job file put it.
+Use it for spells where the set's own stats matter more than not being interrupted (Stun and Absorb-TP need
+magic accuracy; Phalanx needs its potency gear):
+
+```lua
+-- common/gcinclude.lua, every job:
+SIRSkip = T{'Absorb-TP', 'Stun'};
+
+-- top of a job file, that job only (adds to the list above):
+gcinclude.SIRSkip = T{'Phalanx', 'Reprisal'};
+```
+
+Names are exact spell names in any case (`'Cure IV'`, not `'Cure'`). The job file's list adds to the shared one;
+it doesn't replace it.
+
 ## Settings: `common/gcinclude.lua`
 
 Two blocks at the top of the file are yours to edit; everything below them is the engine.
