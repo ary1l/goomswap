@@ -69,7 +69,7 @@ Defense toggles only wear gear, except `/aminon`, which also locks the weapon sl
 
 **`/sir` is a casting mode, not a defense**: it stays on whatever `/def` does. `SIRSkip` (default
 `Absorb-TP`, `Stun`) are spells it never goes over, so your one `Absorb_TP` / `Stun` set is what's worn. Per job:
-`gcinclude.SIRSkip = T{'Absorb-TP', 'Stun', 'Flash'}` in OnLoad (replaces the list, so keep the defaults you want).
+`gcinclude.SIRSkip = T{'Phalanx', 'Reprisal'}` at the top of the job file adds to it (PLD does this).
 
 ## Magic burst (RDM BLM SCH GEO)
 

@@ -155,7 +155,7 @@
 			['Flaming Arrow'] = 'Fire', ['Hot Shot'] = 'Fire', ['Wildfire'] = 'Fire', ['Trueflight'] = 'Light', ['Leaden Salute'] = 'Dark',
 		};
 		CombatWindow = 6; -- seconds; Selindrile uses 6
-		SIRSkip = T{'Absorb-TP', 'Stun'}; -- spells /sir never goes over (your own set for them stays); per job gcinclude.SIRSkip = T{...} replaces this list
+		SIRSkip = T{'Absorb-TP', 'Stun'}; -- spells /sir never goes over on every job (your own set for them stays); a job's gcinclude.SIRSkip = T{...} adds to it
 		HoxneItem = 'Hoxne Ampulla'; -- what the Hoxne states keep in your ammo slot
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
@@ -2441,8 +2441,13 @@ end
 		if (gcdisplay.GetToggle('SIR') ~= true) then return end
 		local action = gData.GetAction();
 		if (action == nil) then return end
-		local skip = gcinclude.SIRSkip or gcinclude.settings.SIRSkip; -- job file may set gcinclude.SIRSkip
-		if (type(skip) == 'table') and (skip:contains(action.Name)) then return end
+		for _, skip in ipairs({ gcinclude.settings.SIRSkip, gcinclude.SIRSkip }) do -- every job's list, plus the job file's own
+			if (type(skip) == 'table') then
+				for _, n in ipairs(skip) do
+					if (string.lower(n) == string.lower(action.Name)) then return end
+				end
+			end
+		end
 		local set = gcinclude.FindSet('SIR');
 		if (set ~= nil) then gFunc.EquipSet(set) end
 	end

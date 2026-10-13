@@ -1,6 +1,6 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
-gcinclude.SIRSkip = T{'Phalanx','Reprisal'}; -- /sir leaves these midcasts alone
+gcinclude.SIRSkip = T{'Phalanx','Reprisal'}; -- /sir leaves these midcasts alone, on top of the default Absorb-TP and Stun
 
 
 local sets = {
