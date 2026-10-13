@@ -67,19 +67,9 @@ gcinclude.WeaponItemMap = {
 
 Defense toggles only wear gear, except `/aminon`, which also locks the weapon slots. `/lock` is absolute until `/unlock`, even against force-equips.
 
-**Absorb-TP and Stun ignore `/def` states** (`settings.DefenseExempt`, per job `gcinclude.DefenseExempt = T{...}` in OnLoad):
-no `SIR` over them, and `/aminon`'s weapon lock is lifted for the cast (back on after it). `/lock`, the Hoxne lock and
-the TP hold still apply. Want different gear for them in one state? Opt in with a set named `<spell>_<state>`; it goes
-on last while that state is on. States: `Dt`, `Mdt`, `Aminon`, `SIR`. `Absorb-TP` is written `Absorb_TP`:
-
-```lua
-    Absorb_TP_Aminon = { -- over Absorb_TP, only while /aminon is on
-    },
-    Stun_SIR = { -- over Stun, only while /sir (or /def sird) is on
-    },
-```
-
-No such set, nothing changes: your `Absorb_TP` / `Stun` gear stands as the job file put it.
+**Absorb-TP and Stun ignore `/def` states** (`settings.DefenseExempt`): your one `Absorb_TP` / `Stun` set is what's
+worn in every defense mode. No `SIR` over them, and `/aminon`'s weapon lock is lifted for the cast (back on after it).
+`/lock`, the Hoxne lock and the TP hold still apply. Add spells per job: `gcinclude.DefenseExempt = T{...}` in OnLoad.
 Unknown slot names are refused. Holds skip slots already locked or TP-held; off releases only what they took.
 
 ## Magic burst (RDM BLM SCH GEO)

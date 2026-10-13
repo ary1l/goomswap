@@ -296,7 +296,7 @@ local sets = {
         Feet = { Name = 'odyssean greaves', Priority = 20 },--20
     },
 
-    Absorb_TP = { -- /def states leave Absorb-TP and Stun alone (settings.DefenseExempt). Opt-in, only if wanted: Absorb_TP_Aminon / _Dt / _Mdt / _SIR worn over this while that state is on
+    Absorb_TP = { -- used as is in every /def mode (settings.DefenseExempt)
         Head = { Name = 'Chev. Armet +3', Priority = 145 },
         Neck = { Name = 'Null Loop', Priority = 50 },
 		Ear1 = 'chev. earring +1',
