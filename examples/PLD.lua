@@ -296,7 +296,7 @@ local sets = {
         Feet = { Name = 'odyssean greaves', Priority = 20 },--20
     },
 
-    Absorb_TP = { -- used as is in every /def mode (settings.DefenseExempt)
+    Absorb_TP = { -- /sir never goes over this (settings.DefenseExempt); /aminon's weapons stay
         Head = { Name = 'Chev. Armet +3', Priority = 145 },
         Neck = { Name = 'Null Loop', Priority = 50 },
 		Ear1 = 'chev. earring +1',

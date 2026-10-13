@@ -156,7 +156,7 @@
 		};
 		CombatWindow = 6; -- seconds; Selindrile uses 6
 		SIRSkip = T{}; -- spell names /sir leaves alone, e.g. T{'Phalanx','Reprisal'}
-		DefenseExempt = T{'Absorb-TP', 'Stun'}; -- /def states leave these spells alone: your set for them is what's worn (no SIR over them, /aminon's weapon lock lifted for the cast)
+		DefenseExempt = T{'Absorb-TP', 'Stun'}; -- /def states leave these spells alone: no SIR set over them; /aminon's weapons stay
 		HoxneItem = 'Hoxne Ampulla'; -- what the Hoxne states keep in your ammo slot
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
@@ -1707,7 +1707,6 @@ end
 					if gcinclude.Checked:contains(name) and gcaction.Check() then gFunc.CancelAction(); return end
 					gcaction.TraceStart();
 					gcinclude.CheckHoldExempt();
-					if (name ~= 'HandleAbility') then gcinclude.LiftAminonForExempt() end
 					if (name == 'HandleAbility') then gcinclude.AnnounceCast() end -- Waltzes to your own boxes
 					if (name == 'HandlePrecast') then
 						gcinclude.AnnounceCast();
@@ -2449,9 +2448,8 @@ end
 		if (set ~= nil) then gFunc.EquipSet(set) end
 	end
 
-	-- settings.DefenseExempt (Absorb-TP, Stun): /def states don't touch these casts. No SIR set over them, and
-	-- /aminon's Main/Sub (and Range/Ammo) lock is lifted for the cast; HandleDefault puts it back afterwards.
-	-- /lock, the Hoxne lock and the TP hold still apply. Per job: gcinclude.DefenseExempt = T{...} in OnLoad.
+	-- settings.DefenseExempt (Absorb-TP, Stun): no SIR set over these casts. /aminon's weapon lock, /lock, the
+	-- Hoxne lock and the TP hold still apply. Per job: gcinclude.DefenseExempt = T{...} in OnLoad.
 	function gcinclude.IsDefenseExempt(action)
 		local list = gcinclude.DefenseExempt or gcinclude.settings.DefenseExempt;
 		if (action == nil) or (type(action.Name) ~= 'string') or (type(list) ~= 'table') then return false end
@@ -2459,11 +2457,6 @@ end
 			if (string.lower(n) == string.lower(action.Name)) then return true end
 		end
 		return false;
-	end
-
-	function gcinclude.LiftAminonForExempt()
-		if (#gcinclude.AminonOwned == 0) or not gcinclude.IsDefenseExempt(gData.GetAction()) then return end
-		gcinclude.UnlockSlots(gcinclude.AminonOwned);
 	end
 
 	-- True when the Burst set belongs on this cast: always when a skillchain whose elements include the spell's
