@@ -174,7 +174,7 @@
 		ValidateMP = true; -- the MP part; gear "MP cost -%" isn't counted, so turn off if it stops casts that would go off
 		AutoRemedy = true; -- silenced: Echo Drops, else Remedy (Remedy first if also paralyzed); paralyzed on an ability: Remedy. Not under Muddle
 		WaltzTPCut = 0; -- total "Waltz TP cost" reduction on your Waltz gear, in TP
-		MiniQueue = true; -- recast back within MiniQueueMax seconds: send it then instead of just cancelling
+		MiniQueue = true; -- queue actions pressed on recast, mid-cast or in the forced delay when they can go within MiniQueueMax seconds (COMMANDS.md Action checks)
 		MiniQueueMax = 5;
 		Trace = false; -- /gctrace: one chat line per action naming each set put on
 		LockstyleSet = nil; -- /lockstyleset N 4s after load and job change; per job gcinclude.LockstyleSet = N in OnLoad
@@ -2337,6 +2337,7 @@ end
 	function gcinclude.OnZone()
 		gcinclude.ZoneOutAt, gcinclude.ZoneInAt = nil, os.clock();
 		gcinclude.HoxneGoneSince = nil;
+		if (gcaction ~= nil) and (gcaction.Clear ~= nil) then gcaction.Clear() end
 		for index, _ in pairs(gcinclude.Enchants) do gcinclude.ReleaseEnchant(index) end
 		gcinclude.HoxneRetryAt = 0;
 		if gcinclude.HoxneOn() then
@@ -3085,6 +3086,9 @@ end
 				gFunc.EquipSet, gFunc.Equip = gFunc.GcRawEquipSet, gFunc.GcRawEquip;
 				gFunc.GcRawEquipSet, gFunc.GcRawEquip = nil, nil;
 			end
+			if (gPacketHandlers ~= nil) and (gPacketHandlers.GcRawAction ~= nil) then
+				gPacketHandlers.HandleActionPacket, gPacketHandlers.GcRawAction = gPacketHandlers.GcRawAction, nil;
+			end
 			if (gEquip ~= nil) and (gEquip.GcRawToBuffer ~= nil) then
 				gEquip.EquipItemToBuffer, gEquip.ClearBuffer, gEquip.ProcessBuffer = gEquip.GcRawToBuffer, gEquip.GcRawClear, gEquip.GcRawProcess;
 				gEquip.GcRawToBuffer, gEquip.GcRawClear, gEquip.GcRawProcess = nil, nil, nil;
@@ -3145,10 +3149,28 @@ end
 		if (gchud ~= nil) then gchud.Start() end
 	end
 
+	-- LAC takes every outgoing action packet as the new pending action, and when it is cancelled leaves none, so
+	-- its idle gear goes on in that same packet chunk (LuAshitacast packethandlers.lua HandleActionPacket /
+	-- HandleOutgoingChunk), even while an earlier cast is still running. A cancelled action (on recast, or
+	-- queued while you cast) gives the earlier one back instead, so its gear stays on. Wrapped once.
+	function gcinclude.WrapActionPacket()
+		if (gPacketHandlers == nil) or (gPacketHandlers.GcRawAction ~= nil) then return end
+		gPacketHandlers.GcRawAction = gPacketHandlers.HandleActionPacket;
+		gPacketHandlers.HandleActionPacket = function(...)
+			local before = gState.PlayerAction;
+			local result = gPacketHandlers.GcRawAction(...);
+			if (gState.PlayerAction == nil) and (before ~= nil) and ((before.Completion or 0) > os.clock()) then
+				gState.PlayerAction = before;
+			end
+			return result;
+		end
+	end
+
 	function gcinclude.Initialize()
 		gcinclude.WrapHoldHandlers();
 		gcinclude.WrapEquip();
 		gcinclude.WrapBuffer();
+		gcinclude.WrapActionPacket();
 		gcinclude.InitStep(0);
 	end
 
