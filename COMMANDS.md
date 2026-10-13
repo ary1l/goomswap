@@ -52,9 +52,9 @@ gcinclude.WeaponItemMap = {
 
 | Command | Does |
 |---|---|
-| `/def [off\|dt\|mdt\|aminon\|sird]` | Sets one (or none); no arg cycles none → DT → MDT → Aminon → SIRD → none (Ctrl+Shift+grave) |
+| `/def [off\|dt\|mdt\|aminon]` | Sets one (or none); no arg cycles none → DT → MDT → Aminon → none (Ctrl+Shift+grave) |
 | `/dt` `/mdt` `/aminon` | Toggle one. `/aminon` uses `mdt` if the job has no `Aminon` set, and locks Main/Sub (the set's items, else what you wear) plus Range/Ammo when the set names them, until off; other slots still swap for actions |
-| `/sir` | `SIR` set over every midcast except `SIRSkip` and `DefenseExempt` spells; engaged or not |
+| `/sir` | Casting mode, separate from `/def`: `SIR` set over every midcast except `SIRSkip` spells (Absorb-TP, Stun); engaged or not |
 | `/hoxne` | Off → Locked (Alt+grave). Locked keeps the ampulla in Ammo and locks Ammo and Range (any action set's Ammo would knock it off and end the Enchantment; an instrument in Range would too), and keeps bows/guns/crossbows out of Range (they need matching ammo). `/hoxne use` goes Locked and uses it. While Locked it is used when it is in Ammo and the Enchantment status isn't up (BG-Wiki: Double Attack +100% for 30 min as Enchantment, 60s recast, 5s use delay, lost when unequipped or zoning); Enchantment up, it is never used; it waits until Enchantment has been gone 3s (it drops as you cross a zone line). Zoning sets it back to Off. `HoxneAutoUse = false` stops the automatic use |
 | `/hoxne use` | Locked, equip, wait its delay, use |
 | `/lock` | Lock Main, Sub, Ammo |
@@ -67,9 +67,9 @@ gcinclude.WeaponItemMap = {
 
 Defense toggles only wear gear, except `/aminon`, which also locks the weapon slots. `/lock` is absolute until `/unlock`, even against force-equips.
 
-**Absorb-TP and Stun skip `SIR`** (`settings.DefenseExempt`): with `/sir` or `/def sird` on, your one `Absorb_TP` /
-`Stun` set is still what's worn. `/aminon`'s weapons, `/lock`, the Hoxne lock and the TP hold stay as they are.
-Add spells per job: `gcinclude.DefenseExempt = T{...}` in OnLoad.
+**`/sir` is a casting mode, not a defense**: it stays on whatever `/def` does. `SIRSkip` (default
+`Absorb-TP`, `Stun`) are spells it never goes over, so your one `Absorb_TP` / `Stun` set is what's worn. Per job:
+`gcinclude.SIRSkip = T{'Absorb-TP', 'Stun', 'Flash'}` in OnLoad (replaces the list, so keep the defaults you want).
 
 ## Magic burst (RDM BLM SCH GEO)
 
@@ -296,7 +296,7 @@ Change per job: `gcinclude.settings.dem_Ring = 'Teleport Ring: Dem'`.
 | `LightBonus` | Healing Magic midcast |
 | `TH` | `/th` on: at rest, and over midcast/midshot at a mob, until it is tagged (your hit, shot, WS or ability; a spell, step or Effusion only if it lands; clears on death or zone). Not over actions on you or allies. BLU: only `BluMagTH` spells, always (AoE). Main/Sub/Range stay on while `/th` is on, tagged or not (Sub only if you can dual wield; a weapon swap resets TP) |
 | `HolyWater` | When Doomed (else `gcinclude.sets.Holy_Water`) |
-| `Incapacitated` | Slept, petrified, stunned or terrorized: your `/def` set (`mdt` or `Aminon`; else `Dt`, as SIRD is midcast only) minus Main/Sub/Range/Ammo goes on, then this set (extras, empty by default) on top, then any `*_Received` set. Not charmed: the client can't change gear then and GearSwap never sends any |
+| `Incapacitated` | Slept, petrified, stunned or terrorized: your `/def` set (`mdt` or `Aminon`; else `Dt`) minus Main/Sub/Range/Ammo goes on, then this set (extras, empty by default) on top, then any `*_Received` set. Not charmed: the client can't change gear then and GearSwap never sends any |
 | `Sleeping` | Asleep, over `Incapacitated` (else `gcinclude.sets.Sleeping`). Main/Sub/Range in it go on past the TP hold (not past `/lock`), e.g. WHM/GEO `Main = 'Lorg Mor'`: a Prime stage 1-2 weapon's "Slowly devours your soul" drains 1 HP and 1 MP every 3s, which wakes you (BG-Wiki Prime weapons; not Diabolos' Nightmare). A weapon swap resets TP. Awake again, your normal weapon comes back |
 | `XIRoll` | Idle only, with a roll on you at 11 (default Roller's Ring) |
 | `Absorb` | Absorb-TP and every other Absorb- spell, over midcast |

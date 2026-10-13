@@ -67,8 +67,8 @@ Examples worth copying: `WHM.lua` cures (weapons by MP% and Light weather, `Cure
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` (hands off weapons) |
 | `/mainset` `/subset` `[name]` | One slot's weapon, e.g. PLD `/subset duban`. Add `force` at 1000+ TP |
 | `/meleeset` or `/mset [hybrid\|acc\|default]` | Wear `_Hybrid` / `_Acc` versions of TP and WS sets |
-| `/def` | Defense: DT → MDT → Aminon → SIRD → off (one at a time) |
-| `/dt` `/mdt` `/sir` | Toggle one directly (`/dt` and `/sir` can both be on) |
+| `/def` | Defense: DT → MDT → Aminon → off (one at a time). `/dt` `/mdt` `/aminon` toggle one directly |
+| `/sir` | Casting mode: `SIR` set over every spell's midcast (not Absorb-TP or Stun). Works with any defense |
 | `/th` | TH gear until the mob is tagged |
 | `/kite` | Movement gear |
 | `/hoxne` | Off → Locked: Hoxne Ampulla kept in ammo and used |
