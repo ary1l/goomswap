@@ -101,7 +101,7 @@ Later wins, slot by slot. A set only changes the slots it lists.
 Cure → Self_Cure → Cure_LowMP or Cure_LowMP_Storm (MP <= 50%) → Cure_Dt (/dt) → Hachirin-no-Obi (Light) → SIR (/sir)
 ```
 
-`SIR` goes on last, so every slot it lists wins, even over `Cure_Dt` and the obi. Leave a slot out of `SIR`
+`SIR` goes on last (never on Absorb-TP or Stun), so every slot it lists wins, even over `Cure_Dt` and the obi. Leave a slot out of `SIR`
 to keep the cure or DT piece. `/dt` only touches spells where the job file says so (WHM: `Cure_Dt`).
 
 **Weapon skills:** your job file → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.

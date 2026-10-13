@@ -54,7 +54,7 @@ gcinclude.WeaponItemMap = {
 |---|---|
 | `/def [off\|dt\|mdt\|aminon\|sird]` | Sets one (or none); no arg cycles none → DT → MDT → Aminon → SIRD → none (Ctrl+Shift+grave) |
 | `/dt` `/mdt` `/aminon` | Toggle one. `/aminon` uses `mdt` if the job has no `Aminon` set, and locks Main/Sub (the set's items, else what you wear) plus Range/Ammo when the set names them, until off; other slots still swap for actions |
-| `/sir` | `SIR` set over every midcast. `SIRSkip` exempts spells; engaged or not |
+| `/sir` | `SIR` set over every midcast except `SIRSkip` and `DefenseExempt` spells; engaged or not |
 | `/hoxne` | Off → Locked (Alt+grave). Locked keeps the ampulla in Ammo and locks Ammo and Range (any action set's Ammo would knock it off and end the Enchantment; an instrument in Range would too), and keeps bows/guns/crossbows out of Range (they need matching ammo). `/hoxne use` goes Locked and uses it. While Locked it is used when it is in Ammo and the Enchantment status isn't up (BG-Wiki: Double Attack +100% for 30 min as Enchantment, 60s recast, 5s use delay, lost when unequipped or zoning); Enchantment up, it is never used; it waits until Enchantment has been gone 3s (it drops as you cross a zone line). Zoning sets it back to Off. `HoxneAutoUse = false` stops the automatic use |
 | `/hoxne use` | Locked, equip, wait its delay, use |
 | `/lock` | Lock Main, Sub, Ammo |
@@ -66,6 +66,20 @@ gcinclude.WeaponItemMap = {
 | `/capacity` `/jubilee` `/dynamisrp` `[on\|off]` | Wear and hold: the best carried capacity cape (BG-Wiki: Aptitude Mantle +1 30%, Aptitude Mantle 25%, Mecisto. Mantle by its augment) / Jubilee Ring (`JubileeSlot`, Ring1) / your main job's best Dynamis - Divergence neck (+2, +1, base). Entering a `[D]` zone reminds you |
 
 Defense toggles only wear gear, except `/aminon`, which also locks the weapon slots. `/lock` is absolute until `/unlock`, even against force-equips.
+
+**Absorb-TP and Stun ignore `/def` states** (`settings.DefenseExempt`, per job `gcinclude.DefenseExempt = T{...}` in OnLoad):
+no `SIR` over them, and `/aminon`'s weapon lock is lifted for the cast (back on after it). `/lock`, the Hoxne lock and
+the TP hold still apply. Want different gear for them in one state? Opt in with a set named `<spell>_<state>`; it goes
+on last while that state is on. States: `Dt`, `Mdt`, `Aminon`, `SIR`. `Absorb-TP` is written `Absorb_TP`:
+
+```lua
+    Absorb_TP_Aminon = { -- over Absorb_TP, only while /aminon is on
+    },
+    Stun_SIR = { -- over Stun, only while /sir (or /def sird) is on
+    },
+```
+
+No such set, nothing changes: your `Absorb_TP` / `Stun` gear stands as the job file put it.
 Unknown slot names are refused. Holds skip slots already locked or TP-held; off releases only what they took.
 
 ## Magic burst (RDM BLM SCH GEO)

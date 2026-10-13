@@ -156,6 +156,7 @@
 		};
 		CombatWindow = 6; -- seconds; Selindrile uses 6
 		SIRSkip = T{}; -- spell names /sir leaves alone, e.g. T{'Phalanx','Reprisal'}
+		DefenseExempt = T{'Absorb-TP', 'Stun'}; -- /def states leave these spells alone: no SIR over them, /aminon's weapon lock lifted for the cast; opt-in <Set>_<State> sets (COMMANDS.md Defense and locks)
 		HoxneItem = 'Hoxne Ampulla'; -- what the Hoxne states keep in your ammo slot
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
@@ -1706,6 +1707,7 @@ end
 					if gcinclude.Checked:contains(name) and gcaction.Check() then gFunc.CancelAction(); return end
 					gcaction.TraceStart();
 					gcinclude.CheckHoldExempt();
+					if (name ~= 'HandleAbility') then gcinclude.LiftAminonForExempt() end
 					if (name == 'HandleAbility') then gcinclude.AnnounceCast() end -- Waltzes to your own boxes
 					if (name == 'HandlePrecast') then
 						gcinclude.AnnounceCast();
@@ -1718,6 +1720,7 @@ end
 						gcinclude.CheckLightBonus();
 						gcinclude.CheckElementGear();
 						gcinclude.CheckSIR();
+						gcinclude.CheckExemptStateSets();
 					elseif (name == 'HandleAbility') then
 						gcinclude.CheckElementGear(); -- Quick Draw
 					else
@@ -2442,8 +2445,41 @@ end
 		if (action == nil) then return end
 		local skip = gcinclude.SIRSkip or gcinclude.settings.SIRSkip; -- job file may set gcinclude.SIRSkip
 		if (type(skip) == 'table') and (skip:contains(action.Name)) then return end
+		if gcinclude.IsDefenseExempt(action) then return end
 		local set = gcinclude.FindSet('SIR');
 		if (set ~= nil) then gFunc.EquipSet(set) end
+	end
+
+	-- settings.DefenseExempt (Absorb-TP, Stun): /def states don't touch these casts. No SIR set over them, and
+	-- /aminon's Main/Sub (and Range/Ammo) lock is lifted for the cast; HandleDefault puts it back afterwards.
+	-- /lock, the Hoxne lock and the TP hold still apply. Per job: gcinclude.DefenseExempt = T{...} in OnLoad.
+	function gcinclude.IsDefenseExempt(action)
+		local list = gcinclude.DefenseExempt or gcinclude.settings.DefenseExempt;
+		if (action == nil) or (type(action.Name) ~= 'string') or (type(list) ~= 'table') then return false end
+		for _, n in ipairs(list) do
+			if (string.lower(n) == string.lower(action.Name)) then return true end
+		end
+		return false;
+	end
+
+	function gcinclude.LiftAminonForExempt()
+		if (#gcinclude.AminonOwned == 0) or not gcinclude.IsDefenseExempt(gData.GetAction()) then return end
+		gcinclude.UnlockSlots(gcinclude.AminonOwned);
+	end
+
+	-- Opt-in: a set named <spell>_<state> goes on last over a DefenseExempt spell while that state is on, e.g.
+	-- Absorb_TP_Aminon, Stun_SIR, Stun_Dt ('Absorb-TP' -> 'Absorb_TP'). No such set: nothing changes.
+	gcinclude.ExemptStates = T{ {'DTset', 'Dt'}, {'MDTset', 'Mdt'}, {'Aminon', 'Aminon'}, {'SIR', 'SIR'} };
+	function gcinclude.CheckExemptStateSets()
+		local action = gData.GetAction();
+		if not gcinclude.IsDefenseExempt(action) then return end
+		local base = string.gsub(action.Name, '[%s%-]', '_');
+		for _, s in ipairs(gcinclude.ExemptStates) do
+			if (gcdisplay.GetToggle(s[1]) == true) then
+				local set = gcinclude.FindSet(base .. '_' .. s[2]);
+				if (set ~= nil) then gFunc.EquipSet(set) end
+			end
+		end
 	end
 
 	-- True when the Burst set belongs on this cast: always when a skillchain whose elements include the spell's

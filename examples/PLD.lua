@@ -296,7 +296,7 @@ local sets = {
         Feet = { Name = 'odyssean greaves', Priority = 20 },--20
     },
 
-    Absorb_TP = {
+    Absorb_TP = { -- /def states leave Absorb-TP and Stun alone (settings.DefenseExempt). Opt-in, only if wanted: Absorb_TP_Aminon / _Dt / _Mdt / _SIR worn over this while that state is on
         Head = { Name = 'Chev. Armet +3', Priority = 145 },
         Neck = { Name = 'Null Loop', Priority = 50 },
 		Ear1 = 'chev. earring +1',
@@ -844,9 +844,10 @@ end
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
     gFunc.EquipSet(sets.SIR);
-	if string.match(spell.Name, '^Cur[ae]') then -- Cure/Cura/Curaga, not Cursna
+    local family = gcinclude.Family(spell.Name); -- 'Cure IV' -> 'Cure', 'Protect V' -> 'Protect'
+	if (family == 'Cure') then -- PLD: Cure I-IV
         gFunc.EquipSet(sets.Cure);
-	elseif string.contains(spell.Name, 'Pro') then
+	elseif (family == 'Protect') then -- Protect I-V: same SIR/enmity gear as Reprisal
         gFunc.EquipSet(sets.Reprisal);
     elseif string.match(spell.Name, 'Phalanx') then
         gFunc.EquipSet(sets.Phalanx);
