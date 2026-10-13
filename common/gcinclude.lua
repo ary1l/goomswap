@@ -155,7 +155,7 @@
 			['Flaming Arrow'] = 'Fire', ['Hot Shot'] = 'Fire', ['Wildfire'] = 'Fire', ['Trueflight'] = 'Light', ['Leaden Salute'] = 'Dark',
 		};
 		CombatWindow = 6; -- seconds; Selindrile uses 6
-		SIRSkip = T{}; -- spell names /sir leaves alone, e.g. T{'Phalanx','Reprisal'}
+		SIRSkip = T{'Absorb-TP', 'Stun'}; -- spells /sir never goes over on every job (your own set for them stays); a job's gcinclude.SIRSkip = T{...} adds to it
 		HoxneItem = 'Hoxne Ampulla'; -- what the Hoxne states keep in your ammo slot
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
@@ -167,7 +167,7 @@
 		HUDScale = 0.9; -- HUD text size (compact style)
 		HUDStyle = 'compact'; -- HUD look: 'compact' (tight) or 'large' (bigger text, more spacing, full names); /gchud large|compact, saved per character
 		HUDScaleLarge = 1.1; -- HUD text size in the large style
-		HUDPinned = T{'Def', 'MB', 'Kite', 'AutoFood', 'AutoSoda'}; -- HUD columns always shown (Def = DT/MDT/Aminon/SIR via /def, MB = /mbmode); others only once a box changes them
+		HUDPinned = T{'Def', 'MB', 'Kite', 'AutoFood', 'AutoSoda'}; -- HUD columns always shown (Def = DT/MDT/Aminon via /def, MB = /mbmode); others only once a box changes them
 		HUDAbbr = {}; -- HUD short value overrides, e.g. { ['CarnwenhanAcc'] = 'CarnA' }; auto-shortened otherwise
 		HUDLabels = {}; -- HUD column glyph overrides, e.g. { Main = 'mn', AutoSoda = 'so' }
 		Validate = true; -- cancel spells/abilities/WS that would fail: KO, sleep/stun/petrify/terror/charm, mute, silence, recast, MP, stratagems, Waltz TP, amnesia
@@ -236,11 +236,11 @@
 	gcinclude.HardCC = T{'Sleep', 'Petrification', 'Stun', 'Terror', 'Charm'}; -- can't act (gcauto, gcaction, WS bailout)
 	gcinclude.CORmsg = true;
 
-	-- /def: none > DT > MDT > Aminon > SIRD > none. Only one of the four is on at a time.
-	gcinclude.DefenseCycle = T{ {'DTset','DT'}, {'MDTset','MDT'}, {'Aminon','Aminon'}, {'SIR','SIRD'} };
+	-- /def: none > DT > MDT > Aminon > none. Only one of the three is on at a time. /sir is a casting mode, not in here.
+	gcinclude.DefenseCycle = T{ {'DTset','DT'}, {'MDTset','MDT'}, {'Aminon','Aminon'} };
 	function gcinclude.CycleDefense(arg)
 		local want = string.lower(tostring(arg or ''));
-		if (want ~= '') then -- /def off|none, or a set by name (dt, mdt, aminon, sir)
+		if (want ~= '') then -- /def off|none, or a set by name (dt, mdt, aminon)
 			local pick = nil;
 			for _, d in ipairs(gcinclude.DefenseCycle) do
 				if (string.lower(d[2]) == want) or (string.lower(d[1]) == want) then pick = d end
@@ -2412,7 +2412,8 @@ end
 	function gcinclude.Help()
 		local lines = T{
 			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset',
-			'defense: /def (cycle DT > MDT > Aminon > SIRD > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set) /sir, /lock [slots] /unlock [slots]',
+			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set), /lock [slots] /unlock [slots]',
+			'casting: /sir (SIR set over every midcast except SIRSkip: Absorb-TP, Stun)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
 			'toggles: /th (TH gear until the target is tagged; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
@@ -2424,7 +2425,7 @@ end
 			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, recasts under 5s queue',
 			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N]',
 			'bar    : /gcbar [on|off|pos x y]',
-			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon|sird',
+			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
 			'nuke   : Burst set is automatic on live skillchains; /automb [on|off] = cast bursts by itself; /mbtier low|mid|high = its tier I|III|V; /burst = Burst set on every nuke',
 			'keys   : Ctrl+grave wm, Shift+grave wm default, Ctrl+Shift+grave def, Alt+grave hoxne, Win+grave automb (no bare grave); /gckey <key> <command>',
 			'all of these work as /mss /lac fwd <command> for every box',
@@ -2440,8 +2441,13 @@ end
 		if (gcdisplay.GetToggle('SIR') ~= true) then return end
 		local action = gData.GetAction();
 		if (action == nil) then return end
-		local skip = gcinclude.SIRSkip or gcinclude.settings.SIRSkip; -- job file may set gcinclude.SIRSkip
-		if (type(skip) == 'table') and (skip:contains(action.Name)) then return end
+		for _, skip in ipairs({ gcinclude.settings.SIRSkip, gcinclude.SIRSkip }) do -- every job's list, plus the job file's own
+			if (type(skip) == 'table') then
+				for _, n in ipairs(skip) do
+					if (string.lower(n) == string.lower(action.Name)) then return end
+				end
+			end
+		end
 		local set = gcinclude.FindSet('SIR');
 		if (set ~= nil) then gFunc.EquipSet(set) end
 	end
@@ -2682,7 +2688,7 @@ end
 		return out;
 	end
 
-	-- Slept, petrified, stunned or terrorized: your /def set (mdt or Aminon; else Dt, as SIRD is midcast only)
+	-- Slept, petrified, stunned or terrorized: your /def set (mdt or Aminon; else Dt)
 	-- minus Main/Sub/Range/Ammo, then the job's Incapacitated set, then received gear.
 	-- Not charmed: the client can't change gear then and GearSwap never sends any (Windower GearSwap flow.lua).
 	gcinclude.IncapacitatedBuffs = T{'Sleep', 'Petrification', 'Stun', 'Terror'};

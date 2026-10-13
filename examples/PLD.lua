@@ -1,6 +1,6 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
-gcinclude.SIRSkip = T{'Phalanx','Reprisal'}; -- /sir leaves these midcasts alone
+gcinclude.SIRSkip = T{'Phalanx','Reprisal'}; -- /sir leaves these midcasts alone, on top of the default Absorb-TP and Stun
 
 
 local sets = {
@@ -296,7 +296,7 @@ local sets = {
         Feet = { Name = 'odyssean greaves', Priority = 20 },--20
     },
 
-    Absorb_TP = {
+    Absorb_TP = { -- /sir never goes over this (settings.SIRSkip); /aminon's weapons stay
         Head = { Name = 'Chev. Armet +3', Priority = 145 },
         Neck = { Name = 'Null Loop', Priority = 50 },
 		Ear1 = 'chev. earring +1',
@@ -844,9 +844,10 @@ end
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
     gFunc.EquipSet(sets.SIR);
-	if string.match(spell.Name, '^Cur[ae]') then -- Cure/Cura/Curaga, not Cursna
+    local family = gcinclude.Family(spell.Name); -- 'Cure IV' -> 'Cure', 'Protect V' -> 'Protect'
+	if (family == 'Cure') then -- PLD: Cure I-IV
         gFunc.EquipSet(sets.Cure);
-	elseif string.contains(spell.Name, 'Pro') then
+	elseif (family == 'Protect') then -- Protect I-V: same SIR/enmity gear as Reprisal
         gFunc.EquipSet(sets.Reprisal);
     elseif string.match(spell.Name, 'Phalanx') then
         gFunc.EquipSet(sets.Phalanx);

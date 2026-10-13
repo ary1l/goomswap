@@ -68,7 +68,7 @@ local FULL = {
     Kite = 'Kite', AutoFood = 'Auto food', AutoSoda = 'Auto soda', PROC = 'Proc',
     Burst = 'Burst (force)', AutoNuke = 'Auto MB (casts bursts)', String = 'Harp (force string)', SongLock = 'Song lock (enemy songs keep main/sub)',
     Death = 'Death', Weapons = 'Weapon set',
-    Def = 'Defense (click = /def: DT > MDT > Aminon > SIRD > none)',
+    Def = 'Defense (click = /def: DT > MDT > Aminon > none)',
     MB = 'Auto MB (click = /automb on/off, Ctrl+click = /mbtier); Auto shows its nuke tier, +F = /burst on',
     MBTier = 'Autonuke tier (click = /mbtier: Low I > Mid III > High V)', MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',
     Range = 'Range', Ammo = 'Ammo', NukeSet = 'Nuke set', Element = 'Element', TankSet = 'Tank set',
@@ -368,7 +368,7 @@ end
 -- Cycle columns first (weapon set leads), then toggle columns. Clicking a cell drives that box.
 -- Hidden to save width: cycle columns None/Off on every box; toggle columns at load default on
 -- every box, unless pinned (settings.HUDPinned). They show up as soon as any box changes them.
--- DT/MDT/Aminon/SIR merge into one 'def' column (/def), AutoNuke/Burst into 'mb' (/automb).
+-- DT/MDT/Aminon merge into one 'def' column (/def); SIR (a casting mode) keeps its own 'si' column, AutoNuke/Burst into 'mb' (/automb).
 -- Clicking a name adds a detail line under it: job + that box's hidden cycles and toggles.
 local PADX = 1; -- cell padding; set from the style each frame in render()
 local function short_name(name)
@@ -416,8 +416,8 @@ local function cycle_cell(row, key)
 end
 
 -- Merged columns: several toggles shown as one mode, clicked through the command that cycles them.
-local DEF_PARTS = { { 'DTset', 'DT' }, { 'MDTset', 'MDT' }, { 'Aminon', 'Amin' }, { 'SIR', 'SIR' } };
-local GROUP_PART = { DTset = true, MDTset = true, Aminon = true, SIR = true, AutoNuke = true, Burst = true };
+local DEF_PARTS = { { 'DTset', 'DT' }, { 'MDTset', 'MDT' }, { 'Aminon', 'Amin' } };
+local GROUP_PART = { DTset = true, MDTset = true, Aminon = true, AutoNuke = true, Burst = true };
 local GROUP_ORDER = { 'Def', 'MB' };
 
 local function part(row, key)

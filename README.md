@@ -67,8 +67,8 @@ Examples worth copying: `WHM.lua` cures (weapons by MP% and Light weather, `Cure
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` (hands off weapons) |
 | `/mainset` `/subset` `[name]` | One slot's weapon, e.g. PLD `/subset duban`. Add `force` at 1000+ TP |
 | `/meleeset` or `/mset [hybrid\|acc\|default]` | Wear `_Hybrid` / `_Acc` versions of TP and WS sets |
-| `/def` | Defense: DT → MDT → Aminon → SIRD → off (one at a time) |
-| `/dt` `/mdt` `/sir` | Toggle one directly (`/dt` and `/sir` can both be on) |
+| `/def` | Defense: DT → MDT → Aminon → off (one at a time). `/dt` `/mdt` `/aminon` toggle one directly |
+| `/sir` | Casting mode: `SIR` set over every spell's midcast (not Absorb-TP or Stun). Works with any defense |
 | `/th` | TH gear until the mob is tagged |
 | `/kite` | Movement gear |
 | `/hoxne` | Off → Locked: Hoxne Ampulla kept in ammo and used |
@@ -101,7 +101,7 @@ Later wins, slot by slot. A set only changes the slots it lists.
 Cure → Self_Cure → Cure_LowMP or Cure_LowMP_Storm (MP <= 50%) → Cure_Dt (/dt) → Hachirin-no-Obi (Light) → SIR (/sir)
 ```
 
-`SIR` goes on last, so every slot it lists wins, even over `Cure_Dt` and the obi. Leave a slot out of `SIR`
+`SIR` goes on last (never on Absorb-TP or Stun), so every slot it lists wins, even over `Cure_Dt` and the obi. Leave a slot out of `SIR`
 to keep the cure or DT piece. `/dt` only touches spells where the job file says so (WHM: `Cure_Dt`).
 
 **Weapon skills:** your job file → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
