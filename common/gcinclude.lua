@@ -155,7 +155,7 @@
 			['Flaming Arrow'] = 'Fire', ['Hot Shot'] = 'Fire', ['Wildfire'] = 'Fire', ['Trueflight'] = 'Light', ['Leaden Salute'] = 'Dark',
 		};
 		CombatWindow = 6; -- seconds; Selindrile uses 6
-		SIRSkip = T{'Absorb-TP', 'Stun'}; -- spells /sir never goes over on every job (your own set for them stays); a job's gcinclude.SIRSkip = T{...} adds to it
+		SIRSkip = T{}; -- spells /sir never goes over on every job (your own set for them stays); a job's gcinclude.SIRSkip = T{...} adds to it. Absorb-TP/Stun need no entry: /aminon turns /sir off
 		HoxneItem = 'Hoxne Ampulla'; -- what the Hoxne states keep in your ammo slot
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
@@ -412,7 +412,12 @@ end
 			toggle = 'DT Set';
 			status = gcdisplay.GetToggle('DTset');
 		elseif (args[1] == 'sir') then
-			gcinclude.FlipToggle('SIR', args[2]);
+			if (gcdisplay.GetToggle('Aminon') == true) then
+				gcdisplay.SetToggle('SIR', false);
+				gcinclude.Err('/sir stays off while Aminon is on');
+			else
+				gcinclude.FlipToggle('SIR', args[2]);
+			end
 			toggle = 'Spell Interrupt Set';
 			status = gcdisplay.GetToggle('SIR');
 		elseif (args[1] == 'mbmode') or (args[1] == 'automb') or (args[1] == 'autonuke') then
@@ -2419,8 +2424,8 @@ end
 		end
 		local lines = T{
 			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset',
-			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set), /lock [slots] /unlock [slots]',
-			'casting: /sir (SIR set over every midcast except SIRSkip: ' .. table.concat(skip, ', ') .. ')',
+			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots] /unlock [slots]',
+			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
 			'toggles: /th (TH gear until the target is tagged; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
@@ -2511,6 +2516,11 @@ end
 			if (#gcinclude.AminonOwned > 0) then gcinclude.UnlockSlots(gcinclude.AminonOwned) end
 			gcinclude.AminonOwned = T{};
 			return;
+		end
+		-- No SIR against Aminon: /aminon (or /def) turns /sir off, /sir is refused until Aminon is off, and stays off after.
+		if (gcdisplay.GetToggle('SIR') == true) then
+			gcdisplay.SetToggle('SIR', false);
+			gcinclude.Say('/sir off: Aminon is on');
 		end
 		local set = gcinclude.FindSet('Aminon') or gcinclude.FindSet('mdt') or {};
 		local wear, take = {}, T{};

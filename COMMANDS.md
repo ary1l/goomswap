@@ -53,8 +53,8 @@ gcinclude.WeaponItemMap = {
 | Command | Does |
 |---|---|
 | `/def [off\|dt\|mdt\|aminon]` | Sets one (or none); no arg cycles none → DT → MDT → Aminon → none (Ctrl+Shift+grave) |
-| `/dt` `/mdt` `/aminon` | Toggle one. `/aminon` uses `mdt` if the job has no `Aminon` set, and locks Main/Sub (the set's items, else what you wear) plus Range/Ammo when the set names them, until off; other slots still swap for actions |
-| `/sir` | Casting mode, separate from `/def`: `SIR` set over every midcast except `SIRSkip` spells (Absorb-TP, Stun, plus the job's own: PLD adds Phalanx, Reprisal); engaged or not |
+| `/dt` `/mdt` `/aminon` | Toggle one. `/aminon` uses `mdt` if the job has no `Aminon` set, and locks Main/Sub (the set's items, else what you wear) plus Range/Ammo when the set names them, until off; other slots still swap for actions. Turning Aminon on turns `/sir` off (stays off after) |
+| `/sir` | Casting mode, separate from `/def`: `SIR` set over every midcast except `SIRSkip` spells (empty by default; PLD adds Phalanx, Reprisal); engaged or not. Refused while Aminon is on |
 | `/hoxne` | Off → Locked (Alt+grave). Locked keeps the ampulla in Ammo and locks Ammo and Range (any action set's Ammo would knock it off and end the Enchantment; an instrument in Range would too), and keeps bows/guns/crossbows out of Range (they need matching ammo). `/hoxne use` goes Locked and uses it. While Locked it is used when it is in Ammo and the Enchantment status isn't up (BG-Wiki: Double Attack +100% for 30 min as Enchantment, 60s recast, 5s use delay, lost when unequipped or zoning); Enchantment up, it is never used; it waits until Enchantment has been gone 3s (it drops as you cross a zone line). Zoning sets it back to Off. `HoxneAutoUse = false` stops the automatic use |
 | `/hoxne use` | Locked, equip, wait its delay, use |
 | `/lock` | Lock Main, Sub, Ammo |
@@ -67,8 +67,9 @@ gcinclude.WeaponItemMap = {
 
 Defense toggles only wear gear, except `/aminon`, which also locks the weapon slots. `/lock` is absolute until `/unlock`, even against force-equips.
 
-**`/sir` is a casting mode, not a defense**: it stays on whatever `/def` does. `SIRSkip` (default
-`Absorb-TP`, `Stun`) are spells it never goes over, so your one `Absorb_TP` / `Stun` set is what's worn. Per job:
+**`/sir` is a casting mode, not a defense**: DT and MDT leave it alone; Aminon turns it off and refuses it until
+Aminon is off (no SIR against Aminon, so your one `Absorb_TP` / `Stun` set is what's worn there). It stays off after.
+`SIRSkip` (empty by default) are spells it never goes over. Per job:
 `gcinclude.SIRSkip = T{'Phalanx', 'Reprisal'}` at the top of the job file adds to it (PLD does this). A spell whose
 own set carries SIR gear (PLD `Reprisal`) goes in `SIRSkip` so `/sir` doesn't cover it; README "Per-spell SIR sets".
 
