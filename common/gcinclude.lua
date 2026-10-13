@@ -412,7 +412,12 @@ end
 			toggle = 'DT Set';
 			status = gcdisplay.GetToggle('DTset');
 		elseif (args[1] == 'sir') then
-			gcinclude.FlipToggle('SIR', args[2]);
+			if (gcdisplay.GetToggle('Aminon') == true) then
+				gcdisplay.SetToggle('SIR', false);
+				gcinclude.Err('/sir stays off while Aminon is on');
+			else
+				gcinclude.FlipToggle('SIR', args[2]);
+			end
 			toggle = 'Spell Interrupt Set';
 			status = gcdisplay.GetToggle('SIR');
 		elseif (args[1] == 'mbmode') or (args[1] == 'automb') or (args[1] == 'autonuke') then
@@ -2411,10 +2416,16 @@ end
 	end
 
 	function gcinclude.Help()
+		local skip = {};
+		for _, l in ipairs({ gcinclude.settings.SIRSkip, gcinclude.SIRSkip }) do -- same lists CheckSIR reads
+			if (type(l) == 'table') then
+				for _, n in ipairs(l) do skip[#skip + 1] = n end
+			end
+		end
 		local lines = T{
 			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset',
-			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set), /lock [slots] /unlock [slots]',
-			'casting: /sir (SIR set over every midcast except SIRSkip: Absorb-TP, Stun)',
+			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots] /unlock [slots]',
+			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
 			'toggles: /th (TH gear until the target is tagged; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
@@ -2505,6 +2516,11 @@ end
 			if (#gcinclude.AminonOwned > 0) then gcinclude.UnlockSlots(gcinclude.AminonOwned) end
 			gcinclude.AminonOwned = T{};
 			return;
+		end
+		-- No SIR against Aminon: /aminon (or /def) turns /sir off, /sir is refused until Aminon is off, and stays off after.
+		if (gcdisplay.GetToggle('SIR') == true) then
+			gcdisplay.SetToggle('SIR', false);
+			gcinclude.Say('/sir off: Aminon is on');
 		end
 		local set = gcinclude.FindSet('Aminon') or gcinclude.FindSet('mdt') or {};
 		local wear, take = {}, T{};
