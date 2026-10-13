@@ -134,6 +134,35 @@ gcinclude.SIRSkip = T{'Phalanx', 'Reprisal'};
 Names are exact spell names in any case (`'Cure IV'`, not `'Cure'`). The job file's list adds to the shared one;
 it doesn't replace it.
 
+## Auto magic burst tier (`/mbtier`)
+
+RDM, BLM, SCH and GEO only. `/automb` (Win+grave) makes the box cast the skillchain's nuke by itself; `/mbtier`
+picks which tier it casts.
+
+| `/mbtier` | Casts |
+|---|---|
+| `low` (or `1`) | Tier I (Fire, Blizzard, Aero, Stone, Thunder, Water) |
+| `mid` (or `3`) | Tier III. The default |
+| `high` (or `5`) | Tier V |
+| nothing | Cycles Low → Mid → High |
+
+- Can't cast that tier (not learned, on recast, short MP; SCH IV/V without Addendum: Black or Enlightenment)? It
+  tries the next tier down on each chain element, down to I. `MBFallback = false` stops that.
+- Light and Dark chains have no tiered nuke: SCH casts Luminohelix / Noctohelix.
+
+How to change it:
+
+| Where | How |
+|---|---|
+| This box, now | `/mbtier high` (Windower `//mbtier high`) |
+| Every box, now | `/mss /lac fwd mbtier high` (Windower `//send @all gs c mbtier high`) |
+| HUD (Ashita) | Ctrl+click that box's `mb` cell: I → III → V |
+| A key | `/gckey !m mbtier` (Alt+M cycles it) |
+| Load default, every job | `MBTier = 'Mid';` in `common/gcinclude.lua` settings |
+| Load default, one job | `gcinclude.MBTier = 'High';` in that job's `OnLoad`, before `gcinclude.Initialize()` |
+
+A tier set with the command lasts until reload or job change, then the load default comes back.
+
 ## Settings: `common/gcinclude.lua`
 
 Two blocks at the top of the file are yours to edit; everything below them is the engine.

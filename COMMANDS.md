@@ -90,7 +90,7 @@ element on its target wears it; any other nuke wears your normal set (`/burst` p
 - Casts the chain element's nuke (Fire, Blizzard, Aero, Stone, Thunder, Water) at the tier.
   Light/Darkness chains use those elements. Transfixion/Compression (Light or Dark only): SCH casts
   Luminohelix/Noctohelix (II with 1200 JP); other jobs have no Light/Dark nuke, so they skip it.
-- Tries the tier on each chain element, then one tier lower (`MBFallback`). Blizzard V on recast
+- Tries the tier on each chain element, then each tier lower down to I (`MBFallback`). Blizzard V on recast
   during Distortion → Water V.
 - Only casts if it lands inside the window (`MBWindow` 10s; cast time is learned from your last casts),
   is castable, off recast, affordable, and you're not moving.
