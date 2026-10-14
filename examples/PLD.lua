@@ -844,7 +844,6 @@ end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
-    gFunc.EquipSet(sets.SIR);
     local family = gcinclude.Family(spell.Name); -- 'Cure IV' -> 'Cure', 'Protect V' -> 'Protect'
 	if (family == 'Cure') then -- PLD: Cure I-IV
         gFunc.EquipSet(sets.Cure);

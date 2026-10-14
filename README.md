@@ -117,8 +117,7 @@ Full list of engine sets: `COMMANDS.md` Sets the engine uses.
   engine layer (TH, Absorb, `Buffs_Midcast`, LightBonus, obi/Orpheus).
 - Only the slots `SIR` lists change, and those slots win for that cast (its waist replaces the obi, its ring
   replaces your cure ring). Slots it leaves out keep the spell's own gear. Precast and idle are never touched.
-- Off: the engine never wears `SIR`. A job file can still use `sets.SIR` itself (PLD puts it on first for every
-  spell as a base, `/sir` or not).
+- Off: `SIR` is never worn.
 - Aminon: turning Aminon on (`/aminon`, `/def`) turns `/sir` off, and `/sir` is refused while Aminon is on. It stays
   off when Aminon goes off.
 
@@ -144,7 +143,6 @@ the tag (TH still goes on for your next action at that mob).
 **Per-spell SIR sets.** The engine has one `SIR` set. When a spell needs SIR *and* its own stats, put the SIR gear
 in that spell's set in the job file and add the spell to `SIRSkip`, so `/sir` doesn't cover it. PLD does this:
 
-- `SIR`: worn by PLD.lua first on every spell, `/sir` or not.
 - `Reprisal` (105 SIR, Enmity) and `Phalanx` (potency): in PLD's `SIRSkip`, so their sets stay as built.
 - `Cure` (98% SIR, cure potency) and Protect (uses `Reprisal`): not in `SIRSkip`, so `/sir` still lays `SIR` over
   them.
