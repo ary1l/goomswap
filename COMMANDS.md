@@ -111,7 +111,8 @@ holds the next press about 1.5s at most. Ready/Sic/Quick Draw and stratagems ski
 | `/gcaspir` `/gcdrain` | Best castable tier on `<t>` |
 
 - `/gce`: delay from the item's `CastDelay` (override `EnchantDelays`, fallback `EnchantWindow`), counted once it's
-  really on; `/item` retried every 2s, 5 tries; gives up after 10s not on. Never refused up front.
+  really on; `/item` retried every 2s, 5 tries; gives up after 10s not on. Not held back for its reuse timer (the game
+  decides), but refused if the slot is held by `/lock` or another feature (chat names it).
 - Warnings (never cancel): ammo ≤ `AmmoWarn` (20), Utsusemi tools ≤ `NinjaToolWarn` (10); once, every 10 fewer, at 0.
 - Asleep under Stoneskin: sends `/cancel Stoneskin` (needs a cancel addon). `SleepCancelStoneskin = false` stops it.
 
@@ -121,9 +122,9 @@ holds the next press about 1.5s at most. Ready/Sic/Quick Draw and stratagems ski
 |---|---|
 | `/mset [value]` (`/meleeset`) | Default → Hybrid → Acc: `Tp_`/`Ws_Hybrid` or `_Acc` over `_Default`, `<Name>_Hybrid` over a named set |
 | `/kite` / `/th` | Movement gear / `TH` until tagged |
-| `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). Regen/Refresh out of combat and not over `/dt` |
+| `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). No word shows thresholds (doesn't flip). Regen/Refresh out of combat, not over `/dt`; Dt/Pet_Dt any time |
 | `/received <spell>` | Wear that `*_Received` set |
-| `/rrset` `/craftset` `/zeniset` `/fishset` | Reraise / Crafting / Zeni / Fishing set |
+| `/rrset` `/craftset` `/zeniset` `/fishset` | Toggle Reraise / Crafting / Zeni / Fishing set, worn over all idle/engaged gear until toggled again (any word flips it) |
 | `/wsdistance [yalms]` | WS distance check on/off, or set (default 5) |
 | `/gcstyle [N]` | `/lockstyleset N` now; `LockstyleSet` applies it 4s after load |
 | `/gcmessages` | Chat confirmations on/off |
@@ -160,8 +161,8 @@ holds the next press about 1.5s at most. Ready/Sic/Quick Draw and stratagems ski
 | `/gcbar [on\|off]` / `/gcbar pos 300 0` | One-line status bar (Windower: Atk/Def show 0) |
 
 One row per box (each writes `hud/<name>.txt` 4x/s); opens on load for `HUDOwners`. `.` off, glyph on, blank = job
-lacks it, `-` none. Bright = changed, dim = default, orange = off but loads on. Columns at default everywhere hide
-unless in `HUDPinned`. Ashita: click a cell runs it on that box, click a name shows hidden columns, Ctrl+click `mb`
+lacks it, `-` none. Bright = changed, dim = default, orange = off but loads on. Toggle columns (and `def`, `mb`) at
+load default on every box hide unless in `HUDPinned`; cycle columns hide only when None/Off on every box. Ashita: click a cell runs it on that box, click a name shows hidden columns, Ctrl+click `mb`
 cycles its tier. Windower: display only, boxes share state over IPC.
 Glyphs: `wpn` Weapons, `ml` MeleeSet, `m` `s` `r` `a` slots, `nk` NukeSet, `el` Element, `tk` TankSet, `hx` Hoxne,
 `pp` PupMode, `w` Weapon, `th` TH, `kt` Kite, `fd` AutoFood, `sd` AutoSoda, `hp` String, `sl` SongLock, `pr` PROC,
@@ -175,18 +176,21 @@ Order: README How sets stack.
 |---|---|
 | `Weapon_<Mode>` / `_1h` | Weapon mode |
 | `Dt`, `mdt`, `Aminon`, `SIR` | With their toggles |
-| `Incapacitated` | Slept, petrified, stunned, terrorized: your defense set (`Aminon`, else `mdt`, else `Dt`) minus Main/Sub/Range/Ammo, then this set, then `*_Received`. Over DT/MDT/Aminon, TH, buffs. Not charmed (the client can't change gear) |
-| `Sleeping` | Asleep, over `Incapacitated` (else `gcinclude.sets.Sleeping`). Main/Sub/Range in it pass the TP hold, not `/lock`: e.g. a Prime stage 1-2 weapon drains 1 HP/MP every 3s, which wakes you (BG-Wiki; not Diabolos' Nightmare). Weapon comes back when awake |
+| `Incapacitated` | Slept, petrified, stunned, terrorized: `Aminon` if `/aminon` (no Aminon set: `mdt`), else `mdt` if `/mdt`, else `Dt` (even with `/dt` off), minus Main/Sub/Range/Ammo; then this set; then `*_Received`. Over all job sets incl. `Dt`, and over `mdt`/`Aminon`, `TH`, `Buffs`, XIRoll. Under `Sleeping`, `Doomed`, `Reraise`, util sets. Not charmed (the client can't change gear) |
+| `Sleeping` | Asleep, over `Incapacitated` (else `gcinclude.sets.Sleeping`). Main/Sub/Range in it pass the TP hold, not any lock (`/lock`, `/aminon` Main/Sub, `/hoxne` Range): e.g. a Prime stage 1-2 weapon drains 1 HP/MP every 3s, which wakes you (BG-Wiki; not Diabolos' Nightmare). Weapon comes back when awake |
 | `TH` | `/th`: at rest, and over midcast/midshot at a mob until tagged (your hit, shot, WS, JA; a spell, step or Effusion that lands). Not on you/allies, not `THSkip` (those don't tag). BLU: only `BluMagTH`. Its waist beats obi/Orpheus on that cast |
-| `Absorb` / `Absorb_TP` | Every Absorb- spell / Absorb-TP on top. A spell-named set (`['Absorb-TP']`) goes on again over `Absorb` |
+| `Absorb` / `Absorb_TP` | Every Absorb- spell / Absorb-TP on top. Without `Absorb_TP`, a spell-named set (`['Absorb-TP']`, `['Absorb-STR']`) goes on again over `Absorb`. TH worn on the cast goes back on top |
 | `LightBonus` | Healing Magic midcast |
 | `Buffs`, `Buffs_Ws`, `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }`: while that buff is up, at rest / over WS / over midcast |
 | `Hoxne_Tp`, `Hoxne_Idle`, `Hoxne_Dt` | `/hoxne` Locked + Enchantment up: engaged / idle not moving / instead of both while `/dt`. None while `/kite` |
 | `Hoxne_Ws`, `Hoxne_<ws>` | Same gate, over every WS, then that WS (`['Hoxne_Victory Smite']`) |
 | `Hoxne_<set>_<buff>` | Over it while the buff is up (`Hoxne_Tp_Impetus`); `&` = all up (`['Hoxne_Ws_Sneak Attack&Trick Attack']`). Fewest buffs first, then A-Z |
-| `HolyWater` | Doomed (else `gcinclude.sets.Holy_Water`) |
+| `HolyWater` | Put on right before `/holywater` auto-uses a Holy Water (else `gcinclude.sets.Holy_Water`) |
+| `gcinclude.sets.Doomed` | While Doomed or Baned, over `Sleeping`/`Incapacitated` |
 | `XIRoll` | Idle with a roll at 11 (default Roller's Ring) |
 | `*_Received` | Spell cast on you, until it lands (max `ReceivedWindow` 8s) |
+
+### Hoxne layering
 
 Hoxne sets go over your job sets (incl. `Impetus`), under every engine layer, and take `/mset` variants
 (`Hoxne_Tp_Hybrid`). MNK Victory Smite, Impetus up: `Ws_Default` → `Victory_Default` → `Victory_Imp` → `Hoxne_Ws`
@@ -204,15 +208,16 @@ Never over your own action; locked slots skipped.
 
 ```lua
 ElementGear = T{ Obis = T{ Dark = 'Anrin Obi' }, AnyObi = 'Hachirin-no-Obi', Distance = "Orpheus's Sash",
-    DistanceMax = nil, Back = 'Twilight Cape', Ring = 'Zodiac Ring', Cures = false, BackOnCures = false, Keep = T{'Oneiros Rope'} };
+    DistanceMax = nil, Back = nil, Ring = nil, RingSlot = 'Ring2', -- optional, e.g. 'Twilight Cape', 'Zodiac Ring'
+    Cures = false, BackOnCures = false, Keep = T{'Oneiros Rope'} };
 ```
 
 - Obi score: day +10, weather +10 (double +25), opposing element subtracts; obi never at ≤ 0. Orpheus: `OrpheusPoints`
   (+15 at ≤ 1.93', +1 at ≥ 13', linear between). Higher wins. `Keep` items are never displaced.
 - Helixes: no obi (day/weather always apply). Cures: obi only (no sash/ring; `BackOnCures` adds the back), off by default; per job
   `gcinclude.CureObi = true` (WHM SCH RDM GEO on; PLD RUN commented). Blue Magic: damage spells only.
-- Twilight Cape: +5% to a day bonus, or a weather bonus that applies. Zodiac Ring: day matches, never
-  Lightsday/Darksday or cures. A TH waist worn on the cast stays.
+- Twilight Cape: +5% to a day bonus, or a weather bonus that applies. Zodiac Ring: `ElementSkills` spells only (not
+  ninjutsu, Quick Draw, WS or cures), day matches, never Lightsday/Darksday. A TH waist worn on the cast stays.
 
 ## Job file
 
@@ -256,7 +261,8 @@ end
   `MoonshadeSkip` = WS that never get it; `MoonshadeTP = 0` = engine leaves it alone. `/checksets` flags it.
 - Dynamis RP: wear only what you rank, `/lock neck main sub range`, `/unlock` after (BG, Oboro).
 - Keybinds (setting `Keybinds`; per job before `Initialize()`; `T{}` = none). Prefixes: `!` Alt, `^` Ctrl, `+` Shift,
-  `@` Win, `#` Apps, combined (`^+` = Ctrl+Shift). Bare grave stays unbound. `/bind list` to check.
+  `@` Win, `#` Apps, combined (`^+` = Ctrl+Shift). On load these replace any bind you had on those keys, and bare grave is
+  `/unbind`-ed unless listed; unload and job change remove them (`/gckey` ones too), so put lasting binds here.
 
   ```lua
   Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} };
