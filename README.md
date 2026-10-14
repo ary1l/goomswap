@@ -22,15 +22,15 @@ Windower/addons/GearSwap/data/
     └── <Name>/<JOB>.lua               <- examples/<JOB>.lua, your gear in it
 ```
 
-`//lua load gearswap`, change job: chat shows `[ShaySwap] Loaded data/shayswap/<Name>/<JOB>.lua`. No such line =
-GearSwap found another file first (`data/<Name>/<JOB>.lua`, `data/<Name>_<JOB>.lua`, `data/<Name>.lua`,
+`//lua load gearswap`, change job: chat shows `[ShaySwap] Loaded data/shayswap/<Name>/<JOB>.lua`. A red
+`[ShaySwap]`/`[LuAshitacast]` line names a missing file or folder. No `[ShaySwap]` line at all = GearSwap found another file first (`data/<Name>/<JOB>.lua`, `data/<Name>_<JOB>.lua`, `data/<Name>.lua`,
 `data/<JOB>.lua` all beat `default.lua`). A job file straight in `shayswap/` serves every character. Already use
 `default.lua` for other jobs? Copy ours to `data/<Name>_<JOB>.lua` for each ShaySwap job instead.
 
 | | Ashita | Windower |
 |---|---|---|
 | Command | `/wm` | `//wm` or `//gs c wm` |
-| All boxes | `/mss /lac fwd wm` | `//send @all gs c wm` |
+| All boxes | `/mss /wm` (Multisend) | `//send @all gs c wm` |
 | Reload after edits | `/lac reload` | `//gs reload` |
 | HUD | `/gchud`, click cells | `//gchud`, display only |
 
@@ -58,7 +58,7 @@ The top of `common/gcinclude.lua` has two blocks you edit; everything below is t
 | Every job | Edit the value in `common/gcinclude.lua` | `RefreshGearMPP = 50;` |
 | One job | Job file `OnLoad`, before `gcinclude.Initialize()` | `gcinclude.settings.RefreshGearMPP = 50;` |
 | One job, list | Top of the job file; adds to the setting's list | `gcinclude.SIRSkip = T{'Phalanx'};` |
-| One job, value | Job file; wins over the setting | `gcinclude.MBTier`, `gcinclude.AutoFood`, `gcinclude.LockstyleSet`, `gcinclude.ElementGear`, `gcinclude.CureObi` |
+| One job, value | Job file; replaces the setting in brackets | `gcinclude.MBTier` (`MBTier`), `gcinclude.AutoFood` (food list, `AutoFoodItems`; on/off stays `AutoFood`), `gcinclude.LockstyleSet`, `gcinclude.ElementGear` (whole table), `gcinclude.CureObi` (`ElementGear.Cures`) |
 
 Copying a newer `common/` over yours erases your edits: note them, or set them per job instead.
 
@@ -106,13 +106,13 @@ Later wins, slot by slot; a set changes only the slots it lists.
 1. Your job file: `Idle` / `Tp_Default` → `Tp_<mset>` → buff sets (`Impetus`) → `Dt` (`/dt`) → `Movement` (`/kite`).
 2. Hoxne sets → auto `Idle_Regen` / `Idle_Refresh` / `Dt` (low HP/MP) → `Town`.
 3. Weapon mode → `mdt` (`/mdt`) or `Aminon` (`/aminon`) → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll.
-4. **`Incapacitated`** (slept, petrified, stunned, terrorized): your defense set (`Aminon`, else `mdt` if `/mdt`,
-   else `Dt`) without Main/Sub/Range/Ammo, then the `Incapacitated` set, then `*_Received`. **Over DT, MDT, Aminon,
+4. **`Incapacitated`** (slept, petrified, stunned, terrorized): `Aminon` if `/aminon` is on, else `mdt` if `/mdt`,
+   else `Dt` (even with `/dt` off), without Main/Sub/Range/Ammo; then the `Incapacitated` set, then `*_Received`. **Over DT, MDT, Aminon,
    TH, Buffs and everything in 1-3.**
 5. `Sleeping` (asleep) → `Doomed` → `Reraise` (Weakness) → craft / zeni / fish / rr sets.
 
-**Spells (midcast):** your job file → `TH` (not `THSkip`) → `Absorb` → `Buffs_Midcast` → `LightBonus` →
-obi/Orpheus/back/ring → `SIR` (`/sir`, not `SIRSkip`). WHM cures:
+**Spells (midcast):** your job file → `TH` (not `THSkip`) → `Absorb` (TH back on top) → `Buffs_Midcast` →
+`LightBonus` → obi/Orpheus/back/ring (a `TH` waist stays) → `SIR` (`/sir`, not `SIRSkip`). WHM cures:
 `Cure` → `Self_Cure` → `Cure_LowMP` or `Cure_LowMP_Storm` (MP ≤ 50%) → `Cure_Dt` (`/dt`) → Hachirin-no-Obi → `SIR`.
 
 **Weapon skills:** your job file → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
@@ -142,9 +142,9 @@ gear into its set and add it to `SIRSkip` (PLD `Reprisal`). THSkip spells don't 
 | Problem | Check |
 |---|---|
 | Edit does nothing | `/lac reload` (`//gs reload`) |
-| Windower: nothing loads | No `[ShaySwap] Loaded` line: see Install |
+| Windower: nothing loads | Red `[ShaySwap]`/`[LuAshitacast]` line: do what it says. No `[ShaySwap]` line at all: see Install |
 | A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapon at 1000+ TP is held (`/wm <mode> force`); `TH`-set weapon while `/th` is on |
-| Weapon in Idle/TP never shows | The weapon mode wins: `/wm none` |
+| Weapon in Idle/TP never shows | The weapon layer wins: `/wm none`, and `/mainset none` / `/subset none` for slot picks (PLD has only those) |
 | Wrong or no gear | `/checksets`, item spelling, `/gctrace` |
 | Action cancelled | Chat says why (`COMMANDS.md` Action checks) |
 | HUD gone | `/gchud on`, `/gchud pos 500 120` |

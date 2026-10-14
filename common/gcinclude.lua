@@ -2532,7 +2532,7 @@ end
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
 			'nuke   : Burst set is automatic on live skillchains; /automb [on|off] = cast bursts by itself; /mbtier low|mid|high = its tier I|III|V; /burst = Burst set on every nuke',
 			'keys   : Ctrl+grave wm, Shift+grave wm default, Ctrl+Shift+grave def, Alt+grave hoxne, Win+grave automb (no bare grave); /gckey <key> <command>',
-			'all of these work as /mss /lac fwd <command> for every box',
+			'every box: /mss /<command> (Multisend), one box: /ms sendto <name> /<command>',
 		};
 		for _, line in ipairs(lines) do
 			print(chat.header('ShaySwap'):append(chat.message(line)));
