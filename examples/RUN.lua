@@ -1,5 +1,6 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+-- gcinclude.CureObi = true; -- uncomment: Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts)
 
 -- RUN example. Gear from GetAwayCoxn's Luashitacast-Profiles (github.com/GetAwayCoxn/Luashitacast-Profiles,
 -- MIT, see LICENSE-GetAwayCoxn.txt); swap in your own.

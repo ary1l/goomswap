@@ -738,8 +738,12 @@ function precast(spell)
         local a = new_action(spell);
         if (a == nil) then return end
         local before = gState.PlayerAction;
+        local running = (before ~= nil) and ((before.Completion or 0) > os.clock());
+        a.Prev = running and before or nil; -- given back if the game refuses this one (aftercast)
         gState.PlayerAction = a;
+        if (gcinclude ~= nil) then gcinclude.PrevAction = before end -- the checks see a cast sent but not started yet
         handle(PRECAST[a.Type]);
+        if (gcinclude ~= nil) then gcinclude.PrevAction = nil end
         if (gState.PlayerAction ~= nil) and (gState.PlayerAction.Block == true) then
             -- Cancelled while an earlier action still runs (a cast, on recast or queued): that one stays
             -- pending, so idle gear doesn't replace its gear mid-cast.
@@ -773,6 +777,11 @@ function aftercast(spell)
         local a = gState.PlayerAction;
         -- A late aftercast for an earlier action must not end the one now pending.
         if (a ~= nil) and (type(spell) == 'table') and (spell.id ~= nil) and (a.SpellId ~= spell.id) then return end
+        -- Refused while an earlier cast still runs: that cast is pending again, and its gear stays on.
+        if (a ~= nil) and (a.Prev ~= nil) and ((a.Prev.Completion or 0) > os.clock()) then
+            gState.PlayerAction = a.Prev;
+            return;
+        end
         gState.PlayerAction = nil;
         handle('HandleDefault');
     end);
@@ -912,6 +921,8 @@ function self_command(command)
                 if (gState.PlayerAction == nil) then handle('HandleDefault') end
             elseif (what == 'flush') then
                 flushSentAt = nil;
+                -- Decided while nothing was pending; an action that started since keeps its gear.
+                if (gState.PlayerAction ~= nil) then pendingForce = {}; return end
                 local map = pendingForce;
                 pendingForce = {};
                 send(map);
