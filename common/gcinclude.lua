@@ -825,7 +825,8 @@ end
 	gcinclude.NextHoldCheck = 0;
 	gcinclude.MissingWarned = {};
 	gcinclude.LastDualWield = false;
-	gcinclude.RollBuffs = T{'Fighter\'s Roll','Monk\'s Roll','Healer\'s Roll','Wizard\'s Roll','Warlock\'s Roll','Rogue\'s Roll','Gallant\'s Roll','Chaos Roll','Beast Roll','Choral Roll','Hunter\'s Roll','Samurai Roll','Ninja Roll','Drachen Roll','Evoker\'s Roll','Magus\'s Roll','Corsair\'s Roll','Puppet Roll','Dancer\'s Roll','Scholar\'s Roll','Bolter\'s Roll','Caster\'s Roll','Courser\'s Roll','Blitzer\'s Roll','Tactician\'s Roll','Allies\' Roll','Miser\'s Roll','Companion\'s Roll','Avenger\'s Roll','Naturalist\'s Roll','Runeist\'s Roll'};
+	gcinclude.RollBuffs = T{}; -- the names in gcinclude.Rolls, as RollActive looks for them in the buff list
+	for _, r in ipairs(gcinclude.Rolls) do gcinclude.RollBuffs:append(r[1]) end
 
 	function gcinclude.UnlockWeapons()
 		for slot, _ in pairs(gcinclude.HeldSlots) do
@@ -876,6 +877,18 @@ end
 		return slots;
 	end
 
+	-- A Main/Sub/Range let go at WeaponTPGuard+ TP goes straight to the TP hold, as CheckDefault does after Sleep:
+	-- left enabled until the next 0.1s HoldTick, a HandleDefault in between could swap the weapon and lose the TP.
+	local function freeSlot(slot)
+		gcinclude.LockedSlots[slot] = nil;
+		if gcinclude.HoldSlots:contains(slot) and (gcinclude.HoldSuspended ~= true) and gcinclude.HoldActive() then
+			gcinclude.HeldSlots[slot] = true;
+			gState.Disabled[slot] = true;
+		else
+			gState.Disabled[slot] = false;
+		end
+	end
+
 	-- owner nil: every owner (load/unload reset). slots nil: every slot that owner holds.
 	function gcinclude.UnlockSlots(slots, owner)
 		if (slots == nil) or (#slots == 0) then
@@ -887,14 +900,10 @@ end
 		for _, slot in ipairs(slots) do
 			local owners = gcinclude.LockedSlots[slot];
 			if (owner == nil) then
-				gcinclude.LockedSlots[slot] = nil;
-				gState.Disabled[slot] = false;
+				freeSlot(slot);
 			elseif (owners ~= nil) and owners[owner] then -- a slot this owner doesn't hold (e.g. TP-held) is left alone
 				owners[owner] = nil;
-				if (next(owners) == nil) then
-					gcinclude.LockedSlots[slot] = nil;
-					gState.Disabled[slot] = false;
-				end
+				if (next(owners) == nil) then freeSlot(slot) end
 			end
 		end
 		return slots;
@@ -969,15 +978,17 @@ end
 	end
 
 	function gcinclude.HoldSet(key, set)
-		gcinclude.ReleaseHold(key);
+		local owner = 'hold:' .. key;
 		local out, owned = {}, T{};
 		for slotName, item in pairs(set) do
 			local n = slotOf(slotName);
-			if (n ~= 0) and (gState.Disabled[n] ~= true) then out[slotName] = item; owned:append(n) end
+			local mine = (gcinclude.LockedSlots[n] ~= nil) and not gcinclude.LockedByOther(n, owner); -- a re-apply keeps its own slots
+			if (n ~= 0) and ((gState.Disabled[n] ~= true) or mine) then out[slotName] = item; owned:append(n) end
 		end
+		gcinclude.ReleaseHold(key); -- after picking slots: released weapon slots go to the TP hold at 1000+ TP
 		if (#owned == 0) then return false end
 		gFunc.ForceEquipSet(out);
-		gcinclude.LockSlots(owned, 'hold:' .. key);
+		gcinclude.LockSlots(owned, owner);
 		gcinclude.Holds[key] = owned;
 		return true;
 	end
@@ -1117,6 +1128,7 @@ end
 
 	-- kind: 'shot' (preshot), 'ws' (weaponskill) or nil (precast). Utsusemi uses Shihei, or Shikanofuda on a
 	-- NIN main (BG-Wiki/FFXIclopedia), from your inventory.
+	local SUPPLY_SKILLS = T{25, 26, 27}; -- arrows, bullets, throwing
 	function gcinclude.CheckSupplies(kind)
 		local a = gData.GetAction();
 		if (a == nil) or (a.Name == nil) then return end
@@ -1134,8 +1146,8 @@ end
 		local equip = gData.GetEquipment();
 		local ammo = (equip ~= nil) and equip.Ammo or nil;
 		if (ammo == nil) or (type(ammo.Name) ~= 'string') then return end
-		local r = AshitaCore:GetResourceManager():GetItemByName(ammo.Name, 0);
-		if (r == nil) or not T{25, 26, 27}:contains(r.Skill) then return end -- arrows, bullets, throwing
+		local r = ammo.Resource; -- the worn item's own resource (LAC GetEquipment): no search by name
+		if (r == nil) or not SUPPLY_SKILLS:contains(r.Skill) then return end
 		local _, count = carriedId(r.Id);
 		warnLow(ammo.Name, count, cfg.AmmoWarn);
 	end
@@ -1208,7 +1220,7 @@ end
 	-- cmd_no 9 Item (Start) value = item id, 0 if interrupted; cmd_no 5 Item (Finish) cmd_arg = item id).
 	-- The slot stays locked until that finish packet, so normal gear can't come back mid-use.
 	-- Several can run at once (one per slot).
-	gcinclude.Enchants = {}; -- [LAC slot] = { item, id, slot, index, delay, start, equippedAt, nextTry, tries, doneAt }
+	gcinclude.Enchants = {}; -- [LAC slot] = { item, id, slot, index, alreadyOn, preAct, delay, start, equippedAt, extPending, nextTry, tries, doneAt }
 	local ENCHANT_MARGIN = 3.0;    -- after the equip delay, before the first try (the server refuses ~3s past it: Rahvin's notes)
 	local ENCHANT_RETRY = 2.0;     -- between tries while no Item (Start) is seen
 	local ENCHANT_TRIES = 5;
@@ -1910,11 +1922,21 @@ end
 
 	-- Job-file helpers.
 	-- Wears <prefix>_Default, then <prefix>_<mode> when /meleeset is not Default.
+	-- A missing <prefix>_<mode> is named once, not on every HandleDefault (LAC's 'Set not found').
+	local modeWarned = {};
 	function gcinclude.EquipMode(prefix)
 		local base = gcinclude.FindSet(prefix .. '_Default');
 		if (base ~= nil) then gFunc.EquipSet(base) end
 		local mode = gcdisplay.GetCycle('MeleeSet');
-		if (mode ~= 'Default') then local n = prefix .. '_' .. mode; gFunc.EquipSet(gcinclude.FindSet(n) or n) end -- index, not LAC's scan of every set
+		if (mode == 'Default') then return end
+		local n = prefix .. '_' .. mode;
+		local set = gcinclude.FindSet(n); -- index, not LAC's scan of every set
+		if (set ~= nil) then
+			gFunc.EquipSet(set);
+		elseif (modeWarned[n] == nil) then
+			modeWarned[n] = true;
+			gcinclude.Err('no ' .. n .. ' set: ' .. prefix .. '_Default stays (add ' .. n .. ' or /mset default)');
+		end
 	end
 
 	-- Wears the set named after an action, then its /meleeset variant. False if there is none.
@@ -1951,7 +1973,10 @@ end
 		local jobs = AshitaCore:GetResourceManager();
 		local main, ml = jobs:GetString('jobs.names_abbr', p:GetMainJob()), p:GetMainJobLevel();
 		local need = gcinclude.DualWieldLevels[main or ''];
-		if (need ~= nil) and (ml >= need) then return true, string.format('main %s Lv%d', main, ml) end
+		if (need ~= nil) and (ml >= need) then
+			gcinclude.LastDualWield = true; -- the zoning fallback below keeps this answer too
+			return true, string.format('main %s Lv%d', main, ml);
+		end
 		if (p:GetIsZoning() ~= 0) or (ml == 0) then return (gcinclude.LastDualWield == true), 'zoning, kept last' end
 		local sub, sl = jobs:GetString('jobs.names_abbr', p:GetSubJob()), p:GetSubJobLevel();
 		need = gcinclude.DualWieldLevels[sub or ''];
@@ -2061,9 +2086,9 @@ end
 		local acting = gData.GetAction();
 		if (acting ~= nil) and gcinclude.Skipped('THSkip', acting.Name) then return end -- that spell's own set stays
 		if (force ~= true) then
-			local action = gData.GetActionTarget();
-			if (action ~= nil) and (action.Type ~= 'Monster') then return end
-			local target = action or gData.GetTarget();
+			local actionTarget = gData.GetActionTarget();
+			if (actionTarget ~= nil) and (actionTarget.Type ~= 'Monster') then return end
+			local target = actionTarget or gData.GetTarget();
 			if (target ~= nil) and (target.Type == 'Monster') and (gcauto ~= nil) and (gcauto.IsTagged ~= nil) and gcauto.IsTagged(target.Id) then
 				return;
 			end
