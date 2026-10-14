@@ -121,21 +121,39 @@ Defense toggles change idle/engaged gear only (`/aminon` also locks weapons); a 
 job file says so (WHM `Cure_Dt`).
 All engine sets: `COMMANDS.md` Sets the engine uses.
 
-## SIRSkip and THSkip
+## Exclusions: SIRSkip and THSkip
 
-`/sir` puts `SIR` on last at every spell's midcast; `/th` puts `TH` on at an untagged mob. Spells on these lists are
-left alone, so their own set stands:
+Two lists of spells the engine leaves alone, so the set your job file put on for them is what you cast in:
+
+| List | Stops | Default |
+|---|---|---|
+| `SIRSkip` | `/sir` putting the `SIR` set over that spell's midcast | `'Absorb-TP', 'Stun'` |
+| `THSkip` | `/th` putting the `TH` set over it at an untagged mob (and it won't count as the tag) | `'Absorb-TP', 'Stun'` |
+
+Only that one layer is skipped: Aminon's weapon lock, obi/Orpheus and `Buffs_Midcast` still apply as usual.
+
+**Add a spell, one job:** top of the job file, under the `gcinclude = gFunc.LoadFile(...)` line. Adds to the
+default list:
 
 ```lua
--- common/gcinclude.lua settings, every job:
-SIRSkip = T{'Absorb-TP', 'Stun'};
-THSkip  = T{'Absorb-TP', 'Stun'};
--- top of a job file, adds for that job:
-gcinclude.SIRSkip = T{'Phalanx', 'Reprisal'};
+gcinclude.SIRSkip = T{'Phalanx', 'Reprisal'};   -- PLD: Phalanx keeps its potency gear, Reprisal its own 105 SIR set
+gcinclude.THSkip  = T{'Absorb-STR', 'Absorb-ACC'}; -- example: these keep their own macc set at a new mob
 ```
 
-Exact spell names, any case (`'Cure IV'`, not `'Cure'`). A spell that needs SIR *and* its own stats: build the SIR
-gear into its set and add it to `SIRSkip` (PLD `Reprisal`). THSkip spells don't count as the TH tag.
+**Add or remove, every job:** edit the line in `common/gcinclude.lua` settings:
+
+```lua
+SIRSkip = T{'Absorb-TP', 'Stun'};
+THSkip  = T{'Absorb-TP', 'Stun'};
+```
+
+**Remove a default, one job:** in that job's `OnLoad`, before `gcinclude.Initialize()`, replace the list:
+`gcinclude.settings.SIRSkip = T{'Absorb-TP'};` (now `/sir` covers Stun on this job).
+
+- Exact spell name, any case: `'Cure IV'`; `'Cure'` matches only Cure I. List every tier you want.
+- A spell that needs SIR *and* its own stats: put the SIR pieces in its own set and add it to `SIRSkip` (PLD
+  `Reprisal`). Spells not on the list get `SIR` over them (PLD `Cure`, `Protect`).
+- Check what's active: `/gchelp` prints both lists for the current job. `/lac reload` after editing.
 
 ## Something wrong
 
