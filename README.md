@@ -1,19 +1,17 @@
 # ShaySwap
 
-Gear-swap engine for FFXI multiboxing. You write sets in a job file; ShaySwap wears them for idle, TP,
-spells and weapon skills, and adds the automatic layers (weapons, defense, obi, TH, and more) on top.
-Runs on **Ashita v4** (LuAshitacast) and **Windower 4** (GearSwap, through the adapter in `windower/`).
-Same job files on both. Every command and setting: [`COMMANDS.md`](COMMANDS.md).
+Gear-swap engine for FFXI multiboxing. You write sets in a job file; ShaySwap wears them and adds automatic
+layers (weapons, defense, TH, obi, and more) on top. **Ashita v4** (LuAshitacast) and **Windower 4** (GearSwap,
+through `windower/`), same job files. Full reference: [`COMMANDS.md`](COMMANDS.md).
 
 ## Install
 
-### Ashita v4
-
+**Ashita v4**
 1. Copy `common/` and `examples/` into `Ashita/config/addons/luashitacast/`.
-2. Copy `examples/<JOB>.lua` into your character folder `luashitacast/<Name>_<id>/` and put in your gear.
+2. Copy `examples/<JOB>.lua` into your character folder `luashitacast/<Name>_<id>/`, put your gear in.
 3. `/addon load luashitacast`, then `/lac load`.
 
-### Windower 4
+**Windower 4**
 
 ```
 Windower/addons/GearSwap/data/
@@ -24,199 +22,129 @@ Windower/addons/GearSwap/data/
     └── <Name>/<JOB>.lua               <- examples/<JOB>.lua, your gear in it
 ```
 
-1. Copy as above. A job file straight in `shayswap/` is used by every character; an Ashita `<Name>_<id>/`
-   folder copied over as is also works.
-2. `//lua load gearswap`, then change job. Chat shows `[ShaySwap] Loaded data/shayswap/<Name>/<JOB>.lua`.
-
-No `[ShaySwap]` line means GearSwap found another file first: `data/<Name>/<JOB>.lua`, `data/<Name>_<JOB>.lua`,
-`data/<Name>.lua` and `data/<JOB>.lua` all beat `default.lua`. Never put a ShaySwap job file in those places.
-Already use `default.lua` for other jobs? Copy ours to `data/<Name>_<JOB>.lua` for each ShaySwap job instead.
-
-## Ashita vs Windower
+`//lua load gearswap`, change job: chat shows `[ShaySwap] Loaded data/shayswap/<Name>/<JOB>.lua`. No such line =
+GearSwap found another file first (`data/<Name>/<JOB>.lua`, `data/<Name>_<JOB>.lua`, `data/<Name>.lua`,
+`data/<JOB>.lua` all beat `default.lua`). A job file straight in `shayswap/` serves every character. Already use
+`default.lua` for other jobs? Copy ours to `data/<Name>_<JOB>.lua` for each ShaySwap job instead.
 
 | | Ashita | Windower |
 |---|---|---|
 | Command | `/wm` | `//wm` or `//gs c wm` |
-| All boxes | `/mss /lac fwd wm` (Multisend) | `//send @all gs c wm` (Send addon) |
-| Reload after editing | `/lac reload` | `//gs reload` |
-| Keys | below | same keys |
-| HUD (one line per box) | `/gchud`; click a cell to change it on that box | `//gchud`; display only (no clicks), drag to move |
-| Status bar | `/gcbar` | `//gcbar`; Atk/Def show 0 |
-
-The HUD opens by itself for names in `gcinclude.settings.HUDOwners`; otherwise `/gchud on` (`//gchud on`).
-On Windower, boxes on the same PC share HUD state over IPC, `/automb` casts at the mob without targeting it, and
-`profile.Packer` goes to `//gs org` (needs the Organizer addon).
+| All boxes | `/mss /lac fwd wm` | `//send @all gs c wm` |
+| Reload after edits | `/lac reload` | `//gs reload` |
+| HUD | `/gchud`, click cells | `//gchud`, display only |
 
 ## First steps
 
-1. Fill `Idle`, `Tp_Default` and `Ws_Default`. The rest can wait.
-2. `/checksets` lists empty sets and item names it can't find. `/gctrace` shows which sets each action used.
+1. Fill `Idle`, `Tp_Default`, `Ws_Default`. The rest can wait.
+2. `/checksets`: empty sets, misspelled items. `/gctrace`: which sets each action wore.
 3. Leave `gSettings.FastCast` at 0.
-4. Template jobs (BLM BST DNC DRG DRK NIN PUP RUN SAM SMN WAR) use a set named after the action
-   (`['Savage Blade']`); a spell with no set of its own uses its family's (`['Cure']` for Cure IV). Other jobs name their sets in the job file. Example gear in
-   template jobs is from [GetAwayCoxn](https://github.com/GetAwayCoxn/Luashitacast-Profiles) (MIT,
-   `examples/LICENSE-GetAwayCoxn.txt`).
 
-Examples worth copying: `WHM.lua` cures (weapons by MP% and Light weather, `Cure_Dt` while `/dt` is on; same hooks,
-empty, in `SCH.lua`, `RDM.lua`, `GEO.lua`),
-`MNK.lua` Hoxne sets, `PLD.lua` shields with `/subset`.
+Template jobs (BLM BST DNC DRG DRK NIN PUP RUN SAM SMN WAR) name sets after the action (`['Savage Blade']`); a spell
+with no set uses its family's (`['Cure']` for Cure IV). Template gear is from
+[GetAwayCoxn](https://github.com/GetAwayCoxn/Luashitacast-Profiles) (MIT, `examples/LICENSE-GetAwayCoxn.txt`).
+Worth copying: `WHM.lua` cures (MP% / Light weather weapons, `Cure_Dt`), `MNK.lua` Hoxne sets, `PLD.lua` `/subset`.
+
+## Settings (`common/gcinclude.lua`)
+
+The top of `common/gcinclude.lua` has two blocks you edit; everything below is the engine.
+
+- **`gcinclude.sets`**: sets shared by every job: `Doomed`, `Holy_Water`, `Sleeping` (a job's own `Sleeping` wins),
+  `Reraise` (worn while Weakened), `Crafting` (`/craftset`), `Zeni` (`/zeniset`), `Fishing` (`/fishset`).
+- **`gcinclude.settings`**: one option per line, each commented.
+
+| Where | How | Example |
+|---|---|---|
+| Every job | Edit the value in `common/gcinclude.lua` | `RefreshGearMPP = 50;` |
+| One job | Job file `OnLoad`, before `gcinclude.Initialize()` | `gcinclude.settings.RefreshGearMPP = 50;` |
+| One job, list | Top of the job file; adds to the setting's list | `gcinclude.SIRSkip = T{'Phalanx'};` |
+| One job, value | Job file; wins over the setting | `gcinclude.MBTier`, `gcinclude.AutoFood`, `gcinclude.LockstyleSet`, `gcinclude.ElementGear`, `gcinclude.CureObi` |
+
+Copying a newer `common/` over yours erases your edits: note them, or set them per job instead.
+
+| Area | Settings |
+|---|---|
+| Weapons / TP | `WeaponTPGuard`, `HoldExemptSkills`, `HoldExemptAbilities`, `SmartSwap`, `SmartSwapTP`, `NoWeaponSpells`, `KeepWeaponsFor` |
+| Casting | `SIRSkip`, `THSkip`, `ElementGear` (obi, Orpheus, ring, back, `Cures`), `ElementSkills`, `OrpheusPoints` |
+| Auto idle sets | `AutoGear`, `RegenGearHPP`, `RefreshGearMPP`, `DTGearHPP`, `PetDTGearHPP` |
+| Weapon skills | `WScheck`, `WSdistance`, `MoonshadeTP`, `MoonshadeSlot`, `MoonshadeSkip`, `ElementalWS` |
+| Magic burst | `AutoNuke`, `MBTier`, `MBCasts`, `MBRotate`, `MBMinMP`, `MBWindow`, `MBFallback`, `MBSkills` |
+| Items | `AutoFood`, `AutoFoodItems`, `AutoSoda`, `SodaItem`, `AutoHolyWater`, `HolyWaterItem`, `AutoRevitalizer`, `AutoUseItems`, `EnchantDelays`, `EnchantWindow`, `ConsumableMaxTries` |
+| Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
+| Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
+| Action checks | `Validate`, `ValidateMP`, `AutoRemedy`, `WaltzTPCut`, `MiniQueue`, `MiniQueueMax` |
+| HUD / bar | `HUDOwners`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDPinned`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
+| Other | `Keybinds`, `Messages`, `Trace`, `LockstyleSet`, `CombatWindow`, `XIRollSet`, `CapacityCapes`, `JubileeSlot`, `AmmoWarn`, `NinjaToolWarn`, `SleepCancelStoneskin`, `ElementReport`, `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
+
+Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 
 ## Everyday commands
 
 | Command | Does |
 |---|---|
-| `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` (hands off weapons) |
-| `/mainset` `/subset` `[name]` | One slot's weapon, e.g. PLD `/subset duban`. Add `force` at 1000+ TP |
-| `/meleeset` or `/mset [hybrid\|acc\|default]` | Wear `_Hybrid` / `_Acc` versions of TP and WS sets |
-| `/def` | Defense: DT → MDT → Aminon → off (one at a time). `/dt` `/mdt` `/aminon` toggle one directly |
-| `/sir` | Casting mode: `SIR` set over every spell's midcast except `SIRSkip` (Absorb-TP, Stun, plus the job's own: PLD adds Phalanx, Reprisal). Works with DT/MDT; Aminon turns it off |
-| `/th` | TH gear until the mob is tagged. Never over `THSkip` spells (Absorb-TP, Stun) |
+| `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
+| `/mainset` `/subset` `[name]` | One slot's weapon (PLD `/subset duban`). `force` at 1000+ TP |
+| `/mset [hybrid\|acc\|default]` | `_Hybrid` / `_Acc` versions of TP and WS sets (`/meleeset` same) |
+| `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
+| `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
+| `/th` | `TH` set until the mob is tagged (not `THSkip`) |
 | `/kite` | Movement gear |
-| `/hoxne` | Off → Locked: Hoxne Ampulla kept in ammo and used |
-| `/automb` | Auto magic burst (RDM BLM SCH GEO) |
-| `/lock [slots]` `/unlock` | Freeze slots. `/unlock` frees only yours: Aminon, Hoxne and `/proc` keep their own locks until turned off, and turning them off never frees yours |
+| `/hoxne` | Off ↔ Locked (ampulla kept in Ammo and used). `/hoxne off` releases it |
+| `/automb` | Auto magic burst on/off (RDM BLM SCH GEO) |
+| `/mbtier [low\|mid\|high]` | Its nuke tier I / III / V. Load default: `MBTier` setting, or `gcinclude.MBTier` per job |
+| `/lock [slots]` `/unlock` | Freeze slots. `/unlock` frees only yours, and says what else holds a slot |
 | `/gchelp` | Command list in game |
 
-| Key | Does |
-|---|---|
-| Ctrl+grave | `/wm` |
-| Shift+grave | `/wm default` |
-| Ctrl+Shift+grave | `/def` |
-| Alt+grave | `/hoxne` |
-| Win+grave | `/automb` |
-
+Keys: Ctrl+grave `/wm`, Shift+grave `/wm default`, Ctrl+Shift+grave `/def`, Alt+grave `/hoxne`, Win+grave `/automb`.
 `/gckey <key> <cmd>` rebinds.
 
 ## How sets stack
 
-Later wins, slot by slot. A set only changes the slots it lists.
+Later wins, slot by slot; a set changes only the slots it lists.
 
-**Idle / engaged:** your job file (`Idle` → `Tp_Default` → `Tp_<mset>` → buff sets like `Impetus` → `Dt` if `/dt`
-→ `Movement` if `/kite`) → Hoxne sets → auto `Idle_Regen`/`Idle_Refresh`/`Dt` → `Town` → weapon mode → `mdt` or
-`Aminon` → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll → debuff and craft sets.
+**Idle / engaged**, lowest to highest:
+1. Your job file: `Idle` / `Tp_Default` → `Tp_<mset>` → buff sets (`Impetus`) → `Dt` (`/dt`) → `Movement` (`/kite`).
+2. Hoxne sets → auto `Idle_Regen` / `Idle_Refresh` / `Dt` (low HP/MP) → `Town`.
+3. Weapon mode → `mdt` (`/mdt`) or `Aminon` (`/aminon`) → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll.
+4. **`Incapacitated`** (slept, petrified, stunned, terrorized): your defense set (`Aminon`, else `mdt` if `/mdt`,
+   else `Dt`) without Main/Sub/Range/Ammo, then the `Incapacitated` set, then `*_Received`. **Over DT, MDT, Aminon,
+   TH, Buffs and everything in 1-3.**
+5. `Sleeping` (asleep) → `Doomed` → `Reraise` (Weakness) → craft / zeni / fish / rr sets.
 
-**Spells (midcast):** your job file → `TH` (not `THSkip`) → `Absorb` → `Buffs_Midcast` → `LightBonus` → obi/Orpheus/back/ring →
-`SIR` if `/sir`. WHM cure in `examples/WHM.lua`:
-
-```
-Cure → Self_Cure → Cure_LowMP or Cure_LowMP_Storm (MP <= 50%) → Cure_Dt (/dt) → Hachirin-no-Obi (Light, gcinclude.CureObi) → SIR (/sir)
-```
-
-`SIR` goes on last (never on `SIRSkip` spells), so every slot it lists wins, even over `Cure_Dt` and the obi. Leave a slot out of `SIR`
-to keep the cure or DT piece. `/dt` only touches spells where the job file says so (WHM: `Cure_Dt`).
+**Spells (midcast):** your job file → `TH` (not `THSkip`) → `Absorb` → `Buffs_Midcast` → `LightBonus` →
+obi/Orpheus/back/ring → `SIR` (`/sir`, not `SIRSkip`). WHM cures:
+`Cure` → `Self_Cure` → `Cure_LowMP` or `Cure_LowMP_Storm` (MP ≤ 50%) → `Cure_Dt` (`/dt`) → Hachirin-no-Obi → `SIR`.
 
 **Weapon skills:** your job file → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
 
-Full list of engine sets: `COMMANDS.md` Sets the engine uses.
+Defense toggles change idle/engaged gear only (`/aminon` also locks weapons); a spell wears DT gear only where the
+job file says so (WHM `Cure_Dt`).
+All engine sets: `COMMANDS.md` Sets the engine uses.
 
-## SIR set and SIRSkip
+## SIRSkip and THSkip
 
-`/sir` is a casting mode (separate from `/def`, engaged or not). While it's on:
-
-- On every spell's **midcast**, the `SIR` set goes on **last**: after your job file's midcast sets and after every
-  engine layer (TH, Absorb, `Buffs_Midcast`, LightBonus, obi/Orpheus).
-- Only the slots `SIR` lists change, and those slots win for that cast (its waist replaces the obi, its ring
-  replaces your cure ring). Slots it leaves out keep the spell's own gear. Precast and idle are never touched.
-- Off: `SIR` is never worn.
-- Aminon: turning Aminon on (`/aminon`, `/def`) turns `/sir` off, and `/sir` is refused while Aminon is on. It stays
-  off when Aminon goes off.
-
-**`SIRSkip`** is the list of spells `/sir` leaves alone, so the spell's own set stands as the job file put it.
-Use it for spells where the set's own stats matter more than not being interrupted (Stun and Absorb-TP need
-magic accuracy; Phalanx needs its potency gear):
+`/sir` puts `SIR` on last at every spell's midcast; `/th` puts `TH` on at an untagged mob. Spells on these lists are
+left alone, so their own set stands:
 
 ```lua
--- common/gcinclude.lua, every job:
+-- common/gcinclude.lua settings, every job:
 SIRSkip = T{'Absorb-TP', 'Stun'};
-
--- top of a job file, that job only (adds to the list above):
+THSkip  = T{'Absorb-TP', 'Stun'};
+-- top of a job file, adds for that job:
 gcinclude.SIRSkip = T{'Phalanx', 'Reprisal'};
 ```
 
-Names are exact spell names in any case (`'Cure IV'`, not `'Cure'`). The job file's list adds to the shared one;
-it doesn't replace it.
-
-**`THSkip`** does the same for `/th`: `THSkip = T{'Absorb-TP', 'Stun'}` in settings, `gcinclude.THSkip = T{...}` in
-a job file adds to it. Those spells wear their own set at an untagged mob, never the `TH` set, and don't count as
-the tag (TH still goes on for your next action at that mob).
-
-**Per-spell SIR sets.** The engine has one `SIR` set. When a spell needs SIR *and* its own stats, put the SIR gear
-in that spell's set in the job file and add the spell to `SIRSkip`, so `/sir` doesn't cover it. PLD does this:
-
-- `Reprisal` (105 SIR, Enmity) and `Phalanx` (potency): in PLD's `SIRSkip`, so their sets stay as built.
-- `Cure` (98% SIR, cure potency) and Protect (uses `Reprisal`): not in `SIRSkip`, so `/sir` still lays `SIR` over
-  them.
-
-## Auto magic burst tier (`/mbtier`)
-
-RDM, BLM, SCH and GEO only. `/automb` (Win+grave) makes the box cast the skillchain's nuke by itself; `/mbtier`
-picks which tier it casts.
-
-| `/mbtier` | Casts |
-|---|---|
-| `low` (or `1`) | Tier I (Fire, Blizzard, Aero, Stone, Thunder, Water) |
-| `mid` (or `3`) | Tier III. The default |
-| `high` (or `5`) | Tier V |
-| nothing | Cycles Low → Mid → High |
-
-- Can't cast that tier (not learned, on recast, short MP; SCH IV/V without Addendum: Black or Enlightenment)? It
-  tries the next tier down on each chain element, down to I. `MBFallback = false` stops that.
-- Light and Dark chains have no tiered nuke: SCH casts Luminohelix / Noctohelix.
-
-How to change it:
-
-| Where | How |
-|---|---|
-| This box, now | `/mbtier high` (Windower `//mbtier high`) |
-| Every box, now | `/mss /lac fwd mbtier high` (Windower `//send @all gs c mbtier high`) |
-| HUD (Ashita) | Ctrl+click that box's `mb` cell: I → III → V |
-| A key | `/gckey !m mbtier` (Alt+M cycles it) |
-| Load default, every job | `MBTier = 'Mid';` in `common/gcinclude.lua` settings |
-| Load default, one job | `gcinclude.MBTier = 'High';` in that job's `OnLoad`, before `gcinclude.Initialize()` |
-
-A tier set with the command lasts until reload or job change, then the load default comes back.
-
-## Settings: `common/gcinclude.lua`
-
-Two blocks at the top of the file are yours to edit; everything below them is the engine.
-
-- **`gcinclude.sets`**: sets every job shares. `Doomed`, `Holy_Water`, `Sleeping` (a job's own `Sleeping` wins),
-  `Reraise` (worn while Weakened), `Crafting` (`/craftset`), `Zeni` (`/zeniset`), `Fishing` (`/fishset`).
-- **`gcinclude.settings`**: options, one per line, each with a comment saying what it does.
-
-| Area | Settings |
-|---|---|
-| Auto idle sets | `AutoGear`, `RegenGearHPP`, `RefreshGearMPP`, `DTGearHPP`, `PetDTGearHPP` |
-| Weapons and TP | `WeaponTPGuard`, `HoldExemptSkills`, `HoldExemptAbilities`, `SmartSwap`, `SmartSwapTP`, `NoWeaponSpells`, `KeepWeaponsFor` |
-| Weapon skills | `WScheck`, `WSdistance`, `MoonshadeTP`, `MoonshadeSlot`, `MoonshadeSkip`, `ElementalWS` |
-| Casting | `SIRSkip`, `THSkip`, `ElementGear` (obi, Orpheus, ring, back, cures), `ElementSkills`, `OrpheusPoints` |
-| Magic burst | `AutoNuke`, `MBTier`, `MBCasts`, `MBRotate`, `MBMinMP`, `MBWindow`, `MBFallback`, `MBSkills` |
-| Items and food | `AutoFood`, `AutoFoodItems`, `AutoSoda`, `SodaItem`, `AutoHolyWater`, `HolyWaterItem`, `AutoRevitalizer`, `AutoUseItems`, `EnchantDelays`, `EnchantWindow`, `ConsumableMaxTries` |
-| Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
-| Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
-| Action checks | `Validate`, `ValidateMP`, `AutoRemedy`, `WaltzTPCut`, `MiniQueue`, `MiniQueueMax` |
-| HUD and bar | `HUDOwners`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDPinned`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
-| Other | `Keybinds`, `Messages`, `Trace`, `LockstyleSet`, `CombatWindow`, `XIRollSet`, `CapacityCapes`, `JubileeSlot`, `AmmoWarn`, `NinjaToolWarn`, `SleepCancelStoneskin`, `ElementReport`, `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
-
-**Every job or one job:**
-
-- Every job: change the value in `gcinclude.lua`. Copying a newer `common/` over it erases your edits, so keep a
-  note of them (or set them per job instead).
-- One job: in that job file's `OnLoad`, before `gcinclude.Initialize()`, e.g. `gcinclude.settings.RefreshGearMPP = 50;`
-  (`WHM.lua` does `gcinclude.settings.KeepWeaponsFor = T{};`).
-- Per-job values on `gcinclude` itself win over the setting: `gcinclude.MBTier`, `gcinclude.AutoFood`,
-  `gcinclude.LockstyleSet`, `gcinclude.ElementGear`. `gcinclude.SIRSkip` adds to `settings.SIRSkip` (PLD adds
-  Phalanx and Reprisal).
-- Weapon modes, default weapons and the rest of job setup: `COMMANDS.md` Job file.
+Exact spell names, any case (`'Cure IV'`, not `'Cure'`). A spell that needs SIR *and* its own stats: build the SIR
+gear into its set and add it to `SIRSkip` (PLD `Reprisal`). THSkip spells don't count as the TH tag.
 
 ## Something wrong
 
 | Problem | Check |
 |---|---|
-| Edit does nothing | `/lac reload` (Windower: `//gs reload`) |
-| Windower: nothing loads | No `[ShaySwap] Loaded` line: see Install, Windower |
-| A slot won't change | `/unlock`; a weapon at 1000+ TP is held (`/wm <mode> force`); a `TH`-set weapon while `/th` is on |
-| Weapon in Idle/TP never shows | The weapon mode overrides it: `/wm none` to manage weapons yourself |
+| Edit does nothing | `/lac reload` (`//gs reload`) |
+| Windower: nothing loads | No `[ShaySwap] Loaded` line: see Install |
+| A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapon at 1000+ TP is held (`/wm <mode> force`); `TH`-set weapon while `/th` is on |
+| Weapon in Idle/TP never shows | The weapon mode wins: `/wm none` |
 | Wrong or no gear | `/checksets`, item spelling, `/gctrace` |
-| Action cancelled | The chat line says why (`COMMANDS.md` Action checks) |
+| Action cancelled | Chat says why (`COMMANDS.md` Action checks) |
 | HUD gone | `/gchud on`, `/gchud pos 500 120` |
