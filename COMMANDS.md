@@ -1,7 +1,7 @@
 # ShaySwap commands
 
-Every command: `/name` or `/lac fwd name` (Windower `//name` or `//gs c name`). All boxes: `/mss /lac fwd <cmd>`;
-one box: `/ms sendto <name> /lac fwd <cmd>` (Windower `//send @all gs c <cmd>`).
+Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes through Multisend: `/mss /wm default`
+(all), `/ms sendto <name> /wm 3` (one), or your own Multisend shortcuts. Windower: `//send @all gs c wm default`.
 
 - On/off commands (`/dt`, `/th`, `/sir`, `/kite`, `/automb`, `/autofood`…) take `on`/`off`; no word flips.
 - Cycle commands (`/mset`, `/nukeset`, `/tankset`, `/weapon`, `/elecycle`, `/pupmode`): no word cycles; a word picks
@@ -250,7 +250,14 @@ end
   real casts (last 5 per skill, slowest used). Too high a value makes LAC's backup timer put idle gear on mid-cast.
 - Slot keywords (LuAshitacast): `'remove'` empties the slot; `'displaced'` marks it empty without a packet (a cloak
   covers Head, an instrument empties Ammo, the ampulla empties Range); `'ignore'` leaves it alone.
-- HP pieces: `Priority = <HP>` so max HP doesn't dip mid-swap. Leave Moonshade out of WS sets.
+- HP pieces: `Priority = <HP>` so max HP doesn't dip mid-swap.
+- Moonshade Earring: leave it out of WS sets. The engine puts it in `MoonshadeSlot` (Ear2) on every WS below
+  `MoonshadeTP` (1750) and gives the set's earring back at or above it, so a set that lists it only fights that.
+  `MoonshadeSkip` = WS that never get it; `MoonshadeTP = 0` = engine leaves it alone. `/checksets` flags it.
 - Dynamis RP: wear only what you rank, `/lock neck main sub range`, `/unlock` after (BG, Oboro).
-- Keybinds: `Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} };`
-  `!` Alt, `^` Ctrl, `+` Shift, `@` Win, `#` Apps. Bare grave stays unbound. `/bind list` to check.
+- Keybinds (setting `Keybinds`; per job before `Initialize()`; `T{}` = none). Prefixes: `!` Alt, `^` Ctrl, `+` Shift,
+  `@` Win, `#` Apps, combined (`^+` = Ctrl+Shift). Bare grave stays unbound. `/bind list` to check.
+
+  ```lua
+  Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} };
+  ```

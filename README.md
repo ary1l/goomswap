@@ -30,7 +30,7 @@ GearSwap found another file first (`data/<Name>/<JOB>.lua`, `data/<Name>_<JOB>.l
 | | Ashita | Windower |
 |---|---|---|
 | Command | `/wm` | `//wm` or `//gs c wm` |
-| All boxes | `/mss /lac fwd wm` | `//send @all gs c wm` |
+| All boxes | `/mss /wm` (Multisend) | `//send @all gs c wm` |
 | Reload after edits | `/lac reload` | `//gs reload` |
 | HUD | `/gchud`, click cells | `//gchud`, display only |
 
