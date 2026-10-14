@@ -2507,19 +2507,25 @@ end
 		gcinclude.Say('temps: ' .. ((queued > 0) and (queued .. ' drinks') or 'none carried'));
 	end
 
-	function gcinclude.Help()
-		local skip = {};
-		for _, l in ipairs({ gcinclude.settings.SIRSkip or {}, gcinclude.SIRSkip or {} }) do -- same lists CheckSIR reads
+	-- settings.<key> plus the job file's gcinclude.<key>, as Skipped() reads them
+	function gcinclude.SkipList(key)
+		local out = {};
+		for _, l in ipairs({ gcinclude.settings[key] or {}, gcinclude[key] or {} }) do
 			if (type(l) == 'table') then
-				for _, n in ipairs(l) do skip[#skip + 1] = n end
+				for _, n in ipairs(l) do out[#out + 1] = n end
 			end
 		end
+		return out;
+	end
+
+	function gcinclude.Help()
+		local skip, thskip = gcinclude.SkipList('SIRSkip'), gcinclude.SkipList('THSkip');
 		local lines = T{
 			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset',
 			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots] /unlock [slots]',
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
-			'toggles: /th (TH gear until the target is tagged, never on THSkip spells; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
+			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
 			'hud    : /gchud [on|off|pos x y|debug]',
 			'checks : /checksets, /xiroll, /mbinfo',
