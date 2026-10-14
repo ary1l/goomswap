@@ -208,7 +208,7 @@ local function tick()
     if (inc.Zoning ~= nil) and inc.Zoning() then return end -- no auto items/nukes mid-zone
     prune_tags();
     if (now < busyUntil) or (now < lockUntil) then return end
-    if (gState == nil) or (gState.PlayerAction ~= nil) then return end
+    if (gState == nil) or (gState.PlayerAction ~= nil) or (gcauto.CastLeft() > 0) then return end
     local player = gData.GetPlayer();
     if (player == nil) then return end
     if (player.Status ~= 'Idle') and (player.Status ~= 'Engaged') then return end
@@ -376,6 +376,15 @@ local function cast_packet(P)
     if (cat == 8) then
         local id = (P.ntgt > 0) and (P.nres[1] > 0) and P.rval[P.first[1]] or nil;
         castStart = (bit.band(P.param, 0xFFFF) == 24931) and (id ~= nil) and { id = id, t = os.clock() } or nil;
+        -- LAC (and the Windower adapter) end the pending spell at send + base cast + SpellOffset, then put idle
+        -- gear on even if it hasn't landed (lag). It has started: keep it pending until base cast + SpellOffset
+        -- from now; the finish or interrupt packet still ends it at once.
+        local a = (gState ~= nil) and gState.PlayerAction or nil;
+        local res = (castStart ~= nil) and AshitaCore:GetResourceManager():GetSpellById(id) or nil;
+        if (a ~= nil) and (a.Type == 'Spell') and (a.Resource ~= nil) and (a.Resource.Index == id) and (res ~= nil) then
+            local offset = ((gSettings ~= nil) and tonumber(gSettings.SpellOffset)) or 1;
+            a.Completion = math.max(a.Completion or 0, os.clock() + (res.CastTime or 0) / 4 + offset);
+        end
         return;
     end
     local s = castStart;
@@ -727,6 +736,11 @@ local function roll_packet(P)
     -- Magic (Start): handled by incoming_cast.
     if (category == 8) then return end
     local tagcat = TAGCAT[category];
+    -- A THSkip spell (Absorb-TP, Stun) is cast without the TH set, so it doesn't count as the tag.
+    if (tagcat ~= nil) and (category == 4) and (inc ~= nil) and (inc.Skipped ~= nil) then
+        local res = AshitaCore:GetResourceManager():GetSpellById(param);
+        if (res ~= nil) and (res.Name ~= nil) and inc.Skipped('THSkip', res.Name[1]) then tagcat = nil end
+    end
     if (tagcat ~= nil) then
         if (me ~= nil) and (actor == me) then
             for t = 1, P.ntgt do

@@ -71,7 +71,7 @@
 		DisplayBar = false; -- one-line status bar (job, atk/def, toggles, cycles), /gcbar to toggle
 		DisplayBarX = 300;
 		DisplayBarY = 0;
-		warp_Ring = 'Warp Ring'; -- /warpring, /mea, /holla, /dem: equip in Ring2, use 11s later, back to Idle 11s after that
+		warp_Ring = 'Warp Ring'; -- /warpring, /mea, /holla, /dem: equip in Ring2, use 11s later, let go 11s after that (normal ring back)
 		mea_Ring = 'Dim. Ring (Mea)';
 		dem_Ring = 'Dim. Ring (Dem)';
 		holla_Ring = 'Dim. Ring (Holla)';
@@ -119,7 +119,7 @@
 			Ring = nil, -- e.g. 'Zodiac Ring', worn when the day matches the element (never Light/Dark, never on cures)
 			RingSlot = 'Ring2',
 			Back = nil, -- e.g. 'Twilight Cape': +5% to a day bonus, or to a weather bonus that applies (BG-Wiki)
-			Cures = true, -- Cure/Cura/Curaga: obi on Light day/weather (BG-Wiki: +10/+10/+25, the obi forces it); false = never
+			Cures = false, -- Cure/Cura/Curaga: obi on Light day/weather (BG-Wiki: +10/+10/+25, the obi forces it). Every job; one job: gcinclude.CureObi = true/false at the top of its file (WHM/SCH/RDM/GEO turn it on)
 			BackOnCures = false, -- also the back on Cure/Cura/Curaga (your cure-potency back may be worth more)
 			Keep = T{'Oneiros Rope'}, -- items that are never displaced by the picks above
 		};
@@ -156,6 +156,7 @@
 		};
 		CombatWindow = 6; -- seconds; Selindrile uses 6
 		SIRSkip = T{'Absorb-TP', 'Stun'}; -- spells /sir never goes over on every job (your own set for them stays); a job's gcinclude.SIRSkip = T{...} adds to it
+		THSkip = T{'Absorb-TP', 'Stun'}; -- spells /th never goes over (their own set stays, tagged or not); a job's gcinclude.THSkip = T{...} adds to it
 		HoxneItem = 'Hoxne Ampulla'; -- what the Hoxne states keep in your ammo slot
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
@@ -444,7 +445,7 @@ end
 			if (args[2] ~= nil) and (string.lower(args[2]) == 'use') then
 				gcinclude.SetWeaponCycle('Hoxne', 'Locked', true);
 				gcinclude.CheckHoxne();
-				gcinclude.UseEnchanted(gcinclude.settings.HoxneItem, 'Ammo', true);
+				gcinclude.UseEnchanted(gcinclude.settings.HoxneItem, 'Ammo', 'hoxne');
 			elseif (args[2] ~= nil) then
 				gcinclude.SetWeaponCycle('Hoxne', args[2], true);
 			else
@@ -594,10 +595,11 @@ end
 				toggle = 'Low Damage PROC Set';
 				status = gcdisplay.GetToggle('PROC');
 				if (player.MainJob == 'NIN') then
+					-- an owned lock, so it never undoes your /lock ammo or Hoxne's (raw /lac disable|enable did)
 					if gcdisplay.GetToggle('PROC') == true then
-						AshitaCore:GetChatManager():QueueCommand(-1, '/lac disable ammo');
+						gcinclude.LockSlots(T{4}, 'proc');
 					else
-						AshitaCore:GetChatManager():QueueCommand(-1, '/lac enable ammo');
+						gcinclude.UnlockSlots(T{4}, 'proc');
 					end
 				end
 			end
@@ -855,26 +857,73 @@ end
 		return tostring(index);
 	end
 
-	function gcinclude.LockSlots(slots)
+	-- Every lock has an owner ('user' = /lock, 'aminon', 'hoxne', 'enchant', 'proc', 'hold:<key>'), so one
+	-- feature letting go never frees a slot another still holds: /aminon off keeps your /lock main.
+	-- LockedSlots[slot] = { [owner] = true } while anyone holds it, nil when free.
+	function gcinclude.LockSlots(slots, owner)
 		if (slots == nil) or (#slots == 0) then slots = T{1, 2, 4} end
+		owner = owner or 'user';
 		for _, slot in ipairs(slots) do
-			gcinclude.LockedSlots[slot] = true;
+			gcinclude.LockedSlots[slot] = gcinclude.LockedSlots[slot] or {};
+			gcinclude.LockedSlots[slot][owner] = true;
 			gState.Disabled[slot] = true;
 			gcinclude.HeldSlots[slot] = nil;
 		end
 		return slots;
 	end
 
-	function gcinclude.UnlockSlots(slots)
+	-- owner nil: every owner (load/unload reset). slots nil: every slot that owner holds.
+	function gcinclude.UnlockSlots(slots, owner)
 		if (slots == nil) or (#slots == 0) then
 			slots = T{};
-			for slot, _ in pairs(gcinclude.LockedSlots) do slots:append(slot) end
+			for slot, owners in pairs(gcinclude.LockedSlots) do
+				if (owner == nil) or owners[owner] then slots:append(slot) end
+			end
 		end
 		for _, slot in ipairs(slots) do
-			gcinclude.LockedSlots[slot] = nil;
-			gState.Disabled[slot] = false;
+			local owners = gcinclude.LockedSlots[slot];
+			if (owner == nil) then
+				gcinclude.LockedSlots[slot] = nil;
+				gState.Disabled[slot] = false;
+			elseif (owners ~= nil) and owners[owner] then -- a slot this owner doesn't hold (e.g. TP-held) is left alone
+				owners[owner] = nil;
+				if (next(owners) == nil) then
+					gcinclude.LockedSlots[slot] = nil;
+					gState.Disabled[slot] = false;
+				end
+			end
 		end
 		return slots;
+	end
+
+	-- What turns each owner's lock off, for messages.
+	function gcinclude.LockOwnerFix(owner, slot)
+		if (owner == 'user') then return '/unlock ' .. string.lower(gcinclude.SlotName(slot)) end
+		if (owner == 'hoxne') or (owner == 'aminon') or (owner == 'proc') then return '/' .. owner .. ' off' end
+		if (owner == 'enchant') then return 'its /gce use' end
+		local key = string.match(owner, '^hold:(.+)$');
+		if (key == 'strip') and (gcinclude.Strip ~= nil) then return '/' .. gcinclude.Strip .. ' off' end
+		if (key ~= nil) then return '/' .. key .. ' off' end
+		return owner;
+	end
+
+	-- Owners of the slot other than skip, as their off commands.
+	function gcinclude.LockHolders(slot, skip)
+		local out = T{};
+		for o, _ in pairs(gcinclude.LockedSlots[slot] or {}) do
+			if (o ~= skip) then out:append(gcinclude.LockOwnerFix(o, slot)) end
+		end
+		return out;
+	end
+
+	-- True when anyone but owner holds the slot.
+	function gcinclude.LockedByOther(slot, owner)
+		local owners = gcinclude.LockedSlots[slot];
+		if (owners == nil) then return false end
+		for o, _ in pairs(owners) do
+			if (o ~= owner) then return true end
+		end
+		return false;
 	end
 
 	function gcinclude.LockCommand(args)
@@ -883,7 +932,7 @@ end
 			gcinclude.Err('No such slot: ' .. table.concat(unknown, ', ') .. ' - nothing locked');
 			return;
 		end
-		local slots = gcinclude.LockSlots(wanted);
+		local slots = gcinclude.LockSlots(wanted, 'user');
 		local names = T{};
 		for _, slot in ipairs(slots) do names:append(gcinclude.SlotName(slot)) end
 		gcinclude.Say('Locked: ' .. table.concat(names, ', '));
@@ -895,8 +944,15 @@ end
 			gcinclude.Err('No such slot: ' .. table.concat(unknown, ', ') .. ' - nothing unlocked');
 			return;
 		end
-		gcinclude.UnlockSlots(wanted);
-		gcinclude.Say('Unlocked');
+		local slots = gcinclude.UnlockSlots(wanted, 'user'); -- yours only: Aminon/Hoxne/holds keep theirs until they turn off
+		local still = T{};
+		local check = slots;
+		if (wanted == nil) or (#wanted == 0) then check = T{}; for s = 1, 16 do check:append(s) end end
+		for _, slot in ipairs(check) do
+			local by = gcinclude.LockHolders(slot);
+			if (#by > 0) then still:append(gcinclude.SlotName(slot) .. ' (' .. table.concat(by, ', ') .. ')') end
+		end
+		gcinclude.Say('Unlocked' .. ((#still > 0) and ('; still held: ' .. table.concat(still, ', ')) or ''));
 	end
 
 
@@ -904,7 +960,7 @@ end
 	gcinclude.Holds = {}; -- key -> slot numbers it locked
 	function gcinclude.ReleaseHold(key)
 		local owned = gcinclude.Holds[key];
-		if (owned ~= nil) then gcinclude.UnlockSlots(owned) end
+		if (owned ~= nil) then gcinclude.UnlockSlots(owned, 'hold:' .. key) end
 		gcinclude.Holds[key] = nil;
 	end
 
@@ -917,7 +973,7 @@ end
 		end
 		if (#owned == 0) then return false end
 		gFunc.ForceEquipSet(out);
-		gcinclude.LockSlots(owned);
+		gcinclude.LockSlots(owned, 'hold:' .. key);
 		gcinclude.Holds[key] = owned;
 		return true;
 	end
@@ -1148,7 +1204,7 @@ end
 	-- cmd_no 9 Item (Start) value = item id, 0 if interrupted; cmd_no 5 Item (Finish) cmd_arg = item id).
 	-- The slot stays locked until that finish packet, so normal gear can't come back mid-use.
 	-- Several can run at once (one per slot).
-	gcinclude.Enchants = {}; -- [LAC slot] = { item, id, slot, index, wasLocked, delay, start, equippedAt, nextTry, tries, doneAt }
+	gcinclude.Enchants = {}; -- [LAC slot] = { item, id, slot, index, delay, start, equippedAt, nextTry, tries, doneAt }
 	local ENCHANT_MARGIN = 3.0;    -- after the equip delay, before the first try (the server refuses ~3s past it: Rahvin's notes)
 	local ENCHANT_RETRY = 2.0;     -- between tries while no Item (Start) is seen
 	local ENCHANT_TRIES = 5;
@@ -1198,7 +1254,7 @@ end
 	function gcinclude.ReleaseEnchant(index)
 		local e = gcinclude.Enchants[index];
 		if (e == nil) then return end
-		if (e.wasLocked ~= true) then gcinclude.UnlockSlots(T{index}) end
+		gcinclude.UnlockSlots(T{index}, 'enchant'); -- Hoxne's or your own lock on the slot stays
 		gcinclude.Enchants[index] = nil;
 	end
 
@@ -1391,7 +1447,7 @@ end
 		if (from ~= nil) then gcinclude.ReceivedFrom = from elseif not same then gcinclude.ReceivedFrom = nil end
 		gcinclude.ReceivedSet = set;
 		gcinclude.ReceivedUntil = now + (gcinclude.settings.ReceivedWindow or 8);
-		if (gState.PlayerAction == nil) then gcinclude.ForceUnlocked(set) end
+		if (gState.PlayerAction == nil) and (gcinclude.CastLeft() == 0) then gcinclude.ForceUnlocked(set) end
 	end
 
 	-- The caster's spell finished or was interrupted. With no known caster (Multisend notice), only a
@@ -1543,11 +1599,12 @@ end
 			if gcinclude.HelixSpells:contains(fam) then
 				element, opts.noObi = action.Element, true;
 			elseif (type(skills) == 'table') and skills:contains(action.Skill) then
-				element = action.Element;
+				-- Blue Magic: damage spells only, never the buff/debuff/enmity/cure/physical lists (Subduction, a
+				-- TH spell on no other list, still gets it)
+				if (action.Skill ~= 'Blue Magic') or not gcinclude.BluNoElement(action.Name) then element = action.Element end
 			elseif (action.Skill == 'Ninjutsu') and gcinclude.NinjutsuNukes:contains(fam) then
 				element, opts.noRing = action.Element, true;
-			elseif (action.Skill == 'Healing Magic') and ((gcinclude.ElementCfg() or {}).Cures ~= false)
-				and T{'Cure', 'Cura', 'Curaga'}:contains(fam) then
+			elseif (action.Skill == 'Healing Magic') and gcinclude.CureObiOn() and T{'Cure', 'Cura', 'Curaga'}:contains(fam) then
 				element, opts.noSash, opts.noRing = 'Light', true, true;
 				opts.noBack = (gcinclude.ElementCfg() or {}).BackOnCures ~= true;
 			end
@@ -1559,14 +1616,37 @@ end
 			element, opts.noRing = gcinclude.QuickDrawElement[action.Name], true;
 		end
 		if (element == nil) or (element == 'Non-Elemental') then return end
+		-- /th put its set on for this cast (untagged mob): the TH waist stays, the obi/Orpheus pick doesn't replace it
+		if (gcinclude.THWorn == true) and (action.ActionType == 'Spell') and (gcinclude.FindSet('TH') ~= nil) then
+			for k, _ in pairs(gcinclude.FindSet('TH')) do
+				if (slotOf(k) == slotOf('Waist')) then opts.keepWaist = true end
+			end
+		end
 		gcinclude.ApplyElementGear(element, action.Name, opts);
+	end
+
+	-- Blue Magic lists that aren't damage: buffs, skill buffs, cures, debuffs, enmity, physical and stun spells.
+	gcinclude.BluNoElementLists = T{'BluMagBuff', 'BluMagSkill', 'BluMagCure', 'BluMagDebuff', 'BluMagEnmity', 'BluMagPhysical', 'BluMagStun'};
+	function gcinclude.BluNoElement(name)
+		for _, key in ipairs(gcinclude.BluNoElementLists) do
+			local list = gcinclude[key];
+			if (type(list) == 'table') and list:contains(name) then return true end
+		end
+		return false;
+	end
+
+	-- Cure obi: the job file's gcinclude.CureObi (true/false) wins, else ElementGear.Cures.
+	function gcinclude.CureObiOn()
+		if (gcinclude.CureObi ~= nil) then return gcinclude.CureObi == true end
+		return (gcinclude.ElementCfg() or {}).Cures == true;
 	end
 
 	function gcinclude.ApplyElementGear(element, label, opts)
 		if (type(opts) ~= 'table') then opts = { noRing = (opts == true) } end -- old (element, label, noRing) form
 		local set = {};
 		local report = T{};
-		local waist, value = gcinclude.ElementWaist(element, opts.noObi, opts.noSash);
+		local waist, value = nil, 0;
+		if (opts.keepWaist ~= true) then waist, value = gcinclude.ElementWaist(element, opts.noObi, opts.noSash) end
 		if (waist ~= nil) then
 			if gcinclude.ElementKept('Waist') then
 				report:append('waist kept');
@@ -1716,10 +1796,11 @@ end
 						gcinclude.AnnounceCast();
 						gcinclude.SmartKeep = gcinclude.SmartKeepFor(gData.GetAction());
 					end
+					gcinclude.THWorn = false;
 					local result = original(...);
 					if (name == 'HandleMidcast') then
+						gcinclude.CheckAbsorb(); -- before the buff layer: a buff piece (Nether Void, Dark Seal) beats the Absorb sets
 						gcinclude.CheckBuffSets('Buffs_Midcast');
-						gcinclude.CheckAbsorb();
 						gcinclude.CheckLightBonus();
 						gcinclude.CheckElementGear();
 						gcinclude.CheckSIR();
@@ -1759,6 +1840,14 @@ end
 			local original = gProfile[name];
 			if (type(original) == 'function') then
 				gProfile[name] = function(...)
+					-- /item or /ra while a spell is being cast: the game refuses it, and letting it through would
+					-- put its gear (or, once refused, idle gear) over the cast's midcast set.
+					if (name ~= 'HandleMidshot') and (gcinclude.settings.Validate ~= false) and (gcinclude.CastLeft() > 0) then
+						local a = gData.GetAction();
+						gcinclude.Say(((a ~= nil) and a.Name or ((name == 'HandleItem') and 'item' or 'ranged')) .. ': casting');
+						gFunc.CancelAction();
+						return;
+					end
 					gcaction.TraceStart();
 					local result = original(...);
 					if (name == 'HandlePreshot') then gcinclude.CheckSupplies('shot') end
@@ -1965,6 +2054,8 @@ end
 		if (gcdisplay.GetToggle('TH') ~= true) then return end
 		local set = gcinclude.FindSet('TH');
 		if (set == nil) then return end
+		local acting = gData.GetAction();
+		if (acting ~= nil) and gcinclude.Skipped('THSkip', acting.Name) then return end -- that spell's own set stays
 		if (force ~= true) then
 			local action = gData.GetActionTarget();
 			if (action ~= nil) and (action.Type ~= 'Monster') then return end
@@ -1986,9 +2077,8 @@ end
 			end
 		end
 		gFunc.EquipSet(thGear);
+		gcinclude.THWorn = true; -- this action wears TH: the element layer leaves the TH waist alone
 	end
-
-	gcinclude.HoxneOwned = T{};
 
 	-- Bows, guns and crossbows (Archery 25 / Marksmanship 26) need matching ammo, so the ampulla can't sit with
 	-- them. While Hoxne is Locked, any set asking for one in Range has that entry dropped.
@@ -2195,23 +2285,24 @@ end
 	function gcinclude.CheckHoxne()
 		local state = gcdisplay.GetCycle('Hoxne');
 		if (state == 'Locked') then
-			if (gcinclude.HoxneLocked ~= true) then
-				gcinclude.HoxneLocked = true;
-				gcinclude.HoxneOwned = T{};
-				for _, slot in ipairs(gcinclude.SlotNumbers(gcinclude.settings.HoxneLockSlots, 1)) do
-					if (gcinclude.LockedSlots[slot] == nil) then gcinclude.HoxneOwned:append(slot) end
-				end
+			gcinclude.HoxneLocked = true;
+			-- Every call takes any lock slot nobody holds, so one that was /locked or held when Hoxne went Locked
+			-- is taken as soon as it is free (/unlock no longer strips Hoxne's own: locks have owners).
+			local take = T{};
+			for _, slot in ipairs(gcinclude.SlotNumbers(gcinclude.settings.HoxneLockSlots, 1)) do
+				if (gcinclude.LockedSlots[slot] == nil) then take:append(slot) end
+			end
+			if (#take > 0) then
 				-- Settle Ammo/Range before locking them, else a bow already on stays locked in.
 				local range = gData.GetEquipment().Range;
 				local settle = { Ammo = gcinclude.settings.HoxneItem };
 				if (range ~= nil) and gcinclude.NeedsAmmo(range.Name) then settle.Range = 'displaced' end -- the Ampulla going on drops the bow
 				gcinclude.ForceUnlocked(settle);
-				if (#gcinclude.HoxneOwned > 0) then gcinclude.LockSlots(gcinclude.HoxneOwned) end
+				gcinclude.LockSlots(take, 'hoxne');
 			end
 		elseif (gcinclude.HoxneLocked == true) then
 			gcinclude.HoxneLocked = false;
-			if (#gcinclude.HoxneOwned > 0) then gcinclude.UnlockSlots(gcinclude.HoxneOwned) end
-			gcinclude.HoxneOwned = T{};
+			gcinclude.UnlockSlots(nil, 'hoxne');
 		end
 		if (state ~= 'Locked') then return end
 		local set = { Ammo = gcinclude.settings.HoxneItem };
@@ -2271,7 +2362,7 @@ end
 		return (gcinclude.settings.EnchantWindow or 12), 'default';
 	end
 
-	function gcinclude.UseEnchanted(name, slot, allowLocked)
+	function gcinclude.UseEnchanted(name, slot, allowOwner)
 		local res = AshitaCore:GetResourceManager():GetItemByName(name, 0);
 		if (res == nil) then
 			gcinclude.Err('no such item: ' .. name);
@@ -2290,16 +2381,17 @@ end
 		local delay, source = gcinclude.EnchantDelay(name, res);
 		local index = slotOf(slot);
 		gcinclude.ReleaseEnchant(index); -- a new /gce on the same slot replaces the old one
-		local wasLocked = (gcinclude.LockedSlots[index] == true);
-		if wasLocked and (allowLocked ~= true) then
-			gcinclude.Err(slot .. ' is locked - /unlock ' .. string.lower(slot) .. ' first');
+		-- Already in the slot: using it swaps nothing, so another owner's lock doesn't matter. Else /hoxne use may
+		-- use Hoxne's own lock, never your /lock or another feature's.
+		if (equippedId(index) ~= res.Id) and gcinclude.LockedByOther(index, allowOwner) then
+			gcinclude.Err(slot .. ' is locked - ' .. table.concat(gcinclude.LockHolders(index, allowOwner), ', ') .. ' first');
 			return false;
 		end
 		gFunc.ForceEquipSet({ [slot] = name }); -- slot is free or owned by the caller
-		gcinclude.LockSlots(T{index});
+		gcinclude.LockSlots(T{index}, 'enchant');
 		local alreadyOn = (equippedId(index) == res.Id); -- worn already: its delay may be long past
 		local before = enchantInfo(carriedId(res.Id)); -- extdata before this equip, to see when it refreshes
-		gcinclude.Enchants[index] = { item = name, id = res.Id, slot = slot, index = index, wasLocked = wasLocked, alreadyOn = alreadyOn, preAct = (before ~= nil) and before.activation or nil,
+		gcinclude.Enchants[index] = { item = name, id = res.Id, slot = slot, index = index, alreadyOn = alreadyOn, preAct = (before ~= nil) and before.activation or nil,
 			delay = delay, start = os.clock(), tries = 0 };
 		gcinclude.Say(name .. ' on ' .. string.lower(slot) .. ', using it ' .. tostring(delay) .. 's after it is on (' .. source .. ')');
 		return true;
@@ -2376,7 +2468,7 @@ end
 			if (gcinclude.BuffCount(b) > 0) then return end
 		end
 		gcinclude.HoxneRetryAt = now + 60;
-		gcinclude.UseEnchanted(gcinclude.settings.HoxneItem, 'Ammo', true);
+		gcinclude.UseEnchanted(gcinclude.settings.HoxneItem, 'Ammo', 'hoxne');
 	end
 
 	-- Asleep under Stoneskin: damage it absorbs can't wake you (FFXIclopedia Sleep), so cancel it.
@@ -2417,7 +2509,7 @@ end
 
 	function gcinclude.Help()
 		local skip = {};
-		for _, l in ipairs({ gcinclude.settings.SIRSkip, gcinclude.SIRSkip }) do -- same lists CheckSIR reads
+		for _, l in ipairs({ gcinclude.settings.SIRSkip or {}, gcinclude.SIRSkip or {} }) do -- same lists CheckSIR reads
 			if (type(l) == 'table') then
 				for _, n in ipairs(l) do skip[#skip + 1] = n end
 			end
@@ -2427,7 +2519,7 @@ end
 			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots] /unlock [slots]',
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
-			'toggles: /th (TH gear until the target is tagged; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
+			'toggles: /th (TH gear until the target is tagged, never on THSkip spells; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
 			'hud    : /gchud [on|off|pos x y|debug]',
 			'checks : /checksets, /xiroll, /mbinfo',
@@ -2449,17 +2541,23 @@ end
 
 	-- SIRD counts only while worn when each hit lands mid-cast (BG: must be in midcast),
 	-- so it is laid over the finished midcast set, never at rest.
-	function gcinclude.CheckSIR()
-		if (gcdisplay.GetToggle('SIR') ~= true) then return end
-		local action = gData.GetAction();
-		if (action == nil) then return end
-		for _, skip in ipairs({ gcinclude.settings.SIRSkip, gcinclude.SIRSkip }) do -- every job's list, plus the job file's own
+	-- SIRSkip / THSkip: settings.<key> (every job) plus gcinclude.<key> (the job file's own), exact names, any case.
+	function gcinclude.Skipped(key, name)
+		if (type(name) ~= 'string') then return false end
+		for _, skip in ipairs({ gcinclude.settings[key] or {}, gcinclude[key] or {} }) do -- either may be missing
 			if (type(skip) == 'table') then
 				for _, n in ipairs(skip) do
-					if (string.lower(n) == string.lower(action.Name)) then return end
+					if (string.lower(n) == string.lower(name)) then return true end
 				end
 			end
 		end
+		return false;
+	end
+
+	function gcinclude.CheckSIR()
+		if (gcdisplay.GetToggle('SIR') ~= true) then return end
+		local action = gData.GetAction();
+		if (action == nil) or gcinclude.Skipped('SIRSkip', action.Name) then return end
 		local set = gcinclude.FindSet('SIR');
 		if (set ~= nil) then gFunc.EquipSet(set) end
 	end
@@ -2507,13 +2605,13 @@ end
 	-- /aminon locks Main/Sub while on, plus Range/Ammo only when the set names them (BRD instruments keep
 	-- swapping): puts on the set's items for those slots first (else keeps what you wear), then locks them so
 	-- action sets can't swap them. Other slots still swap for actions.
-	-- Slots already /locked or Hoxne-locked are left alone; off releases only what it took. /unlock re-locks.
+	-- Slots already /locked or Hoxne-locked are left alone; off releases only Aminon's own lock (/unlock never does).
 	gcinclude.AminonSlots = T{'Main', 'Sub', 'Range', 'Ammo'};
 	gcinclude.AminonAlways = T{1, 2}; -- Main, Sub
 	gcinclude.AminonOwned = T{};
 	function gcinclude.CheckAminonLock()
 		if (gcdisplay.GetToggle('Aminon') ~= true) then
-			if (#gcinclude.AminonOwned > 0) then gcinclude.UnlockSlots(gcinclude.AminonOwned) end
+			if (#gcinclude.AminonOwned > 0) then gcinclude.UnlockSlots(gcinclude.AminonOwned, 'aminon') end
 			gcinclude.AminonOwned = T{};
 			return;
 		end
@@ -2537,8 +2635,13 @@ end
 			end
 		end
 		if (#take == 0) then return end
-		if (next(wear) ~= nil) then gFunc.ForceEquipSet(wear) end -- ignores the TP hold: /aminon asked for these
-		gcinclude.LockSlots(take);
+		-- The TP hold disables Main/Sub/Range at 1000+ TP, and force equips skip disabled slots: let go of it for
+		-- the slots taken here, or the weapons you wear (not the Aminon set's) would be the ones locked.
+		for _, slot in ipairs(take) do
+			if (gcinclude.HeldSlots[slot] ~= nil) then gcinclude.HeldSlots[slot] = nil; gState.Disabled[slot] = false end
+		end
+		if (next(wear) ~= nil) then gFunc.ForceEquipSet(wear) end -- /aminon asked for these
+		gcinclude.LockSlots(take, 'aminon');
 	end
 
 	-- Buffs (idle/engaged, HandleDefault), Buffs_Ws (weaponskills) and Buffs_Midcast (spells): { [buff name] = set },
@@ -2753,12 +2856,17 @@ end
 	end
 
 	-- Ring1/Ring2 only (slots 14/15), read the way LAC's gData.GetEquipment does, without its 16-slot walk.
+	gcinclude.RingReleased = nil; -- a teleport ring done with (SafeSetIdle): no longer kept on, so normal gear replaces it
 	function gcinclude.CheckLockingRings()
+		local released = false;
 		for slot = 14, 15 do
 			local item = gEquip.GetCurrentEquip(slot).Item;
 			local res = (item ~= nil) and AshitaCore:GetResourceManager():GetItemById(item.Id) or nil;
-			if (res ~= nil) and gcinclude.LockingRings:contains(res.Name[1]) then gFunc.Equip(slot, res.Name[1]) end
+			if (res ~= nil) and gcinclude.LockingRings:contains(res.Name[1]) then
+				if (string.lower(res.Name[1]) == string.lower(gcinclude.RingReleased or '')) then released = true else gFunc.Equip(slot, res.Name[1]) end
+			end
 		end
+		if not released then gcinclude.RingReleased = nil end -- it's off: the next manual equip is kept again
 	end
 
 	function gcinclude.SetTownGear()
@@ -2803,18 +2911,20 @@ end
 		return true;
 	end
 
-	function gcinclude.SafeSetIdle(tries)
+	-- After a teleport ring's use (warped or not): stop keeping that ring on, so the next HandleDefault puts
+	-- your normal ring back. No forced set: '/lac set Idle' locked Idle over every handler for 3 s, casts included.
+	function gcinclude.SafeSetIdle(tries, ring)
 		local mm = AshitaCore:GetMemoryManager();
 		if (mm:GetPlayer():GetIsZoning() ~= 0) or (mm:GetInventory():GetEquippedItem(0) == nil) then
 			if (tries < 30) then
 				local function retry()
-					gcinclude.SafeSetIdle(tries + 1);
+					gcinclude.SafeSetIdle(tries + 1, ring);
 				end
 				retry:once(1);
 			end
 			return;
 		end
-		AshitaCore:GetChatManager():QueueCommand(-1, '/lac set Idle');
+		gcinclude.RingReleased = ring;
 	end
 
 	gcinclude.TeleRings = T{ warpring = 'warp_Ring', mea = 'mea_Ring', holla = 'holla_Ring', dem = 'dem_Ring' };
@@ -2822,9 +2932,10 @@ end
 	function gcinclude.UseTeleRing(key)
 		local ring = gcinclude.settings[key];
 		if (type(ring) ~= 'string') then return end
+		if (gcinclude.RingReleased == ring) then gcinclude.RingReleased = nil end -- used again: keep it on
 		AshitaCore:GetChatManager():QueueCommand(-1, '/lac equip ring2 "' .. ring .. '"');
 		local function restoreIdle()
-			gcinclude.SafeSetIdle(0);
+			gcinclude.SafeSetIdle(0, ring);
 		end
 		local function useRing()
 			AshitaCore:GetChatManager():QueueCommand(-1, '/item "' .. ring .. '" <me>');
@@ -3018,16 +3129,20 @@ end
 	end
 
 
-	-- Absorb spells: Absorb set for all of them, then Absorb_TP (or legacy AbsorbTP) for Absorb-TP.
+	-- Absorb spells: Absorb set for all of them, then the spell's own set on top: Absorb_TP (or legacy AbsorbTP) for
+	-- Absorb-TP, else a set named after the spell (DRK's ['Absorb-TP'], an ['Absorb-STR']), so the generic one never wins.
 	function gcinclude.CheckAbsorb()
 		local spell = gData.GetAction();
 		if (spell == nil) or (type(spell.Name) ~= 'string') or (string.sub(spell.Name, 1, 7) ~= 'Absorb-') then return end
 		local set = gcinclude.FindSet('Absorb');
 		if (set ~= nil) then gFunc.EquipSet(set) end
-		if (spell.Name == 'Absorb-TP') then
-			set = gcinclude.FindSet('Absorb_TP') or gcinclude.FindSet('AbsorbTP');
-			if (set ~= nil) then gFunc.EquipSet(set) end
+		set = (spell.Name == 'Absorb-TP') and (gcinclude.FindSet('Absorb_TP') or gcinclude.FindSet('AbsorbTP')) or nil;
+		if (set ~= nil) then
+			gFunc.EquipSet(set);
+		else
+			gcinclude.ByName(spell.Name); -- with its /mset version, as the job file wore it
 		end
+		if (gcinclude.THWorn == true) then gcinclude.CheckTH() end -- TH that this cast already wore stays over it
 	end
 
 	function gcinclude.CheckCancels()--tossed Stoneskin in here too
@@ -3102,6 +3217,9 @@ end
 				gFunc.EquipSet, gFunc.Equip = gFunc.GcRawEquipSet, gFunc.GcRawEquip;
 				gFunc.GcRawEquipSet, gFunc.GcRawEquip = nil, nil;
 			end
+			if (gPacketHandlers ~= nil) and (gPacketHandlers.GcRawItem ~= nil) then
+				gPacketHandlers.HandleItemPacket, gPacketHandlers.GcRawItem = gPacketHandlers.GcRawItem, nil;
+			end
 			if (gPacketHandlers ~= nil) and (gPacketHandlers.GcRawAction ~= nil) then
 				gPacketHandlers.HandleActionPacket, gPacketHandlers.GcRawAction = gPacketHandlers.GcRawAction, nil;
 			end
@@ -3169,17 +3287,49 @@ end
 	-- its idle gear goes on in that same packet chunk (LuAshitacast packethandlers.lua HandleActionPacket /
 	-- HandleOutgoingChunk), even while an earlier cast is still running. A cancelled action (on recast, or
 	-- queued while you cast) gives the earlier one back instead, so its gear stays on. Wrapped once.
+	-- gcinclude.PrevAction is that earlier action while the new one's handlers run, so the checks see a cast that
+	-- was sent but hasn't started yet (gcauto only knows it from the start packet). Item uses (0x37) too.
 	function gcinclude.WrapActionPacket()
 		if (gPacketHandlers == nil) or (gPacketHandlers.GcRawAction ~= nil) then return end
-		gPacketHandlers.GcRawAction = gPacketHandlers.HandleActionPacket;
-		gPacketHandlers.HandleActionPacket = function(...)
-			local before = gState.PlayerAction;
-			local result = gPacketHandlers.GcRawAction(...);
-			if (gState.PlayerAction == nil) and (before ~= nil) and ((before.Completion or 0) > os.clock()) then
-				gState.PlayerAction = before;
+		local function wrap(raw)
+			return function(...)
+				local before = gState.PlayerAction;
+				gcinclude.PrevAction = before;
+				local ok, result = pcall(raw, ...);
+				gcinclude.PrevAction = nil;
+				local a = gState.PlayerAction;
+				if (a ~= nil) and (a ~= before) then a.GcSentAt = os.clock() end -- went out now (not blocked)
+				if (gState.PlayerAction == nil) and (before ~= nil) and ((before.Completion or 0) > os.clock()) then
+					gState.PlayerAction = before;
+				end
+				if not ok then error(result, 0) end
+				return result;
 			end
-			return result;
 		end
+		gPacketHandlers.GcRawAction = gPacketHandlers.HandleActionPacket;
+		gPacketHandlers.HandleActionPacket = wrap(gPacketHandlers.GcRawAction);
+		if (gPacketHandlers.HandleItemPacket ~= nil) and (gPacketHandlers.GcRawItem == nil) then
+			gPacketHandlers.GcRawItem = gPacketHandlers.HandleItemPacket;
+			gPacketHandlers.HandleItemPacket = wrap(gPacketHandlers.GcRawItem);
+		end
+	end
+
+	-- Seconds left on my own cast, and its spell id: from gcauto's start packet, else the spell sent before the
+	-- action now being handled, while its start packet could still be on the way (StartWindow s after it went
+	-- out). A spell the server refused never starts, so after that it no longer counts. 0 when not casting.
+	gcinclude.StartWindow = 1.5;
+	function gcinclude.CastLeft()
+		local left, id = 0, nil;
+		if (gcauto ~= nil) and (gcauto.CastLeft ~= nil) then left, id = gcauto.CastLeft() end
+		if (left > 0) then return left, id end
+		local p = gcinclude.PrevAction;
+		local now = os.clock();
+		if (p ~= nil) and (p.Type == 'Spell') and (p.GcSentAt ~= nil) and (now - p.GcSentAt < gcinclude.StartWindow)
+			and ((p.Completion or 0) > now) then
+			local cast = ((gcauto ~= nil) and (gcauto.CastTime ~= nil)) and gcauto.CastTime(p.Resource) or 0; -- learned, as gcauto does
+			return math.max(p.GcSentAt + cast - now, 0.1), (p.Resource ~= nil) and p.Resource.Index or nil;
+		end
+		return 0;
 	end
 
 	function gcinclude.Initialize()

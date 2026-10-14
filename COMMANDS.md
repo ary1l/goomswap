@@ -59,13 +59,13 @@ gcinclude.WeaponItemMap = {
 | `/hoxne use` | Locked, equip, wait its delay, use |
 | `/lock` | Lock Main, Sub, Ammo |
 | `/lock ear1 back` | Lock any slots by name |
-| `/unlock` / `/unlock ammo` | Release all / one |
+| `/unlock` / `/unlock ammo` | Release all / one of yours. Aminon, Hoxne, `/proc` and holds keep their own locks; it names what still holds a slot and how to free it |
 | `/dw [on\|off\|auto]` | Dual Wield: no arg shows yes/no and why (e.g. `sub NIN Lv0`). `off` = always `_1h` sets, `on` = always DW sets, `auto` = detect (default) |
 | `/smartswap [on\|off]` | On: at `SmartSwapTP`+, `NoWeaponSpells` (Dia, Blink, spikes…) don't swap weapons; `KeepWeaponsFor` (Cure/Cura) keep Daybreak or Bunzi's Rod |
 | `/naked` `/weaponsonly` `/abysseaproc` `[on\|off]` | Strip all 16 / the 12 armor slots / head, hands, legs, feet and keep them bare. One at a time |
 | `/capacity` `/jubilee` `/dynamisrp` `[on\|off]` | Wear and hold: the best carried capacity cape (BG-Wiki: Aptitude Mantle +1 30%, Aptitude Mantle 25%, Mecisto. Mantle by its augment) / Jubilee Ring (`JubileeSlot`, Ring1) / your main job's best Dynamis - Divergence neck (+2, +1, base). Entering a `[D]` zone reminds you |
 
-Defense toggles only wear gear, except `/aminon`, which also locks the weapon slots. `/lock` is absolute until `/unlock`, even against force-equips.
+Defense toggles only wear gear, except `/aminon`, which also locks the weapon slots. `/lock` is absolute until `/unlock`, even against force-equips. Every lock has an owner: turning Aminon, Hoxne, `/proc` or a hold off frees only its own slots, never one you `/lock`ed, and `/unlock` never frees theirs.
 
 **`/sir` is a casting mode, not a defense**: DT and MDT leave it alone; Aminon turns it off and refuses it until
 Aminon is off (no SIR against Aminon). It stays off after. `SIRSkip` (default `Absorb-TP`, `Stun`) are spells it
@@ -120,7 +120,7 @@ Spells, abilities and WS that would fail are cancelled before any gear moves, wi
 | Silence | Cancelled; uses Echo Drops, else Remedy (Remedy first if paralyzed). `AutoRemedy`, not under Muddle |
 | Paralysis on an ability | Uses a Remedy instead, if carried |
 | Recast | Back within `MiniQueueMax` (5s): queued. Longer: shows `m:ss` |
-| While you cast | Another spell, ability or WS pressed mid-cast: queued for after the cast plus its 3s forced delay (if that's within `MiniQueueMax`), else cancelled so your cast keeps its gear. The spell you're casting pressed again is only cancelled |
+| While you cast | Another spell, ability or WS pressed mid-cast (also before the cast-start packet is back): queued for after the cast plus its 3s forced delay (if that's within `MiniQueueMax`), else cancelled so your cast keeps its gear. The spell you're casting pressed again is only cancelled. `/item` and `/ra` mid-cast are cancelled |
 | Forced delay | Pressed in the forced delay after your last action (BG-Wiki: 3s after a spell, 2s after a WS, 2s after a job ability with job abilities allowed after 1s): queued. The same action pressed again (a double-tap) goes out as it would have |
 | MP short | Cost adjusted for Light/Dark Arts (own school -10% rounded down, other +20% rounded up). Skipped under Manafont, Manawell, Parsimony, Penury, Addenda, Tabula Rasa. Gear "MP cost -%" isn't counted: `ValidateMP = false` if it bites |
 | Stratagems at 0 | Cancelled, next charge time shown |
@@ -246,7 +246,7 @@ All boxes: `/mss /meleeset hybrid` (Multisend), Windower `//send @all gs c melee
 |---|---|
 | `/meleeset [value]` (`/mset`) | MeleeSet: Default → Hybrid → Acc. Wears `Tp_`/`Ws_Hybrid` or `_Acc` over `Tp_`/`Ws_Default`, and `<Name>_Hybrid`/`_Acc` over a named set |
 | `/kite` | Kite toggle |
-| `/th` | TH toggle: `TH` set until the target is tagged; its Main/Sub/Range the whole time it's on |
+| `/th` | TH toggle: `TH` set until the target is tagged (never over `THSkip`: Absorb-TP, Stun); its Main/Sub/Range the whole time it's on |
 | `/setcycle <name> <value>` | Set any cycle; name and value in any case (`/setcycle meleeset acc`) |
 | `/wsdistance [yalms]` | Toggle WS distance check / set distance (default 5) |
 | `/gcmessages` | Chat confirmations on/off |
@@ -284,8 +284,9 @@ All boxes: `/mss /meleeset hybrid` (Multisend), Windower `//send @all gs c melee
 | `/holla` | `holla_Ring` | La Theine portal |
 | `/dem` | `dem_Ring` | Konschtat portal |
 
-Force-equips to Ring2 (ignores `/lock`), holds it through the equip delay, uses it at 11s, then
-`/lac set Idle` at 22s (retries while zoning). If `Idle` has no Ring2 the ring stays on.
+Force-equips to Ring2 (ignores `/lock`), holds it through the equip delay, uses it at 11s, then lets go of it at
+22s (after zoning), so your next idle/engaged set puts your normal Ring2 back. Nothing is forced over a cast.
+If `Idle` has no Ring2 the ring stays on.
 Change per job: `gcinclude.settings.dem_Ring = 'Teleport Ring: Dem'`.
 
 ## Diagnostics
@@ -306,7 +307,7 @@ Change per job: `gcinclude.settings.dem_Ring = 'Teleport Ring: Dem'`.
 | `Weapon_<Mode>` / `_1h` | Weapon mode |
 | `mdt`, `Aminon`, `SIR` | With their toggles |
 | `LightBonus` | Healing Magic midcast |
-| `TH` | `/th` on: at rest, and over midcast/midshot at a mob, until it is tagged (your hit, shot, WS or ability; a spell, step or Effusion only if it lands; clears on death or zone). Not over actions on you or allies. BLU: only `BluMagTH` spells, always (AoE). Main/Sub/Range stay on while `/th` is on, tagged or not (Sub only if you can dual wield; a weapon swap resets TP) |
+| `TH` | `/th` on: at rest, and over midcast/midshot at a mob, until it is tagged (your hit, shot, WS or ability; a spell, step or Effusion only if it lands; clears on death or zone). Not over actions on you or allies, nor `THSkip` spells (which don't count as the tag either). BLU: only `BluMagTH` spells, always (AoE). The obi/Orpheus pick leaves its Waist alone on that cast. Main/Sub/Range stay on while `/th` is on, tagged or not (Sub only if you can dual wield; a weapon swap resets TP) |
 | `HolyWater` | When Doomed (else `gcinclude.sets.Holy_Water`) |
 | `Incapacitated` | Slept, petrified, stunned or terrorized: your `/def` set (`mdt` or `Aminon`; else `Dt`) minus Main/Sub/Range/Ammo goes on, then this set (extras, empty by default) on top, then any `*_Received` set. Not charmed: the client can't change gear then and GearSwap never sends any |
 | `Sleeping` | Asleep, over `Incapacitated` (else `gcinclude.sets.Sleeping`). Main/Sub/Range in it go on past the TP hold (not past `/lock`), e.g. WHM/GEO `Main = 'Lorg Mor'`: a Prime stage 1-2 weapon's "Slowly devours your soul" drains 1 HP and 1 MP every 3s, which wakes you (BG-Wiki Prime weapons; not Diabolos' Nightmare). A weapon swap resets TP. Awake again, your normal weapon comes back |
@@ -324,7 +325,7 @@ Moonshade goes in Ear2 on WS below `MoonshadeTP` (1750), except `MoonshadeSkip`.
 
 Layer order: your sets → Hoxne sets → weapons (+ `TH` weapons while `/th` is on) → mdt/Aminon → Hoxne Ampulla (Ammo) → TH → received → buff sets → XIRoll →
 debuff (Incapacitated/Sleeping/Doom/Weakness) and craft/zeni/fish/rr sets.
-Midcast: job sets → TH → `Buffs_Midcast` → Absorb → LightBonus → obi/Orpheus/back/ring → SIR.
+Midcast: job sets → TH (not `THSkip`) → Absorb (then the spell's own `Absorb_TP` / `['Absorb-TP']` set again, and TH again if this cast wore it) → `Buffs_Midcast` → LightBonus → obi/Orpheus/back/ring (not over a TH waist) → SIR (not `SIRSkip`).
 WS: job sets → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
 
 ### Hoxne layering
@@ -388,7 +389,10 @@ ElementGear = T{
 ```
 
 Per BG-Wiki: helixes always get day/weather, so never an obi (Orpheus still); cures get Light day/weather
-(+10/+10/+25, the obi forces it) but no sash and no ring (`BackOnCures = true` adds the back, `Cures = false` skips cures); Quick Draw
+(+10/+10/+25, the obi forces it) but no sash and no ring (`BackOnCures = true` adds the back). Cures are off by default
+(`Cures = false`); a job turns them on with `gcinclude.CureObi = true` at the top of its file (WHM, SCH, RDM, GEO do;
+PLD and RUN have it commented out). Blue Magic: damage spells only, never ones in the buff, skill, cure, debuff,
+enmity, physical or stun lists. A TH waist worn on that cast (untagged mob) stays. Quick Draw
 and elemental ninjutsu (Katon…Suiton) take obi/Orpheus/back; the Twilight Cape adds +5% to a day bonus, or to a
 weather bonus that applies (obi on, or a helix); Zodiac Ring never on Lightsday/Darksday nor on cures.
 
@@ -469,7 +473,7 @@ Handler helpers:
 | `gcinclude.EquipMode('Ws')` | `Ws_Default`, then `Ws_<MeleeSet>` unless Default |
 | `gcinclude.ByName(name)` | Set named `name` (any case), then `name_<MeleeSet>`. False if none |
 | `gcinclude.Family(name)` | `'Utsusemi: Ni'` → `'Utsusemi'`, `'Drain III'` → `'Drain'` |
-| `gcinclude.CheckTH(force)` | `TH` set without its weapons if `/th` is on and the target is an untagged mob; `force` skips the target checks |
+| `gcinclude.CheckTH(force)` | `TH` set without its weapons if `/th` is on and the target is an untagged mob; `force` skips the target checks. Never on `THSkip` spells |
 | `gcinclude.CheckWsBailout()` | False if the WS would fail: `if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end` |
 
 ## Multibox examples

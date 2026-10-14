@@ -121,8 +121,10 @@ local function forced_delay(kind)
     return gcauto.ForcedDelay(kind);
 end
 
--- Seconds left on my own cast in progress (gcauto, from the start/finish packets); 0 without the tracker.
+-- Seconds left on my own cast in progress (gcinclude.CastLeft: start/finish packets, or a cast sent whose start
+-- packet isn't back yet); 0 without the tracker.
 local function cast_left()
+    if (inc ~= nil) and (inc.CastLeft ~= nil) then return inc.CastLeft() end -- also a cast sent but not started yet
     if (gcauto == nil) or (gcauto.CastLeft == nil) then return 0 end
     return gcauto.CastLeft(); -- seconds, spell id
 end
