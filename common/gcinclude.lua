@@ -20,7 +20,7 @@
 		},
 		Sleeping = { -- this set will auto equip if you are asleep, over Incapacitated; a job file's own Sleeping set is used instead (Main allowed there)
 		},
-		Reraise = { -- this set will try to equip when weakened if AutoGear variable is true below or you can force it with /rrset in game
+		Reraise = { -- worn while Weakened (any status), or always with /rrset
 			Head = 'Crepuscular Helm',
 			Body = 'Crepuscular Mail',
 		},
@@ -237,7 +237,7 @@
 	gcinclude.HardCC = T{'Sleep', 'Petrification', 'Stun', 'Terror', 'Charm'}; -- can't act (gcauto, gcaction, WS bailout)
 	gcinclude.CORmsg = true;
 
-	-- /def: none > DT > MDT > Aminon > none. Only one of the three is on at a time. /sir is a casting mode, not in here.
+	-- /def: none > DT > MDT > Aminon > none; /def leaves one on (/dt /mdt /aminon each flip on their own). /sir is a casting mode, not in here.
 	gcinclude.DefenseCycle = T{ {'DTset','DT'}, {'MDTset','MDT'}, {'Aminon','Aminon'} };
 	function gcinclude.CycleDefense(arg)
 		local want = string.lower(tostring(arg or ''));
@@ -246,7 +246,10 @@
 			for _, d in ipairs(gcinclude.DefenseCycle) do
 				if (string.lower(d[2]) == want) or (string.lower(d[1]) == want) then pick = d end
 			end
-			if (pick == nil) and (want ~= 'off') and (want ~= 'none') then return 'unknown: ' .. want end
+			if (pick == nil) and (want ~= 'off') and (want ~= 'none') then
+				gcinclude.Err('/def off|dt|mdt|aminon (no ' .. want .. ')');
+				return 'unknown: ' .. want;
+			end
 			for _, d in ipairs(gcinclude.DefenseCycle) do gcdisplay.SetToggle(d[1], d == pick) end
 			return (pick ~= nil) and pick[2] or 'None';
 		end
@@ -447,7 +450,8 @@ end
 				gcinclude.CheckHoxne();
 				gcinclude.UseEnchanted(gcinclude.settings.HoxneItem, 'Ammo', 'hoxne');
 			elseif (args[2] ~= nil) then
-				gcinclude.SetWeaponCycle('Hoxne', args[2], true);
+				local want = string.lower(args[2]);
+				gcinclude.SetWeaponCycle('Hoxne', (want == 'on') and 'Locked' or want); -- on = Locked; a word matching neither is reported
 			else
 				gcdisplay.AdvanceCycle('Hoxne');
 			end
@@ -802,7 +806,7 @@ end
 			if not gcinclude.SetWeaponCycle(cname, arg, quiet) then return end
 		end
 		local new = gcdisplay.GetCycle(cname);
-		if (new == old) then return end
+		if (new == old) and (not force) then return end -- force re-applies the current mode: the TP hold or a lock may have kept it off
 		if (cname ~= 'Ammo') and (not force) and gcinclude.HoldActive() then
 			gcdisplay.SetCycle(cname, old);
 			gcinclude.Err(cname .. ' kept on ' .. tostring(old) .. ': at ' .. tostring(gData.GetPlayer().TP) .. ' TP (add force to override)');
@@ -1683,7 +1687,7 @@ end
 		if (next(set) == nil) then return end
 		gFunc.EquipSet(set);
 		if (gcinclude.settings.ElementReport == true) then
-			print(chat.header('ShaySwap'):append(chat.message((label or element) .. ' [' .. element .. ']: ' .. table.concat(report, ', '))));
+			print(chat.header('GoomSwap'):append(chat.message((label or element) .. ' [' .. element .. ']: ' .. table.concat(report, ', '))));
 		end
 	end
 
@@ -2541,7 +2545,7 @@ end
 			'every box: /mss /<command> (Multisend), one box: /ms sendto <name> /<command>',
 		};
 		for _, line in ipairs(lines) do
-			print(chat.header('ShaySwap'):append(chat.message(line)));
+			print(chat.header('GoomSwap'):append(chat.message(line)));
 		end
 	end
 

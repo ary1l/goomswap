@@ -1,4 +1,4 @@
--- ShaySwap for Windower: just enough of ImGui to draw common/gchud.lua and the gcdisplay bar as Windower
+-- GoomSwap for Windower: just enough of ImGui to draw common/gchud.lua and the gcdisplay bar as Windower
 -- text boxes, so those files run unchanged. Display only: buttons draw as text and never report a click
 -- (use the commands). Boxes can be dragged; gchud/gcdisplay save the new position as they do on Ashita.
 --

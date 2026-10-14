@@ -1,6 +1,6 @@
-# ShaySwap
+# GoomSwap
 
-Gear-swap engine for FFXI multiboxing. You write sets in a job file; ShaySwap wears them and adds automatic
+Gear-swap engine for FFXI multiboxing. You write sets in a job file; GoomSwap wears them and adds automatic
 layers (weapons, defense, TH, obi, and more) on top. **Ashita v4** (LuAshitacast) and **Windower 4** (GearSwap,
 through `windower/`), same job files. Full reference: [`COMMANDS.md`](COMMANDS.md).
 
@@ -16,16 +16,16 @@ through `windower/`), same job files. Full reference: [`COMMANDS.md`](COMMANDS.m
 ```
 Windower/addons/GearSwap/data/
 ├── default.lua                        <- windower/GearSwap/data/default.lua
-└── shayswap/
-    ├── core.lua ashita.lua imgui.lua  <- windower/GearSwap/data/shayswap/
+└── goomswap/
+    ├── core.lua ashita.lua imgui.lua  <- windower/GearSwap/data/goomswap/
     ├── common/                        <- common/
     └── <Name>/<JOB>.lua               <- examples/<JOB>.lua, your gear in it
 ```
 
-`//lua load gearswap`, change job: chat shows `[ShaySwap] Loaded data/shayswap/<Name>/<JOB>.lua`. A red
-`[ShaySwap]`/`[LuAshitacast]` line names a missing file or folder. No `[ShaySwap]` line at all = GearSwap found another file first (`data/<Name>/<JOB>.lua`, `data/<Name>_<JOB>.lua`, `data/<Name>.lua`,
-`data/<JOB>.lua` all beat `default.lua`). A job file straight in `shayswap/` serves every character. Already use
-`default.lua` for other jobs? Copy ours to `data/<Name>_<JOB>.lua` for each ShaySwap job instead.
+`//lua load gearswap`, change job: chat shows `[GoomSwap] Loaded data/goomswap/<Name>/<JOB>.lua`. A red
+`[GoomSwap]`/`[LuAshitacast]` line names a missing file or folder. No `[GoomSwap]` line at all = GearSwap found another file first (`data/<Name>/<JOB>.lua`, `data/<Name>_<JOB>.lua`, `data/<Name>.lua`,
+`data/<JOB>.lua` all beat `default.lua`). A job file straight in `goomswap/` serves every character. Already use
+`default.lua` for other jobs? Copy ours to `data/<Name>_<JOB>.lua` for each GoomSwap job instead.
 
 | | Ashita | Windower |
 |---|---|---|
@@ -160,7 +160,7 @@ THSkip  = T{'Absorb-TP', 'Stun'};
 | Problem | Check |
 |---|---|
 | Edit does nothing | `/lac reload` (`//gs reload`) |
-| Windower: nothing loads | Red `[ShaySwap]`/`[LuAshitacast]` line: do what it says. No `[ShaySwap]` line at all: see Install |
+| Windower: nothing loads | Red `[GoomSwap]`/`[LuAshitacast]` line: do what it says. No `[GoomSwap]` line at all: see Install |
 | A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapon at 1000+ TP is held (`/wm <mode> force`); `TH`-set weapon while `/th` is on |
 | Weapon in Idle/TP never shows | The weapon layer wins: `/wm none`, and `/mainset none` / `/subset none` for slot picks (PLD has only those) |
 | Wrong or no gear | `/checksets`, item spelling, `/gctrace` |

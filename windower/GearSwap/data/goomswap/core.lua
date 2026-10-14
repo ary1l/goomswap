@@ -1,4 +1,4 @@
--- ShaySwap for Windower: runs the LuAshitacast job files and common/*.lua unchanged inside GearSwap.
+-- GoomSwap for Windower: runs the LuAshitacast job files and common/*.lua unchanged inside GearSwap.
 --
 -- LuAshitacast (LAC) behaviour copied here, from ThornyFFXI/LuAshitacast (MIT, (c) 2021 ThornyFFXI):
 --   * gFunc.EquipSet/Equip fill a buffer; the buffer is sent when the handler returns. Locked slots
@@ -11,11 +11,11 @@
 --     or its LAC timeout passes (LAC packethandlers.lua).
 -- Settings and constants below are LAC's defaults (config.lua, constants.lua).
 
-local ROOT = windower.addon_path .. 'data/shayswap/';
+local ROOT = windower.addon_path .. 'data/goomswap/';
 local TICK = 0.2; -- seconds between HandleDefault runs while idle (tunable; not a game value)
 
-local A = include('shayswap/ashita.lua');
-local I = include('shayswap/imgui.lua');
+local A = include('goomswap/ashita.lua');
+local I = include('goomswap/imgui.lua');
 local wres, ffxi = gearswap.res, A.ffxi; -- ffxi reads kept per event (ashita.lua)
 
 local ctx = { root = ROOT, events = {}, inEvent = false };
@@ -268,8 +268,8 @@ local function short_path(f) -- for chat: from GearSwap's data/ on
     return (string.sub(f, 1, #base) == base) and ('data/' .. string.sub(f, #base + 1)) or f;
 end
 
--- Folders LoadFile looks in, first hit wins: data/shayswap/<Name>/, an Ashita-style data/shayswap/<Name>_<id>/
--- (the folder name luashitacast/ uses, if copied over as is), then data/shayswap/.
+-- Folders LoadFile looks in, first hit wins: data/goomswap/<Name>/, an Ashita-style data/goomswap/<Name>_<id>/
+-- (the folder name luashitacast/ uses, if copied over as is), then data/goomswap/.
 local function search_dirs()
     local me = ffxi.get_player();
     local name = me and me.name or '';
@@ -304,7 +304,7 @@ local function load_file(path)
         if (file ~= nil) then break end
     end
     if (file == nil) then
-        local hint = (string.sub(string.lower(p), 1, 7) == 'common/') and '; copy the repo\'s common/ folder to data/shayswap/common/' or '';
+        local hint = (string.sub(string.lower(p), 1, 7) == 'common/') and '; copy the repo\'s common/ folder to data/goomswap/common/' or '';
         print(chat.header('LuAshitacast') .. chat.error('File not found: ' .. p .. ' (looked in ' .. table.concat(looked, ', ') .. ')' .. hint));
         return nil, 'missing';
     end
@@ -692,7 +692,7 @@ local function in_event(fn, ...)
     ctx.inEvent = true;
     local ok, err = pcall(fn, ...);
     ctx.inEvent = was;
-    if not ok then print(chat.header('ShaySwap') .. chat.error(tostring(err))) end
+    if not ok then print(chat.header('GoomSwap') .. chat.error(tostring(err))) end
 end
 
 -- A GearSwap spell -> LAC's pending action.
@@ -863,7 +863,7 @@ queue_command = function(cmd)
     if (first == '/ms') and (string.lower(args[2] or '') == 'sendto') and (args[3] ~= nil) then
         local rest = string.match(cmd, '^%S+%s+%S+%s+%S+%s+(.*)$') or '';
         if (string.lower(args[3]) == my_name()) then queue_command(rest)
-        else windower.send_ipc_message('shayswap cmd ' .. args[3] .. ' ' .. rest) end
+        else windower.send_ipc_message('goomswap cmd ' .. args[3] .. ' ' .. rest) end
         return;
     end
     if (first == '/alias') then
@@ -987,7 +987,7 @@ io = setmetatable({
                 close = function()
                     local line = table.concat(buf);
                     hud_store(line);
-                    windower.send_ipc_message('shayswap hud ' .. line);
+                    windower.send_ipc_message('goomswap hud ' .. line);
                     return true;
                 end,
             };
@@ -1040,14 +1040,14 @@ function get_sets()
     if (type(profile) ~= 'table') then
         local name = (player and player.name) or '<Name>';
         if (why == 'missing') then
-            print(chat.header('ShaySwap') .. chat.error('No ' .. tostring(job) .. '.lua: put it at data/shayswap/' .. name .. '/'
+            print(chat.header('GoomSwap') .. chat.error('No ' .. tostring(job) .. '.lua: put it at data/goomswap/' .. name .. '/'
                 .. tostring(job) .. '.lua (not in GearSwap\'s own data/' .. name .. '/ folder)'));
         else
-            print(chat.header('ShaySwap') .. chat.error(tostring(job) .. '.lua did not load (see the error above); it must end with: return profile;'));
+            print(chat.header('GoomSwap') .. chat.error(tostring(job) .. '.lua did not load (see the error above); it must end with: return profile;'));
         end
         return;
     end
-    print(chat.header('ShaySwap') .. 'Loaded ' .. short_path(file));
+    print(chat.header('GoomSwap') .. 'Loaded ' .. short_path(file));
     gProfile = profile;
     -- GearSwap's own commands (//gs validate, //gs org) read 'sets' in GearSwap's item format.
     local naked = (type(sets) == 'table') and sets.naked or nil; -- GearSwap seeds it for //gs equip naked
@@ -1083,7 +1083,7 @@ local function dispatch(name, ...)
             local k = name .. key .. tostring(err);
             if not reported[k] then
                 reported[k] = true;
-                print(chat.header('ShaySwap') .. chat.error(name .. ' ' .. tostring(key) .. ': ' .. tostring(err)));
+                print(chat.header('GoomSwap') .. chat.error(name .. ' ' .. tostring(key) .. ': ' .. tostring(err)));
             end
         end
     end
@@ -1177,8 +1177,8 @@ end);
 
 windower.raw_register_event('ipc message', function(msg)
     A.Fresh();
-    if (type(msg) ~= 'string') or (string.sub(msg, 1, 9) ~= 'shayswap ') then return end
-    local kind, rest = string.match(msg, '^shayswap (%S+) (.*)$');
+    if (type(msg) ~= 'string') or (string.sub(msg, 1, 9) ~= 'goomswap ') then return end
+    local kind, rest = string.match(msg, '^goomswap (%S+) (.*)$');
     if (kind == 'hud') and (rest ~= nil) then
         hud_store(rest);
     elseif (kind == 'cmd') and (rest ~= nil) then
