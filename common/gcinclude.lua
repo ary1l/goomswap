@@ -882,13 +882,38 @@ end
 		end
 		for _, slot in ipairs(slots) do
 			local owners = gcinclude.LockedSlots[slot];
-			if (owners ~= nil) and (owner ~= nil) then owners[owner] = nil end
-			if (owner == nil) or (owners == nil) or (next(owners) == nil) then
+			if (owner == nil) then
 				gcinclude.LockedSlots[slot] = nil;
 				gState.Disabled[slot] = false;
+			elseif (owners ~= nil) and owners[owner] then -- a slot this owner doesn't hold (e.g. TP-held) is left alone
+				owners[owner] = nil;
+				if (next(owners) == nil) then
+					gcinclude.LockedSlots[slot] = nil;
+					gState.Disabled[slot] = false;
+				end
 			end
 		end
 		return slots;
+	end
+
+	-- What turns each owner's lock off, for messages.
+	function gcinclude.LockOwnerFix(owner, slot)
+		if (owner == 'user') then return '/unlock ' .. string.lower(gcinclude.SlotName(slot)) end
+		if (owner == 'hoxne') or (owner == 'aminon') or (owner == 'proc') then return '/' .. owner .. ' off' end
+		if (owner == 'enchant') then return 'its /gce use' end
+		local key = string.match(owner, '^hold:(.+)$');
+		if (key == 'strip') and (gcinclude.Strip ~= nil) then return '/' .. gcinclude.Strip .. ' off' end
+		if (key ~= nil) then return '/' .. key .. ' off' end
+		return owner;
+	end
+
+	-- Owners of the slot other than skip, as their off commands.
+	function gcinclude.LockHolders(slot, skip)
+		local out = T{};
+		for o, _ in pairs(gcinclude.LockedSlots[slot] or {}) do
+			if (o ~= skip) then out:append(gcinclude.LockOwnerFix(o, slot)) end
+		end
+		return out;
 	end
 
 	-- True when anyone but owner holds the slot.
@@ -919,8 +944,15 @@ end
 			gcinclude.Err('No such slot: ' .. table.concat(unknown, ', ') .. ' - nothing unlocked');
 			return;
 		end
-		gcinclude.UnlockSlots(wanted, 'user'); -- yours only: Aminon/Hoxne/holds keep theirs until they turn off
-		gcinclude.Say('Unlocked');
+		local slots = gcinclude.UnlockSlots(wanted, 'user'); -- yours only: Aminon/Hoxne/holds keep theirs until they turn off
+		local still = T{};
+		local check = slots;
+		if (wanted == nil) or (#wanted == 0) then check = T{}; for s = 1, 16 do check:append(s) end end
+		for _, slot in ipairs(check) do
+			local by = gcinclude.LockHolders(slot);
+			if (#by > 0) then still:append(gcinclude.SlotName(slot) .. ' (' .. table.concat(by, ', ') .. ')') end
+		end
+		gcinclude.Say('Unlocked' .. ((#still > 0) and ('; still held: ' .. table.concat(still, ', ')) or ''));
 	end
 
 
@@ -1587,7 +1619,7 @@ end
 		-- /th put its set on for this cast (untagged mob): the TH waist stays, the obi/Orpheus pick doesn't replace it
 		if (gcinclude.THWorn == true) and (action.ActionType == 'Spell') and (gcinclude.FindSet('TH') ~= nil) then
 			for k, _ in pairs(gcinclude.FindSet('TH')) do
-				if (slotOf(k) == slotOf('Waist')) then opts.noObi, opts.noSash = true, true end
+				if (slotOf(k) == slotOf('Waist')) then opts.keepWaist = true end
 			end
 		end
 		gcinclude.ApplyElementGear(element, action.Name, opts);
@@ -1613,7 +1645,8 @@ end
 		if (type(opts) ~= 'table') then opts = { noRing = (opts == true) } end -- old (element, label, noRing) form
 		local set = {};
 		local report = T{};
-		local waist, value = gcinclude.ElementWaist(element, opts.noObi, opts.noSash);
+		local waist, value = nil, 0;
+		if (opts.keepWaist ~= true) then waist, value = gcinclude.ElementWaist(element, opts.noObi, opts.noSash) end
 		if (waist ~= nil) then
 			if gcinclude.ElementKept('Waist') then
 				report:append('waist kept');
@@ -1766,8 +1799,8 @@ end
 					gcinclude.THWorn = false;
 					local result = original(...);
 					if (name == 'HandleMidcast') then
+						gcinclude.CheckAbsorb(); -- before the buff layer: a buff piece (Nether Void, Dark Seal) beats the Absorb sets
 						gcinclude.CheckBuffSets('Buffs_Midcast');
-						gcinclude.CheckAbsorb();
 						gcinclude.CheckLightBonus();
 						gcinclude.CheckElementGear();
 						gcinclude.CheckSIR();
@@ -2348,8 +2381,10 @@ end
 		local delay, source = gcinclude.EnchantDelay(name, res);
 		local index = slotOf(slot);
 		gcinclude.ReleaseEnchant(index); -- a new /gce on the same slot replaces the old one
-		if gcinclude.LockedByOther(index, allowOwner) then -- /hoxne use may use Hoxne's own lock, never your /lock
-			gcinclude.Err(slot .. ' is locked - /unlock ' .. string.lower(slot) .. ' first');
+		-- Already in the slot: using it swaps nothing, so another owner's lock doesn't matter. Else /hoxne use may
+		-- use Hoxne's own lock, never your /lock or another feature's.
+		if (equippedId(index) ~= res.Id) and gcinclude.LockedByOther(index, allowOwner) then
+			gcinclude.Err(slot .. ' is locked - ' .. table.concat(gcinclude.LockHolders(index, allowOwner), ', ') .. ' first');
 			return false;
 		end
 		gFunc.ForceEquipSet({ [slot] = name }); -- slot is free or owned by the caller
@@ -2474,7 +2509,7 @@ end
 
 	function gcinclude.Help()
 		local skip = {};
-		for _, l in ipairs({ gcinclude.settings.SIRSkip, gcinclude.SIRSkip }) do -- same lists CheckSIR reads
+		for _, l in ipairs({ gcinclude.settings.SIRSkip or {}, gcinclude.SIRSkip or {} }) do -- same lists CheckSIR reads
 			if (type(l) == 'table') then
 				for _, n in ipairs(l) do skip[#skip + 1] = n end
 			end
@@ -2509,7 +2544,7 @@ end
 	-- SIRSkip / THSkip: settings.<key> (every job) plus gcinclude.<key> (the job file's own), exact names, any case.
 	function gcinclude.Skipped(key, name)
 		if (type(name) ~= 'string') then return false end
-		for _, skip in ipairs({ gcinclude.settings[key], gcinclude[key] }) do
+		for _, skip in ipairs({ gcinclude.settings[key] or {}, gcinclude[key] or {} }) do -- either may be missing
 			if (type(skip) == 'table') then
 				for _, n in ipairs(skip) do
 					if (string.lower(n) == string.lower(name)) then return true end
@@ -3101,11 +3136,13 @@ end
 		if (spell == nil) or (type(spell.Name) ~= 'string') or (string.sub(spell.Name, 1, 7) ~= 'Absorb-') then return end
 		local set = gcinclude.FindSet('Absorb');
 		if (set ~= nil) then gFunc.EquipSet(set) end
-		if (spell.Name == 'Absorb-TP') then
-			set = gcinclude.FindSet('Absorb_TP') or gcinclude.FindSet('AbsorbTP');
-			if (set ~= nil) then gFunc.EquipSet(set); return end
+		set = (spell.Name == 'Absorb-TP') and (gcinclude.FindSet('Absorb_TP') or gcinclude.FindSet('AbsorbTP')) or nil;
+		if (set ~= nil) then
+			gFunc.EquipSet(set);
+		else
+			gcinclude.ByName(spell.Name); -- with its /mset version, as the job file wore it
 		end
-		gcinclude.ByName(spell.Name); -- with its /mset version, as the job file wore it
+		if (gcinclude.THWorn == true) then gcinclude.CheckTH() end -- TH that this cast already wore stays over it
 	end
 
 	function gcinclude.CheckCancels()--tossed Stoneskin in here too
@@ -3179,6 +3216,9 @@ end
 			if (gFunc.GcRawEquipSet ~= nil) then
 				gFunc.EquipSet, gFunc.Equip = gFunc.GcRawEquipSet, gFunc.GcRawEquip;
 				gFunc.GcRawEquipSet, gFunc.GcRawEquip = nil, nil;
+			end
+			if (gPacketHandlers ~= nil) and (gPacketHandlers.GcRawItem ~= nil) then
+				gPacketHandlers.HandleItemPacket, gPacketHandlers.GcRawItem = gPacketHandlers.GcRawItem, nil;
 			end
 			if (gPacketHandlers ~= nil) and (gPacketHandlers.GcRawAction ~= nil) then
 				gPacketHandlers.HandleActionPacket, gPacketHandlers.GcRawAction = gPacketHandlers.GcRawAction, nil;
@@ -3257,6 +3297,8 @@ end
 				gcinclude.PrevAction = before;
 				local ok, result = pcall(raw, ...);
 				gcinclude.PrevAction = nil;
+				local a = gState.PlayerAction;
+				if (a ~= nil) and (a ~= before) then a.GcSentAt = os.clock() end -- went out now (not blocked)
 				if (gState.PlayerAction == nil) and (before ~= nil) and ((before.Completion or 0) > os.clock()) then
 					gState.PlayerAction = before;
 				end
@@ -3266,21 +3308,26 @@ end
 		end
 		gPacketHandlers.GcRawAction = gPacketHandlers.HandleActionPacket;
 		gPacketHandlers.HandleActionPacket = wrap(gPacketHandlers.GcRawAction);
-		if (gPacketHandlers.HandleItemPacket ~= nil) then
+		if (gPacketHandlers.HandleItemPacket ~= nil) and (gPacketHandlers.GcRawItem == nil) then
 			gPacketHandlers.GcRawItem = gPacketHandlers.HandleItemPacket;
 			gPacketHandlers.HandleItemPacket = wrap(gPacketHandlers.GcRawItem);
 		end
 	end
 
 	-- Seconds left on my own cast, and its spell id: from gcauto's start packet, else the spell sent before the
-	-- action now being handled (sent, start packet not back yet). 0 when not casting.
+	-- action now being handled, while its start packet could still be on the way (StartWindow s after it went
+	-- out). A spell the server refused never starts, so after that it no longer counts. 0 when not casting.
+	gcinclude.StartWindow = 1.5;
 	function gcinclude.CastLeft()
 		local left, id = 0, nil;
 		if (gcauto ~= nil) and (gcauto.CastLeft ~= nil) then left, id = gcauto.CastLeft() end
 		if (left > 0) then return left, id end
 		local p = gcinclude.PrevAction;
-		if (p ~= nil) and (p.Type == 'Spell') and ((p.Completion or 0) > os.clock()) then
-			return p.Completion - os.clock(), (p.Resource ~= nil) and p.Resource.Index or nil;
+		local now = os.clock();
+		if (p ~= nil) and (p.Type == 'Spell') and (p.GcSentAt ~= nil) and (now - p.GcSentAt < gcinclude.StartWindow)
+			and ((p.Completion or 0) > now) then
+			local cast = ((gcauto ~= nil) and (gcauto.CastTime ~= nil)) and gcauto.CastTime(p.Resource) or 0; -- learned, as gcauto does
+			return math.max(p.GcSentAt + cast - now, 0.1), (p.Resource ~= nil) and p.Resource.Index or nil;
 		end
 		return 0;
 	end

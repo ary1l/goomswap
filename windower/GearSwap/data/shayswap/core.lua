@@ -698,7 +698,7 @@ end
 -- A GearSwap spell -> LAC's pending action.
 local function new_action(spell)
     local now = os.clock();
-    local a = { Block = false, Target = (spell.target and spell.target.index) or 0, SpellId = spell.id };
+    local a = { Block = false, Target = (spell.target and spell.target.index) or 0, SpellId = spell.id, GcSentAt = now };
     local at = spell.action_type;
     local rm = AshitaCore:GetResourceManager();
     if (at == 'Magic') then

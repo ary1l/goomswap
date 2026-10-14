@@ -95,7 +95,7 @@ Later wins, slot by slot. A set only changes the slots it lists.
 → `Movement` if `/kite`) → Hoxne sets → auto `Idle_Regen`/`Idle_Refresh`/`Dt` → `Town` → weapon mode → `mdt` or
 `Aminon` → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll → debuff and craft sets.
 
-**Spells (midcast):** your job file → `TH` (not `THSkip`) → `Buffs_Midcast` → `Absorb` → `LightBonus` → obi/Orpheus/back/ring →
+**Spells (midcast):** your job file → `TH` (not `THSkip`) → `Absorb` → `Buffs_Midcast` → `LightBonus` → obi/Orpheus/back/ring →
 `SIR` if `/sir`. WHM cure in `examples/WHM.lua`:
 
 ```
@@ -114,7 +114,7 @@ Full list of engine sets: `COMMANDS.md` Sets the engine uses.
 `/sir` is a casting mode (separate from `/def`, engaged or not). While it's on:
 
 - On every spell's **midcast**, the `SIR` set goes on **last**: after your job file's midcast sets and after every
-  engine layer (TH, `Buffs_Midcast`, Absorb, LightBonus, obi/Orpheus).
+  engine layer (TH, Absorb, `Buffs_Midcast`, LightBonus, obi/Orpheus).
 - Only the slots `SIR` lists change, and those slots win for that cast (its waist replaces the obi, its ring
   replaces your cure ring). Slots it leaves out keep the spell's own gear. Precast and idle are never touched.
 - Off: the engine never wears `SIR`. A job file can still use `sets.SIR` itself (PLD puts it on first for every
@@ -138,7 +138,8 @@ Names are exact spell names in any case (`'Cure IV'`, not `'Cure'`). The job fil
 it doesn't replace it.
 
 **`THSkip`** does the same for `/th`: `THSkip = T{'Absorb-TP', 'Stun'}` in settings, `gcinclude.THSkip = T{...}` in
-a job file adds to it. Those spells wear their own set at an untagged mob, never the `TH` set.
+a job file adds to it. Those spells wear their own set at an untagged mob, never the `TH` set, and don't count as
+the tag (TH still goes on for your next action at that mob).
 
 **Per-spell SIR sets.** The engine has one `SIR` set. When a spell needs SIR *and* its own stats, put the SIR gear
 in that spell's set in the job file and add the spell to `SIRSkip`, so `/sir` doesn't cover it. PLD does this:
