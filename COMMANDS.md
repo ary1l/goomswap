@@ -1,4 +1,4 @@
-# ShaySwap commands
+# GoomSwap commands
 
 Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes through Multisend: `/mss /wm default`
 (all), `/ms sendto <name> /wm 3` (one), or your own Multisend shortcuts. Windower: `//send @all gs c wm default`.

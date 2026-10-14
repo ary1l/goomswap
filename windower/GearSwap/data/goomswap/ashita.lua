@@ -1,5 +1,5 @@
--- ShaySwap for Windower: the Ashita calls common/*.lua and the job files make, answered from Windower.
--- Only what ShaySwap uses is here. Anything else prints one "not on Windower" line and returns nil.
+-- GoomSwap for Windower: the Ashita calls common/*.lua and the job files make, answered from Windower.
+-- Only what GoomSwap uses is here. Anything else prints one "not on Windower" line and returns nil.
 --
 -- Units checked against the sources:
 --   spell cast/recast   Ashita quarter-seconds (LAC: CastTime * 0.25)  <- Windower seconds * 4
@@ -15,7 +15,7 @@ local warned = {};
 local function unsupported(what)
     if warned[what] then return end
     warned[what] = true;
-    windower.add_to_chat(123, '[ShaySwap] not on Windower: ' .. what);
+    windower.add_to_chat(123, '[GoomSwap] not on Windower: ' .. what);
 end
 A.Unsupported = unsupported;
 
@@ -80,7 +80,7 @@ local function object(name, t)
     end });
 end
 
--- chat: LAC and ShaySwap print lines built from these. print() below sends them to the chat log
+-- chat: LAC and GoomSwap print lines built from these. print() below sends them to the chat log
 -- (on Windower print() goes to the console). A line that ends with chat.error text is shown red;
 -- one that only has an error-coloured word inside (COR's Unlucky number) is not.
 local errorText = nil;
@@ -112,12 +112,12 @@ struct = {
 -- Ashita's function:once(delay, ...): run once after delay seconds. Windower's functions library has no
 -- 'once'; adding it does not change anything that library already defines. 'functions' is GearSwap's and
 -- outlives //gs reload, so the installed once() calls the current load's Fresh, not the first load's.
-rawset(functions, '__ShaySwapFresh', A.Fresh);
-if (rawget(functions, 'once') == nil) or (rawget(functions, '__ShaySwapOnce') == true) then
-    rawset(functions, '__ShaySwapOnce', true);
+rawset(functions, '__GoomSwapFresh', A.Fresh);
+if (rawget(functions, 'once') == nil) or (rawget(functions, '__GoomSwapOnce') == true) then
+    rawset(functions, '__GoomSwapOnce', true);
     functions.once = function(fn, delay, ...)
         local args, n = { ... }, select('#', ...);
-        return coroutine.schedule(function() rawget(functions, '__ShaySwapFresh')(); fn(unpack(args, 1, n)) end, tonumber(delay) or 0);
+        return coroutine.schedule(function() rawget(functions, '__GoomSwapFresh')(); fn(unpack(args, 1, n)) end, tonumber(delay) or 0);
     end
 end
 
