@@ -161,6 +161,7 @@ THSkip  = T{'Absorb-TP', 'Stun'};
 |---|---|
 | Edit does nothing | `/lac reload` (`//gs reload`) |
 | Windower: nothing loads | Red `[GoomSwap]`/`[LuAshitacast]` line: do what it says. No `[GoomSwap]` line at all: see Install |
+| Windower: `attempt to index global 'gFunc'` or `GearSwap loaded this job file directly` | Job file is in `data/<Name>/` (GearSwap's own spot): move it to `data/goomswap/<Name>/<JOB>.lua`, delete `data/<Name>/` |
 | A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapon at 1000+ TP is held (`/wm <mode> force`); `TH`-set weapon while `/th` is on |
 | Weapon in Idle/TP never shows | The weapon layer wins: `/wm none`, and `/mainset none` / `/subset none` for slot picks (PLD has only those) |
 | Wrong or no gear | `/checksets`, item spelling, `/gctrace` |
