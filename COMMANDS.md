@@ -178,7 +178,7 @@ Order: README How sets stack.
 | `Dt`, `mdt`, `Aminon`, `SIR` | With their toggles |
 | `Incapacitated` | Slept, petrified, stunned, terrorized: `Aminon` if `/aminon` (no Aminon set: `mdt`), else `mdt` if `/mdt`, else `Dt` (even with `/dt` off), minus Main/Sub/Range/Ammo; then this set; then `*_Received`. Over all job sets incl. `Dt`, and over `mdt`/`Aminon`, `TH`, `Buffs`, XIRoll. Under `Sleeping`, `Doomed`, `Reraise`, util sets. Not charmed (the client can't change gear) |
 | `Sleeping` | Asleep, over `Incapacitated` (else `gcinclude.sets.Sleeping`). Main/Sub/Range in it pass the TP hold, not any lock (`/lock`, `/aminon` Main/Sub, `/hoxne` Range): e.g. a Prime stage 1-2 weapon drains 1 HP/MP every 3s, which wakes you (BG-Wiki; not Diabolos' Nightmare). Weapon comes back when awake |
-| `TH` | `/th`: at rest, and over midcast/midshot at a mob until tagged (your hit, shot, WS, JA; a spell, step or Effusion that lands). Not on you/allies, not `THSkip` (those don't tag). BLU: only `BluMagTH`. Its waist beats obi/Orpheus on that cast |
+| `TH` | `/th`: at rest, and over midcast/midshot at a mob until tagged (your swing hit or miss, shot, WS, JA; a spell, step or Effusion that lands). `gcinclude.THFullTime = true` (THF.lua) = tag ignored, on the whole fight. Not on you/allies, not `THSkip` (those don't tag). BLU: only `BluMagTH`. Its waist beats obi/Orpheus on that cast |
 | `Absorb` / `Absorb_TP` | Every Absorb- spell / Absorb-TP on top. Without `Absorb_TP`, a spell-named set (`['Absorb-TP']`, `['Absorb-STR']`) goes on again over `Absorb`. TH worn on the cast goes back on top |
 | `LightBonus` | Healing Magic midcast |
 | `Buffs`, `Buffs_Ws`, `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }`: while that buff is up, at rest / over WS / over midcast |
