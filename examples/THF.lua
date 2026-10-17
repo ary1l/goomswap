@@ -1,6 +1,7 @@
 local profile = {};
 if (gFunc == nil) then error('GoomSwap: GearSwap loaded this job file directly. Windower: move it to data/goomswap/<Name>/<JOB>.lua and delete it from data/<Name>/ (see README Install)', 0) end
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+gcinclude.THFullTime = true; -- /th keeps the TH set on the whole fight, not only until the mob is tagged
 
 
 local sets = {

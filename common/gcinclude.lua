@@ -2089,7 +2089,9 @@ end
 			local actionTarget = gData.GetActionTarget();
 			if (actionTarget ~= nil) and (actionTarget.Type ~= 'Monster') then return end
 			local target = actionTarget or gData.GetTarget();
-			if (target ~= nil) and (target.Type == 'Monster') and (gcauto ~= nil) and (gcauto.IsTagged ~= nil) and gcauto.IsTagged(target.Id) then
+			-- gcinclude.THFullTime (job file, THF): TH stays on while /th is on, tagged or not
+			if (gcinclude.THFullTime ~= true) and (target ~= nil) and (target.Type == 'Monster') and (gcauto ~= nil)
+				and (gcauto.IsTagged ~= nil) and gcauto.IsTagged(target.Id) then
 				return;
 			end
 		end
