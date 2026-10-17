@@ -2089,8 +2089,14 @@ end
 			local actionTarget = gData.GetActionTarget();
 			if (actionTarget ~= nil) and (actionTarget.Type ~= 'Monster') then return end
 			local target = actionTarget or gData.GetTarget();
-			-- gcinclude.THFullTime (job file, THF): TH stays on while /th is on, tagged or not
-			if (gcinclude.THFullTime ~= true) and (target ~= nil) and (target.Type == 'Monster') and (gcauto ~= nil)
+			-- THF main: TH stays on while /th is on, tagged or not. Other jobs: until tagged.
+			-- A job file can set gcinclude.THFullTime = true/false to choose.
+			local fullTime = gcinclude.THFullTime;
+			if (fullTime == nil) then
+				local p = gData.GetPlayer();
+				fullTime = (p ~= nil) and (p.MainJob == 'THF');
+			end
+			if (fullTime ~= true) and (target ~= nil) and (target.Type == 'Monster') and (gcauto ~= nil)
 				and (gcauto.IsTagged ~= nil) and gcauto.IsTagged(target.Id) then
 				return;
 			end
