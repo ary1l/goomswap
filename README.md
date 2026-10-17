@@ -87,7 +87,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/mset [hybrid\|acc\|default]` | `_Hybrid` / `_Acc` versions of TP and WS sets (`/meleeset` same) |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
-| `/th` | `TH` set until the mob is tagged: your first swing, shot, WS or JA on it (not `THSkip`). THF: the whole fight (`gcinclude.THFullTime`) |
+| `/th` | `TH` set until the mob is tagged: your first swing, shot, WS or JA on it (not `THSkip`). THF main: the whole fight, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
 | `/kite` | Movement gear |
 | `/hoxne` | Off ↔ Locked (ampulla kept in Ammo and used). `/hoxne off` releases it |
 | `/automb` | Auto magic burst on/off (RDM BLM SCH GEO) |
