@@ -75,7 +75,7 @@
 		mea_Ring = 'Dim. Ring (Mea)';
 		dem_Ring = 'Dim. Ring (Dem)';
 		holla_Ring = 'Dim. Ring (Holla)';
-		WeaponTPGuard = 1000; -- at or above this TP (engaged or not), main/sub/range are held and weapon commands are refused unless you add force, 0 to disable
+		WeaponTPGuard = 1000; -- at or above this TP (engaged or not), main/sub/range are held against automatic swaps (action sets, idle/engaged sets); weapon commands (/wm, /mainset...) still swap; 0 to disable
 		HoldExemptSkills = T{'Singing', 'Geomancy', 'Healing Magic', 'Enfeebling Magic', 'Enhancing Magic'}; -- spells of these skills always get their weapon swaps
 		HoldExemptAbilities = T{'Corsair Roll'}; -- ability types that always get their weapon swaps
 		SmartSwap = true; -- keep main/sub/range on the spells below instead of losing TP to a weapon swap, /smartswap to toggle
@@ -503,7 +503,7 @@ end
 			elseif gcinclude.PickCycle(cname, args[3]) then
 				toggle = cname;
 				status = gcdisplay.GetCycle(cname);
-				if (gcinclude.WeaponCycleList(cname) ~= nil) then gcinclude.ApplyWeapons() end
+				if (gcinclude.WeaponCycleList(cname) ~= nil) then gcinclude.ApplyWeapons(true) end -- a command: swaps at any TP
 			end
 		elseif (args[1] == 'kite') then
 			gcinclude.FlipToggle('Kite', args[2]);
@@ -776,12 +776,8 @@ end
 		end
 		local arg = (#words > 0) and table.concat(words, ' ') or nil;
 		if (cname == 'Weapons') and (arg ~= nil) and (string.lower(arg) == 'default') and (type(gcinclude.DefaultWeapons) == 'table') then
-			if (not force) and gcinclude.HoldActive() then
-				gcinclude.Err('Weapons kept: at ' .. tostring(gData.GetPlayer().TP) .. ' TP (add force to override)');
-				return;
-			end
 			for dname, dval in pairs(gcinclude.DefaultWeapons) do gcinclude.SetWeaponCycle(dname, dval, true) end
-			gcinclude.ApplyWeapons(force);
+			gcinclude.ApplyWeapons(true); -- you asked: swaps at any TP (the TP hold only guards automatic swaps)
 			return;
 		end
 		local list = gcinclude.WeaponCycleList(cname);
@@ -806,13 +802,8 @@ end
 			if not gcinclude.SetWeaponCycle(cname, arg, quiet) then return end
 		end
 		local new = gcdisplay.GetCycle(cname);
-		if (new == old) and (not force) then return end -- force re-applies the current mode: the TP hold or a lock may have kept it off
-		if (cname ~= 'Ammo') and (not force) and gcinclude.HoldActive() then
-			gcdisplay.SetCycle(cname, old);
-			gcinclude.Err(cname .. ' kept on ' .. tostring(old) .. ': at ' .. tostring(gData.GetPlayer().TP) .. ' TP (add force to override)');
-			return;
-		end
-		gcinclude.ApplyWeapons(force);
+		if (new == old) and (not force) then return end -- force re-applies the current mode: a lock may have kept it off
+		gcinclude.ApplyWeapons(true); -- you asked: swaps at any TP (the TP hold only guards automatic swaps)
 	end
 
 	function gcinclude.IsWeaponValue(v)

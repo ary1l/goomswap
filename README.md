@@ -83,7 +83,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | Command | Does |
 |---|---|
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
-| `/mainset` `/subset` `[name]` | One slot's weapon (PLD `/subset duban`). `force` at 1000+ TP |
+| `/mainset` `/subset` `[name]` | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
 | `/mset [hybrid\|acc\|default]` | `_Hybrid` / `_Acc` versions of TP and WS sets (`/meleeset` same) |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
@@ -162,7 +162,7 @@ THSkip  = T{'Absorb-TP', 'Stun'};
 | Edit does nothing | `/lac reload` (`//gs reload`) |
 | Windower: nothing loads | Red `[GoomSwap]`/`[LuAshitacast]` line: do what it says. No `[GoomSwap]` line at all: see Install |
 | Windower: `attempt to index global 'gFunc'` or `GearSwap loaded this job file directly` | Job file is in `data/<Name>/` (GearSwap's own spot): move it to `data/goomswap/<Name>/<JOB>.lua`, delete `data/<Name>/` |
-| A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapon at 1000+ TP is held (`/wm <mode> force`); `TH`-set weapon while `/th` is on |
+| A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapon at 1000+ TP is held against automatic swaps (`/wm <mode>` swaps it; `/wm <current mode> force` re-applies); `TH`-set weapon while `/th` is on |
 | Weapon in Idle/TP never shows | The weapon layer wins: `/wm none`, and `/mainset none` / `/subset none` for slot picks (PLD has only those) |
 | Wrong or no gear | `/checksets`, item spelling, `/gctrace` |
 | Action cancelled | Chat says why (`COMMANDS.md` Action checks) |

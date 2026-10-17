@@ -18,8 +18,8 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 | `/wm savage` / `/wm 3` | By name (exact, prefix, substring) / position (1 = None) |
 | `/wm none` | Stop managing weapons (`TH`-set weapons still apply while `/th` is on) |
 | `/wm default` / `/wm melee` | This job's `DefaultWeapons` / a role from `gcinclude.WeaponRoles` |
-| `/wm leaden force` | Swap even at 1000+ TP |
-| `/mainset` `/subset` `/rangeset` `/ammoset` `[name\|N\|none]` | Per-slot cycles (jobs that define them), e.g. PLD `/subset`: None → Aegis → Duban. `force` at 1000+ TP |
+| `/wm leaden force` | Re-apply a mode you're already on (a lock or the TP hold kept it off) |
+| `/mainset` `/subset` `/rangeset` `/ammoset` `[name\|N\|none]` | Per-slot cycles (jobs that define them), e.g. PLD `/subset`: None → Aegis → Duban. Swaps at any TP |
 | `/dw [on\|off\|auto]` | Dual Wield: no word shows yes/no and why; `off` = always `_1h` sets, `on` = always DW, `auto` = detect |
 | `/smartswap [on\|off]` | At `SmartSwapTP`+: `NoWeaponSpells` (Dia, Blink, spikes…) don't swap weapons; `KeepWeaponsFor` (Cure/Cura) keep Daybreak or Bunzi's Rod |
 
@@ -27,7 +27,7 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
   override the mode for their slot. COR/RNG modes are named for the gun, so `/mainset` changes the melee weapon.
 - `/th` on: Main/Sub/Range in `TH` override mode and cycles the whole time, tagged or not (Sub only if you can dual wield).
 - **TP hold:** at 1000+ TP Main/Sub/Range don't change (except songs, rolls, cures, enfeebling, enhancing,
-  geomancy). `force` overrides; `WeaponTPGuard = 0` disables. Asleep, slots your `Sleeping` set names are let go.
+  geomancy). Weapon commands (`/wm`, `/mainset`…, `/setcycle`) always swap, at any TP. `WeaponTPGuard = 0` disables the hold. Asleep, slots your `Sleeping` set names are let go.
 - `Weapon_<Mode>_1h` when you can't dual wield: NIN Lv10+, DNC Lv20+, THF Lv83+ main or sub at the effective level
   (FFXIclopedia; SJ Restriction / Sheol Gaol sub Lv0 doesn't count). Losing DW puts `_1h` on at once; regaining waits
   for the TP hold. `gcinclude.AlwaysDualWield = true` forces DW (BLU, THF).
