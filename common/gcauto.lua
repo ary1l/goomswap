@@ -877,6 +877,18 @@ local function lock_packet(P)
     end
 end
 
+-- My spell refused before it started (0x0029 caster 0x04, MessageNum 0x18, XiPackets; texts from Windower
+-- Resources action_messages): 17/18 unable to cast at this time, 34 not enough MP, 40 not in this area,
+-- 47 cannot cast, 48 cannot be cast on target, 49 unable to cast, 313 out of range.
+local SPELL_REFUSED = { [17] = true, [18] = true, [34] = true, [40] = true, [47] = true, [48] = true, [49] = true, [313] = true };
+local function refused_packet(data)
+    if (inc == nil) or (inc.OnSpellRefused == nil) then return end
+    local party = AshitaCore:GetMemoryManager():GetParty();
+    local me = party and party:GetMemberServerId(0);
+    if (me == nil) or (struct.unpack('L', data, 0x04 + 1) ~= me) then return end
+    if SPELL_REFUSED[struct.unpack('H', data, 0x18 + 1)] then inc.OnSpellRefused() end
+end
+
 function gcauto.Start()
     ashita.events.register('d3d_present', 'gcauto_tick', tick);
     ashita.events.register('packet_in', 'gcauto_packet', function (e)
@@ -884,6 +896,7 @@ function gcauto.Start()
             local ok, P = pcall(parse_action, e.data);
             if ok then pcall(roll_packet, P); pcall(lock_packet, P); pcall(combat_packet, P); pcall(cast_packet, P); pcall(mb_packet, P); pcall(item_packet, P); pcall(incoming_cast, P); pcall(incoming_end, P) end
         end
+        if (e.id == 0x0029) then pcall(refused_packet, e.data) end
         if (e.id == 0x000B) and (inc ~= nil) and (inc.OnZoneOut ~= nil) then pcall(function() inc.OnZoneOut(struct.unpack('L', e.data, 0x04 + 1)) end) end -- LogoutState
         if (e.id == 0x000A) and (inc ~= nil) and (inc.OnZone ~= nil) then pcall(inc.OnZone) end
         if (e.id == 0x000A) then gcauto.RollReset(); gcauto.ClearTags(); lockUntil = 0; lastCombat = -1e9; monsterCache = {}; soda = { lock = 0, tries = 0 }; mbres = {}; mbst = {} end

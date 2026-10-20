@@ -3366,6 +3366,11 @@ end
 	-- action now being handled, while its start packet could still be on the way (StartWindow s after it went
 	-- out). A spell the server refused never starts, so after that it no longer counts. 0 when not casting.
 	gcinclude.StartWindow = 1.5;
+	-- The server refused my pending spell (gcauto, 0x0029): it won't start, so the window ends now.
+	function gcinclude.OnSpellRefused()
+		local a = gState.PlayerAction;
+		if (a ~= nil) and (a.Type == 'Spell') then a.GcSentAt = nil end
+	end
 	function gcinclude.CastLeft()
 		local left, id = 0, nil;
 		if (gcauto ~= nil) and (gcauto.CastLeft ~= nil) then left, id = gcauto.CastLeft() end

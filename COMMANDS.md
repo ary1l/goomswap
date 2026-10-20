@@ -87,7 +87,7 @@ Spells, abilities and WS that would fail are cancelled before any gear moves, re
 | Silence | Cancelled; uses Echo Drops, else Remedy (Remedy first if paralyzed). `AutoRemedy`, not under Muddle |
 | Paralysis on an ability | Uses a Remedy instead, if carried |
 | Recast | Cancelled, shows `m:ss` left (Ready/Sic/Quick Draw: charges, not checked) |
-| While you cast (also before "starts casting" is back) | Spell/JA/WS cancelled so your cast keeps its gear, `casting` in chat. Same spell again: cancelled, no message. `/item`, `/ra`: cancelled |
+| While you cast (also before "starts casting" is back) | Spell/JA/WS cancelled so your cast keeps its gear, `casting` in chat. Same spell again: cancelled, no message. `/item`, `/ra`: cancelled. A spell the server refuses ("Unable to cast…") stops counting at once. The game's own resend (Sequencer) isn't checked, unless that cast already started |
 | MP short | Arts-adjusted (own school -10%, other +20%); skipped under Manafont, Manawell, Parsimony, Penury, Addenda, Tabula Rasa. Gear MP cost not counted: `ValidateMP = false` |
 | Stratagems at 0 / Waltz short on TP | Cancelled (`WaltzTPCut` = your gear's reduction) |
 

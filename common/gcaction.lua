@@ -104,6 +104,11 @@ function gcaction.Check()
     if (inc.settings.Validate == false) then return false end
     local a = gData.GetAction();
     if (a == nil) or (a.Name == nil) then return false end
+    -- The game's own resend (Sequencer plugin): checked when first sent, so it goes unless the server has
+    -- started that cast (start packet seen); then it is cancelled without a message.
+    if (a.Resend == true) then
+        return (gcauto ~= nil) and (gcauto.CastLeft ~= nil) and (gcauto.CastLeft() > 0);
+    end
     local player = gData.GetPlayer();
     if (player.HP == 0) then return true end
     for _, b in ipairs(inc.HardCC) do

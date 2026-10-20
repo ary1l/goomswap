@@ -10,6 +10,9 @@ through `windower/`), same job files. Full reference: [`COMMANDS.md`](COMMANDS.m
 1. Copy `common/` and `examples/` into `Ashita/config/addons/luashitacast/`.
 2. Copy `examples/<JOB>.lua` into your character folder `luashitacast/<Name>_<id>/`, put your gear in.
 3. `/addon load luashitacast`, then `/lac load`.
+4. Recommended: Thorny's [Sequencer](https://github.com/ThornyFFXI/Sequencer) and [PacketFlow](https://github.com/ThornyFFXI/PacketFlow) plugins
+   (`/load sequencer`, `/load packetflow`, or in your startup script). Without Sequencer, LuAshitacast blocks the
+   game's own resends, so an action is lost when lag hits; PacketFlow sends packets more often.
 
 **Windower 4**
 
