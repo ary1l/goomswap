@@ -175,8 +175,6 @@
 		ValidateMP = true; -- the MP part; gear "MP cost -%" isn't counted, so turn off if it stops casts that would go off
 		AutoRemedy = true; -- silenced: Echo Drops, else Remedy (Remedy first if also paralyzed); paralyzed on an ability: Remedy. Not under Muddle
 		WaltzTPCut = 0; -- total "Waltz TP cost" reduction on your Waltz gear, in TP
-		MiniQueue = true; -- queue actions pressed on recast, mid-cast or in the forced delay when they can go within MiniQueueMax seconds (COMMANDS.md Action checks)
-		MiniQueueMax = 5;
 		Trace = false; -- /gctrace: one chat line per action naming each set put on
 		LockstyleSet = nil; -- /lockstyleset N 4s after load and job change; per job gcinclude.LockstyleSet = N in OnLoad
 		CapacityCapes = T{'Aptitude Mantle +1', 'Aptitude Mantle', 'Mecisto. Mantle'}; -- /capacity wears the carried one worth most (Mecisto by its augment)
@@ -1348,7 +1346,6 @@ end
 		gcinclude.CheckHoxneAuto(now);
 		gcinclude.CheckSleepStoneskin(now);
 		gcinclude.CheckZoneNotes();
-		gcaction.Tick();
 		if (gcinclude.HoldSuspended == true) then
 			if (gState.PlayerAction ~= nil) then return end
 			gcinclude.HoldSuspended = false;
@@ -2007,6 +2004,17 @@ end
 		if (arg ~= nil) then gcinclude.NextDualCheck = 0; gcinclude.ApplyWeapons() end -- a switch to no DW forces the 1h set next tick
 	end
 
+	-- THF main: /th keeps TH on the whole time, tagged or not. Other jobs: only to tag the mob.
+	-- A job file can set gcinclude.THFullTime = true/false to choose.
+	local function thFullTime()
+		local f = gcinclude.THFullTime;
+		if (f == nil) then
+			local p = gData.GetPlayer();
+			f = (p ~= nil) and (p.MainJob == 'THF');
+		end
+		return (f == true);
+	end
+
 	function gcinclude.BuildWeaponLayer()
 		local equip = {};
 		local mode = gcdisplay.GetCycle('Weapons');
@@ -2036,9 +2044,9 @@ end
 			local v = gcdisplay.GetCycle(cname);
 			if gcinclude.IsWeaponValue(v) then equip[cname] = gcinclude.WeaponItems[string.lower(v)] or v end
 		end
-		-- Main/Sub/Range in the TH set stay on while /th is on, tagged or not: swapping them resets TP.
-		-- Sub only when you can dual wield; otherwise it is dropped (CheckTH skips it too).
-		if (gcdisplay.GetToggle('TH') == true) then
+		-- Full-time TH (THF): Main/Sub/Range in the TH set stay on while /th is on, tagged or not: swapping them
+		-- resets TP. Sub only when you can dual wield. Other jobs: CheckTH wears them until the tag like the rest.
+		if (gcdisplay.GetToggle('TH') == true) and thFullTime() then
 			local th = gcinclude.FindSet('TH');
 			if (th ~= nil) then
 				for k, v in pairs(th) do
@@ -2066,39 +2074,46 @@ end
 	function gcinclude.DoMoonshade() end
 	function gcinclude.GetWeaponSet(mode) return gcinclude.FindSet('Weapon_' .. mode) end
 
-	-- TH gear until the action's target (else the selected one) is tagged; none for an action on you or an
-	-- ally. force skips both checks (AoE TH spells, which can be self-targeted). Main/Sub/Range are left to BuildWeaponLayer, so they don't come off at the tag. The TH set
-	-- minus those slots is built once per set table (the set itself when it has none, so /gctrace names it).
-	local thGear, thGearOf = nil, nil;
+	-- TH gear, never for an action on you or an ally. Full time (THF): always otherwise, and Main/Sub/Range are
+	-- left to BuildWeaponLayer so they stay. Other jobs: only for an action at an untagged mob, or engaged with
+	-- one targeted; not at rest; the whole set (Sub only if you can dual wield). force skips the target checks
+	-- (AoE TH spells, which can be self-targeted). The worn set is built once per set table and case (the set
+	-- itself when nothing is dropped, so /gctrace names it).
+	local thGear, thGearOf, thGearKey = nil, nil, nil;
 	function gcinclude.CheckTH(force)
 		if (gcdisplay.GetToggle('TH') ~= true) then return end
 		local set = gcinclude.FindSet('TH');
 		if (set == nil) then return end
 		local acting = gData.GetAction();
 		if (acting ~= nil) and gcinclude.Skipped('THSkip', acting.Name) then return end -- that spell's own set stays
+		local full = thFullTime();
 		if (force ~= true) then
 			local actionTarget = gData.GetActionTarget();
 			if (actionTarget ~= nil) and (actionTarget.Type ~= 'Monster') then return end
-			local target = actionTarget or gData.GetTarget();
-			-- THF main: TH stays on while /th is on, tagged or not. Other jobs: until tagged.
-			-- A job file can set gcinclude.THFullTime = true/false to choose.
-			local fullTime = gcinclude.THFullTime;
-			if (fullTime == nil) then
-				local p = gData.GetPlayer();
-				fullTime = (p ~= nil) and (p.MainJob == 'THF');
-			end
-			if (fullTime ~= true) and (target ~= nil) and (target.Type == 'Monster') and (gcauto ~= nil)
-				and (gcauto.IsTagged ~= nil) and gcauto.IsTagged(target.Id) then
-				return;
+			if not full then
+				local target = actionTarget;
+				if (target == nil) then
+					local p = gData.GetPlayer();
+					if (p == nil) or (p.Status ~= 'Engaged') then return end
+					target = gData.GetTarget();
+				end
+				if (target == nil) or (target.Type ~= 'Monster') then return end
+				if (gcauto ~= nil) and (gcauto.IsTagged ~= nil) and gcauto.IsTagged(target.Id) then return end
 			end
 		end
-		if (thGearOf ~= set) then
-			thGear, thGearOf = set, set;
+		local dw = full or gcinclude.CanDualWield();
+		local key = full and 'full' or (dw and 'dw' or '1h');
+		if (thGearOf ~= set) or (thGearKey ~= key) then
+			thGear, thGearOf, thGearKey = set, set, key;
+			local function drop(k)
+				local s = slotOf(k);
+				return (full and gcinclude.HoldSlots:contains(s)) or ((s == 2) and not dw);
+			end
 			for k, _ in pairs(set) do
-				if gcinclude.HoldSlots:contains(slotOf(k)) then
+				if drop(k) then
 					thGear = {};
 					for k2, v2 in pairs(set) do
-						if not gcinclude.HoldSlots:contains(slotOf(k2)) then thGear[k2] = v2 end
+						if not drop(k2) then thGear[k2] = v2 end
 					end
 					break;
 				end
@@ -2462,7 +2477,6 @@ end
 	function gcinclude.OnZone()
 		gcinclude.ZoneOutAt, gcinclude.ZoneInAt = nil, os.clock();
 		gcinclude.HoxneGoneSince = nil;
-		if (gcaction ~= nil) and (gcaction.Clear ~= nil) then gcaction.Clear() end
 		for index, _ in pairs(gcinclude.Enchants) do gcinclude.ReleaseEnchant(index) end
 		gcinclude.HoxneRetryAt = 0;
 		if gcinclude.HoxneOn() then
@@ -2560,7 +2574,7 @@ end
 			'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
 			'holds  : /naked /weaponsonly /abysseaproc [on|off] (one at a time), /capacity /jubilee /dynamisrp [on|off]',
 			'items  : /gce <item> | cancel, /temps (Escha drinks), /warpring /mea /holla /dem',
-			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, recasts under 5s queue',
+			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat',
 			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N]',
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
@@ -3352,6 +3366,11 @@ end
 	-- action now being handled, while its start packet could still be on the way (StartWindow s after it went
 	-- out). A spell the server refused never starts, so after that it no longer counts. 0 when not casting.
 	gcinclude.StartWindow = 1.5;
+	-- The server refused my pending spell (gcauto, 0x0029): it won't start, so the window ends now.
+	function gcinclude.OnSpellRefused()
+		local a = gState.PlayerAction;
+		if (a ~= nil) and (a.Type == 'Spell') then a.GcSentAt = nil end
+	end
 	function gcinclude.CastLeft()
 		local left, id = 0, nil;
 		if (gcauto ~= nil) and (gcauto.CastLeft ~= nil) then left, id = gcauto.CastLeft() end
