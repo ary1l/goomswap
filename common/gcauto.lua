@@ -11,13 +11,9 @@ local nukeSent = false; -- busyUntil is an auto nuke's fallback hold; its finish
 -- job ability in phase 2 restarts phase 1. Steps/Flourishes (14) and Effusions (15) are job abilities.
 -- FFXIclopedia (Chainspell): "approximate 2.5 - 3 second". Too soon gets "Unable to cast spells at this
 -- time." No source gives an interrupted cast's delay, so it gets the spell's 3s. Items: no source, so
--- no delay is added. lockUntil gates everything; jaLockUntil gates job abilities only. Sources say
--- nothing about a job ability right after a spell or a spell in JA phase 2, so those wait the full lock.
+-- no delay is added. lockUntil holds back the automatic actions (food, items, auto nukes) for the full lock.
 local lockUntil = 0;
-local jaLockUntil = 0;
 local LOCK = { [3] = 2.0, [4] = 3.0, [6] = 2.0, [14] = 2.0, [15] = 2.0 };
-local JA_CATS = { [6] = true, [14] = true, [15] = true };
-local JA_PHASE1 = 1.0;
 local SPELL_LOCK = 3.0;
 local warned = {};
 local seen = {};
@@ -662,12 +658,6 @@ function gcauto.NukeTick(player, now)
     return false;
 end
 
--- Seconds of forced delay left before an action of this kind ('Ability', else anything) can go out.
-function gcauto.ForcedDelay(kind)
-    local untilT = (kind == 'Ability') and jaLockUntil or lockUntil;
-    return math.max(0, untilT - os.clock());
-end
-
 function gcauto.InCombat()
     local window = (inc ~= nil) and inc.settings.CombatWindow or 6;
     return (os.clock() - lastCombat) <= window;
@@ -881,7 +871,6 @@ local function lock_packet(P)
     if (lock == nil) then return end
     local now = os.clock();
     lockUntil = math.max(lockUntil, now + lock); -- a JA can't shorten a spell's 3s
-    jaLockUntil = math.max(jaLockUntil, now + (JA_CATS[P.cat] and JA_PHASE1 or lock));
     if nukeSent and ((P.cat == 4) or (P.cat == 8)) then
         busyUntil = 0;
         nukeSent = false;
@@ -897,7 +886,7 @@ function gcauto.Start()
         end
         if (e.id == 0x000B) and (inc ~= nil) and (inc.OnZoneOut ~= nil) then pcall(function() inc.OnZoneOut(struct.unpack('L', e.data, 0x04 + 1)) end) end -- LogoutState
         if (e.id == 0x000A) and (inc ~= nil) and (inc.OnZone ~= nil) then pcall(inc.OnZone) end
-        if (e.id == 0x000A) then gcauto.RollReset(); gcauto.ClearTags(); lockUntil = 0; jaLockUntil = 0; lastCombat = -1e9; monsterCache = {}; soda = { lock = 0, tries = 0 }; mbres = {}; mbst = {} end
+        if (e.id == 0x000A) then gcauto.RollReset(); gcauto.ClearTags(); lockUntil = 0; lastCombat = -1e9; monsterCache = {}; soda = { lock = 0, tries = 0 }; mbres = {}; mbst = {} end
         if (e.id == 0x000A) and (disp ~= nil) then -- AutoFood and AutoSoda go off on zoning
             for _, name in ipairs({ 'AutoFood', 'AutoSoda' }) do
                 if (disp.GetToggle(name) == true) then

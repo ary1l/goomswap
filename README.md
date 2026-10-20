@@ -72,7 +72,7 @@ Copying a newer `common/` over yours erases your edits: note them, or set them p
 | Items | `AutoFood`, `AutoFoodItems`, `AutoSoda`, `SodaItem`, `AutoHolyWater`, `HolyWaterItem`, `AutoRevitalizer`, `AutoUseItems`, `EnchantDelays`, `EnchantWindow`, `ConsumableMaxTries` |
 | Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
 | Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
-| Action checks | `Validate`, `ValidateMP`, `AutoRemedy`, `WaltzTPCut`, `MiniQueue`, `MiniQueueMax` |
+| Action checks | `Validate`, `ValidateMP`, `AutoRemedy`, `WaltzTPCut` |
 | HUD / bar | `HUDOwners`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDPinned`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
 | Other | `Keybinds`, `Messages`, `Trace`, `LockstyleSet`, `CombatWindow`, `XIRollSet`, `CapacityCapes`, `JubileeSlot`, `AmmoWarn`, `NinjaToolWarn`, `SleepCancelStoneskin`, `ElementReport`, `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
 
@@ -87,7 +87,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/mset [hybrid\|acc\|default]` | `_Hybrid` / `_Acc` versions of TP and WS sets (`/meleeset` same) |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
-| `/th` | `TH` set until the mob is tagged: your first swing, shot, WS or JA on it (not `THSkip`). THF main: the whole fight, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
+| `/th` | `TH` set while engaged with or acting on a mob, until it's tagged: your first swing, shot, WS or JA on it (not `THSkip`). Not at rest. THF main: the whole time, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
 | `/kite` | Movement gear |
 | `/hoxne` | Off ↔ Locked (ampulla kept in Ammo and used). `/hoxne off` releases it |
 | `/automb` | Auto magic burst on/off (RDM BLM SCH GEO) |
@@ -162,7 +162,7 @@ THSkip  = T{'Absorb-TP', 'Stun'};
 | Edit does nothing | `/lac reload` (`//gs reload`) |
 | Windower: nothing loads | Red `[GoomSwap]`/`[LuAshitacast]` line: do what it says. No `[GoomSwap]` line at all: see Install |
 | Windower: `attempt to index global 'gFunc'` or `GearSwap loaded this job file directly` | Job file is in `data/<Name>/` (GearSwap's own spot): move it to `data/goomswap/<Name>/<JOB>.lua`, delete `data/<Name>/` |
-| A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapon at 1000+ TP is held against automatic swaps (`/wm <mode>` swaps it; `/wm <current mode> force` re-applies); `TH`-set weapon while `/th` is on |
+| A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapon at 1000+ TP is held against automatic swaps (`/wm <mode>` swaps it; `/wm <current mode> force` re-applies); `TH`-set weapon while `/th` is on (THF) |
 | Weapon in Idle/TP never shows | The weapon layer wins: `/wm none`, and `/mainset none` / `/subset none` for slot picks (PLD has only those) |
 | Wrong or no gear | `/checksets`, item spelling, `/gctrace` |
 | Action cancelled | Chat says why (`COMMANDS.md` Action checks) |

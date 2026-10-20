@@ -8,7 +8,7 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
   by name, start or number, any case (`/mset hybrid`, `/mset d`, `/tankset meva`). `/setcycle <name> <value>` sets any.
 - Windower: `profile.Packer` goes to `//gs org` (Organizer addon).
 - Zoning turns off `/autofood`, `/autosoda`, `/hoxne`. While zoning (zone-line reply until 3s after arriving) nothing
-  is sent by itself: no item uses, queued actions, food/soda or auto-casts.
+  is sent by itself: no item uses, food/soda or auto-casts.
 
 ## Weapons
 
@@ -16,7 +16,7 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 |---|---|
 | `/wm` | Next weapon mode (`/weaponset` same) |
 | `/wm savage` / `/wm 3` | By name (exact, prefix, substring) / position (1 = None) |
-| `/wm none` | Stop managing weapons (`TH`-set weapons still apply while `/th` is on) |
+| `/wm none` | Stop managing weapons (THF: `TH`-set weapons still apply while `/th` is on) |
 | `/wm default` / `/wm melee` | This job's `DefaultWeapons` / a role from `gcinclude.WeaponRoles` |
 | `/wm leaden force` | Re-apply a mode you're already on (a lock or the TP hold kept it off) |
 | `/mainset` `/subset` `/rangeset` `/ammoset` `[name\|N\|none]` | Per-slot cycles (jobs that define them), e.g. PLD `/subset`: None → Aegis → Duban. Swaps at any TP |
@@ -25,7 +25,8 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 
 - The weapon mode is what you return to at rest; action sets that name weapons still swap them. Per-slot cycles
   override the mode for their slot. COR/RNG modes are named for the gun, so `/mainset` changes the melee weapon.
-- `/th` on: Main/Sub/Range in `TH` override mode and cycles the whole time, tagged or not (Sub only if you can dual wield).
+- `/th` on, THF: Main/Sub/Range in `TH` override mode and cycles the whole time, tagged or not. Other jobs: they come
+  off at the tag with the rest of `TH` (a swap resets TP). Sub only if you can dual wield.
 - **TP hold:** at 1000+ TP Main/Sub/Range don't change (except songs, rolls, cures, enfeebling, enhancing,
   geomancy). Weapon commands (`/wm`, `/mainset`…, `/setcycle`) always swap, at any TP. `WeaponTPGuard = 0` disables the hold. Asleep, slots your `Sleeping` set names are let go.
 - `Weapon_<Mode>_1h` when you can't dual wield: NIN Lv10+, DNC Lv20+, THF Lv83+ main or sub at the effective level
@@ -85,16 +86,13 @@ Spells, abilities and WS that would fail are cancelled before any gear moves, re
 | KO, sleep, stun, petrify, terror, charm; Mute; Amnesia (JA/WS) | Cancelled |
 | Silence | Cancelled; uses Echo Drops, else Remedy (Remedy first if paralyzed). `AutoRemedy`, not under Muddle |
 | Paralysis on an ability | Uses a Remedy instead, if carried |
-| Recast | Back within `MiniQueueMax` (5s): queued, else shows `m:ss` |
-| While you cast (also before "starts casting" is back) | Spell/JA/WS queued for after the cast + 3s forced delay if within `MiniQueueMax`, else cancelled so your cast keeps its gear. Same spell again: only cancelled. `/item`, `/ra`: cancelled |
-| Forced delay (BG-Wiki: 3s spell, 2s WS, 2s JA / 1s JA→JA) | Queued. Same action double-tapped goes out as pressed |
+| Recast | Cancelled, shows `m:ss` left (Ready/Sic/Quick Draw: charges, not checked) |
+| While you cast (also before "starts casting" is back) | Spell/JA/WS cancelled so your cast keeps its gear, `casting` in chat. Same spell again: cancelled, no message. `/item`, `/ra`: cancelled |
 | MP short | Arts-adjusted (own school -10%, other +20%); skipped under Manafont, Manawell, Parsimony, Penury, Addenda, Tabula Rasa. Gear MP cost not counted: `ValidateMP = false` |
 | Stratagems at 0 / Waltz short on TP | Cancelled (`WaltzTPCut` = your gear's reduction) |
 
-**Queue** (`MiniQueue = false` off): 3 actions; oldest ready one goes when nothing is running, one at a time; a 4th
-drops the oldest; same action again replaces its entry. Each waits expected time + 2s (clock stops while you're busy,
-up to 10s more). Targets `<me>`, a player by name, or `<t>` if still your target. Zoning clears it. A refused spell
-holds the next press about 1.5s at most. Ready/Sic/Quick Draw and stratagems skip the recast check.
+Nothing is queued: press it again when it's ready. Forced delay (BG-Wiki: 3s after a spell, 2s after a WS/JA) isn't
+checked; the game's own message says when it refuses.
 
 ## Automation and items
 
@@ -178,7 +176,7 @@ Order: README How sets stack.
 | `Dt`, `mdt`, `Aminon`, `SIR` | With their toggles |
 | `Incapacitated` | Slept, petrified, stunned, terrorized: `Aminon` if `/aminon` (no Aminon set: `mdt`), else `mdt` if `/mdt`, else `Dt` (even with `/dt` off), minus Main/Sub/Range/Ammo; then this set; then `*_Received`. Over all job sets incl. `Dt`, and over `mdt`/`Aminon`, `TH`, `Buffs`, XIRoll. Under `Sleeping`, `Doomed`, `Reraise`, util sets. Not charmed (the client can't change gear) |
 | `Sleeping` | Asleep, over `Incapacitated` (else `gcinclude.sets.Sleeping`). Main/Sub/Range in it pass the TP hold, not any lock (`/lock`, `/aminon` Main/Sub, `/hoxne` Range): e.g. a Prime stage 1-2 weapon drains 1 HP/MP every 3s, which wakes you (BG-Wiki; not Diabolos' Nightmare). Weapon comes back when awake |
-| `TH` | `/th`: at rest, and over midcast/midshot at a mob until tagged (your swing hit or miss, shot, WS, JA; a spell, step or Effusion that lands). THF main: tag ignored, on the whole fight (`gcinclude.THFullTime = true/false` in a job file overrides, any job). Not on you/allies, not `THSkip` (those don't tag). BLU: only `BluMagTH`. Its waist beats obi/Orpheus on that cast |
+| `TH` | `/th`: engaged with an untagged mob targeted, and over precast/midcast/midshot at one, until tagged (your swing hit or miss, shot, WS, JA; a spell, step or Effusion that lands). Not at rest. THF main: tag ignored, on the whole time incl. at rest (`gcinclude.THFullTime = true/false` in a job file overrides, any job). Not on you/allies, not `THSkip` (those don't tag). BLU: only `BluMagTH`. Its waist beats obi/Orpheus on that cast |
 | `Absorb` / `Absorb_TP` | Every Absorb- spell / Absorb-TP on top. Without `Absorb_TP`, a spell-named set (`['Absorb-TP']`, `['Absorb-STR']`) goes on again over `Absorb`. TH worn on the cast goes back on top |
 | `LightBonus` | Healing Magic midcast |
 | `Buffs`, `Buffs_Ws`, `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }`: while that buff is up, at rest / over WS / over midcast |
