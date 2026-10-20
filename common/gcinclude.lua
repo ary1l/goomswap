@@ -175,6 +175,8 @@
 		ValidateMP = true; -- the MP part; gear "MP cost -%" isn't counted, so turn off if it stops casts that would go off
 		AutoRemedy = true; -- silenced: Echo Drops, else Remedy (Remedy first if also paralyzed); paralyzed on an ability: Remedy. Not under Muddle
 		WaltzTPCut = 0; -- total "Waltz TP cost" reduction on your Waltz gear, in TP
+		MiniQueue = true; -- queue actions pressed on recast, mid-cast or in the forced delay when they can go within MiniQueueMax seconds, /miniqueue to toggle (COMMANDS.md Action checks)
+		MiniQueueMax = 5;
 		Trace = false; -- /gctrace: one chat line per action naming each set put on
 		LockstyleSet = nil; -- /lockstyleset N 4s after load and job change; per job gcinclude.LockstyleSet = N in OnLoad
 		CapacityCapes = T{'Aptitude Mantle +1', 'Aptitude Mantle', 'Mecisto. Mantle'}; -- /capacity wears the carried one worth most (Mecisto by its augment)
@@ -201,7 +203,7 @@
 	end
 
 	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
-	'pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
+	'pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','miniqueue','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
@@ -480,6 +482,8 @@ end
 			end
 		elseif (args[1] == 'smartswap') then
 			gcinclude.SmartSwapCommand(args);
+		elseif (args[1] == 'miniqueue') then
+			gcinclude.MiniQueueCommand(args);
 		elseif (args[1] == 'autogear') then
 			gcinclude.AutoGearCommand(args);
 		elseif (args[1] == 'gcbar') then
@@ -1346,6 +1350,7 @@ end
 		gcinclude.CheckHoxneAuto(now);
 		gcinclude.CheckSleepStoneskin(now);
 		gcinclude.CheckZoneNotes();
+		gcaction.Tick();
 		if (gcinclude.HoldSuspended == true) then
 			if (gState.PlayerAction ~= nil) then return end
 			gcinclude.HoldSuspended = false;
@@ -1724,6 +1729,15 @@ end
 		elseif (v == 'off') then gcinclude.settings.SmartSwap = false;
 		else gcinclude.settings.SmartSwap = not (gcinclude.settings.SmartSwap == true) end
 		gcinclude.Say('SmartSwap: ' .. (gcinclude.settings.SmartSwap and 'On' or 'Off'));
+	end
+
+	function gcinclude.MiniQueueCommand(args)
+		local v = (args[2] ~= nil) and string.lower(args[2]) or nil;
+		if (v == 'on') then gcinclude.settings.MiniQueue = true;
+		elseif (v == 'off') then gcinclude.settings.MiniQueue = false;
+		else gcinclude.settings.MiniQueue = (gcinclude.settings.MiniQueue == false) end
+		if (gcinclude.settings.MiniQueue == false) and (gcaction.Clear ~= nil) then gcaction.Clear() end
+		gcinclude.Say('MiniQueue: ' .. ((gcinclude.settings.MiniQueue ~= false) and 'On' or 'Off'));
 	end
 
 	gcinclude.AutoGearKeys = T{ regen = 'RegenGearHPP', refresh = 'RefreshGearMPP', dt = 'DTGearHPP', petdt = 'PetDTGearHPP' };
@@ -2477,6 +2491,7 @@ end
 	function gcinclude.OnZone()
 		gcinclude.ZoneOutAt, gcinclude.ZoneInAt = nil, os.clock();
 		gcinclude.HoxneGoneSince = nil;
+		if (gcaction ~= nil) and (gcaction.Clear ~= nil) then gcaction.Clear() end
 		for index, _ in pairs(gcinclude.Enchants) do gcinclude.ReleaseEnchant(index) end
 		gcinclude.HoxneRetryAt = 0;
 		if gcinclude.HoxneOn() then
@@ -2574,7 +2589,7 @@ end
 			'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
 			'holds  : /naked /weaponsonly /abysseaproc [on|off] (one at a time), /capacity /jubilee /dynamisrp [on|off]',
 			'items  : /gce <item> | cancel, /temps (Escha drinks), /warpring /mea /holla /dem',
-			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat',
+			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat; /miniqueue [on|off] (recasts under 5s queue)',
 			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N]',
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',

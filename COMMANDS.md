@@ -8,7 +8,7 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
   by name, start or number, any case (`/mset hybrid`, `/mset d`, `/tankset meva`). `/setcycle <name> <value>` sets any.
 - Windower: `profile.Packer` goes to `//gs org` (Organizer addon).
 - Zoning turns off `/autofood`, `/autosoda`, `/hoxne`. While zoning (zone-line reply until 3s after arriving) nothing
-  is sent by itself: no item uses, food/soda or auto-casts.
+  is sent by itself: no item uses, queued actions, food/soda or auto-casts.
 
 ## Weapons
 
@@ -86,13 +86,18 @@ Spells, abilities and WS that would fail are cancelled before any gear moves, re
 | KO, sleep, stun, petrify, terror, charm; Mute; Amnesia (JA/WS) | Cancelled |
 | Silence | Cancelled; uses Echo Drops, else Remedy (Remedy first if paralyzed). `AutoRemedy`, not under Muddle |
 | Paralysis on an ability | Uses a Remedy instead, if carried |
-| Recast | Cancelled, shows `m:ss` left (Ready/Sic/Quick Draw: charges, not checked) |
-| While you cast (also before "starts casting" is back) | Spell/JA/WS cancelled so your cast keeps its gear, `casting` in chat. Same spell again: cancelled, no message. `/item`, `/ra`: cancelled. A spell the server refuses ("Unable to cast…") stops counting at once. The game's own resend (Sequencer) isn't checked, unless that cast already started |
+| Recast | Back within `MiniQueueMax` (5s): queued, else cancelled, shows `m:ss` |
+| While you cast (also before "starts casting" is back) | Spell/JA/WS queued for after the cast + 3s forced delay if within `MiniQueueMax`, else cancelled so your cast keeps its gear (`casting`). Same spell again: cancelled, no message. `/item`, `/ra`: cancelled. A spell the server refuses ("Unable to cast…") stops counting at once. The game's own resend (Sequencer) isn't checked, unless that cast already started |
 | MP short | Arts-adjusted (own school -10%, other +20%); skipped under Manafont, Manawell, Parsimony, Penury, Addenda, Tabula Rasa. Gear MP cost not counted: `ValidateMP = false` |
+| Forced delay (BG-Wiki: 3s spell, 2s WS, 2s JA / 1s JA→JA) | Queued. Same action double-tapped goes out as pressed |
 | Stratagems at 0 / Waltz short on TP | Cancelled (`WaltzTPCut` = your gear's reduction) |
 
-Nothing is queued: press it again when it's ready. Forced delay (BG-Wiki: 3s after a spell, 2s after a WS/JA) isn't
-checked; the game's own message says when it refuses.
+**Queue** (`/miniqueue [on|off]`, `MiniQueue = false` off): 3 actions; oldest ready one goes when nothing is running,
+one at a time; a 4th drops the oldest; same action again replaces its entry. Each waits expected time + 2s (clock
+stops while you're busy, up to 10s more). Targets `<me>`, a player by name, or `<t>` if still your target. Zoning
+clears it. A queued re-send isn't confirmed: if the server refuses it, it's gone. Off: nothing queued, recast and
+mid-cast still cancel with the reason; the forced delay isn't checked. Ready/Sic/Quick Draw and stratagems skip the
+recast check.
 
 ## Automation and items
 

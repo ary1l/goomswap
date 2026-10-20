@@ -1,7 +1,15 @@
--- Action checks and set trace. Loaded and bound by gcinclude.
+-- Action checks, mini-queue and set trace. Loaded and bound by gcinclude.
 local gcaction = {};
 
 local inc = nil;
+local queue = {};     -- waiting actions, oldest first: { name, cmd, index, token, res, kind, untilT, hardT }
+local QUEUE_MAX = 3;  -- a 4th drops the oldest (said in chat)
+local BUSY_HOLD = 10; -- seconds a waiting action's deadline may stretch while you're mid-action
+local SEND_GAP = 1.0; -- after sending one, the next waits this long for it to start
+local sendAfter = 0;
+local lastSent = nil; -- { name, at }: a re-sent action that is still blocked is not queued again
+local lastTick = nil;
+local lastStarted = nil; -- { name, at }: the last action let through, so a double-tap isn't queued again
 local tracing = nil;  -- { label, parts } while a handler runs with /gctrace on
 local traceHead = nil;-- precast/preshot line waiting for its midcast/midshot
 
@@ -66,6 +74,34 @@ local function stratagems()
     return math.max(0, math.floor((max * per - t) / per)), nextIn;
 end
 
+local function ready(q)
+    if (q.kind == 'Spell') then
+        return AshitaCore:GetMemoryManager():GetRecast():GetSpellTimer(q.res.Index) == 0;
+    elseif (q.kind == 'Weaponskill') then
+        return true; -- no recast; TP is checked by the game
+    end
+    local rid = q.res.RecastTimerId;
+    if CHARGE_POOLS[rid] or (rid == STRATAGEMS) then return true end -- charges, not a single timer
+    return ability_timer(rid) <= 0;
+end
+
+local function current_target()
+    local t = AshitaCore:GetMemoryManager():GetTarget();
+    local ok, idx = pcall(function() return t:GetTargetIndex(t:GetIsSubTargetActive()) end);
+    return ok and idx or 0;
+end
+
+-- How to name the action's target again later: <me>, a player's name, or <t> while still targeted.
+local function target_token(index)
+    local mm = AshitaCore:GetMemoryManager();
+    if (index == mm:GetParty():GetMemberTargetIndex(0)) then return '<me>' end
+    if (bit.band(mm:GetEntity():GetSpawnFlags(index) or 0, 0x01) ~= 0) then
+        return mm:GetEntity():GetName(index);
+    end
+    if (index == current_target()) then return '<t>' end
+    return nil;
+end
+
 -- Silence or paralysis: use the first carried cure item (Echo Drops: silence; Remedy: paralysis,
 -- silence, blindness, poison, disease - in-game item text). Muddle blocks item use.
 local function use_cure(list)
@@ -79,6 +115,12 @@ local function use_cure(list)
     return nil;
 end
 
+-- Forced delay left after my last action (gcauto, BG-Wiki Forced Delay); 0 without the tracker.
+local function forced_delay(kind)
+    if (gcauto == nil) or (gcauto.ForcedDelay == nil) then return 0 end
+    return gcauto.ForcedDelay(kind);
+end
+
 -- Seconds left on my own cast in progress (gcinclude.CastLeft: start/finish packets, or a cast sent whose start
 -- packet isn't back yet); 0 without the tracker.
 local function cast_left()
@@ -87,25 +129,62 @@ local function cast_left()
     return gcauto.CastLeft(); -- seconds, spell id
 end
 
--- Recast or your cast in progress: cancelled, reason in chat (the game refuses them, and a cancel keeps your
--- current cast's gear on). The spell you're casting pressed again is cancelled without a message.
+local CMD = { Spell = '/ma "', Ability = '/ja "', Weaponskill = '/ws "' };
+
+-- Queue the action if it can go out within MiniQueueMax seconds. False when it can't be queued
+-- (queue off, too long, no target to name again, or it was just re-sent from the queue and is still blocked).
+local function enqueue(a, wait, kind, why)
+    local cfg = inc.settings;
+    local target = gData.GetActionTarget();
+    if (cfg.MiniQueue == false) or (wait > (cfg.MiniQueueMax or 5)) or (target == nil) or (a.Resource == nil) then return false end
+    local now = os.clock();
+    if (lastSent ~= nil) and (lastSent.name == a.Name) and (now - lastSent.at < 1.5) then return false end
+    local token = target_token(target.Index);
+    if (token == nil) then return false end
+    for i = #queue, 1, -1 do -- pressed again: the newer one replaces it
+        if (queue[i].name == a.Name) then table.remove(queue, i) end
+    end
+    if (#queue >= QUEUE_MAX) then
+        local old = table.remove(queue, 1);
+        say(old.name .. ': queue full, dropped');
+    end
+    queue[#queue + 1] = { name = a.Name, kind = kind, res = a.Resource, token = token, index = target.Index,
+        untilT = now + wait + 2, hardT = now + wait + 2 + BUSY_HOLD, cmd = CMD[kind] .. a.Name .. '" ' };
+    say(a.Name .. ': queued (' .. why .. '), ' .. string.format('%.1fs', wait));
+    return true;
+end
+
+-- Recast, your cast in progress, or the forced delay after your last action. Recast and casting always
+-- cancel (the game refuses them, and a cancel keeps your current cast's gear on); the forced delay only
+-- cancels when it can be queued, otherwise the action goes out as it would have.
 local function on_wait(a, kind, recast)
     local casting, castId = cast_left();
-    if (casting > 0) and (kind == 'Spell') and (castId ~= nil) and (a.Resource ~= nil) and (castId == a.Resource.Index) then
+    local busy = (casting > 0) and (casting + 3.0) or 0; -- then the 3s forced delay after a spell (BG-Wiki)
+    busy = math.max(busy, forced_delay(kind));
+    local wait = math.max(recast or 0, busy);
+    if (wait <= 0) then return false end
+    local why = ((recast or 0) >= busy) and 'recast' or ((casting > 0) and 'casting' or 'delay');
+    -- Double-taps: the spell you're casting pressed again is only cancelled, and the action you just
+    -- used pressed again in its own forced delay goes out as it would have; neither is queued twice.
+    if (why == 'casting') and (kind == 'Spell') and (castId ~= nil) and (a.Resource ~= nil) and (castId == a.Resource.Index) then
         return true;
     end
+    if (why == 'delay') and (lastStarted ~= nil) and (lastStarted.name == a.Name) and (os.clock() - lastStarted.at < 5) then
+        return false;
+    end
+    if enqueue(a, wait, kind, why) then return true end
     if ((recast or 0) > 0) then say(a.Name .. ': recast ' .. mmss(recast)); return true end
     if (casting > 0) then say(a.Name .. ': casting'); return true end
     return false;
 end
 
 -- True when the pending action would fail; the caller cancels it. Runs before any gear goes on.
-function gcaction.Check()
+local function check()
     if (inc.settings.Validate == false) then return false end
     local a = gData.GetAction();
     if (a == nil) or (a.Name == nil) then return false end
     -- The game's own resend (Sequencer plugin): checked when first sent, so it goes unless the server has
-    -- started that cast (start packet seen); then it is cancelled without a message.
+    -- started that cast (start packet seen); then it is cancelled without a message. Never queued.
     if (a.Resend == true) then
         return (gcauto ~= nil) and (gcauto.CastLeft ~= nil) and (gcauto.CastLeft() > 0);
     end
@@ -163,6 +242,47 @@ function gcaction.Check()
         if on_wait(a, 'Weaponskill', 0) then return true end
     end
     return false;
+end
+
+function gcaction.Check()
+    local blocked = check();
+    if not blocked then
+        local a = gData.GetAction();
+        if (a ~= nil) and (a.Name ~= nil) then lastStarted = { name = a.Name, at = os.clock() } end
+    end
+    return blocked;
+end
+
+-- Called every 0.1s. While you're mid-action the deadlines stop (up to BUSY_HOLD more), so an action
+-- that waited behind another isn't dropped for it. When nothing is running: sends the oldest waiting
+-- action whose recast is back and whose forced delay is over, one at a time.
+function gcaction.Tick()
+    local now = os.clock();
+    local dt = (lastTick ~= nil) and math.min(now - lastTick, 0.5) or 0;
+    lastTick = now;
+    if (#queue == 0) then return end
+    local busy = (gState.PlayerAction ~= nil) or (cast_left() > 0);
+    for i = #queue, 1, -1 do
+        local q = queue[i];
+        if busy then q.untilT = math.min(q.untilT + dt, q.hardT) end
+        if (now > q.untilT) then table.remove(queue, i); say(q.name .. ': queue dropped') end
+    end
+    if busy or (now < sendAfter) then return end
+    for i, q in ipairs(queue) do
+        if ready(q) and (forced_delay(q.kind) <= 0) then
+            table.remove(queue, i);
+            if (q.token == '<t>') and (current_target() ~= q.index) then say(q.name .. ': target changed, not sent'); return end
+            sendAfter = now + SEND_GAP;
+            lastSent = { name = q.name, at = now };
+            AshitaCore:GetChatManager():QueueCommand(-1, q.cmd .. q.token);
+            return;
+        end
+    end
+end
+
+-- Zoning: nothing waiting is sent on arrival.
+function gcaction.Clear()
+    queue = {};
 end
 
 -- Trace: one chat line per action naming each set put on, in order.
