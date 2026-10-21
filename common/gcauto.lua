@@ -893,11 +893,18 @@ end
 -- 47 cannot cast, 48 cannot be cast on target, 49 unable to cast, 313 out of range.
 local SPELL_REFUSED = { [17] = true, [18] = true, [34] = true, [40] = true, [47] = true, [48] = true, [49] = true, [313] = true };
 local function refused_packet(data)
-    if (inc == nil) or (inc.OnSpellRefused == nil) then return end
+    if (inc == nil) then return end
+    local msg = struct.unpack('H', data, 0x18 + 1);
+    -- 39: "You need the Dual Wield ability to equip the ${item} as a sub-weapon." (Data 0x0C = the item)
+    if (msg == 39) then
+        if (inc.OnSubRefused ~= nil) then inc.OnSubRefused(struct.unpack('L', data, 0x0C + 1)) end
+        return;
+    end
+    if (inc.OnSpellRefused == nil) or not SPELL_REFUSED[msg] then return end
     local party = AshitaCore:GetMemoryManager():GetParty();
     local me = party and party:GetMemberServerId(0);
     if (me == nil) or (struct.unpack('L', data, 0x04 + 1) ~= me) then return end
-    if SPELL_REFUSED[struct.unpack('H', data, 0x18 + 1)] then inc.OnSpellRefused() end
+    inc.OnSpellRefused();
 end
 
 function gcauto.Start()

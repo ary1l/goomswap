@@ -31,7 +31,9 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
   geomancy). Weapon commands (`/wm`, `/mainset`…, `/setcycle`) always swap, at any TP. `WeaponTPGuard = 0` disables the hold. Asleep, slots your `Sleeping` set names are let go.
 - `Weapon_<Mode>_1h` when you can't dual wield: NIN Lv10+, DNC Lv20+, THF Lv83+ main or sub at the effective level
   (FFXIclopedia; SJ Restriction / Sheol Gaol sub Lv0 doesn't count). Losing DW puts `_1h` on at once; regaining waits
-  for the TP hold. `gcinclude.AlwaysDualWield = true` forces DW (BLU, THF).
+  for the TP hold. `gcinclude.AlwaysDualWield = true` forces DW (BLU, THF). If the game refuses a Sub weapon for
+  lack of Dual Wield ("You need the Dual Wield ability…", e.g. BLU mid spell change), DW counts as off and that
+  item stays off Sub for 15s (`gcinclude.SubRefuseHold`), then one retry: one message per 15s, not every packet.
 - Augmented items in a cycle:
   `gcinclude.WeaponItemMap = { ['Rostam B'] = { Name = 'Rostam', AugPath = 'B' } };` with `'Rostam B'` in `MainModes`.
 

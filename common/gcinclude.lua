@@ -1432,7 +1432,7 @@ end
 		local out, n = {}, 0;
 		for k, v in pairs(set) do
 			local slot = slotOf(k);
-			if (slot ~= 0) and (gState.Disabled[slot] ~= true) then
+			if (slot ~= 0) and (gState.Disabled[slot] ~= true) and not ((slot == 2) and gcinclude.SubRefusedNow(v)) then
 				out[k] = v;
 				n = n + 1;
 			end
@@ -1967,9 +1967,37 @@ end
 	gcinclude.DualWieldLevels = T{ NIN = 10, DNC = 20, THF = 83 };
 	gcinclude.DualWieldMode = 'auto';
 
+	-- The game refused a Sub weapon for lack of Dual Wield (BLU changing spells, a level sync): that item stays off
+	-- Sub and Dual Wield counts as off for SubRefuseHold seconds, instead of LAC re-sending it every packet.
+	gcinclude.SubRefuseHold = 15;
+	gcinclude.SubRefused = {}; -- [lower item name] = os.clock() it may be tried again
+	function gcinclude.OnSubRefused(itemId)
+		local r = (itemId ~= nil) and (itemId > 0) and AshitaCore:GetResourceManager():GetItemById(itemId) or nil;
+		local name = ((r ~= nil) and (r.Name ~= nil)) and r.Name[1] or gcinclude.LastSubSent;
+		if (type(name) ~= 'string') then return end
+		gcinclude.SubRefused[string.lower(name)] = os.clock() + gcinclude.SubRefuseHold;
+		gcinclude.NextDualCheck = 0; -- CheckDualWieldChange: 1h weapons now
+	end
+	function gcinclude.SubRefusedNow(item)
+		local name = (type(item) == 'table') and item.Name or item;
+		if (type(name) ~= 'string') then return false end
+		local untilT = gcinclude.SubRefused[string.lower(name)];
+		return (untilT ~= nil) and (os.clock() < untilT);
+	end
+	local function subRefused()
+		local now = os.clock();
+		for name, untilT in pairs(gcinclude.SubRefused) do
+			if (now < untilT) then return name end
+			gcinclude.SubRefused[name] = nil;
+		end
+		return nil;
+	end
+
 	function gcinclude.DualWieldState()
-		if (gcinclude.DualWieldMode == 'on') then return true, 'set by /dw on' end
 		if (gcinclude.DualWieldMode == 'off') then return false, 'set by /dw off' end
+		local refused = subRefused();
+		if (refused ~= nil) then return false, 'the game refused ' .. refused .. ' in Sub, retry in ' .. gcinclude.SubRefuseHold .. 's' end
+		if (gcinclude.DualWieldMode == 'on') then return true, 'set by /dw on' end
 		if (gcinclude.AlwaysDualWield == true) then return true, 'AlwaysDualWield' end
 		local p = AshitaCore:GetMemoryManager():GetPlayer();
 		local jobs = AshitaCore:GetResourceManager();
@@ -2058,6 +2086,7 @@ end
 			local v = gcdisplay.GetCycle(cname);
 			if gcinclude.IsWeaponValue(v) then equip[cname] = gcinclude.WeaponItems[string.lower(v)] or v end
 		end
+		if (equip.Sub ~= nil) and gcinclude.SubRefusedNow(equip.Sub) then equip.Sub = nil end
 		-- Full-time TH (THF): Main/Sub/Range in the TH set stay on while /th is on, tagged or not: swapping them
 		-- resets TP. Sub only when you can dual wield. Other jobs: CheckTH wears them until the tag like the rest.
 		if (gcdisplay.GetToggle('TH') == true) and thFullTime() then
@@ -2331,9 +2360,12 @@ end
 		end
 		gEquip.ProcessBuffer = function(...)
 			local sub = shadow[2];
-			if (sub ~= nil) and (gcinclude ~= nil) and (gcinclude.SubFits ~= nil) then
+			if (sub ~= nil) and (gcinclude ~= nil) and (gcinclude.SubRefusedNow ~= nil) and gcinclude.SubRefusedNow(sub) then
+				gEquip.GcRawToBuffer(2, { Name = 'ignore' }); -- refused for lack of Dual Wield: not re-sent every packet
+			elseif (sub ~= nil) and (gcinclude ~= nil) and (gcinclude.SubFits ~= nil) then
 				local ok, fits = pcall(gcinclude.SubFits, shadow[1], sub);
 				if ok and (fits == false) then gEquip.GcRawToBuffer(2, { Name = 'ignore' }) end
+				if (gcinclude.SubRefusedNow ~= nil) and not (ok and (fits == false)) then gcinclude.LastSubSent = sub.Name end
 			end
 			return gEquip.GcRawProcess(...);
 		end
