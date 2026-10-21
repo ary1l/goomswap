@@ -3393,7 +3393,13 @@ end
 				local ok, result = pcall(raw, ...);
 				gcinclude.PrevAction = nil;
 				local a = gState.PlayerAction;
-				if (a ~= nil) and (a ~= before) then a.GcSentAt = os.clock() end -- went out now (not blocked)
+				if (a ~= nil) and (a ~= before) then -- went out now (not blocked)
+					-- The game's resend (Sequencer) of the same action keeps the first send time: a fresh one per
+					-- resend kept the not-started window open, so every other press read as "casting".
+					local same = (a.Resend == true) and (before ~= nil) and (before.GcSentAt ~= nil) and (before.Type == a.Type)
+						and (before.Resource ~= nil) and (a.Resource ~= nil) and (before.Resource.Index == a.Resource.Index);
+					a.GcSentAt = same and before.GcSentAt or os.clock();
+				end
 				if (gState.PlayerAction == nil) and (before ~= nil) and ((before.Completion or 0) > os.clock()) then
 					gState.PlayerAction = before;
 				end
