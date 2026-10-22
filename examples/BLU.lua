@@ -491,6 +491,7 @@ profile.OnLoad = function()
     gcinclude.AlwaysDualWield = true;
     gcinclude.WeaponModes = {'None', 'Tizona'};
     gcinclude.DefaultWeapons = 'Tizona';
+    gcinclude.SubModes = {'None', 'Bunzi\'s Rod'}; -- /subset bunzi: nuke offhand (Tizona stays), /subset none: back to the mode's Thibron. A Sub swap resets TP
     gcinclude.Initialize();
 
 end
@@ -608,4 +609,4 @@ profile.HandleWeaponskill = function()
     end
 end
 
-return profile;
+return profile;
