@@ -836,7 +836,16 @@ local queue_command;
 local function console_form(cmd)
     local lower = string.lower(cmd);
     if (string.sub(lower, 1, 9) == '/lac fwd ') then return 'gs c ' .. string.sub(cmd, 10) end
-    if (string.sub(lower, 1, 5) == '/lac ') then return 'gs c __ss lac ' .. string.sub(cmd, 6) end
+    if (string.sub(lower, 1, 5) == '/lac ') then
+        -- 'gs c' args arrive split with their quotes stripped and GearSwap rejoins them with spaces, so
+        -- '/lac equip ring2 "Dim. Ring (Mea)"' fell apart. A quoted arg's spaces go as %20 (% as %25); the
+        -- __ss lac handler below turns them back.
+        local parts = {};
+        for _, a in ipairs(split_args(string.sub(cmd, 6))) do
+            parts[#parts + 1] = (string.gsub(string.gsub(a, '%%', '%%25'), ' ', '%%20'));
+        end
+        return 'gs c __ss lac ' .. table.concat(parts, ' ');
+    end
     return 'input ' .. cmd;
 end
 
@@ -928,7 +937,7 @@ function self_command(command)
                 send(map);
             elseif (what == 'lac') then
                 local rest = {};
-                for i = 3, #args do rest[#rest + 1] = args[i] end
+                for i = 3, #args do rest[#rest + 1] = (string.gsub(string.gsub(args[i], '%%20', ' '), '%%25', '%%')) end
                 lac_command(rest);
             end
             return;
