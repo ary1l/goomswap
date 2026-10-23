@@ -71,7 +71,7 @@
 		DisplayBar = false; -- one-line status bar (job, atk/def, toggles, cycles), /gcbar to toggle
 		DisplayBarX = 300;
 		DisplayBarY = 0;
-		warp_Ring = 'Warp Ring'; -- /warpring, /mea, /holla, /dem: held in Ring2, used once its equip delay is up (as /gce), let go after the use (normal ring back)
+		warp_Ring = 'Warp Ring'; -- /warpring, /mea, /holla, /dem: equip in Ring2, use 11s later, let go 11s after that (normal ring back)
 		mea_Ring = 'Dim. Ring (Mea)';
 		dem_Ring = 'Dim. Ring (Dem)';
 		holla_Ring = 'Dim. Ring (Holla)';
@@ -1261,11 +1261,6 @@ end
 		if (e == nil) then return end
 		gcinclude.UnlockSlots(T{index}, 'enchant'); -- Hoxne's or your own lock on the slot stays
 		gcinclude.Enchants[index] = nil;
-		-- A ring CheckLockingRings keeps on (Warp, Dim., exp rings): stop keeping it, so your normal ring returns
-		-- (once any zoning is over: SafeSetIdle).
-		for _, r in ipairs(gcinclude.LockingRings) do
-			if (string.lower(r) == string.lower(e.item)) then gcinclude.SafeSetIdle(0, e.item); break end
-		end
 	end
 
 	local function enchant_step(e, now)
@@ -3014,14 +3009,19 @@ end
 
 	gcinclude.TeleRings = T{ warpring = 'warp_Ring', mea = 'mea_Ring', holla = 'holla_Ring', dem = 'dem_Ring' };
 
-	-- Same path as /gce (like Windower's Dimmer/MyHome): equipped directly (no '/lac equip' chat round trip, whose
-	-- quoted name Windower splits apart in 'gs c'), Ring2 held through the equip delay, used when the extdata
-	-- says so, retried if no use is seen, let go after the use. Past your /lock on Ring2, as before.
 	function gcinclude.UseTeleRing(key)
 		local ring = gcinclude.settings[key];
 		if (type(ring) ~= 'string') then return end
-		if (gcinclude.RingReleased ~= nil) and (string.lower(gcinclude.RingReleased) == string.lower(ring)) then gcinclude.RingReleased = nil end -- used again: keep it on
-		gcinclude.UseEnchanted(ring, 'Ring2', 'user');
+		if (gcinclude.RingReleased == ring) then gcinclude.RingReleased = nil end -- used again: keep it on
+		AshitaCore:GetChatManager():QueueCommand(-1, '/lac equip ring2 "' .. ring .. '"');
+		local function restoreIdle()
+			gcinclude.SafeSetIdle(0, ring);
+		end
+		local function useRing()
+			AshitaCore:GetChatManager():QueueCommand(-1, '/item "' .. ring .. '" <me>');
+			restoreIdle:once(11);
+		end
+		useRing:once(11);
 	end
 
 

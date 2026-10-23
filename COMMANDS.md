@@ -106,7 +106,7 @@ checked; the game's own message says when it refuses.
 | `/holywater [on\|off]` | Holy Water on Doom (on by default) |
 | `/gce <item>` / `/gce cancel` | Equip enchanted item, lock slot, wait its delay, use / stop all and free slots |
 | `/temps` | Carried Escha drinks, 3s apart |
-| `/warpring` `/mea` `/holla` `/dem` | Same as `/gce` on Ring2 (past `/lock`): held through its equip delay, used when the ring says it's ready (retried if no use is seen), let go after the use so your normal Ring2 returns (if a set names Ring2). Windower: `//warpring` etc. Ring names: `warp_Ring` etc. |
+| `/warpring` `/mea` `/holla` `/dem` | Ring2 (past `/lock`), held through its delay, used at 11s, let go at 22s so your normal Ring2 returns (if a set names Ring2). Ring names: `warp_Ring` etc. |
 | `/ontic` `/shard` | Ontic Extremity / V. Con. Shard (more: `gcinclude.ExitItems`) |
 | `/gcaspir` `/gcdrain` | Best castable tier on `<t>` |
 
