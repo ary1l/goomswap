@@ -86,7 +86,7 @@ Spells, abilities and WS that would fail are cancelled before any gear moves, re
 | Check | Result |
 |---|---|
 | KO, sleep, stun, petrify, terror, charm; Mute; Amnesia (JA/WS) | Cancelled |
-| Silence | Cancelled; uses Echo Drops, else Remedy (Remedy first if paralyzed). `AutoRemedy`, not under Muddle |
+| Silence | Cancelled; uses Echo Drops, else Remedy (Remedy first if paralyzed). `AutoRemedy`, not under Muddle. One item at a time; if the status is still on after the item lands (an aura, e.g. Triboulex), no more items for it for 60s or until it's gone |
 | Paralysis on an ability | Uses a Remedy instead, if carried |
 | Recast | Cancelled, shows `m:ss` left (Ready/Sic/Quick Draw: charges, not checked) |
 | While you cast (also before "starts casting" is back) | Spell/JA/WS cancelled so your cast keeps its gear, `casting` in chat. Same spell again: cancelled, no message. `/item`, `/ra`: cancelled. A spell the server refuses ("Unable to cast…") stops counting at once. The game's own resend (Sequencer) isn't checked, unless that cast already started |
