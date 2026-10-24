@@ -68,15 +68,46 @@ end
 
 -- Silence or paralysis: use the first carried cure item (Echo Drops: silence; Remedy: paralysis,
 -- silence, blindness, poison, disease - in-game item text). Muddle blocks item use.
-local function use_cure(list)
+-- One item per status at a time: none while the last one is still going (up to CURE_WAIT s for its finish
+-- packet). If the status is still on after an item finished (an aura puts it straight back, e.g. Triboulex),
+-- no more items for it for CURE_PAUSE s, or until it has been seen gone.
+local CURE_WAIT, CURE_BACK, CURE_PAUSE = 8, 15, 60;
+local cures = {}; -- [status] = { item, id, at, doneAt, pausedUntil }
+local function use_cure(status, list)
     if (inc.settings.AutoRemedy == false) or has('Muddle') then return nil end
+    local now = os.clock();
+    local c = cures[status];
+    if (c ~= nil) then
+        if (c.pausedUntil ~= nil) and (now < c.pausedUntil) then return nil, 'AutoRemedy paused' end
+        if (c.pausedUntil == nil) then
+            if (c.doneAt == nil) then
+                if (now - c.at < CURE_WAIT) then return nil, c.item .. ' in use' end -- no finish yet; after that it didn't go
+            elseif (now - c.doneAt < 1) then
+                return nil, c.item .. ' in use'; -- just landed: the buff list may not show it gone yet
+            elseif (now - c.doneAt < CURE_BACK) then
+                c.pausedUntil = now + CURE_PAUSE;
+                say(status .. ' is back after ' .. c.item .. ' (an aura?): no more items for it for ' .. CURE_PAUSE .. 's');
+                return nil, 'AutoRemedy paused';
+            end
+        end
+    end
     for _, item in ipairs(list) do
         if (gcauto.ItemCount(item) > 0) then
             AshitaCore:GetChatManager():QueueCommand(-1, '/item "' .. item .. '" <me>');
+            local res = AshitaCore:GetResourceManager():GetItemByName(item, 0);
+            cures[status] = { item = item, id = (res ~= nil) and res.Id or nil, at = now };
             return item;
         end
     end
     return nil;
+end
+
+-- From gcinclude.OnItemAction (gcauto's 0x0028 reader): my item use finished (cmd 5, item id).
+function gcaction.OnItemAction(cmd, id)
+    if (cmd ~= 5) then return end
+    for _, c in pairs(cures) do
+        if (c.id == id) and (c.doneAt == nil) then c.doneAt = os.clock() end
+    end
 end
 
 -- Seconds left on my own cast in progress (gcinclude.CastLeft: start/finish packets, or a cast sent whose start
@@ -111,6 +142,9 @@ function gcaction.Check()
     end
     local player = gData.GetPlayer();
     if (player.HP == 0) then return true end
+    for status, _ in pairs(cures) do
+        if not has(status) then cures[status] = nil end -- gone: the next one gets an item again
+    end
     for _, b in ipairs(inc.HardCC) do
         if has(b) then say(a.Name .. ': ' .. string.lower(b)); return true end
     end
@@ -118,8 +152,8 @@ function gcaction.Check()
     if (kind == 'Spell') then
         if has('Mute') then say(a.Name .. ': mute'); return true end
         if has('Silence') then
-            local item = use_cure(has('Paralysis') and { 'Remedy', 'Echo Drops' } or { 'Echo Drops', 'Remedy' });
-            say(a.Name .. ': silenced' .. (item and (', using ' .. item) or ''));
+            local item, why = use_cure('Silence', has('Paralysis') and { 'Remedy', 'Echo Drops' } or { 'Echo Drops', 'Remedy' });
+            say(a.Name .. ': silenced' .. (item and (', using ' .. item) or (why and (' (' .. why .. ')') or '')));
             return true;
         end
         local timer = AshitaCore:GetMemoryManager():GetRecast():GetSpellTimer(a.Resource.Index) / 60;
@@ -137,7 +171,7 @@ function gcaction.Check()
     elseif (kind == 'Ability') then
         if has('Amnesia') then say(a.Name .. ': amnesia'); return true end
         if has('Paralysis') then
-            local item = use_cure({ 'Remedy' });
+            local item = use_cure('Paralysis', { 'Remedy' }); -- none (paused, in use): the ability goes anyway
             if item then say(a.Name .. ': paralyzed, using ' .. item); return true end
         end
         local rid = (a.Resource ~= nil) and a.Resource.RecastTimerId or nil;

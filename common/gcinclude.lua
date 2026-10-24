@@ -1326,6 +1326,7 @@ end
 
 	-- From gcauto's 0x0028 reader: my item use started (cmd 9), was interrupted (cmd 9, id 0) or finished (cmd 5).
 	function gcinclude.OnItemAction(cmd, id)
+		if (gcaction ~= nil) and (gcaction.OnItemAction ~= nil) then gcaction.OnItemAction(cmd, id) end -- AutoRemedy
 		local now = os.clock();
 		for _, e in pairs(gcinclude.Enchants) do
 			if (e.doneAt == nil) and (e.equippedAt ~= nil) then
