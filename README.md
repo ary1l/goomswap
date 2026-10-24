@@ -38,6 +38,15 @@ Windower/addons/GearSwap/data/
 | HUD | `/gchud`, click cells | `//gchud`, display only |
 | Augmented gear | `{ Name = 'X', Augment = {...} }` (LAC strings) | Same file works: the carried copy best matching the list is worn (names differ a bit between the two, so not exact). Or GearSwap's own `{ name="X", augments={...} }`, pasted from `//gs export`, matched exactly |
 
+Windower augment strings: wear the gear, `//gs export` (file in `GearSwap/data/export/`) or `//gs export copy`
+(clipboard), paste the line into a set and capitalize the slot (`back=` → `Back =`). Rare items export without
+augments (only one copy exists):
+
+```lua
+Back = { name="Camulus's Mantle", augments={'AGI+20','Rng.Acc.+20 Rng.Atk.+20','Rng.Acc.+10','"Store TP"+10','Mag. Evasion+15',}},
+Main = { name="Rostam", augments={'Path: A',}},
+```
+
 ## First steps
 
 1. Fill `Idle`, `Tp_Default`, `Ws_Default`. The rest can wait.
