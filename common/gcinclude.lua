@@ -832,7 +832,11 @@ end
 		for i = first, #args do
 			local want = string.lower(args[i]);
 			local hit = false;
-			for _, name in ipairs(gcinclude.AllSlotNames) do
+			if (want == 'all') then -- /lock all: all 16 slots (e.g. to equip by hand for //gs export)
+				for n = 1, 16 do if not slots:contains(n) then slots:append(n) end end
+				hit = true;
+			end
+			for _, name in ipairs((want == 'all') and T{} or gcinclude.AllSlotNames) do
 				if (string.sub(string.lower(name), 1, string.len(want)) == want) then
 					local n = slotOf(name);
 					hit = true;
@@ -2602,7 +2606,7 @@ end
 		local skip, thskip = gcinclude.SkipList('SIRSkip'), gcinclude.SkipList('THSkip');
 		local lines = T{
 			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset',
-			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots] /unlock [slots]',
+			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots|all] /unlock [slots|all]',
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
 			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',

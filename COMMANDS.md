@@ -46,7 +46,7 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 | `/aminon` | `Aminon` set (else `mdt`); locks Main/Sub (the set's, else worn) and Range/Ammo if the set names them, until off. Turns `/sir` off |
 | `/sir` | `SIR` set last over every spell midcast, not `SIRSkip` (Absorb-TP, Stun + job's own). Refused while Aminon is on; stays off after Aminon |
 | `/hoxne` / `/hoxne off` / `/hoxne use` | Off ↔ Locked (Alt+grave) / off / Locked and use it now |
-| `/lock` / `/lock ear1 back` | Lock Main, Sub, Ammo / any slots |
+| `/lock` / `/lock ear1 back` / `/lock all` | Lock Main, Sub, Ammo / any slots / all 16 (gear stays as you put it on by hand, e.g. for `//gs export`) |
 | `/unlock` / `/unlock ammo` | Free your locks, all / one. Names what still holds a slot (`/aminon off`, `/hoxne off`…) |
 | `/naked` `/weaponsonly` `/abysseaproc` `[on\|off]` | Strip all 16 / 12 armor slots / head, hands, legs, feet, kept bare. One at a time |
 | `/capacity` `/jubilee` `/dynamisrp` `[on\|off]` | Wear and hold best carried capacity cape / Jubilee Ring (`JubileeSlot`) / main job's best Dynamis neck |
