@@ -91,10 +91,13 @@ local function make_item(item) -- LAC equip.lua MakeItemTable
         t.Name = string.lower(item);
     elseif (type(item) == 'table') then
         for k, v in pairs(item) do
-            if (k == 'Name') and (type(v) == 'string') then t.Name = string.lower(v)
+            if ((k == 'Name') or (k == 'name')) and (type(v) == 'string') then t.Name = string.lower(v)
             elseif (k == 'Augment') then t.Augment = v
-            elseif (k == 'Bag') then t.Bag = (type(v) == 'string') and C.Containers[string.lower(v)] or v
-            elseif (k == 'Priority') and (type(v) == 'number') then t.Priority = v
+            -- GearSwap's own item format ({ name=, augments=, priority=, bag= }, as //gs export writes it):
+            -- its augment strings are Windower's, so GearSwap matches them as they are.
+            elseif (k == 'augments') or (k == 'augment') then t.GSAug = (type(v) == 'table') and v or { v }
+            elseif ((k == 'Bag') or (k == 'bag')) then t.Bag = (type(v) == 'string') and C.Containers[string.lower(v)] or v
+            elseif ((k == 'Priority') or (k == 'priority')) and (type(v) == 'number') then t.Priority = v
             elseif (k == 'AugPath') then t.AugPath = v
             elseif (k == 'AugRank') then t.AugRank = v
             elseif (k == 'AugTrial') then t.AugTrial = v end
@@ -148,15 +151,80 @@ local function aug_item(t)
     return augments, bag;
 end
 
+-- LAC-style Augment lists (Ashita job files) on Windower. LAC splits an augment into one string per stat
+-- from its own table (data.lua GetAugment); Windower's extdata gives one string per augment slot, and some
+-- stats are named differently (one id: LAC 'Mag. Acc.+20' + 'Magic Damage+20', Windower 'Mag. Acc+20 /Mag.
+-- Dmg.+20'), so GearSwap's whole-string match fails. Instead: score each carried copy by how many of the
+-- list's stats show up in its augments (spacing, dots, quotes and slashes ignored; a stat must not run on
+-- from letters or into more digits), and hand GearSwap the best copy's own augment list and bag. No copy
+-- matching any: equip by name, said once.
+local function aug_norm(str) return (string.gsub(string.lower(tostring(str)), '[^%w%+%-%%]', '')) end
+local function aug_has(hay, goal)
+    local from = 1;
+    while true do
+        local i, j = string.find(hay, goal, from, true);
+        if (i == nil) then return false end
+        local before, after = string.sub(hay, i - 1, i - 1), string.sub(hay, j + 1, j + 1);
+        if (not string.find(before, '%a')) and (not string.find(after, '%d')) then return true end
+        from = i + 1;
+    end
+end
+local lacAugCache, lacAugWarned = {}, {};
+local function lac_aug_item(t)
+    local goals = (type(t.Augment) == 'table') and t.Augment or { t.Augment };
+    local key = t.Name;
+    for _, g in pairs(goals) do key = key .. '|' .. tostring(g) end
+    local hit = lacAugCache[key];
+    local now = os.clock();
+    if (hit ~= nil) and (now < hit.until_) then return hit.augments, hit.bag end
+    local id = A.ItemIdByName(t.Name);
+    local all = ffxi.get_items();
+    local best, bestScore, bestBag = nil, 0, nil;
+    if (id ~= nil) and (type(all) == 'table') then
+        for _, b in ipairs(gSettings.EquipBags) do
+            local name = bag_name(b);
+            local list = name and all[gearswap.to_windower_bag_api(name)] or nil;
+            if (type(list) == 'table') then
+                for _, it in pairs(list) do
+                    if (type(it) == 'table') and (it.id == id) and (it.extdata ~= nil) then
+                        local ok, d = pcall(gearswap.extdata.decode, it);
+                        if ok and (type(d) == 'table') and (type(d.augments) == 'table') then
+                            local own, parts = {}, {};
+                            for _, a in ipairs(d.augments) do
+                                if (type(a) == 'string') and (a ~= 'none') then own[#own + 1] = a; parts[#parts + 1] = aug_norm(a) end
+                            end
+                            local hay = '|' .. table.concat(parts, '|') .. '|';
+                            local score = 0;
+                            for _, g in pairs(goals) do
+                                if aug_has(hay, aug_norm(g)) then score = score + 1 end
+                            end
+                            if (score > bestScore) and (#own > 0) then best, bestScore, bestBag = own, score, name end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    if (best == nil) and not lacAugWarned[key] then
+        lacAugWarned[key] = true;
+        windower.add_to_chat(207, '[GoomSwap] ' .. t.Name .. ': no carried copy matches its Augment list, wearing it by name');
+    end
+    lacAugCache[key] = { augments = best, bag = bestBag, until_ = now + 5 };
+    return best, bestBag;
+end
+
 local function to_gs(t)
     if (t.Name == 'remove') then return empty end
     if (t.Name == 'displaced') or (t.Name == 'ignore') then return nil end
     local e = { name = t.Name };
     local plain = true;
     if (t.Priority ~= 0) then e.priority = t.Priority; plain = false end
-    if (t.Augment ~= nil) then
-        e.augments = (type(t.Augment) == 'table') and t.Augment or { t.Augment };
+    if (t.GSAug ~= nil) then
+        e.augments = t.GSAug;
         plain = false;
+    elseif (t.Augment ~= nil) then
+        local augs, bag = lac_aug_item(t);
+        if (augs ~= nil) then e.augments = augs; e.bag = bag; plain = false end
     end
     if (t.Bag ~= nil) then e.bag = bag_name(t.Bag); plain = false end
     if (t.AugPath ~= nil) or (t.AugRank ~= nil) or (t.AugTrial ~= nil) then
