@@ -394,7 +394,7 @@ local sets = {
         Feet = 'Leth. Houseaux +3',
     },
     NukeACC = {};
-    OccultAcumen = { -- /nukeset oc: Occult Acumen / Store TP pieces, over Nuke and Burst (TP from nukes)
+    OccultAcumen = { -- /nukeset oa: Occult Acumen / Store TP pieces, over Nuke and Burst (TP from nukes)
     },
     Burst = {
         Main = 'Bunzi\'s Rod', -- 10 and 0
@@ -596,7 +596,7 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None', 'Naegling', 'Maxentius', 'Crocea'};
     gcinclude.DefaultWeapons = 'Maxentius';
     gcinclude.MainModes = {'None', 'Caliburnus'}; -- /mainset caliburnus: Caliburnus in Main (Sub stays the mode's), /mainset none: back to the mode's main. A Main swap resets TP
-    gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oc (or occult, acumen): OccultAcumen set on nukes
+    gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
     gcinclude.Initialize();
 end
 
@@ -728,7 +728,7 @@ profile.HandleMidcast = function()
         if gcinclude.BurstWanted() then
             gFunc.EquipSet(sets.Burst);
         end
-        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oc: TP from nukes, over Nuke/Burst
+        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
         if string.match(spell.Name, 'helix') then
             gFunc.EquipSet(sets.Helix);
         end

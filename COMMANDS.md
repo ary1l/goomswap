@@ -5,9 +5,9 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 
 - On/off commands (`/dt`, `/th`, `/sir`, `/kite`, `/automb`, `/autofood`…) take `on`/`off`; no word flips.
 - Cycle and weapon commands (`/wm`, `/mainset`…, `/mset`, `/nukeset`, `/tankset`, `/weapon`, `/elecycle`, `/pupmode`):
-  no word cycles; a word picks, any case: exact name, else the one value it starts, else the one value containing it, or
-  a number (`/wm max` = Maxentius, `/nukeset oc` = OccultAcumen, `/mset sb`, `/tankset meva`, `/wm 3`). Two matches:
-  it lists them. `/setcycle <name> <value>` sets any cycle.
+  no word cycles; a word picks, any case: exact name, else the one value it starts, else the one whose initials it is,
+  else the one containing it, or a number (`/wm max` = Maxentius, `/nukeset oa` = OccultAcumen, `/mset sb` =
+  SubtleBlow, `/tankset meva`, `/wm 3`). Two matches: it lists them. `/setcycle <name> <value>` sets any cycle.
 - Windower: `profile.Packer` goes to `//gs org` (Organizer addon).
 - Zoning turns off `/autofood`, `/autosoda`, `/hoxne`. While zoning (zone-line reply until 3s after arriving) nothing
   is sent by itself: no item uses, food/soda or auto-casts.
@@ -63,6 +63,15 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 
 ## Magic burst (RDM BLM SCH GEO)
 
+Setup:
+1. Fill the job's `Burst` set (magic burst damage gear). It goes on by itself when a nuke lands in a live skillchain
+   of its element; `/burst` puts it on every nuke.
+2. Tier for `/automb`: `MBTier = 'Mid'` in settings (Low = I, Mid = III, High = V), or one job: `gcinclude.MBTier =
+   'High'` in OnLoad before `Initialize()`. In game: `/mbtier high` (`low`/`mid`/`high`, `1`/`3`/`5`; lasts until reload or job change).
+3. `/automb on` (Win+grave) to cast bursts by itself; `AutoNuke = true` starts it on.
+4. Optional settings: `MBCasts` (bursts per chain, 1), `MBRotate` (spread them over the chain's elements), `MBMinMP`
+   (hold below this MP), `MBFallback` (next tier down when the tier can't go), `MBSkills` (skills that wear Burst).
+
 | Command | Does |
 |---|---|
 | `/automb [on\|off]` | Casts into live skillchains by itself (Win+grave; `/autonuke`, `/mbmode` same) |
@@ -70,16 +79,12 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 | `/burst` | Burst set on every nuke, not only live skillchains |
 | `/mbinfo` | Last skillchain seen |
 
-- Burst set: automatic. A nuke landing in a live skillchain of its element wears it.
-- Tier default: `MBTier = 'Mid'`; per job `gcinclude.MBTier = 'High'` before `Initialize()`. A command's tier lasts
-  until reload or job change.
 - `/automb` targets a chain on your target or a mob you/your party are engaged on (your target first), cast by id
   (works engaged on another mob; skipped past 21.8'). Casts the chain element's tiered nuke; can't (not learned,
   recast, MP, SCH IV/V without Addendum: Black/Enlightenment) → next tier down (`MBFallback`). Light/Dark-only chains:
   SCH Luminohelix/Noctohelix, others skip. Only if it lands inside `MBWindow` (10s; cast time learned), not moving,
   after your own action delays (3s spell, 2s WS/JA). `MBCasts` per chain, `MBRotate`, `MBMinMP`. Tier V: BLM 86,
   SCH 91, RDM/GEO 100 JP gift. Windower: casts at the mob without targeting it.
-- `settings.MBSkills` (Elemental Magic) = skills that count for Burst.
 
 ## Action checks
 
@@ -122,7 +127,7 @@ checked; the game's own message says when it refuses.
 
 | Command | Does |
 |---|---|
-| `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb` = SubtleBlow): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
+| `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb`): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
 | `/kite` / `/th` | Movement gear / `TH` until tagged |
 | `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). No word shows thresholds (doesn't flip). Regen/Refresh out of combat, not over `/dt`; Dt/Pet_Dt any time |
 | `/received <spell>` | Wear that `*_Received` set |
@@ -133,7 +138,7 @@ checked; the game's own message says when it refuses.
 
 | Command | Jobs | Does |
 |---|---|---|
-| `/nukeset` | RDM BLM SCH GEO WHM | Power → Macc; RDM, GEO also → OccultAcumen (`/nukeset oc`): `OccultAcumen` set over your nuke sets. Own list: `gcinclude.NukeModes` in OnLoad |
+| `/nukeset` | RDM BLM SCH GEO WHM | Power → Macc; RDM, GEO also → OccultAcumen (`/nukeset oa`): `OccultAcumen` set over your nuke sets. Own list: `gcinclude.NukeModes` in OnLoad |
 | `/weapon` / `/elecycle` | BLM SCH | Club ↔ Staff / element |
 | `/nuke <1-6>` `/helix` `/weather` | BLM SCH (`/weather` SCH) | Element's nuke / helix / storm |
 | `/death` | BLM | Death toggle |

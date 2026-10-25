@@ -435,7 +435,7 @@ end
 			toggle = 'MDT Set';
 			status = gcdisplay.GetToggle('MDTset');
 		elseif (args[1] == 'meleeset') or (args[1] == 'mset') then
-			gcinclude.PickCycle('MeleeSet', ((args[2] ~= nil) and (string.lower(args[2]) == 'sb')) and 'SubtleBlow' or args[2]);
+			gcinclude.PickCycle('MeleeSet', args[2]);
 			toggle = 'Melee Set';
 			status = gcdisplay.GetCycle('MeleeSet');
 		elseif (gcinclude.WeaponCommands[args[1]] ~= nil) then
@@ -736,6 +736,18 @@ end
 
 	-- Sets cycle cname to the value val names in list: its number, the value in any case, or one value
 	-- it starts (or is part of). Says why when nothing or more than one matches, unless quiet.
+	-- A value's initials: first letter, each capital after a lower-case letter, each letter after a space/_/-
+	-- ('OccultAcumen' -> 'oa', 'SubtleBlow' -> 'sb', 'Bunzi's Rod' -> 'br').
+	local function initials(v)
+		local out = string.sub(v, 1, 1);
+		for i = 2, #v do
+			local c, p = string.sub(v, i, i), string.sub(v, i - 1, i - 1);
+			if (string.find(c, '%u') and string.find(p, '[%l%d]')) or (string.find(p, '[%s_%-]') and string.find(c, '%w')) then out = out .. c end
+		end
+		return string.lower(out);
+	end
+
+	-- Exact name, else the one value it starts, else the one whose initials it is, else the one containing it; or a number.
 	function gcinclude.SetCycleFrom(cname, list, val, quiet)
 		local index = tonumber(val);
 		if (index ~= nil) and (index >= 1) and (index <= #list) then
@@ -751,6 +763,11 @@ end
 		for _, v in ipairs(list) do
 			local lv = string.lower(v);
 			if (string.sub(lv, 1, string.len(want)) == want) then hits:append(v) end
+		end
+		if (#hits == 0) then
+			for _, v in ipairs(list) do
+				if (initials(v) == want) then hits:append(v) end
+			end
 		end
 		if (#hits == 0) then
 			for _, v in ipairs(list) do
