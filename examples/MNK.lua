@@ -166,7 +166,7 @@ local sets = {
 
 
     Impetus = {--over rides your TP set if impetus is up
-		Ear2 = 'dedition earring',
+		Ear1 = 'dedition earring',
         Body = 'Bhikku Cyclas +3',
     },
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
