@@ -111,6 +111,14 @@ local sets = {
         Main = 'Crocea Mors',
         Sub = 'Genmei Shield',
     },
+    Weapon_Caliburnus = { -- /wm cali
+        Main = 'Caliburnus',
+        Sub = 'Thibron',
+    },
+    Weapon_Caliburnus_1h = {
+        Main = 'Caliburnus',
+        Sub = 'Genmei Shield',
+    },
     Tp_Default = {
 		Main = 'excalibur',
 		Sub = 'thibron',
@@ -593,9 +601,8 @@ profile.Sets = sets;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
-    gcinclude.WeaponModes = {'None', 'Naegling', 'Maxentius', 'Crocea'};
+    gcinclude.WeaponModes = {'None', 'Naegling', 'Maxentius', 'Crocea', 'Caliburnus'};
     gcinclude.DefaultWeapons = 'Maxentius';
-    gcinclude.MainModes = {'None', 'Caliburnus'}; -- /mainset caliburnus: Caliburnus in Main (Sub stays the mode's), /mainset none: back to the mode's main. A Main swap resets TP
     gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
     gcinclude.Initialize();
 end

@@ -109,6 +109,14 @@ local sets = {
         Main = 'Tizona',
         Sub = 'Genmei Shield',
     },
+    Weapon_Caliburnus = { -- /wm cali
+        Main = 'Caliburnus',
+        Sub = 'Thibron',
+    },
+    Weapon_Caliburnus_1h = {
+        Main = 'Caliburnus',
+        Sub = 'Genmei Shield',
+    },
 	Tp_Default = {
 		--sub = 'thibron',
         Ammo = 'coiste bodhar',
@@ -481,9 +489,8 @@ profile.Sets = sets;
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
     gcinclude.AlwaysDualWield = true;
-    gcinclude.WeaponModes = {'None', 'Tizona'};
+    gcinclude.WeaponModes = {'None', 'Tizona', 'Caliburnus'};
     gcinclude.DefaultWeapons = 'Tizona';
-    gcinclude.MainModes = {'None', 'Caliburnus'}; -- /mainset caliburnus: Caliburnus in Main (Sub stays the mode's), /mainset none: back to Tizona. A Main swap resets TP
     gcinclude.SubModes = {'None', 'Bunzi\'s Rod'}; -- /subset bunzi: nuke offhand (Tizona stays), /subset none: back to the mode's Thibron. A Sub swap resets TP
     gcinclude.Initialize();
 
