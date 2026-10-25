@@ -2,8 +2,7 @@ local profile = {};
 if (gFunc == nil) then error('GoomSwap: GearSwap loaded this job file directly. Windower: move it to data/goomswap/<Name>/<JOB>.lua and delete it from data/<Name>/ (see README Install)', 0) end
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
 
--- BST example. Gear from GetAwayCoxn's Luashitacast-Profiles (github.com/GetAwayCoxn/Luashitacast-Profiles,
--- MIT, see LICENSE-GetAwayCoxn.txt); swap in your own.
+-- BST example: swap in your own gear.
 -- Sets named after an ability, spell, skill or weapon skill (['Reward'], ['Savage Blade'])
 -- are worn by name (gcinclude.ByName); a spell with no set uses its family's (['Cure'] for Cure IV).
 -- Add '<Name>_SubtleBlow' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
