@@ -124,23 +124,9 @@ local sets = {
         Legs = { Name = 'Sakpata\'s Cuisses', Priority = 114 },
         Feet = { Name = 'sakpata\'s leggings', Priority = 68 },
     },
-    Tp_Hybrid = {
-        Ammo = 'coiste bodhar',
-        Head = { Name = 'sakpata\'s helm', Priority = 91 },
-        Neck ={ Name = 'null loop', Priority = 50 },
-        Ear1 = 'Telos Earring',
-        Ear2 = 'Cessance Earring',
-        Body = { Name = 'sakpata\'s plate', Priority = 136 },
-        Hands = { Name = 'Sakpata\'s Gauntlets', Priority = 91 },
-        Ring1 = 'murky ring',
-        Ring2 = { Name = 'moonlight Ring', Priority = 110 },
-        Back = 'null shawl',
-        Waist = 'Sailfi Belt +1',
-        Legs = { Name = 'Sakpata\'s Cuisses', Priority = 114 },
-        Feet = { Name = 'Sakpata\'s leggings', Priority = 68 },
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
-        Ring1 = 'Chirich Ring +1',
         Ring2 = 'Cacoethic Ring +1',
     },
 
@@ -363,8 +349,6 @@ local sets = {
         Legs = { Name = 'nyame flanchard', Priority = 114 },
         Feet = { Name = 'nyame Sollerets', Priority = 68 },
     },
-    Ws_Hybrid = {
-    },
     Ws_Acc = {
     },
     Chant_Default = {
@@ -381,8 +365,6 @@ local sets = {
         Legs = { Name = 'nyame flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
-    Chant_Hybrid = {
-    },
     Chant_Acc = {
     },
     Savage_Default = {
@@ -398,8 +380,6 @@ local sets = {
         Waist = 'Sailfi Belt +1',
         Legs = { Name = 'nyame flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
-    },
-    Savage_Hybrid = {
     },
     Savage_Acc = {
     },
@@ -418,8 +398,6 @@ local sets = {
         Legs = { Name = 'cab. breeches +4', Priority = 82 },
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },
     },
-    Atone_Hybrid = {
-    },
     Atone_Acc = {
     },
     Aedge_Default = {
@@ -437,7 +415,6 @@ local sets = {
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
-    Aedge_Hybrid = {},
     Aedge_Acc = {},
 
     sanguine_Default = {
@@ -455,7 +432,6 @@ local sets = {
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
-    sanguine_Hybrid = {},
     sanguine_Acc = {},
 
 	shining_Default = {
@@ -473,7 +449,6 @@ local sets = {
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
-    shining_Hybrid = {},
     shining_Acc = {},
 
 	KOR_Default = {
@@ -491,7 +466,6 @@ local sets = {
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'nyame sollerets', Priority = 68 },
     },
-    KOR_Hybrid = {},
     KOR_Acc = {},
 
 	Imperator_Default = {
@@ -508,7 +482,6 @@ local sets = {
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'nyame sollerets', Priority = 68 },
     },
-    Imperator_Hybrid = {},
     Imperator_Acc = {},
 
     Fealty = {
@@ -688,7 +661,7 @@ local sets = {
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
 		},
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
-    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
     -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
     -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
     Hoxne_Tp = {},

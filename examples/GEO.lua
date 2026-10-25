@@ -168,7 +168,7 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Tp_Hybrid = {
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         --Head = 'Blistering Sallet +1',
@@ -425,8 +425,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Ws_Hybrid = {
-    },
     Ws_Acc = {
     },
 
@@ -445,11 +443,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    BH_Hybrid = {
-        Ammo = 'Crepuscular Pebble',
-        Neck = 'Null Loop',
-        Waist = 'Fotia Belt',
-    },
     BH_Acc = {
     },
     Aedge_Default = {
@@ -465,8 +458,6 @@ local sets = {
         Waist = 'Eschan Stone',
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
-    },
-    Aedge_Hybrid = {
     },
     Aedge_Acc = {
     },
@@ -487,8 +478,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Exudation_Hybrid = {
-    },
     Exudation_Acc = {
     },
     -- Judgment: physical single hit, STR + MND mods, damage varies with TP. Same profile as Black Halo.
@@ -507,8 +496,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Judgment_Hybrid = {
-    },
     Judgment_Acc = {
     },
     -- Shining Strike / Seraph Strike: magical, light, STR + MND mods; INT still counts (dINT term).
@@ -526,8 +513,6 @@ local sets = {
         Waist = 'Eschan Stone',
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
-    },
-    Strike_Hybrid = {
     },
     Strike_Acc = {
     },

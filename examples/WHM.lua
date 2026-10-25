@@ -111,7 +111,7 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'bunzi\'s sabots',
     },
-    Tp_Hybrid = {
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear2 = 'Digni. Earring',
@@ -340,8 +340,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Ws_Hybrid = {
-    },
     Ws_Acc = {
     },
     Cataclysm_Default = {
@@ -358,8 +356,6 @@ local sets = {
         Waist = 'Eschan Stone',
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
-    },
-    Cataclysm_Hybrid = {
     },
     Cataclysm_Acc = {
     },

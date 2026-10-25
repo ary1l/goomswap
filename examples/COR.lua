@@ -126,40 +126,10 @@ local sets = {
         Legs = 'Chas. Culottes +3',
         Feet = 'malignance boots',
     },
-    Tp_Hybrid = {
-		Main = 'naegling',
-		Sub = 'tauret',
-		Range = 'Fomalhaut',
-        Ammo = 'Chrono Bullet',
-        Head = 'Malignance Chapeau',
-        Neck = 'Iskur Gorget',
-        Ear2 = 'Suppanomimi',
-        Body = 'Malignance Tabard',
-        Hands = 'Malignance gloves',
-        Ring1 = 'Chirich Ring +1',
-        Ring2 = 'Epona\'s Ring',
-		Back = 'null shawl',
-        Waist = 'sailfi belt +1',
-        Legs = 'Chas. Culottes +3',
-        Feet = 'malignance boots',
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
-		Main = 'Naegling',
-		Sub = 'Gleti\'s Knife',
-		Range = 'Anarchy +2',
-		Ammo = 'chrono bullet',
-        Head = 'Malignance Chapeau',
-        Neck = 'Iskur Gorget',
-        Ear1 = 'Telos Earring',
-        Ear2 = 'Suppanomimi',
-        Body = 'Malignance Tabard',
-        Hands = 'Malignance gloves',
         Ring1 = 'Petrov Ring',
-        Ring2 = 'Epona\'s Ring',
-		Back = 'null shawl',
-        Waist = 'sailfi belt +1',
-        Legs = 'Chas. Culottes +3',
-        Feet = 'malignance boots',
     },
 
 
@@ -274,8 +244,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
     },
-    Ws_Hybrid = {
-    },
     Ws_Acc = {
     },
     WsObi = {--puts elemental obi on for leaden/wildfire under dark/fire situations
@@ -295,8 +263,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
     },
-    Savage_Hybrid = {
-    },
     Savage_Acc = {
         --Ear1 = 'Telos Earring',
     },
@@ -314,8 +280,6 @@ local sets = {
         Waist = 'Fotia Belt',
         -- Legs = 'Mummu Kecks +2',
         -- Feet = 'Mummu Gamash. +2',
-    },
-    Evisceration_Hybrid = {
     },
     Evisceration_Acc = {
     },
@@ -335,8 +299,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
     },
-    Aedge_Hybrid = {
-    },
     Aedge_Acc = {
     },
 
@@ -353,8 +315,6 @@ local sets = {
         Waist = 'Fotia Belt',
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
-    },
-    Laststand_Hybrid = {
     },
     Laststand_Acc = {
 	Neck = 'null loop',
@@ -374,8 +334,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
     },
-    Wildfire_Hybrid = {
-    },
     Wildfire_Acc = {
         --Ear2 = 'Digni. Earring',
     },
@@ -392,8 +350,6 @@ local sets = {
         Waist = 'Fotia Belt',
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
-    },
-    HS_Hybrid = {
     },
     HS_Acc = {
         --Ear2 = 'Digni. Earring',
@@ -412,8 +368,6 @@ local sets = {
         Waist = 'Svelt. Gouriz +1',
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
-    },
-    Leaden_Hybrid = {
     },
     Leaden_Acc = {
         --Ear2 = 'Digni. Earring',

@@ -120,7 +120,7 @@ checked; the game's own message says when it refuses.
 
 | Command | Does |
 |---|---|
-| `/mset [value]` (`/meleeset`) | Default → Hybrid → Acc: `Tp_`/`Ws_Hybrid` or `_Acc` over `_Default`, `<Name>_Hybrid` over a named set |
+| `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb` = SubtleBlow): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
 | `/kite` / `/th` | Movement gear / `TH` until tagged |
 | `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). No word shows thresholds (doesn't flip). Regen/Refresh out of combat, not over `/dt`; Dt/Pet_Dt any time |
 | `/received <spell>` | Wear that `*_Received` set |
@@ -193,7 +193,7 @@ Order: README How sets stack.
 ### Hoxne layering
 
 Hoxne sets go over your job sets (incl. `Impetus`), under every engine layer, and take `/mset` variants
-(`Hoxne_Tp_Hybrid`). MNK Victory Smite, Impetus up: `Ws_Default` → `Victory_Default` → `Victory_Imp` → `Hoxne_Ws`
+(`Hoxne_Tp_SubtleBlow`). MNK Victory Smite, Impetus up: `Ws_Default` → `Victory_Default` → `Victory_Imp` → `Hoxne_Ws`
 → `['Hoxne_Victory Smite']` → `['Hoxne_Victory Smite_Impetus']` → `Buffs_Ws` → Moonshade.
 Moonshade goes in Ear2 on WS under `MoonshadeTP` (1750), except `MoonshadeSkip`. A Sub that can't go with the final
 Main (two-hander needs a grip, grip needs a two-hander; FFXIclopedia Grips) is dropped.

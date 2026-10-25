@@ -97,7 +97,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 |---|---|
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
 | `/mainset` `/subset` `[name]` | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
-| `/mset [hybrid\|acc\|default]` | `_Hybrid` / `_Acc` versions of TP and WS sets (`/meleeset` same) |
+| `/mset [sb\|acc\|default]` | `_SubtleBlow` / `_Acc` versions of TP and WS sets (`/meleeset` same). DT is `/dt`, on top of any |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
 | `/th` | `TH` set while engaged with or acting on a mob, until it's tagged: your first swing, shot, WS or JA on it (not `THSkip`). Not at rest. THF main: the whole time, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |

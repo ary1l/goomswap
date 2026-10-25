@@ -8,7 +8,7 @@ gcinclude.settings.WeaponTPGuard = 0; -- no 1000+ TP weapon hold either (nukes, 
 -- MIT, see LICENSE-GetAwayCoxn.txt); swap in your own.
 -- Sets named after an ability, spell, skill or weapon skill (['Manafont'], ['Savage Blade'])
 -- are worn by name (gcinclude.ByName); a spell with no set uses its family's (['Cure'] for Cure IV).
--- Add '<Name>_Hybrid' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
+-- Add '<Name>_SubtleBlow' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
 local sets = {
     Incapacitated = { -- slept, petrified, stunned or terrorized: worn over your /def set (else Dt) minus Main/Sub/Range/Ammo; add extra pieces here
     },
@@ -86,7 +86,8 @@ local sets = {
     },
 
     Tp_Default = {},
-    Tp_Hybrid = {},
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    },
     Tp_Acc = {
         Ring1 = 'Cacoethic Ring +1',
         Ring2 = 'Chirich Ring +1',
@@ -344,7 +345,6 @@ local sets = {
         Legs = 'Wicce Chausses +2',
         Feet = 'Nyame Sollerets',
     },
-    Ws_Hybrid = {},
     Ws_Acc = {},
     -- ['Weapon Skill Name'] = {}, ['Weapon Skill Name_Acc'] = {},
 

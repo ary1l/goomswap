@@ -341,7 +341,10 @@ function gcinclude.SetVariables()
     gcdisplay.CreateCycle('Hoxne', {[1] = 'Off', [2] = 'Locked'});
     gcdisplay.CreateToggle('Kite', false);
     gcdisplay.CreateToggle('TH', false);
-    gcdisplay.CreateCycle('MeleeSet', {[1] = 'Default', [2] = 'Hybrid', [3] = 'Acc'});
+    -- /mset modes: <set>_<mode> over <set>_Default. A job file can set its own list (gcinclude.MeleeModes = {...} in
+    -- OnLoad, before Initialize). DT is not a mode: /dt layers the Dt set over any of them.
+    local melee = (type(gcinclude.MeleeModes) == 'table') and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or {'Default', 'SubtleBlow', 'Acc'};
+    gcdisplay.CreateCycle('MeleeSet', melee);
     gcinclude.BuildWeaponCycles(mJob);
     if (type(gcinclude.DefaultWeapons) == 'string') then
         gcinclude.SetWeaponCycle('Weapons', gcinclude.DefaultWeapons, true);
@@ -432,7 +435,7 @@ end
 			toggle = 'MDT Set';
 			status = gcdisplay.GetToggle('MDTset');
 		elseif (args[1] == 'meleeset') or (args[1] == 'mset') then
-			gcinclude.PickCycle('MeleeSet', args[2]);
+			gcinclude.PickCycle('MeleeSet', ((args[2] ~= nil) and (string.lower(args[2]) == 'sb')) and 'SubtleBlow' or args[2]);
 			toggle = 'Melee Set';
 			status = gcdisplay.GetCycle('MeleeSet');
 		elseif (gcinclude.WeaponCommands[args[1]] ~= nil) then
@@ -1931,7 +1934,7 @@ end
 		local set = gcinclude.FindSet(n); -- index, not LAC's scan of every set
 		if (set ~= nil) then
 			gFunc.EquipSet(set);
-		elseif (modeWarned[n] == nil) then
+		elseif (mode == 'Acc') and (modeWarned[n] == nil) then -- other modes (SubtleBlow, a job's own) are optional per set
 			modeWarned[n] = true;
 			gcinclude.Err('no ' .. n .. ' set: ' .. prefix .. '_Default stays (add ' .. n .. ' or /mset default)');
 		end
@@ -2184,7 +2187,7 @@ end
 	-- Hoxne sets (per job), worn while /hoxne is Locked and Enchantment is up (the Ampulla's Double Attack +100%,
 	-- FFXIclopedia Hoxne Ampulla): Hoxne_Tp engaged, Hoxne_Idle idle and not moving, Hoxne_Dt in place of both
 	-- while /dt is on (none: the Dt set stays), none while /kite is on. WS: Hoxne_Ws, then Hoxne_<ws name>.
-	-- Each also takes its /meleeset variant (Hoxne_Tp_Hybrid), then its buff combos: Hoxne_Tp_Impetus while
+	-- Each also takes its /meleeset variant (Hoxne_Tp_SubtleBlow), then its buff combos: Hoxne_Tp_Impetus while
 	-- Impetus is up, ['Hoxne_Ws_Sneak Attack&Trick Attack'] while both are (fewest buffs first, then A-Z).
 	-- Over job sets, under engine layers.
 	function gcinclude.HoxneActive()
@@ -2609,7 +2612,7 @@ end
 			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots|all] /unlock [slots|all]',
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
-			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /meleeset or /mset [hybrid|acc|default] (no word: Default > Hybrid > Acc)',
+			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /meleeset or /mset [sb|acc|default] (no word: Default > SubtleBlow > Acc)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
 			'hud    : /gchud [on|off|pos x y|debug]',
 			'checks : /checksets, /xiroll, /mbinfo',
@@ -2856,7 +2859,7 @@ end
 						end
 					end
 				end
-				for _, suffix in ipairs(T{'Default', 'Hybrid', 'Acc'}) do
+				for _, suffix in ipairs(T{'Default', 'SubtleBlow', 'Acc'}) do
 					local base = string.match(name, '^(.+)_' .. suffix .. '$');
 					if (base ~= nil) then
 						families[base] = families[base] or {};
@@ -2872,7 +2875,7 @@ end
 		table.sort(drift);
 		local gaps = T{};
 		for base, seen in pairs(families) do
-			if (seen['Default'] == nil) and (gcinclude.FindSet(base) == nil) then gaps:append(base .. '_Default is missing (Hybrid/Acc exist)') end
+			if (seen['Default'] == nil) and (gcinclude.FindSet(base) == nil) then gaps:append(base .. '_Default is missing (SubtleBlow/Acc exist)') end
 		end
 		gcinclude.Say('checksets: ' .. tostring(#empty) .. ' empty, ' .. tostring(#unknown) .. ' unknown items, ' .. tostring(#gaps) .. ' gaps, ' .. tostring(#drift) .. ' slot drifts');
 		for _, v in ipairs(gaps) do gcinclude.Err(v) end

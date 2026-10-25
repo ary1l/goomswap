@@ -125,16 +125,9 @@ local sets = {
         Legs = 'malignance tights',
 		Feet = 'malignance boots',
     },
-	Tp_Hybrid = {
-		--sub = 'thibron',
-		Head = 'Malignance Chapeau',
-		Ear2 = 'Digni. Earring',
-		Body = 'volte harness',
-		Hands = 'Malignance Gloves',
-		Ring1 = 'Chirich Ring +1',
-		Legs = 'malignance tights',
-		Feet = 'malignance boots',
-        },
+	Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+	    Body = 'volte harness', -- Subtle Blow+10
+	},
 	Tp_Acc = {
         },
 
@@ -325,13 +318,6 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Ws_Hybrid = {
-        Head = 'Nyame Helm',
-        Body = 'Gleti\'s Cuirass',
-        Hands = 'Malignance Gloves',
-        Legs = 'Gleti\'s Breeches',
-        Feet = 'Gleti\'s Boots',
-    },
     Ws_Acc = {
     },
     Chant_Default = {
@@ -347,10 +333,6 @@ local sets = {
         Back = { Name = 'Rosmerta\'s Cape', Augment = { [1] = '"Dbl.Atk."+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'DEX+30' } },
         Legs = 'Gleti\'s Breeches',
         Feet = 'Gleti\'s Boots',
-    },
-    Chant_Hybrid = {
-        Head = 'Malignance Chapeau',
-        Hands = 'Malignance Gloves',
     },
     Chant_Acc = {
     },
@@ -368,10 +350,23 @@ local sets = {
 		Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Savage_Hybrid = {
-        Ammo = 'Staunch Tathlum +1',
-    },
     Savage_Acc = {
+    },
+    Imperator_Default = { -- Caliburnus WS: physical, DEX/MND (BG-Wiki 70%/70%, marked unverified; FFXIAH testing ~27%/27%), fTP 6.6/13.35/20.1. Start: your Savage Blade set (crepuscular pebble as in your PLD Imperator)
+	    Ammo = 'crepuscular pebble',
+        Head = 'Hashishin Kavuk +3',
+		Neck = 'Mirage Stole +2',
+        Ear1 = 'alabaster Earring',
+        Body = 'Assim. Jubbah +4',
+        Hands = 'nyame gauntlets',
+        Ring1 = 'petrov Ring',
+        Ring2 = 'Ephramad\'s Ring',
+        Back = { Name = 'Rosmerta\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'sailfi belt +1',
+		Legs = 'nyame flanchard',
+        Feet = 'nyame sollerets',
+    },
+    Imperator_Acc = {
     },
     Expiacion_Default = {
         Ammo = 'crepuscular pebble',
@@ -387,9 +382,9 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Expiacion_Hybrid = {
-    },
     Expiacion_Acc = {
+    },
+    Expiacion_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Expiacion_Default (any WS: <its set>_SubtleBlow)
     },
     Requiescat_Default = {
         Head = 'Hashishin Kavuk +3',
@@ -402,8 +397,6 @@ local sets = {
         Waist = 'Fotia Belt',
         Legs = 'Gleti\'s Breeches',
         Feet = 'Jhakri Pigaches +2',
-    },
-    Requiescat_Hybrid = {
     },
     Requiescat_Acc = {
     },
@@ -422,7 +415,6 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'Hashi. Basmak +3',
     },
-    sanguine_Hybrid = {},
     sanguine_Acc = {},
     Ca = {
         Head = 'Hashishin Kavuk +3',
@@ -446,7 +438,7 @@ local sets = {
     },
 
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
-    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
     -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
     -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
     Hoxne_Tp = {},
@@ -491,6 +483,7 @@ profile.OnLoad = function()
     gcinclude.AlwaysDualWield = true;
     gcinclude.WeaponModes = {'None', 'Tizona'};
     gcinclude.DefaultWeapons = 'Tizona';
+    gcinclude.MainModes = {'None', 'Caliburnus'}; -- /mainset caliburnus: Caliburnus in Main (Sub stays the mode's), /mainset none: back to Tizona. A Main swap resets TP
     gcinclude.SubModes = {'None', 'Bunzi\'s Rod'}; -- /subset bunzi: nuke offhand (Tizona stays), /subset none: back to the mode's Thibron. A Sub swap resets TP
     gcinclude.Initialize();
 
@@ -600,6 +593,8 @@ profile.HandleWeaponskill = function()
         gcinclude.EquipMode('Chant');
     elseif string.match(ws.Name, 'Savage Blade') then
         gcinclude.EquipMode('Savage');
+    elseif string.match(ws.Name, 'Imperator') then
+        gcinclude.EquipMode('Imperator');
     elseif string.match(ws.Name, 'Expiacion') then
         gcinclude.EquipMode('Expiacion');
     elseif string.match(ws.Name, 'Requiescat') then

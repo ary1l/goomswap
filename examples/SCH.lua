@@ -112,11 +112,9 @@ local sets = {
         Legs = 'Agwu\'s Slops',
         Feet = 'Agwu\'s Pigaches',
     },
-    Tp_Hybrid = {
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
-        Ring1 = 'Chirich Ring +1',
-        Ring2 = 'Cacoethic Ring +1',
     },
 
 
@@ -354,8 +352,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Ws_Hybrid = {
-    },
     Ws_Acc = {
     },
     Mykyr_Default = {
@@ -373,8 +369,6 @@ local sets = {
         Legs = 'Amalric Slops +1',
         Feet = 'Arbatel Loafers +3',
     },
-    Mykyr_Hybrid = {
-    },
     Mykyr_Acc = {
     },
     Cataclysm_Default = {
@@ -391,8 +385,6 @@ local sets = {
         Waist = 'Eschan Stone',
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
-    },
-    Cataclysm_Hybrid = {
     },
     Cataclysm_Acc = {
     },

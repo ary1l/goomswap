@@ -88,19 +88,13 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Tp_Hybrid = {
-        Head = 'Malignance Chapeau',
-        Body = 'Gleti\'s Cuirass',
-        Hands = 'Malignance Gloves',
-        Legs = 'Gleti\'s Breeches',
-        Feet = 'Gleti\'s Boots',
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
 		--Ammo = "Ginsen",
         Head = 'Malignance Chapeau',
         --Neck = 'Sanctity Necklace',
         --Ear1 = 'Mache Earring +1',
-        Body = 'Gleti\'s Cuirass',
         Hands = 'Malignance Gloves',
         --Ring1 = 'Cacoethic Ring +1',
         Ring1 = 'Chirich Ring +1',
@@ -154,15 +148,9 @@ local sets = {
     },
     Ws_Default_SATA = {
     },
-    Ws_Hybrid = {
-        Head = 'Nyame Helm',
-        Body = 'Gleti\'s Cuirass',
-        Legs = 'Gleti\'s Breeches',
-        Feet = 'Gleti\'s Boots',
-    },
-    Ws_Hybrid_SA = {},
-    Ws_Hybrid_TA = {},
-    Ws_Hybrid_SATA = {},
+    Ws_SubtleBlow_SA = {},
+    Ws_SubtleBlow_TA = {},
+    Ws_SubtleBlow_SATA = {},
     Ws_Acc = {
     },
     Ws_Acc_SA = {},
@@ -190,11 +178,9 @@ local sets = {
     },
     Evis_Default_SATA = {
     },
-    Evis_Hybrid = {
-    },
-    Evis_Hybrid_SA = {},
-    Evis_Hybrid_TA = {},
-    Evis_Hybrid_SATA = {},
+    Evis_SubtleBlow_SA = {},
+    Evis_SubtleBlow_TA = {},
+    Evis_SubtleBlow_SATA = {},
     Evis_Acc = {
     },
     Evis_Acc_SA = {},
@@ -221,11 +207,9 @@ local sets = {
     },
     Rudra_Default_SATA = {
     },
-    Rudra_Hybrid = {
-    },
-    Rudra_Hybrid_SA = {},
-    Rudra_Hybrid_TA = {},
-    Rudra_Hybrid_SATA = {},
+    Rudra_SubtleBlow_SA = {},
+    Rudra_SubtleBlow_TA = {},
+    Rudra_SubtleBlow_SATA = {},
     Rudra_Acc = {
     },
     Rudra_Acc_SA = {},
@@ -253,11 +237,9 @@ local sets = {
     },
     Savage_Default_SATA = {
     },
-    Savage_Hybrid = {
-    },
-    Savage_Hybrid_SA = {},
-    Savage_Hybrid_TA = {},
-    Savage_Hybrid_SATA = {},
+    Savage_SubtleBlow_SA = {},
+    Savage_SubtleBlow_TA = {},
+    Savage_SubtleBlow_SATA = {},
     Savage_Acc = {
     },
     Savage_Acc_SA = {},
@@ -286,11 +268,9 @@ local sets = {
     },
     AE_Default_SATA = {
     },
-    AE_Hybrid = {
-    },
-    AE_Hybrid_SA = {},
-    AE_Hybrid_TA = {},
-    AE_Hybrid_SATA = {},
+    AE_SubtleBlow_SA = {},
+    AE_SubtleBlow_TA = {},
+    AE_SubtleBlow_SATA = {},
     AE_Acc = {
     },
     AE_Acc_SA = {},
@@ -315,7 +295,7 @@ local sets = {
         Feet = 'Pill. Poulaines +2',
     },
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
-    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
     -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
     -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
     Hoxne_Tp = {},

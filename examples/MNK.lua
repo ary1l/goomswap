@@ -70,13 +70,7 @@ local sets = {
         Legs = 'bhikku hose +3',
         Feet = 'anch. gaiters +4',
     },
-    Tp_Hybrid = {
-        Head = 'Mpaca\'s Cap',
-        Neck = 'Sanctity Necklace',
-        Body = 'Mpaca\'s Doublet',
-        Hands = 'Mpaca\'s Gloves',
-        Legs = 'Mpaca\'s Hose',
-        Feet = 'Mpaca\'s Boots',
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear2 = 'Mache Earring +1',
@@ -114,8 +108,6 @@ local sets = {
         Legs = 'Mpaca\'s Hose',
         Feet = 'anch. gaiters +4',
     },
-    Ws_Hybrid = {
-    },
     Ws_Acc = {
     },
 
@@ -131,12 +123,10 @@ local sets = {
         Body = 'Bhikku Cyclas +3',
         Back = { Name = 'Segomo\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
     },
-    Victory_Hybrid = {},
     Victory_Acc = {},
 
     Shijin_Default = {
     },
-    Shijin_Hybrid = {},
     Shijin_Acc = {},
 
 	Howling_Default = {
@@ -153,7 +143,6 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Howling_Hybrid = {},
     Howling_Acc = {},
 
 
@@ -171,8 +160,9 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'anch. gaiters +4',
     },
-    kickws_Hybrid = {},
     kickws_Acc = {},
+    kickws_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over kickws_Default (Dragon Kick, Tornado Kick)
+    },
 
 
     Impetus = {--over rides your TP set if impetus is up
@@ -180,7 +170,7 @@ local sets = {
         Body = 'Bhikku Cyclas +3',
     },
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
-    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
     -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
     -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
     Hoxne_Tp = {},
