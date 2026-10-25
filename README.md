@@ -97,16 +97,20 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 |---|---|
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
 | `/mainset` `/subset` `[name]` | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
-| `/mset [hybrid\|acc\|default]` | `_Hybrid` / `_Acc` versions of TP and WS sets (`/meleeset` same) |
+| `/mset [sb\|acc\|default]` | `_SubtleBlow` / `_Acc` versions of TP and WS sets (`/meleeset` same). DT is `/dt`, on top of any |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
 | `/th` | `TH` set while engaged with or acting on a mob, until it's tagged: your first swing, shot, WS or JA on it (not `THSkip`). Not at rest. THF main: the whole time, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
 | `/kite` | Movement gear |
 | `/hoxne` | Off ↔ Locked (ampulla kept in Ammo and used). `/hoxne off` releases it |
-| `/automb` | Auto magic burst on/off (RDM BLM SCH GEO) |
+| `/nukeset [power\|macc\|oa]` | Nuke sets: power, or Macc (`NukeACC`) on top. RDM, GEO: OccultAcumen (`OccultAcumen` set on top, TP from nukes) |
+| `/automb` | Auto magic burst on/off (RDM BLM SCH GEO). Setup (Burst set, tier, settings): COMMANDS.md Magic burst |
 | `/mbtier [low\|mid\|high]` | Its nuke tier I / III / V. Load default: `MBTier` setting, or `gcinclude.MBTier` per job |
-| `/lock [slots]` `/unlock` | Freeze slots. `/unlock` frees only yours, and says what else holds a slot |
+| `/lock [slots\|all]` `/unlock` | Freeze slots (none named: Main, Sub, Ammo). `/unlock` frees only yours, and says what else holds a slot |
 | `/gchelp` | Command list in game |
+
+Picking a value, any case: no word = next; else exact name, the one it starts, its initials, the one containing it, or
+a number: `/wm max` (Maxentius), `/nukeset oa` (OccultAcumen), `/mset sb` (SubtleBlow), `/wm 3`. Two matches: it lists them.
 
 Keys: Ctrl+grave `/wm`, Shift+grave `/wm default`, Ctrl+Shift+grave `/def`, Alt+grave `/hoxne`, Win+grave `/automb`.
 `/gckey <key> <cmd>` rebinds.

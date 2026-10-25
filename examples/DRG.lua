@@ -6,7 +6,7 @@ gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
 -- MIT, see LICENSE-GetAwayCoxn.txt); swap in your own.
 -- Sets named after an ability, spell, skill or weapon skill (['Jump'], ['Savage Blade'])
 -- are worn by name (gcinclude.ByName); a spell with no set uses its family's (['Cure'] for Cure IV).
--- Add '<Name>_Hybrid' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
+-- Add '<Name>_SubtleBlow' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
 local sets = {
     Incapacitated = { -- slept, petrified, stunned or terrorized: worn over your /def set (else Dt) minus Main/Sub/Range/Ammo; add extra pieces here
     },
@@ -78,7 +78,7 @@ local sets = {
     Aminon = {},
     SIR = {},
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
-    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
     -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
     -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
     Hoxne_Tp = {},
@@ -109,8 +109,7 @@ local sets = {
         Legs = 'Gleti\'s Breeches',
         Feet = 'Gleti\'s Boots',
     },
-    Tp_Hybrid = {
-        Body = 'Hjarrandi Breast.',
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ring1 = 'Cacoethic Ring +1',
@@ -188,9 +187,6 @@ local sets = {
         Waist = 'Fotia Belt',
         Legs = 'Gleti\'s Breeches',
         Feet = 'Sulev. Leggings +2',
-    },
-    Ws_Hybrid = {
-        Body = 'Hjarrandi Breast.',
     },
     Ws_Acc = {},
     ['Aeolian Edge'] = {

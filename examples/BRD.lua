@@ -123,15 +123,9 @@ local sets = {
         Legs = 'revelation brais',
         Feet = 'revelation sab.',
     },
-    Tp_Hybrid = {
-		Sub = 'genmei shield',
-		Ammo = 'hoxne ampulla',
-		Ear2 = 'cessance earring',
-		Waist = 'sailfi belt +1',
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
-        Main = 'carnwenhan',
-		Sub = 'gleti\'s knife',
     },
 
 
@@ -554,7 +548,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Ws_Hybrid = {},
     Ws_Acc = {},
 
     Mordant_Default = {
@@ -572,7 +565,6 @@ local sets = {
 		Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Mordant_Hybrid = {},
     Mordant_Acc = {},
 
     Savage_Default = {
@@ -590,7 +582,6 @@ local sets = {
 		Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Savage_Hybrid = {},
     Savage_Acc = {},
 
 	Ruthless_Default = {
@@ -608,7 +599,6 @@ local sets = {
 		Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Ruthless_Hybrid = {},
     Ruthless_Acc = {},
 
     Nitro = {--includes legs for soul voice as well
@@ -618,7 +608,7 @@ local sets = {
     },
 
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
-    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
     -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
     -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
     Hoxne_Tp = {},

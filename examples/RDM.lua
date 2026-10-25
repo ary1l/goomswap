@@ -129,12 +129,10 @@ local sets = {
         Feet = 'malignance boots',
     },
 
-    Tp_Hybrid = {
-        Ring1 = 'murky Ring',
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
 
     Tp_Acc = {
-        Ring1 = 'Chirich Ring +1',
         Ring2 = 'Cacoethic Ring +1',
     },
 
@@ -396,6 +394,8 @@ local sets = {
         Feet = 'Leth. Houseaux +3',
     },
     NukeACC = {};
+    OccultAcumen = { -- /nukeset oa: Occult Acumen / Store TP pieces, over Nuke and Burst (TP from nukes)
+    },
     Burst = {
         Main = 'Bunzi\'s Rod', -- 10 and 0
         Sub = 'Ammurapi Shield',
@@ -429,8 +429,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'leth. houseaux +3',
     },
-    Ws_Hybrid = {
-    },
     Ws_Acc = {
     },
 
@@ -448,8 +446,23 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'leth. houseaux +3',
     },
-    Savage_Hybrid = {},
     Savage_Acc = {},
+
+    Imperator_Default = { -- BG-Wiki All Jobs Gear Sets, Imperator Mid buff, with your gear only: Hoxne Earring, Epaminondas's Ring, Alabaster Mantle -> your pieces; Moonshade is the engine's (Ear2 under 1750 TP)
+        Ammo = 'coiste bodhar',
+        Head = 'Viti. Chapeau +4',
+        Neck = 'rep. plat. medal',
+        Ear1 = 'ishvara earring',
+        Body = 'Nyame Mail',
+        Hands = 'nyame gauntlets',
+        Ring1 = 'ephramad\'s ring',
+        Ring2 = 'ilabrat ring',
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'Sailfi Belt +1',
+        Legs = 'Nyame Flanchard',
+        Feet = 'leth. houseaux +3',
+    },
+    Imperator_Acc = {},
 
     Chant_Default = {
         Ammo = 'Voluspa Tathlum',
@@ -466,7 +479,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Thereoid Greaves',
     },
-    Chant_Hybrid = {},
     Chant_Acc = {},
 
 	BH_Default = {
@@ -483,7 +495,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'leth. houseaux +3',
     },
-    BH_Hybrid = {},
     BH_Acc = {},
 
 	shining_Default = {
@@ -500,7 +511,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'leth. houseaux +3',
     },
-    shining_Hybrid = {},
     shining_Acc = {},
 
 	sanguine_Default = {
@@ -518,7 +528,6 @@ local sets = {
         Legs = 'leth. fuseau +3',
         Feet = 'leth. houseaux +3',
     },
-    sanguine_Hybrid = {},
     sanguine_Acc = {},
 
 	KOR_Default = {
@@ -536,7 +545,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'leth. houseaux +3',
     },
-    KOR_Hybrid = {},
     KOR_Acc = {},
 
     CS = {
@@ -544,11 +552,11 @@ local sets = {
 	},
 
 	sab = {
-		Body = 'diamond aspis',
+		Sub = 'diamond aspis',
 	},
 
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
-    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
     -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
     -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
     Hoxne_Tp = {},
@@ -587,6 +595,8 @@ profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None', 'Naegling', 'Maxentius', 'Crocea'};
     gcinclude.DefaultWeapons = 'Maxentius';
+    gcinclude.MainModes = {'None', 'Caliburnus'}; -- /mainset caliburnus: Caliburnus in Main (Sub stays the mode's), /mainset none: back to the mode's main. A Main swap resets TP
+    gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
     gcinclude.Initialize();
 end
 
@@ -718,6 +728,7 @@ profile.HandleMidcast = function()
         if gcinclude.BurstWanted() then
             gFunc.EquipSet(sets.Burst);
         end
+        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
         if string.match(spell.Name, 'helix') then
             gFunc.EquipSet(sets.Helix);
         end
@@ -775,6 +786,8 @@ profile.HandleWeaponskill = function()
         gcinclude.EquipMode('shining');
     elseif string.match(ws.Name, 'Savage Blade') then
         gcinclude.EquipMode('Savage');
+    elseif string.match(ws.Name, 'Imperator') then
+        gcinclude.EquipMode('Imperator');
     end
 end
 

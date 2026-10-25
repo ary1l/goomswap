@@ -7,7 +7,7 @@ gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
 -- MIT, see LICENSE-GetAwayCoxn.txt); swap in your own.
 -- Sets named after an ability, spell, skill or weapon skill (['Vallation'], ['Savage Blade'])
 -- are worn by name (gcinclude.ByName); a spell with no set uses its family's (['Cure'] for Cure IV).
--- Add '<Name>_Hybrid' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
+-- Add '<Name>_SubtleBlow' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
 local sets = {
     Incapacitated = { -- slept, petrified, stunned or terrorized: worn over your /def set (else Dt) minus Main/Sub/Range/Ammo; add extra pieces here
     },
@@ -89,7 +89,7 @@ local sets = {
         Feet = 'Taeon Boots', -- 10
     },
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
-    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
     -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
     -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
     Hoxne_Tp = {},
@@ -168,27 +168,11 @@ local sets = {
         Legs = 'Meg. Chausses +2',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Accuracy+20', [2] = 'Attack+6', [3] = 'AGI+1', [4] = '"Triple Atk."+3' } },
     },
-    Tp_Hybrid = {
-        Main = 'Epeolatry',
-        Sub = 'Utu Grip',
-        Ammo = 'Yamarang',
-        Head = 'Nyame Helm',
-        Neck ='Anu Torque',
-        Ear1 = 'Sherida Earring',
-        Ear2 = 'Telos Earring',
-        Body = 'Futhark Coat +3',
-        Hands = 'Adhemar Wrist. +1',
-        Ring1 = 'Epona\'s Ring',
-        Ring2 = 'Niqmaddu Ring',
-        Back = { Name = 'Ogma\'s Cape', Augment = { [1] = '"Dbl.Atk."+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'DEX+20' } },
-        Waist = 'Ioskeha Belt +1',
-        Legs = 'Meg. Chausses +2',
-        Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Accuracy+20', [2] = 'Attack+6', [3] = 'AGI+1', [4] = '"Triple Atk."+3' } },
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ring1 = 'Cacoethic Ring +1',
         Ring2 = 'Chirich Ring +1',
-        Waist = 'Ioskeha Belt +1',
     },
 
     Precast = {
@@ -327,7 +311,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Accuracy+30', [2] = 'Weapon skill damage +8%', [3] = 'Attack+6', [4] = 'Mag. Acc.+2' } },
     },
-    Ws_Hybrid = {},
     Ws_Acc = {},
     Dimidiation = {
         Ammo = 'Knobkierrie',

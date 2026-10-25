@@ -6,7 +6,7 @@ gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
 -- MIT, see LICENSE-GetAwayCoxn.txt); swap in your own.
 -- Sets named after an ability, spell, skill or weapon skill (['Meditate'], ['Savage Blade'])
 -- are worn by name (gcinclude.ByName); a spell with no set uses its family's (['Cure'] for Cure IV).
--- Add '<Name>_Hybrid' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
+-- Add '<Name>_SubtleBlow' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
 local sets = {
     Incapacitated = { -- slept, petrified, stunned or terrorized: worn over your /def set (else Dt) minus Main/Sub/Range/Ammo; add extra pieces here
     },
@@ -79,7 +79,7 @@ local sets = {
     Aminon = {},
     SIR = {},
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
-    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _Hybrid/_Acc -> its _<buff> combos -> engine layers.
+    -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
     -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
     -- Combos: <set>_<buff>, <set>_<buff>&<buff> (all up); fewest buffs first, then A-Z. Full order: COMMANDS.md Hoxne layering.
     Hoxne_Tp = {},
@@ -145,18 +145,12 @@ local sets = {
         Legs = { Name = 'Tatena. Haidate +1', AugPath='A' },
         Feet = { Name = 'Tatena. Sune. +1', AugPath='A' },
     },
-    Tp_Hybrid = {
-        Head = 'Mpaca\'s Cap',
-        Body = 'Mpaca\'s Doublet',
-        Hands = 'Mpaca\'s Gloves',
-        Legs = 'Mpaca\'s Hose',
-        Feet = 'Mpaca\'s Boots',
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear1 = 'Mache Earring +1',
         Hands = 'Tatena. Gote +1',
         Ring1 = 'Cacoethic Ring +1',
-        Ring2 = 'Chirich Ring +1',
         Waist = 'Ioskeha Belt +1',
         Feet = 'Tatena. Sune. +1',
     },
@@ -193,11 +187,6 @@ local sets = {
         Legs = 'Hiza. Hizayoroi +2',
         Feet = 'Valorous Greaves',
     },
-    Ws_Hybrid = {
-        Body = 'Nyame Mail',
-        Legs = 'Nyame Flanchard',
-        Feet = 'Nyame Sollerets',
-    },
     Ws_Acc = {},
     ['Savage Blade'] = {
         Ammo = 'Knobkierrie',
@@ -214,11 +203,6 @@ local sets = {
         Legs = 'Mpaca\'s Hose',
         Feet = 'Valorous Greaves',
     },
-    ['Savage Blade_Hybrid'] = {
-        Body = 'Nyame Mail',
-        Legs = 'Nyame Flanchard',
-        Feet = 'Nyame Sollerets',
-    },
     ['Tachi: Jinpu'] = {
         Ammo = 'Knobkierrie',
         Head = 'Nyame Helm',
@@ -232,11 +216,6 @@ local sets = {
         Back = { Name = 'Smertrios\'s Mantle', Augment = { [1] = 'STR+30', [2] = 'Weapon skill damage +10%', [3] = 'Attack+20', [4] = 'Accuracy+20' } },
         Waist = 'Eschan Stone',
         Legs = 'Hiza. Hizayoroi +2',
-        Feet = 'Nyame Sollerets',
-    },
-    ['Tachi: Jinpu_Hybrid'] = {
-        Body = 'Nyame Mail',
-        Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
     ['Tachi: Ageha'] = {
@@ -254,11 +233,6 @@ local sets = {
         Legs = 'Mpaca\'s Hose',
         Feet = 'Nyame Sollerets',
     },
-    ['Tachi: Ageha_Hybrid'] = {
-        Body = 'Nyame Mail',
-        Legs = 'Nyame Flanchard',
-        Feet = 'Nyame Sollerets',
-    },
     Stardiver = {
         Ammo = 'Knobkierrie',
         Head = 'Mpaca\'s Cap',
@@ -273,11 +247,6 @@ local sets = {
         Waist = 'Fotia Belt',
         Legs = 'Mpaca\'s Hose',
         Feet = 'Valorous Greaves',
-    },
-    Stardiver_Hybrid = {
-        Body = 'Nyame Mail',
-        Legs = 'Nyame Flanchard',
-        Feet = 'Nyame Sollerets',
     },
     -- ['Weapon Skill Name'] = {}, ['Weapon Skill Name_Acc'] = {},
 

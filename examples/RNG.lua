@@ -102,14 +102,10 @@ local sets = {
         Legs = 'Samnuha Tights',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Accuracy+7', [2] = 'Attack+18', [3] = 'Spell interruption rate down -8%', [4] = 'Quadruple Attack +2' } },
     },
-    Tp_Hybrid = {
-        Head = 'Malignance Chapeau',
-        Body = 'Malignance Tabard',
-        Hands = 'Malignance Gloves',
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear1 = 'Mache Earring +1',
-        Ear2 = 'Telos Earring',
         Hands = 'Tatena. Gote +1',
         Ring1 = 'Chirich Ring +1',
         Ring2 = 'Cacoethic Ring +1',
@@ -231,8 +227,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Accuracy+14', [3] = 'Attack+26', [4] = 'DEX+8' } },
     },
-    Ws_Hybrid = {
-    },
     Ws_Acc = {
     },
     WsObi = {--puts elemental obi on for trueflight/wildfire under light/fire situations
@@ -251,8 +245,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Accuracy+14', [3] = 'Attack+26', [4] = 'DEX+8' } },
     },
-    Savage_Hybrid = {
-    },
     Savage_Acc = {
     },
     Aedge_Default = {
@@ -268,8 +260,6 @@ local sets = {
         Waist = 'orpheus\'s sash',
         Legs = 'Nyame Flanchard',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Mag. Acc.+17', [3] = 'MND+8', [4] = '"Mag. Atk. Bns."+29' } },
-    },
-    Aedge_Hybrid = {
     },
     Aedge_Acc = {
     },
@@ -287,8 +277,6 @@ local sets = {
         Legs = 'Nyame Flanchard',--relic+3
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Mag. Acc.+17', [3] = 'MND+8', [4] = '"Mag. Atk. Bns."+29' } },
     },
-    Wildfire_Hybrid = {
-    },
     Wildfire_Acc = {
     },
     HS_Default = {
@@ -305,8 +293,6 @@ local sets = {
         Legs = 'Nyame Flanchard',--relic+3
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Mag. Acc.+17', [3] = 'MND+8', [4] = '"Mag. Atk. Bns."+29' } },
     },
-    HS_Hybrid = {
-    },
     HS_Acc = {
     },
     TrueFlight_Default = {
@@ -322,8 +308,6 @@ local sets = {
         Waist = 'orpheus\'s sash',
         Legs = 'Nyame Flanchard',--relic+3
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Mag. Acc.+17', [3] = 'MND+8', [4] = '"Mag. Atk. Bns."+29' } },
-    },
-    TrueFlight_Hybrid = {
     },
     TrueFlight_Acc = {
     },

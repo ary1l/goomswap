@@ -6,7 +6,7 @@ gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
 -- MIT, see LICENSE-GetAwayCoxn.txt); swap in your own.
 -- Sets named after an ability, spell, skill or weapon skill (['Astral Flow'], ['Savage Blade'])
 -- are worn by name (gcinclude.ByName); a spell with no set uses its family's (['Cure'] for Cure IV).
--- Add '<Name>_Hybrid' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
+-- Add '<Name>_SubtleBlow' / '<Name>_Acc' for /meleeset. Empty sets do nothing.
 local sets = {
     Incapacitated = { -- slept, petrified, stunned or terrorized: worn over your /def set (else Dt) minus Main/Sub/Range/Ammo; add extra pieces here
     },
@@ -148,10 +148,7 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Tp_Hybrid = {
-        Neck = 'Empath Necklace',
-        Ear1 = 'Mache Earring +1',
-        Ring1 = 'Cacoethic Ring +1',
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ring1 = 'Cacoethic Ring +1',
@@ -395,7 +392,6 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Ws_Hybrid = {},
     Ws_Acc = {},
     -- ['Weapon Skill Name'] = {}, ['Weapon Skill Name_Acc'] = {},
 
