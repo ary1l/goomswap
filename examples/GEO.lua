@@ -390,7 +390,7 @@ local sets = {
     NukeACC = {
         Waist = 'Acuity Belt +1',
     },
-    OccultAcumen = { -- /nukeset acumen: Occult Acumen / Store TP pieces, over Nuke and Burst (TP from nukes)
+    OccultAcumen = { -- /nukeset oc: Occult Acumen / Store TP pieces, over Nuke and Burst (TP from nukes)
     },
     Burst = {
         Main = 'Bunzi\'s Rod', --10 and 0
@@ -557,7 +557,7 @@ profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None', 'Idris', 'Maxentius', 'Tishtrya'};
     gcinclude.DefaultWeapons = 'Idris';
-    gcinclude.NukeModes = {'Power', 'Macc', 'Acumen'}; -- /nukeset acumen: OccultAcumen set on nukes
+    gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oc (or occult, acumen): OccultAcumen set on nukes
     gcinclude.Initialize();
 end
 
@@ -667,7 +667,7 @@ profile.HandleMidcast = function()
         if gcinclude.BurstWanted() then
             gFunc.EquipSet(sets.Burst);
         end
-        if (gcdisplay.GetCycle('NukeSet') == 'Acumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset acumen: TP from nukes, over Nuke/Burst
+        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oc: TP from nukes, over Nuke/Burst
         if (gData.GetPlayer().MPP <= 40) then
             gFunc.EquipSet(sets.Mp_Body);
         end

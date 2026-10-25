@@ -360,7 +360,7 @@ function gcinclude.SetVariables()
     if (mJob == 'RDM') or (mJob == 'BLM') or (mJob == 'SCH') or (mJob == 'GEO') then
         gcdisplay.CreateToggle('Burst', false); -- /burst: Burst set on every nuke, not only on live skillchains
         gcdisplay.CreateToggle('AutoNuke', gcinclude.settings.AutoNuke == true); -- /automb: cast into live skillchains
-        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM/GEO: 'Acumen')
+        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM/GEO: 'OccultAcumen')
         gcdisplay.CreateCycle('MBTier', {[1] = 'Low', [2] = 'Mid', [3] = 'High'}); -- /mbtier: I / III / V
         gcinclude.SetMBTier(gcinclude.MBTier or gcinclude.settings.MBTier or 'Mid', true);
         if (mJob == 'BLM') or (mJob == 'SCH') then
@@ -372,7 +372,7 @@ function gcinclude.SetVariables()
         end
     end
     if (mJob == 'WHM') then
-        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM/GEO: 'Acumen')
+        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM/GEO: 'OccultAcumen')
     end
     if (mJob == 'PLD') or (mJob == 'RUN') then
         gcdisplay.CreateCycle('TankSet', {[1] = 'None', [2] = 'Main', [3] = 'MEVA'});

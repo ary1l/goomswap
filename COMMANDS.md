@@ -4,8 +4,10 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 (all), `/ms sendto <name> /wm 3` (one), or your own Multisend shortcuts. Windower: `//send @all gs c wm default`.
 
 - On/off commands (`/dt`, `/th`, `/sir`, `/kite`, `/automb`, `/autofood`…) take `on`/`off`; no word flips.
-- Cycle commands (`/mset`, `/nukeset`, `/tankset`, `/weapon`, `/elecycle`, `/pupmode`): no word cycles; a word picks
-  by name, start or number, any case (`/mset hybrid`, `/mset d`, `/tankset meva`). `/setcycle <name> <value>` sets any.
+- Cycle and weapon commands (`/wm`, `/mainset`…, `/mset`, `/nukeset`, `/tankset`, `/weapon`, `/elecycle`, `/pupmode`):
+  no word cycles; a word picks, any case: exact name, else the one value it starts, else the one value containing it, or
+  a number (`/wm max` = Maxentius, `/nukeset oc` = OccultAcumen, `/mset sb`, `/tankset meva`, `/wm 3`). Two matches:
+  it lists them. `/setcycle <name> <value>` sets any cycle.
 - Windower: `profile.Packer` goes to `//gs org` (Organizer addon).
 - Zoning turns off `/autofood`, `/autosoda`, `/hoxne`. While zoning (zone-line reply until 3s after arriving) nothing
   is sent by itself: no item uses, food/soda or auto-casts.
@@ -131,7 +133,7 @@ checked; the game's own message says when it refuses.
 
 | Command | Jobs | Does |
 |---|---|---|
-| `/nukeset` | RDM BLM SCH GEO WHM | Power → Macc. RDM, GEO examples: → Acumen (`OccultAcumen` set over your nuke sets, TP from nukes). Own list per job: `gcinclude.NukeModes` in OnLoad |
+| `/nukeset` | RDM BLM SCH GEO WHM | Power → Macc; RDM, GEO also → OccultAcumen (`/nukeset oc`): `OccultAcumen` set over your nuke sets. Own list: `gcinclude.NukeModes` in OnLoad |
 | `/weapon` / `/elecycle` | BLM SCH | Club ↔ Staff / element |
 | `/nuke <1-6>` `/helix` `/weather` | BLM SCH (`/weather` SCH) | Element's nuke / helix / storm |
 | `/death` | BLM | Death toggle |
