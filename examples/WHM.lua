@@ -19,7 +19,7 @@ local sets = {
         Body = 'ebers bliaut +2',
         Hands = 'nyame gauntlets',
         Ring1 = 'murky ring',
-        Ring2 = 'gurebu\'s ring',
+        Ring2 = 'stikini ring +1',
 		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
 		Waist = 'carrier\'s sash',
 		Legs = 'nyame flanchard',
@@ -35,15 +35,15 @@ local sets = {
     },
     Idle_Refresh = {
         --Ammo = 'Homiliary',
-        Head = 'volte beret',
-		Neck = 'sibyl scarf',
+        --Head = 'volte beret',
+		--Neck = 'sibyl scarf',
 		Body = 'ebers bliaut +2',
-        Hands = 'volte gloves',
+        --Hands = 'volte gloves',
         Ring1 = 'Stikini Ring +1',
-		Ring2 = 'gurebu\'s ring',
+		--Ring2 = 'gurebu\'s ring',
         Waist = 'Fucho-no-Obi',
-        Legs = 'volte brais',
-		Feet = 'volte boots',
+        --Legs = 'volte brais',
+		--Feet = 'volte boots',
     },
     Town = {
         Main = 'yagrush',
@@ -52,12 +52,12 @@ local sets = {
         Head = 'theo. cap +4',
 		Neck = 'sibyl scarf',
 		Body = 'ebers bliaut +2',
-        Hands = 'ebers mitts +2',
+        Hands = 'sworn gauntlets',
         Ring1 = 'murky ring',
-		Ring2 = 'gurebu\'s ring',
+		Ring2 = 'stikini ring +1',
         Waist = 'null belt',
         Legs = 'sworn brais',
-		Feet = 'theo. duckbills +4',
+		Feet = 'sworn sabatons',
     },
 
     Dt = {
@@ -67,8 +67,8 @@ local sets = {
         Neck = 'loricate torque +1',
         Ear1 = 'alabaster earring',
         Ear2 = 'eabani Earring',
-        Body = 'nyame mail',
-        Hands = 'ebers mitts +2',
+        Body = 'ebers bliaut +2',
+        Hands = 'nyame gauntlets',
         Ring1 = 'murky Ring',
         Ring2 = 'defending ring',
 		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
@@ -103,13 +103,13 @@ local sets = {
         Ear1 = 'Brutal Earring',
         Ear2 = 'eabani Earring',
         Body = 'ayanmo corazza +1',
-        Hands = 'bunzi\'s gloves',
+        Hands = 'sworn gauntlets',
         Ring1 = 'rajas ring',
         Ring2 = 'ayanmo ring',
 		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Dbl.Atk."+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Accuracy+30', [4] = 'Attack+20', [5] = 'DEX+20' } },
         Waist = 'Cornelia\'s Belt',
-        Legs = 'Nyame Flanchard',
-        Feet = 'bunzi\'s sabots',
+        Legs = 'sworn brais',
+        Feet = 'sworn sabatons',
     },
     Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
@@ -129,13 +129,13 @@ local sets = {
         Ear1 = 'alabaster earring',
         Ear2 = 'Malignance Earring',
 		Body = 'inyanga jubbah +2',--14
-        Hands = 'egbesu mitts', --5
+        Hands = 'sworn gauntlets', --5
         Ring1 = 'lebeche Ring',
         Ring2 = 'weather. Ring',--5
         Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },--10
         Waist = 'Witful Belt',--3
         Legs = 'sworn brais',--8
-        Feet = 'regal pumps +1',--5
+        Feet = 'sworn sabatons',--5
     },
     Cure_Precast = {
 		Main = 'gada',--5
@@ -146,13 +146,13 @@ local sets = {
         Ear1 = 'alabaster earring',
         Ear2 = 'malignance earring',
 		Body = 'inyanga jubbah +2',
-        Hands = 'egbesu mitts', --6
+        Hands = 'sworn gauntlets', --6
         Ring1 = 'lebeche Ring',--2
         Ring2 = 'weather. Ring',--5
         Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
         Waist = 'Witful Belt',
         Legs = 'sworn brais',
-        Feet = 'regal pumps +1',
+        Feet = 'sworn sabatons',
     },
     Enhancing_Precast = {
         Waist = 'Siegel Sash',
@@ -183,7 +183,7 @@ local sets = {
 		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
         Waist = 'witful belt',
 		Legs = 'ebers pant. +3',--I 11
-        Feet = 'regal pumps +1',
+        Feet = 'sworn sabatons',
     },
     Self_Cure = {--cap 30
         Waist = 'Gishdubar Sash',
@@ -196,11 +196,10 @@ local sets = {
         Main = 'Chatoyant Staff', -- or 'Iridal Staff': "Cure" potency +10%, Iridescence (+10% weather roll)
         Sub = 'Enki Strap',
     },
-    Cure_Dt = { -- /dt on: goes over the cure sets above, so list only the DT pieces to trade in
+    Cure_Dt = { -- over the cure sets while /dt is on: DT pieces only
         Head = 'nyame helm',
         Ear1 = 'alabaster earring',
         Ring2 = 'murky ring',
-        Feet = 'nyame sollerets',
     },
     Regen = {
         Main = 'Bolelabunga',
