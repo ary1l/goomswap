@@ -468,7 +468,7 @@ local sets = {
     },
     KOR_Acc = {},
 
-	Imperator_Default = { -- BG-Wiki All Jobs Gear Sets, Imperator Mid buff, with your gear only: Hoxne Earring, Epaminondas's Ring, Alabaster Mantle -> your pieces; Moonshade is the engine's (Ear2 under 1750 TP)
+	Imperator_Default = {
         Ammo = 'coiste bodhar',
         Head = { Name = 'nyame helm', Priority = 91 },
         Neck = 'rep. plat. medal',
