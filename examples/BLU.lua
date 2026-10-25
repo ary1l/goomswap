@@ -352,7 +352,7 @@ local sets = {
     },
     Savage_Acc = {
     },
-    Imperator_Default = { -- BG-Wiki All Jobs Gear Sets, Imperator Mid buff, with your gear only: Hoxne Earring, Epaminondas's Ring, Beithir Ring, Alabaster Mantle -> your pieces; Moonshade is the engine's (Ear2 under 1750 TP)
+    Imperator_Default = {
         Ammo = 'coiste bodhar',
         Head = 'Hashishin Kavuk +3',
         Neck = 'Mirage Stole +2',
