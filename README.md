@@ -39,12 +39,20 @@ Windower/addons/GearSwap/data/
 | Augmented gear | `{ Name = 'X', Augment = {...} }` (LAC strings) | Same file works: the carried copy best matching the list is worn (names differ a bit between the two, so not exact). Or GearSwap's own `{ name="X", augments={...} }`, pasted from `//gs export`, matched exactly |
 
 Windower augment strings: wear the gear, `//gs export` (file in `GearSwap/data/export/`) or `//gs export copy`
-(clipboard), paste the line into a set and capitalize the slot (`back=` → `Back =`). Rare items export without
-augments (only one copy exists):
+(clipboard), paste each line into a set and capitalize the slot (`back=` → `Back =`). Rare items export without
+augments (only one copy exists). In a job file (COR):
 
 ```lua
-Back = { name="Camulus's Mantle", augments={'AGI+20','Rng.Acc.+20 Rng.Atk.+20','Rng.Acc.+10','"Store TP"+10','Mag. Evasion+15',}},
-Main = { name="Rostam", augments={'Path: A',}},
+local sets = {
+    Weapon_Rostam = {
+        Main = { name="Rostam", augments={'Path: A',} },
+    },
+    Tp_Default = {
+        Back = { name="Camulus's Mantle", augments={
+            'AGI+20', 'Rng.Acc.+20 Rng.Atk.+20', 'Rng.Acc.+10', '"Store TP"+10', 'Mag. Evasion+15',
+        } },
+    },
+};
 ```
 
 ## First steps
@@ -54,9 +62,7 @@ Main = { name="Rostam", augments={'Path: A',}},
 3. Leave `gSettings.FastCast` at 0.
 
 Template jobs (BLM BST DNC DRG DRK NIN PUP RUN SAM SMN WAR) name sets after the action (`['Savage Blade']`); a spell
-with no set uses its family's (`['Cure']` for Cure IV). Template gear is from
-[GetAwayCoxn](https://github.com/GetAwayCoxn/Luashitacast-Profiles) (MIT, `examples/LICENSE-GetAwayCoxn.txt`).
-Worth copying: `WHM.lua` cures (MP% / Light weather weapons, `Cure_Dt`), `MNK.lua` Hoxne sets, `PLD.lua` `/subset`.
+with no set uses its family's (`['Cure']` for Cure IV). Worth copying: `WHM.lua` cures (MP% / Light weather weapons, `Cure_Dt`), `MNK.lua` Hoxne sets, `PLD.lua` `/subset`.
 
 ## Settings (`common/gcinclude.lua`)
 
