@@ -352,18 +352,18 @@ local sets = {
     },
     Savage_Acc = {
     },
-    Imperator_Default = { -- Caliburnus WS: physical, DEX/MND (BG-Wiki 70%/70%, marked unverified; FFXIAH testing ~27%/27%), fTP 6.6/13.35/20.1. Start: your Savage Blade set (crepuscular pebble as in your PLD Imperator)
-	    Ammo = 'crepuscular pebble',
+    Imperator_Default = { -- BG-Wiki All Jobs Gear Sets, Imperator Mid buff, with your gear only: Hoxne Earring, Epaminondas's Ring, Beithir Ring, Alabaster Mantle -> your pieces; Moonshade is the engine's (Ear2 under 1750 TP)
+        Ammo = 'coiste bodhar',
         Head = 'Hashishin Kavuk +3',
-		Neck = 'Mirage Stole +2',
+        Neck = 'Mirage Stole +2',
         Ear1 = 'alabaster Earring',
-        Body = 'Assim. Jubbah +4',
+        Body = 'Nyame Mail',
         Hands = 'nyame gauntlets',
-        Ring1 = 'petrov Ring',
-        Ring2 = 'Ephramad\'s Ring',
+        Ring1 = 'Ephramad\'s Ring',
+        Ring2 = 'petrov Ring',
         Back = { Name = 'Rosmerta\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
-        Waist = 'sailfi belt +1',
-		Legs = 'nyame flanchard',
+        Waist = 'kentarch belt +1',
+        Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
     Imperator_Acc = {

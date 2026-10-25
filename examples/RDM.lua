@@ -394,6 +394,8 @@ local sets = {
         Feet = 'Leth. Houseaux +3',
     },
     NukeACC = {};
+    OccultAcumen = { -- /nukeset acumen: Occult Acumen / Store TP pieces, over Nuke and Burst (TP from nukes)
+    },
     Burst = {
         Main = 'Bunzi\'s Rod', -- 10 and 0
         Sub = 'Ammurapi Shield',
@@ -446,7 +448,7 @@ local sets = {
     },
     Savage_Acc = {},
 
-    Imperator_Default = { -- Caliburnus WS: physical, DEX/MND (BG-Wiki 70%/70%, marked unverified; FFXIAH testing ~27%/27%), fTP 6.6/13.35/20.1. Start: your Savage Blade set
+    Imperator_Default = { -- BG-Wiki All Jobs Gear Sets, Imperator Mid buff, with your gear only: Hoxne Earring, Epaminondas's Ring, Alabaster Mantle -> your pieces; Moonshade is the engine's (Ear2 under 1750 TP)
         Ammo = 'coiste bodhar',
         Head = 'Viti. Chapeau +4',
         Neck = 'rep. plat. medal',
@@ -454,7 +456,7 @@ local sets = {
         Body = 'Nyame Mail',
         Hands = 'nyame gauntlets',
         Ring1 = 'ephramad\'s ring',
-        Ring2 = 'sroda ring',
+        Ring2 = 'ilabrat ring',
         Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'Sailfi Belt +1',
         Legs = 'Nyame Flanchard',
@@ -550,7 +552,7 @@ local sets = {
 	},
 
 	sab = {
-		Body = 'diamond aspis',
+		Sub = 'diamond aspis',
 	},
 
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
@@ -594,6 +596,7 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None', 'Naegling', 'Maxentius', 'Crocea'};
     gcinclude.DefaultWeapons = 'Maxentius';
     gcinclude.MainModes = {'None', 'Caliburnus'}; -- /mainset caliburnus: Caliburnus in Main (Sub stays the mode's), /mainset none: back to the mode's main. A Main swap resets TP
+    gcinclude.NukeModes = {'Power', 'Macc', 'Acumen'}; -- /nukeset acumen: OccultAcumen set on nukes
     gcinclude.Initialize();
 end
 
@@ -725,6 +728,7 @@ profile.HandleMidcast = function()
         if gcinclude.BurstWanted() then
             gFunc.EquipSet(sets.Burst);
         end
+        if (gcdisplay.GetCycle('NukeSet') == 'Acumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset acumen: TP from nukes, over Nuke/Burst
         if string.match(spell.Name, 'helix') then
             gFunc.EquipSet(sets.Helix);
         end

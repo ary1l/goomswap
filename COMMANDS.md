@@ -131,7 +131,7 @@ checked; the game's own message says when it refuses.
 
 | Command | Jobs | Does |
 |---|---|---|
-| `/nukeset` | RDM BLM SCH GEO WHM | Power → Macc |
+| `/nukeset` | RDM BLM SCH GEO WHM | Power → Macc. RDM, GEO examples: → Acumen (`OccultAcumen` set over your nuke sets, TP from nukes). Own list per job: `gcinclude.NukeModes` in OnLoad |
 | `/weapon` / `/elecycle` | BLM SCH | Club ↔ Staff / element |
 | `/nuke <1-6>` `/helix` `/weather` | BLM SCH (`/weather` SCH) | Element's nuke / helix / storm |
 | `/death` | BLM | Death toggle |
