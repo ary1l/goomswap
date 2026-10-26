@@ -3067,7 +3067,7 @@ end
 	-- 0x033 Kind 2 confirms with the Trade Count of the last 0x023 (the other side's items); 0x022 Kind 9 ends it.
 	-- 0x022 kinds: 0 start, 1 cancel, 2 confirm, 3 confirm cancel, 4-8 errors, 9 end. Trade range 6 yalms (LandSandBoat).
 	local EJ = {
-		zone = 78, gate = 17097342, smolder = 5413, glow = 5414,
+		zone = 78, smolder = 5413, glow = 5414,
 		chambers = { -- Valkyrie data/chambers.lua: name, x, y, z (height), heading
 			{ 'Rossweisse',    447.6451953,   -9.379000664, -217.3540039,  159 },
 			{ 'Grimgerde',     207.358017,     7.738000393, -197.3540039,   95 },
@@ -3093,7 +3093,7 @@ end
 	end
 
 	function EJ.option(s, opt, auto, u1) -- 0x05B: id, option, _unknown1, index, automated, _, zone, menu
-		EJ.send(0x05B, 'IHHHBBHH', EJ.gate, opt, u1, s.idx, auto and 1 or 0, 0, EJ.zone, s.menu);
+		EJ.send(0x05B, 'IHHHBBHH', s.gate, opt, u1, s.idx, auto and 1 or 0, 0, EJ.zone, s.menu);
 	end
 
 	function EJ.stop(msg, isErr, release)
@@ -3157,6 +3157,26 @@ end
 		for i = 1, 17 do
 			if (party:GetMemberIsActive(i) == 1) and (party:GetMemberServerId(i) == id) and (id ~= 0) and (id < 0x1000000) then return i end
 		end
+		return nil;
+	end
+
+	-- The gate: the nearest NPC named Entry Gate, else your target if it is an NPC. Valkyrie's fixed id (17097342)
+	-- did not match in game.
+	function EJ.findGate()
+		local mm = AshitaCore:GetMemoryManager();
+		local ent = mm:GetEntity();
+		local best, bd = nil, nil;
+		for i = 0, 0x8FF do
+			local id = ent:GetServerId(i) or 0;
+			if (id >= 0x1000000) and (string.lower(ent:GetName(i) or '') == 'entry gate') then
+				local d = ent:GetDistance(i) or 9999;
+				if (bd == nil) or (d < bd) then best, bd = i, d end
+			end
+		end
+		if (best ~= nil) then return best end
+		local tm = mm:GetTarget();
+		local t = tm:GetTargetIndex(tm:GetIsSubTargetActive());
+		if (t ~= nil) and (t ~= 0) and ((ent:GetServerId(t) or 0) >= 0x1000000) then return t end
 		return nil;
 	end
 
@@ -3361,7 +3381,7 @@ end
 		if dup or (id == 0x037) then return end
 		local c = EJ.chambers[s.chamber];
 		if (id == 0x032) or (id == 0x034) then
-			if (s.step ~= 'trade') or (struct.unpack('I', d, 0x04 + 1) ~= EJ.gate) then return end
+			if (s.step ~= 'trade') or (struct.unpack('I', d, 0x04 + 1) ~= s.gate) then return end
 			if (id == 0x032) then -- Valkyrie expects the menu with parameters (0x034); answer anything else with option 0
 				s.menu = struct.unpack('H', d, 0x0C + 1);
 				EJ.option(s, 0, false, 0);
@@ -3373,7 +3393,7 @@ end
 				EJ.option(s, s.chamber, true, 0);
 				EJ.step(s, 'pick');
 			else -- 0x05C: x, z (height), y, id, _unknown1 1, zone, menu, index, _unknown2 1, heading
-				EJ.send(0x05C, 'fffIIHHHBB', c[2], c[4], c[3], EJ.gate, 1, EJ.zone, s.menu, s.idx, 1, c[5]);
+				EJ.send(0x05C, 'fffIIHHHBB', c[2], c[4], c[3], s.gate, 1, EJ.zone, s.menu, s.idx, 1, c[5]);
 				EJ.step(s, 'warp');
 			end
 		elseif (id == 0x05C) then
@@ -3432,9 +3452,9 @@ end
 			return;
 		end
 		local ent = mm:GetEntity();
-		local idx = bit.band(EJ.gate, 0x7FF); -- zone NPCs sit at id & 0x7FF
-		if (ent:GetServerId(idx) ~= EJ.gate) then
-			gcinclude.Err('/ejenter: Entry Gate not in range');
+		local idx = EJ.findGate();
+		if (idx == nil) then
+			gcinclude.Err('/ejenter: no Entry Gate found; target it and try again');
 			return;
 		end
 		if ((ent:GetDistance(idx) or 99) > 25) then -- squared, Valkyrie's maxdistance
@@ -3445,7 +3465,7 @@ end
 			gcinclude.Err('/ejenter: inventory full');
 			return;
 		end
-		local s = { idx = idx, seen = {} };
+		local s = { idx = idx, gate = ent:GetServerId(idx), seen = {} };
 		if (arg ~= nil) then
 			s.kind, s.chamber = 'register', EJ.chamber(arg);
 			if (s.chamber == nil) then
@@ -3474,9 +3494,9 @@ end
 		EJ.run = s;
 		EJ.step(s, 'trade');
 		-- 0x036: id, counts[10], slots[10], index, number of items
-		EJ.send(0x036, 'I' .. string.rep('I', 10) .. string.rep('B', 10) .. 'HB', EJ.gate,
+		EJ.send(0x036, 'I' .. string.rep('I', 10) .. string.rep('B', 10) .. 'HB', s.gate,
 			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, s.slot, 0, 0, 0, 0, 0, 0, 0, 0, 0, idx, 1);
-		gcinclude.Say('/ejenter: ' .. ((s.kind == 'register') and 'reserving ' or 'entering ') .. EJ.chambers[s.chamber][1]);
+		gcinclude.Say('/ejenter: ' .. ((s.kind == 'register') and 'reserving ' or 'entering ') .. EJ.chambers[s.chamber][1] .. ' (gate ' .. s.gate .. ')');
 	end
 
 	function gcinclude.DoNukes(tier)
