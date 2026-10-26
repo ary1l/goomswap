@@ -3161,7 +3161,7 @@ end
 	end
 
 	-- The gate: the nearest NPC named Entry Gate, else your target if it is an NPC. Valkyrie's fixed id (17097342)
-	-- did not match in game.
+	-- did not match in game (17097343 there).
 	function EJ.findGate()
 		local mm = AshitaCore:GetMemoryManager();
 		local ent = mm:GetEntity();
@@ -3263,6 +3263,21 @@ end
 		end
 	end
 
+	-- After a full hand-out: the reserver goes in, then every other box (/mso: Thorny's Multisend, all but you).
+	function EJ.enterAll()
+		gcinclude.Einherjar('ejenter');
+		local s = EJ.run;
+		if (s == nil) or (s.kind ~= 'enter') then return end
+		s.onDone = function()
+			local pm = AshitaCore:GetPluginManager();
+			if (pm:Get('Multisend') ~= nil) or (pm:Get('multisend') ~= nil) then
+				(function() AshitaCore:GetChatManager():QueueCommand(-1, '/mso /ejenter') end):once(1);
+			else
+				gcinclude.Say('/ejenter: you are in; /ejenter on the others');
+			end
+		end;
+	end
+
 	function EJ.trade(g) -- the next player
 		if (EJ.give ~= g) then return end
 		g.i = g.i + 1;
@@ -3270,7 +3285,10 @@ end
 		if (m == nil) then
 			EJ.give = nil;
 			if (#g.failed > 0) then gcinclude.Err('/ejlamps: no lamp for ' .. table.concat(g.failed, ', ') .. '; /ejlamps to retry')
-			else gcinclude.Say('/ejlamps: lamps handed out. /ejenter (reserver first), then /mss /ejenter') end
+			else
+				gcinclude.Say('/ejlamps: lamps handed out');
+				(function() EJ.enterAll() end):once(1);
+			end
 			return;
 		end
 		g.counter, g.have = 0, EJ.count(EJ.glow);
@@ -3417,11 +3435,15 @@ end
 				else
 					EJ.stop(c[1] .. ' is taken', true);
 				end
-			else
-				EJ.stop(nil); -- moved
+			else -- moved
+				local done = s.onDone;
+				EJ.stop(nil);
+				if (done ~= nil) then done() end
 			end
 		elseif (id == 0x036) and (s.kind == 'enter') then -- NPC text: Valkyrie's enter ends on it
+			local done = (s.step == 'go') and s.onDone or nil;
 			EJ.stop(nil);
+			if (done ~= nil) then done() end
 		elseif (id == 0x02A) and (s.kind == 'register') then
 			-- Valkyrie: Param 1-4 = 1, 23, 2964, 1, Message ID 40799, _unknown1 6 is "timed out from entering Einherjar"
 			local p1, p2, p3, p4 = struct.unpack('IIII', d, 0x08 + 1);
