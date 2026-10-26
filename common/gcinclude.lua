@@ -525,7 +525,7 @@ end
 		elseif (gcinclude.ExitItems[args[1]] ~= nil) then
 			AshitaCore:GetChatManager():QueueCommand(-1, '/item "' .. gcinclude.ExitItems[args[1]] .. '" <me>');
 		elseif (args[1] == 'ejenter') or (args[1] == 'ejexit') then
-			gcinclude.Einherjar(args[1]);
+			gcinclude.Einherjar(args[1], args[2]);
 		elseif (args[1] == 'temps') then
 			gcinclude.UseTemps();
 		elseif (args[1] == 'dw') then
@@ -2639,7 +2639,7 @@ end
 			'checks : /checksets, /xiroll, /mbinfo',
 			'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
 			'holds  : /naked /weaponsonly /abysseaproc [on|off] (one at a time), /capacity /jubilee /dynamisrp [on|off]',
-			'items  : /gce <item> | cancel, /temps (Escha drinks), /warpring /mea /holla /dem, /ejenter /ejexit (Bellhop)',
+			'items  : /gce <item> | cancel, /temps (Escha drinks), /warpring /mea /holla /dem, /ejenter [chamber] /ejexit (Einherjar)',
 			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat',
 			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N]',
 			'bar    : /gcbar [on|off|pos x y]',
@@ -3054,29 +3054,234 @@ end
 	end
 
 
-	-- Einherjar through Thorny's Bellhop plugin (Ashita, /load bellhop; its readme: tradenpc trades to the targeted NPC,
-	-- drop drops one stack). /ejenter: your lamp to the targeted Entry Gate, a Smoldering Lamp (reserve a chamber) before
-	-- a Glowing Lamp (enter); the gate's menu is yours to answer. /ejexit: drop the Glowing Lamp, which takes you out.
-	function gcinclude.Einherjar(cmd)
-		local pm = AshitaCore:GetPluginManager();
-		if (pm == nil) or (type(pm.Get) ~= 'function') or ((pm:Get('Bellhop') == nil) and (pm:Get('bellhop') == nil)) then
-			gcinclude.Err('/' .. cmd .. ' needs the Bellhop plugin (Ashita): /load bellhop');
+	-- Einherjar, Ashita only: the Entry Gate exchange of Valkyrie (Tny5989's Windower addon), Hazhalm Testing Grounds (zone 78).
+	-- Packet layouts: XiPackets and Windower fields.lua. Lamps (Windower res): 5413 Smoldering, 5414 Glowing, stack 1.
+	-- Glowing Lamp extdata (Windower extdata decode.Lamp): u16 @0 chamber 0x1E-0x26, byte 2 % 4: 1-2 Active, 3 Spent.
+	-- Register: trade the Smoldering Lamp, menu -> option chamber (automated), 0x05C byte 4 = 0 free -> option 64+chamber,
+	-- else 48+chamber. Enter: trade the Glowing Lamp, menu -> 0x05C move to the chamber, 0x05C -> option 1.
+	-- The gate's menu, 0x052 and 0x037 are blocked while it runs, as Valkyrie does. /ejexit drops the Glowing Lamp (0x028).
+	local EJ = {
+		zone = 78, gate = 17097342, smolder = 5413, glow = 5414,
+		chambers = { -- Valkyrie data/chambers.lua: name, x, y, z (height), heading
+			{ 'Rossweisse',    447.6451953,   -9.379000664, -217.3540039,  159 },
+			{ 'Grimgerde',     207.358017,     7.738000393, -197.3540039,   95 },
+			{ 'Siegrune',      127.2450027, -232.8470154,   -177.3540039,   95 },
+			{ 'Helmwige',     -151.4430084, -393.2810059,   -147.3540039,   95 },
+			{ 'Schwertleite', -391.1300049, -328.1620178,   -127.3540039,  159 },
+			{ 'Waltraute',    -632.1830444, -167.1180115,   -107.3540039,  159 },
+			{ 'Ortlinde',     -527.6430054,  111.163002,     -67.35400391, 223 },
+			{ 'Gerhilde',     -406.4190635,  350.4610291,    -47.35400391, 223 },
+			{ 'Brunhilde',    -129.6670074,  289.6010132,     -7.354000568,  31 },
+		},
+		run = nil, -- the exchange in progress
+	};
+
+	function EJ.send(id, fmt, ...)
+		local body = struct.pack(fmt, ...);
+		body = body .. string.rep('\0', (4 - #body % 4) % 4);
+		local head = struct.pack('H', bit.bor(bit.band(id, 0x1FF), bit.lshift((4 + #body) / 4, 9))) .. '\0\0';
+		AshitaCore:GetPacketManager():AddOutgoingPacket(id, (head .. body):totable());
+	end
+
+	function EJ.option(s, opt, auto, u1) -- 0x05B: id, option, _unknown1, index, automated, _, zone, menu
+		EJ.send(0x05B, 'IHHHBBHH', EJ.gate, opt, u1, s.idx, auto and 1 or 0, 0, EJ.zone, s.menu);
+	end
+
+	function EJ.stop(msg, isErr, release)
+		local s = EJ.run;
+		EJ.run = nil;
+		if release and (s ~= nil) and (s.menu ~= nil) then
+			-- The gate's event is open server side: cancel it (superwarp's reset, option 0 with _unknown1 16384)
+			-- and release the client (0x052 modes 0 and 1), as DecentWarp does.
+			EJ.option(s, 0, false, 16384);
+			local pm = AshitaCore:GetPacketManager();
+			pm:AddIncomingPacket(0x052, { 0x52, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
+			pm:AddIncomingPacket(0x052, { 0x52, 0x04, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 });
+		end
+		if (msg ~= nil) then
+			if isErr then gcinclude.Err('/ejenter: ' .. msg) else gcinclude.Say('/ejenter: ' .. msg) end
+		end
+	end
+
+	function EJ.step(s, step) -- no answer in 8s: give up
+		s.step = step;
+		(function() if (EJ.run == s) and (s.step == step) then EJ.stop('no answer from the Entry Gate', true, true) end end):once(8);
+	end
+
+	function EJ.slot(id, active) -- inventory slot holding the item (a Glowing Lamp: an Active one), and the item
+		local inv = AshitaCore:GetMemoryManager():GetInventory();
+		for i = 1, gData.GetContainerMax(0) or 0 do
+			local it = inv:GetContainerItem(0, i);
+			if (it ~= nil) and (it.Id == id) and (it.Count > 0) then
+				local x = it.Extra;
+				if not active then return i, it end
+				if (type(x) == 'string') and (#x >= 3) then
+					local st = string.byte(x, 3) % 4;
+					if (st == 1) or (st == 2) then return i, it end
+				end
+			end
+		end
+		return nil;
+	end
+
+	function EJ.free()
+		local inv = AshitaCore:GetMemoryManager():GetInventory();
+		local max, used = gData.GetContainerMax(0) or 0, 0;
+		for i = 1, max do
+			local it = inv:GetContainerItem(0, i);
+			if (it ~= nil) and (it.Id ~= 0) then used = used + 1 end
+		end
+		return max - used;
+	end
+
+	function EJ.chamber(arg) -- 1-9 or a unique start of the name
+		local n = tonumber(arg);
+		if (n ~= nil) then return (EJ.chambers[n] ~= nil) and n or nil end
+		local a, hit = string.lower(arg), nil;
+		for i, c in ipairs(EJ.chambers) do
+			if (string.sub(string.lower(c[1]), 1, #a) == a) then
+				if (hit ~= nil) then return nil end
+				hit = i;
+			end
+		end
+		return hit;
+	end
+
+	function EJ.drop(tries) -- every Glowing Lamp, one a second (Valkyrie's drop)
+		local slot = EJ.slot(EJ.glow, false);
+		if (slot == nil) then
+			if (tries == 0) then gcinclude.Err('/ejexit: no Glowing Lamp in inventory') end
 			return;
 		end
-		if (cmd == 'ejexit') then
-			AshitaCore:GetChatManager():QueueCommand(-1, '/bh drop "Glowing Lamp"');
+		if (tries >= 10) then return end
+		EJ.send(0x028, 'IBBH', 1, 0, slot, 0); -- count, bag (inventory), slot
+		(function() EJ.drop(tries + 1) end):once(1);
+	end
+
+	local EJ_BLOCK = { [0x032] = true, [0x034] = true, [0x05C] = true, [0x052] = true, [0x037] = true };
+	function gcinclude.EinherjarPacket(e)
+		local s = EJ.run;
+		if (s == nil) or e.injected then return end
+		local id = e.id;
+		if not EJ_BLOCK[id] and (id ~= 0x02A) and (id ~= 0x036) then return end
+		local d = e.data;
+		local key = string.sub(d, 1, 4); -- id, size, sync: a resend repeats them (Valkyrie skips resends)
+		local dup = (s.seen[id] == key);
+		s.seen[id] = key;
+		if EJ_BLOCK[id] then e.blocked = true end
+		if dup or (id == 0x037) then return end
+		local c = EJ.chambers[s.chamber];
+		if (id == 0x032) or (id == 0x034) then
+			if (s.step ~= 'trade') or (struct.unpack('I', d, 0x04 + 1) ~= EJ.gate) then return end
+			if (id == 0x032) then -- Valkyrie expects the menu with parameters (0x034); answer anything else with option 0
+				s.menu = struct.unpack('H', d, 0x0C + 1);
+				EJ.option(s, 0, false, 0);
+				EJ.stop('unexpected Entry Gate menu, cancelled', true);
+				return;
+			end
+			s.menu = struct.unpack('H', d, 0x2C + 1);
+			if (s.kind == 'register') then
+				EJ.option(s, s.chamber, true, 0);
+				EJ.step(s, 'pick');
+			else -- 0x05C: x, z (height), y, id, _unknown1 1, zone, menu, index, _unknown2 1, heading
+				EJ.send(0x05C, 'fffIIHHHBB', c[2], c[4], c[3], EJ.gate, 1, EJ.zone, s.menu, s.idx, 1, c[5]);
+				EJ.step(s, 'warp');
+			end
+		elseif (id == 0x05C) then
+			s.err = string.byte(d, 0x04 + 1); -- register: 0 = chamber free; enter: only that it came
+		elseif (id == 0x052) then
+			if (s.step == 'trade') then
+				EJ.stop('the Entry Gate refused the lamp', true);
+			elseif (s.err == nil) then
+				EJ.stop('the Entry Gate closed the menu', true);
+			elseif (s.step == 'pick') then
+				s.free = (s.err == 0);
+				EJ.option(s, (s.free and 64 or 48) + s.chamber, false, 0);
+				EJ.step(s, 'confirm');
+			elseif (s.step == 'warp') then
+				EJ.option(s, 1, false, 0);
+				EJ.step(s, 'go');
+			elseif (s.step == 'confirm') then
+				if s.free then EJ.stop(c[1] .. ' reserved: hand out the Glowing Lamps, then /ejenter (you first)')
+				else EJ.stop(c[1] .. ' is taken', true) end
+			else
+				EJ.stop(nil); -- moved
+			end
+		elseif (id == 0x036) and (s.kind == 'enter') then -- NPC text: Valkyrie's enter ends on it
+			EJ.stop(nil);
+		elseif (id == 0x02A) and (s.kind == 'register') then
+			-- Valkyrie: Param 1-4 = 1, 23, 2964, 1, Message ID 40799, _unknown1 6 is "timed out from entering Einherjar"
+			local p1, p2, p3, p4 = struct.unpack('IIII', d, 0x08 + 1);
+			if (p1 == 1) and (p2 == 23) and (p3 == 2964) and (p4 == 1) and (struct.unpack('H', d, 0x1A + 1) == 40799)
+				and (struct.unpack('I', d, 0x1C + 1) == 6) then
+				EJ.stop('still locked out of Einherjar', true);
+			end
+		end
+	end
+
+	-- /ejenter <chamber>: reserve it with the Smoldering Lamp. /ejenter: enter with the Glowing Lamp's chamber.
+	-- /ejexit: drop the Glowing Lamp, which takes you out.
+	function gcinclude.Einherjar(cmd, arg)
+		if (windower ~= nil) then
+			gcinclude.Err('/' .. cmd .. ' is Ashita only. Windower: Valkyrie (//valk register <chamber>, //valk enter, //valk drop)');
 			return;
 		end
-		local lamp = nil;
-		for _, name in ipairs(T{'Smoldering Lamp', 'Glowing Lamp'}) do
-			if (gcauto.ItemCount(name) > 0) then lamp = name; break end
-		end
-		if (lamp == nil) then
-			gcinclude.Err('/ejenter: no Smoldering Lamp or Glowing Lamp in inventory');
+		local mm = AshitaCore:GetMemoryManager();
+		if (mm:GetParty():GetMemberZone(0) ~= EJ.zone) then
+			gcinclude.Err('/' .. cmd .. ': only in Hazhalm Testing Grounds');
 			return;
 		end
-		AshitaCore:GetChatManager():QueueCommand(-1, '/bh tradenpc "' .. lamp .. '" 1');
-		gcinclude.Say('/ejenter: ' .. lamp .. ' to your target (the Entry Gate); answer its menu');
+		if (cmd == 'ejexit') then EJ.drop(0); return end
+		if (EJ.run ~= nil) then
+			gcinclude.Err('/ejenter: already talking to the Entry Gate');
+			return;
+		end
+		local ent = mm:GetEntity();
+		local idx = bit.band(EJ.gate, 0x7FF); -- zone NPCs sit at id & 0x7FF
+		if (ent:GetServerId(idx) ~= EJ.gate) then
+			gcinclude.Err('/ejenter: Entry Gate not in range');
+			return;
+		end
+		if ((ent:GetDistance(idx) or 99) > 25) then -- squared, Valkyrie's maxdistance
+			gcinclude.Err('/ejenter: stand within 5 yalms of the Entry Gate');
+			return;
+		end
+		if (EJ.free() < 1) then
+			gcinclude.Err('/ejenter: inventory full');
+			return;
+		end
+		local s = { idx = idx, seen = {} };
+		if (arg ~= nil) then
+			s.kind, s.chamber = 'register', EJ.chamber(arg);
+			if (s.chamber == nil) then
+				local names = {};
+				for i, c in ipairs(EJ.chambers) do names[i] = i .. ' ' .. c[1] end
+				gcinclude.Err('/ejenter: chamber? ' .. table.concat(names, ', '));
+				return;
+			end
+			s.slot = EJ.slot(EJ.smolder, false);
+			if (s.slot == nil) then
+				gcinclude.Err('/ejenter ' .. arg .. ': no Smoldering Lamp in inventory');
+				return;
+			end
+		else
+			local slot, it = EJ.slot(EJ.glow, true);
+			if (slot == nil) then
+				gcinclude.Err('/ejenter: no active Glowing Lamp (to reserve: /ejenter <chamber> with the Smoldering Lamp)');
+				return;
+			end
+			s.kind, s.slot, s.chamber = 'enter', slot, struct.unpack('H', it.Extra, 1) - 0x1D;
+			if (EJ.chambers[s.chamber] == nil) then
+				gcinclude.Err('/ejenter: unknown chamber on the Glowing Lamp');
+				return;
+			end
+		end
+		EJ.run = s;
+		EJ.step(s, 'trade');
+		-- 0x036: id, counts[10], slots[10], index, number of items
+		EJ.send(0x036, 'I' .. string.rep('I', 10) .. string.rep('B', 10) .. 'HB', EJ.gate,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, s.slot, 0, 0, 0, 0, 0, 0, 0, 0, 0, idx, 1);
+		gcinclude.Say('/ejenter: ' .. ((s.kind == 'register') and 'reserving ' or 'entering ') .. EJ.chambers[s.chamber][1]);
 	end
 
 	function gcinclude.DoNukes(tier)
@@ -3344,6 +3549,7 @@ end
 			gcinclude.ClearKeybinds();
 			gcauto.Stop();
 			ashita.events.unregister('d3d_present', 'gcinclude_tphold');
+			ashita.events.unregister('packet_in', 'gcinclude_ej');
 			if (gchud ~= nil) then gchud.Stop() end
 			gcinclude.UnlockSlots(nil);
 			gcinclude.UnlockWeapons();
@@ -3414,6 +3620,7 @@ end
 		gcinclude.ApplyLockstyle();
 		gcauto.Start();
 		ashita.events.register('d3d_present', 'gcinclude_tphold', gcinclude.HoldTick);
+		ashita.events.register('packet_in', 'gcinclude_ej', gcinclude.EinherjarPacket);
 		if (gchud ~= nil) then gchud.Start() end
 	end
 

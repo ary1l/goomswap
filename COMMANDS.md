@@ -115,7 +115,7 @@ checked; the game's own message says when it refuses.
 | `/temps` | Carried Escha drinks, 3s apart |
 | `/warpring` `/mea` `/holla` `/dem` | Same as `/gce` on Ring2 (past `/lock`): held through its equip delay, used when the ring says it's ready (retried if no use is seen), let go after the use so your normal Ring2 returns (if a set names Ring2). Windower: `//warpring` etc. Ring names: `warp_Ring` etc. |
 | `/ontic` `/shard` | Ontic Extremity / V. Con. Shard (more: `gcinclude.ExitItems`) |
-| `/ejenter` `/ejexit` | Einherjar, needs Thorny's Bellhop plugin (`/load bellhop`, Ashita). `/ejenter`: trades your lamp to the targeted Entry Gate (Smoldering Lamp first = reserve the chamber, else Glowing Lamp = enter); you answer the gate's menu. `/ejexit`: drops the Glowing Lamp (= leave). Hand out lamps: open a trade with a box, `/bh tradeplayer "Glowing Lamp" 1`; boxes take it by themselves after `/bh whitelist add <leader>`. The reserver enters first |
+| `/ejenter [chamber]` `/ejexit` | Einherjar, Ashita only, near the Entry Gate (within 5 yalms). Reserver: `/ejenter ort` (number 1-9 or name start) trades the Smoldering Lamp and picks the chamber. Hand out the Glowing Lamps, reserver `/ejenter` first, then `/mss /ejenter`: trades the Glowing Lamp and goes to its chamber, no menu. `/ejexit` (or `/mss /ejexit`): drops the Glowing Lamp = leave. Windower: use Valkyrie |
 | `/gcaspir` `/gcdrain` | Best castable tier on `<t>` |
 
 - `/gce`: delay from the item's `CastDelay` (override `EnchantDelays`, fallback `EnchantWindow`), counted once it's
