@@ -211,6 +211,8 @@
 	for k in pairs(gcinclude.ExitItems) do
 		if not gcinclude.AliasList:contains(k) then table.insert(gcinclude.AliasList, k) end
 	end
+	gcinclude.AliasList:append('ejenter');
+	gcinclude.AliasList:append('ejexit');
 	gcinclude.Towns = T{'Tavnazian Safehold','Aht Urhgan Whitegate','Nashmau','Southern San d\'Oria [S]','Bastok Markets [S]','Windurst Waters [S]','San d\'Oria-Jeuno Airship','Bastok-Jeuno Airship','Windurst-Jeuno Airship','Kazham-Jeuno Airship','Southern San d\'Oria','Northern San d\'Oria','Port San d\'Oria','Chateau d\'Oraguille','Bastok Mines','Bastok Markets','Port Bastok','Metalworks','Windurst Waters','Windurst Walls','Port Windurst','Windurst Woods','Heavens Tower','Ru\'Lude Gardens','Upper Jeuno','Lower Jeuno','Port Jeuno','Rabao','Selbina','Mhaura','Kazham','Norg','Mog Garden','Celennia Memorial Library','Western Adoulin','Eastern Adoulin'};
 	gcinclude.LockingRings = T{'Echad Ring', 'Trizek Ring', 'Endorsement Ring', 'Capacity Ring', 'Warp Ring','Facility Ring','Dim. Ring (Dem)','Dim. Ring (Mea)','Dim. Ring (Holla)'};
 	gcinclude.DistanceWS = T{'Flaming Arrow','Piercing Arrow','Dulling Arrow','Sidewinder','Blast Arrow','Arching Arrow','Empyreal Arrow','Refulgent Arrow','Apex Arrow','Namas Arrow','Jishnu\'s Radiance','Hot Shot','Split Shot','Sniper Shot','Slug Shot','Blast Shot','Heavy Shot','Detonator','Numbing Shot','Last Stand','Coronach','Wildfire','Trueflight','Leaden Salute','Myrkr','Dagan','Moonlight','Starlight','Mistral Axe','Bora Axe','Sarv','Terminus'};
@@ -522,6 +524,8 @@ end
 			gcinclude.UseTeleRing(gcinclude.TeleRings[args[1]]);
 		elseif (gcinclude.ExitItems[args[1]] ~= nil) then
 			AshitaCore:GetChatManager():QueueCommand(-1, '/item "' .. gcinclude.ExitItems[args[1]] .. '" <me>');
+		elseif (args[1] == 'ejenter') or (args[1] == 'ejexit') then
+			gcinclude.Einherjar(args[1]);
 		elseif (args[1] == 'temps') then
 			gcinclude.UseTemps();
 		elseif (args[1] == 'dw') then
@@ -2635,7 +2639,7 @@ end
 			'checks : /checksets, /xiroll, /mbinfo',
 			'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
 			'holds  : /naked /weaponsonly /abysseaproc [on|off] (one at a time), /capacity /jubilee /dynamisrp [on|off]',
-			'items  : /gce <item> | cancel, /temps (Escha drinks), /warpring /mea /holla /dem',
+			'items  : /gce <item> | cancel, /temps (Escha drinks), /warpring /mea /holla /dem, /ejenter /ejexit (Bellhop)',
 			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat',
 			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N]',
 			'bar    : /gcbar [on|off|pos x y]',
@@ -3049,6 +3053,31 @@ end
 		gcinclude.UseEnchanted(ring, 'Ring2', 'user');
 	end
 
+
+	-- Einherjar through Thorny's Bellhop plugin (Ashita, /load bellhop; its readme: tradenpc trades to the targeted NPC,
+	-- drop drops one stack). /ejenter: your lamp to the targeted Entry Gate, a Smoldering Lamp (reserve a chamber) before
+	-- a Glowing Lamp (enter); the gate's menu is yours to answer. /ejexit: drop the Glowing Lamp, which takes you out.
+	function gcinclude.Einherjar(cmd)
+		local pm = AshitaCore:GetPluginManager();
+		if (pm == nil) or (type(pm.Get) ~= 'function') or ((pm:Get('Bellhop') == nil) and (pm:Get('bellhop') == nil)) then
+			gcinclude.Err('/' .. cmd .. ' needs the Bellhop plugin (Ashita): /load bellhop');
+			return;
+		end
+		if (cmd == 'ejexit') then
+			AshitaCore:GetChatManager():QueueCommand(-1, '/bh drop "Glowing Lamp"');
+			return;
+		end
+		local lamp = nil;
+		for _, name in ipairs(T{'Smoldering Lamp', 'Glowing Lamp'}) do
+			if (gcauto.ItemCount(name) > 0) then lamp = name; break end
+		end
+		if (lamp == nil) then
+			gcinclude.Err('/ejenter: no Smoldering Lamp or Glowing Lamp in inventory');
+			return;
+		end
+		AshitaCore:GetChatManager():QueueCommand(-1, '/bh tradenpc "' .. lamp .. '" 1');
+		gcinclude.Say('/ejenter: ' .. lamp .. ' to your target (the Entry Gate); answer its menu');
+	end
 
 	function gcinclude.DoNukes(tier)
 		local cast = gcdisplay.GetCycle('Element');
