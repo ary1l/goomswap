@@ -211,6 +211,9 @@
 	for k in pairs(gcinclude.ExitItems) do
 		if not gcinclude.AliasList:contains(k) then table.insert(gcinclude.AliasList, k) end
 	end
+	gcinclude.AliasList:append('ejenter');
+	gcinclude.AliasList:append('ejexit');
+	gcinclude.AliasList:append('ejlamps');
 	gcinclude.Towns = T{'Tavnazian Safehold','Aht Urhgan Whitegate','Nashmau','Southern San d\'Oria [S]','Bastok Markets [S]','Windurst Waters [S]','San d\'Oria-Jeuno Airship','Bastok-Jeuno Airship','Windurst-Jeuno Airship','Kazham-Jeuno Airship','Southern San d\'Oria','Northern San d\'Oria','Port San d\'Oria','Chateau d\'Oraguille','Bastok Mines','Bastok Markets','Port Bastok','Metalworks','Windurst Waters','Windurst Walls','Port Windurst','Windurst Woods','Heavens Tower','Ru\'Lude Gardens','Upper Jeuno','Lower Jeuno','Port Jeuno','Rabao','Selbina','Mhaura','Kazham','Norg','Mog Garden','Celennia Memorial Library','Western Adoulin','Eastern Adoulin'};
 	gcinclude.LockingRings = T{'Echad Ring', 'Trizek Ring', 'Endorsement Ring', 'Capacity Ring', 'Warp Ring','Facility Ring','Dim. Ring (Dem)','Dim. Ring (Mea)','Dim. Ring (Holla)'};
 	gcinclude.DistanceWS = T{'Flaming Arrow','Piercing Arrow','Dulling Arrow','Sidewinder','Blast Arrow','Arching Arrow','Empyreal Arrow','Refulgent Arrow','Apex Arrow','Namas Arrow','Jishnu\'s Radiance','Hot Shot','Split Shot','Sniper Shot','Slug Shot','Blast Shot','Heavy Shot','Detonator','Numbing Shot','Last Stand','Coronach','Wildfire','Trueflight','Leaden Salute','Myrkr','Dagan','Moonlight','Starlight','Mistral Axe','Bora Axe','Sarv','Terminus'};
@@ -522,6 +525,8 @@ end
 			gcinclude.UseTeleRing(gcinclude.TeleRings[args[1]]);
 		elseif (gcinclude.ExitItems[args[1]] ~= nil) then
 			AshitaCore:GetChatManager():QueueCommand(-1, '/item "' .. gcinclude.ExitItems[args[1]] .. '" <me>');
+		elseif (args[1] == 'ejenter') or (args[1] == 'ejexit') or (args[1] == 'ejlamps') then
+			gcinclude.Einherjar(args[1], args[2]);
 		elseif (args[1] == 'temps') then
 			gcinclude.UseTemps();
 		elseif (args[1] == 'dw') then
@@ -2635,7 +2640,7 @@ end
 			'checks : /checksets, /xiroll, /mbinfo',
 			'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
 			'holds  : /naked /weaponsonly /abysseaproc [on|off] (one at a time), /capacity /jubilee /dynamisrp [on|off]',
-			'items  : /gce <item> | cancel, /temps (Escha drinks), /warpring /mea /holla /dem',
+			'items  : /gce <item> | cancel, /temps (Escha drinks), /warpring /mea /holla /dem, /ejenter [chamber] /ejlamps /ejexit (Einherjar)',
 			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat',
 			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N]',
 			'bar    : /gcbar [on|off|pos x y]',
@@ -3050,6 +3055,450 @@ end
 	end
 
 
+	-- Einherjar, Ashita only: the Entry Gate exchange of Valkyrie (Tny5989's Windower addon), Hazhalm Testing Grounds (zone 78).
+	-- Packet layouts: XiPackets and Windower fields.lua. Lamps (Windower res): 5413 Smoldering, 5414 Glowing, stack 1.
+	-- Glowing Lamp extdata (Windower extdata decode.Lamp): u16 @0 chamber 0x1E-0x26, byte 2 % 4: 1-2 Active, 3 Spent.
+	-- Register: trade the Smoldering Lamp, menu -> option chamber (automated), 0x05C byte 4 = 0 free -> option 64+chamber,
+	-- else 48+chamber. Enter: trade the Glowing Lamp, menu -> 0x05C move to the chamber, 0x05C -> option 1.
+	-- The gate's menu, 0x052 and 0x037 are blocked while it runs, as Valkyrie does. /ejexit drops the Glowing Lamp (0x028).
+	-- Lamps for the party (/ejlamps, and after a reservation): using a Glowing Lamp makes a copy that can be traded
+	-- (FFXIclopedia). Player trade (XiPackets, Windower fields.lua, Ivaar's Trade addon): 0x032 request, the other side
+	-- answers 0x033 Kind 0 and both get 0x022 Kind 0; 0x034 sets an item (slot 0 is gil, items 1-8), echoed by 0x025;
+	-- 0x033 Kind 2 confirms with the Trade Count of the last 0x023 (the other side's items); 0x022 Kind 9 ends it.
+	-- 0x022 kinds: 0 start, 1 cancel, 2 confirm, 3 confirm cancel, 4-8 errors, 9 end. Trade range 6 yalms (LandSandBoat).
+	local EJ = {
+		zone = 78, smolder = 5413, glow = 5414,
+		chambers = { -- Valkyrie data/chambers.lua: name, x, y, z (height), heading
+			{ 'Rossweisse',    447.6451953,   -9.379000664, -217.3540039,  159 },
+			{ 'Grimgerde',     207.358017,     7.738000393, -197.3540039,   95 },
+			{ 'Siegrune',      127.2450027, -232.8470154,   -177.3540039,   95 },
+			{ 'Helmwige',     -151.4430084, -393.2810059,   -147.3540039,   95 },
+			{ 'Schwertleite', -391.1300049, -328.1620178,   -127.3540039,  159 },
+			{ 'Waltraute',    -632.1830444, -167.1180115,   -107.3540039,  159 },
+			{ 'Ortlinde',     -527.6430054,  111.163002,     -67.35400391, 223 },
+			{ 'Gerhilde',     -406.4190635,  350.4610291,    -47.35400391, 223 },
+			{ 'Brunhilde',    -129.6670074,  289.6010132,     -7.354000568,  31 },
+		},
+		run = nil, -- the exchange in progress
+		give = nil, -- lamps being handed out
+		take = nil, -- a trade being taken
+		tseen = {},
+	};
+
+	function EJ.send(id, fmt, ...)
+		local body = struct.pack(fmt, ...);
+		body = body .. string.rep('\0', (4 - #body % 4) % 4);
+		local head = struct.pack('H', bit.bor(bit.band(id, 0x1FF), bit.lshift((4 + #body) / 4, 9))) .. '\0\0';
+		AshitaCore:GetPacketManager():AddOutgoingPacket(id, (head .. body):totable());
+	end
+
+	function EJ.option(s, opt, auto, u1) -- 0x05B: id, option, _unknown1, index, automated, _, zone, menu
+		EJ.send(0x05B, 'IHHHBBHH', s.gate, opt, u1, s.idx, auto and 1 or 0, 0, EJ.zone, s.menu);
+	end
+
+	function EJ.stop(msg, isErr, release)
+		local s = EJ.run;
+		EJ.run = nil;
+		if release and (s ~= nil) and (s.menu ~= nil) then
+			-- The gate's event is open server side: cancel it (superwarp's reset, option 0 with _unknown1 16384)
+			-- and release the client (0x052 modes 0 and 1), as DecentWarp does.
+			EJ.option(s, 0, false, 16384);
+			local pm = AshitaCore:GetPacketManager();
+			pm:AddIncomingPacket(0x052, { 0x52, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
+			pm:AddIncomingPacket(0x052, { 0x52, 0x04, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 });
+		end
+		if (msg ~= nil) then
+			if isErr then gcinclude.Err('/ejenter: ' .. msg) else gcinclude.Say('/ejenter: ' .. msg) end
+		end
+	end
+
+	function EJ.step(s, step) -- no answer in 8s: give up
+		s.step = step;
+		(function() if (EJ.run == s) and (s.step == step) then EJ.stop('no answer from the Entry Gate', true, true) end end):once(8);
+	end
+
+	function EJ.slot(id, active) -- inventory slot holding the item (a Glowing Lamp: an Active one), and the item
+		local inv = AshitaCore:GetMemoryManager():GetInventory();
+		for i = 1, gData.GetContainerMax(0) or 0 do
+			local it = inv:GetContainerItem(0, i);
+			if (it ~= nil) and (it.Id == id) and (it.Count > 0) then
+				local x = it.Extra;
+				if not active then return i, it end
+				if (type(x) == 'string') and (#x >= 3) then
+					local st = string.byte(x, 3) % 4;
+					if (st == 1) or (st == 2) then return i, it end
+				end
+			end
+		end
+		return nil;
+	end
+
+	function EJ.free()
+		local inv = AshitaCore:GetMemoryManager():GetInventory();
+		local max, used = gData.GetContainerMax(0) or 0, 0;
+		for i = 1, max do
+			local it = inv:GetContainerItem(0, i);
+			if (it ~= nil) and (it.Id ~= 0) then used = used + 1 end
+		end
+		return max - used;
+	end
+
+	function EJ.count(id)
+		local inv, n = AshitaCore:GetMemoryManager():GetInventory(), 0;
+		for i = 1, gData.GetContainerMax(0) or 0 do
+			local it = inv:GetContainerItem(0, i);
+			if (it ~= nil) and (it.Id == id) then n = n + it.Count end
+		end
+		return n;
+	end
+
+	function EJ.member(id) -- party or alliance slot of a player (players have ids under 0x1000000; trusts don't)
+		local party = AshitaCore:GetMemoryManager():GetParty();
+		for i = 1, 17 do
+			if (party:GetMemberIsActive(i) == 1) and (party:GetMemberServerId(i) == id) and (id ~= 0) and (id < 0x1000000) then return i end
+		end
+		return nil;
+	end
+
+	-- The gate: the nearest NPC named Entry Gate, else your target if it is an NPC. Valkyrie's fixed id (17097342)
+	-- did not match in game.
+	function EJ.findGate()
+		local mm = AshitaCore:GetMemoryManager();
+		local ent = mm:GetEntity();
+		local best, bd = nil, nil;
+		for i = 0, 0x8FF do
+			local id = ent:GetServerId(i) or 0;
+			if (id >= 0x1000000) and (string.lower(ent:GetName(i) or '') == 'entry gate') then
+				local d = ent:GetDistance(i) or 9999;
+				if (bd == nil) or (d < bd) then best, bd = i, d end
+			end
+		end
+		if (best ~= nil) then return best end
+		local tm = mm:GetTarget();
+		local t = tm:GetTargetIndex(tm:GetIsSubTargetActive());
+		if (t ~= nil) and (t ~= 0) and ((ent:GetServerId(t) or 0) >= 0x1000000) then return t end
+		return nil;
+	end
+
+	function EJ.chamber(arg) -- 1-9 or a unique start of the name
+		local n = tonumber(arg);
+		if (n ~= nil) then return (EJ.chambers[n] ~= nil) and n or nil end
+		local a, hit = string.lower(arg), nil;
+		for i, c in ipairs(EJ.chambers) do
+			if (string.sub(string.lower(c[1]), 1, #a) == a) then
+				if (hit ~= nil) then return nil end
+				hit = i;
+			end
+		end
+		return hit;
+	end
+
+	function EJ.drop(tries) -- every Glowing Lamp, one a second (Valkyrie's drop)
+		local slot = EJ.slot(EJ.glow, false);
+		if (slot == nil) then
+			if (tries == 0) then gcinclude.Err('/ejexit: no Glowing Lamp in inventory') end
+			return;
+		end
+		if (tries >= 10) then return end
+		EJ.send(0x028, 'IBBH', 1, 0, slot, 0); -- count, bag (inventory), slot
+		(function() EJ.drop(tries + 1) end):once(1);
+	end
+
+	function EJ.members() -- players here in trade range, and the names of those out of it
+		local mm = AshitaCore:GetMemoryManager();
+		local party, ent = mm:GetParty(), mm:GetEntity();
+		local near, far = {}, {};
+		for i = 1, 17 do
+			local id = party:GetMemberServerId(i);
+			if (EJ.member(id) == i) and (party:GetMemberZone(i) == EJ.zone) then
+				local idx = party:GetMemberTargetIndex(i);
+				if (idx ~= 0) and (ent:GetServerId(idx) == id) and ((ent:GetDistance(idx) or 99) <= 36) then -- squared
+					near[#near + 1] = { id = id, idx = idx, name = party:GetMemberName(i) };
+				else
+					far[#far + 1] = party:GetMemberName(i);
+				end
+			end
+		end
+		return near, far;
+	end
+
+	function EJ.handout(wait) -- copy the Glowing Lamp, then trade one to every player in range
+		if (EJ.give ~= nil) then gcinclude.Err('/ejlamps: already handing out lamps'); return end
+		if (EJ.count(EJ.glow) < 1) then
+			if ((wait or 0) < 5) then (function() EJ.handout((wait or 0) + 0.5) end):once(0.5) -- a new lamp may still be on its way
+			else gcinclude.Err('/ejlamps: no Glowing Lamp in inventory') end
+			return;
+		end
+		local near, far = EJ.members();
+		if (#far > 0) then gcinclude.Err('/ejlamps: not within 6 yalms: ' .. table.concat(far, ', ')) end
+		if (#near == 0) then gcinclude.Err('/ejlamps: nobody to give a lamp to'); return end
+		local g = { list = near, i = 0, need = #near + 1, tries = 0, failed = {} };
+		local short = g.need - EJ.count(EJ.glow) - EJ.free();
+		if (short > 0) then gcinclude.Err('/ejlamps: free ' .. short .. ' more inventory slot(s)'); return end
+		EJ.give = g;
+		gcinclude.Say('/ejlamps: ' .. #near .. ' lamp(s) to make and hand out');
+		EJ.copy(g, nil);
+	end
+
+	function EJ.copy(g, t) -- t: seconds since the last use, nil = use one now
+		if (EJ.give ~= g) then return end
+		local have = EJ.count(EJ.glow);
+		if (have >= g.need) then
+			EJ.trade(g);
+		elseif (t == nil) then
+			g.last = have;
+			AshitaCore:GetChatManager():QueueCommand(-1, '/item "Glowing Lamp" <me>');
+			(function() EJ.copy(g, 0.5) end):once(0.5);
+		elseif (have > g.last) then -- made one: the next use a second later
+			g.tries = 0;
+			(function() EJ.copy(g, nil) end):once(1);
+		elseif (t < 4) then
+			(function() EJ.copy(g, t + 0.5) end):once(0.5);
+		elseif (g.tries < 2) then
+			g.tries = g.tries + 1;
+			EJ.copy(g, nil);
+		else
+			EJ.give = nil;
+			gcinclude.Err('/ejlamps: using the Glowing Lamp made no copy');
+		end
+	end
+
+	function EJ.trade(g) -- the next player
+		if (EJ.give ~= g) then return end
+		g.i = g.i + 1;
+		local m = g.list[g.i];
+		if (m == nil) then
+			EJ.give = nil;
+			if (#g.failed > 0) then gcinclude.Err('/ejlamps: no lamp for ' .. table.concat(g.failed, ', ') .. '; /ejlamps to retry')
+			else gcinclude.Say('/ejlamps: lamps handed out. /ejenter (reserver first), then /mss /ejenter') end
+			return;
+		end
+		g.counter, g.have = 0, EJ.count(EJ.glow);
+		EJ.send(0x032, 'IHH', m.id, m.idx, 0); -- trade request: id, index
+		EJ.gstep(g, 'request');
+	end
+
+	function EJ.gstep(g, phase) -- no answer in 10s: cancel, next player
+		g.phase = phase;
+		local i = g.i;
+		(function()
+			if (EJ.give ~= g) or (g.i ~= i) or (g.phase ~= phase) then return end
+			EJ.gdone(g, EJ.count(EJ.glow) < g.have); -- the lamp went: it worked without the end packet
+		end):once(10);
+	end
+
+	function EJ.gdone(g, ok)
+		if not ok then
+			EJ.send(0x033, 'IHH', 1, 0, 0); -- cancel
+			g.failed[#g.failed + 1] = g.list[g.i].name;
+		end
+		g.phase = nil;
+		(function() EJ.trade(g) end):once(1);
+	end
+
+	-- Giving: trades this box started. Taking: a party member's trade request here is accepted and, when everything
+	-- offered is a Glowing Lamp, confirmed after they confirm (Ivaar's Trade addon and Alexandria do the same for their
+	-- trusted names). The accept waits 1s, as Alexandria's does, so a trade you, Bellhop or Alexandria opened isn't
+	-- accepted twice.
+	function EJ.tradePacket(id, d)
+		local g = EJ.give;
+		if (g ~= nil) and (g.phase ~= nil) then
+			local m = g.list[g.i];
+			if (id == 0x023) then
+				g.counter = struct.unpack('H', d, 0x08 + 1);
+			elseif (id == 0x022) and (struct.unpack('I', d, 0x04 + 1) == m.id) then
+				local kind = struct.unpack('I', d, 0x08 + 1);
+				if (kind == 0) and (g.phase == 'request') then
+					local slot = EJ.slot(EJ.glow, false);
+					EJ.send(0x034, 'IHBB', 1, EJ.glow, slot or 0, 1); -- count, item, inventory slot, trade slot 1
+					EJ.gstep(g, 'item');
+				elseif (kind == 9) then
+					EJ.gdone(g, true);
+				elseif (kind ~= 0) and (kind ~= 2) then
+					EJ.gdone(g, false);
+				end
+			elseif (id == 0x025) and (g.phase == 'item') and (struct.unpack('H', d, 0x08 + 1) == EJ.glow) then
+				EJ.send(0x033, 'IHH', 2, g.counter, 0); -- confirm
+				EJ.gstep(g, 'confirm');
+			end
+			return;
+		end
+		local r = EJ.take;
+		if (id == 0x021) then
+			local from = struct.unpack('I', d, 0x04 + 1);
+			local mm = AshitaCore:GetMemoryManager();
+			local party = mm:GetParty();
+			if (party:GetMemberZone(0) ~= EJ.zone) or (EJ.member(from) == nil) then return end
+			local st = mm:GetEntity():GetStatus(party:GetMemberTargetIndex(0));
+			if (st ~= nil) and (st >= 2) and (st <= 4) then return end -- Ivaar's check: dead or in an event
+			local r = { from = from, counter = 0, items = {} };
+			EJ.take = r;
+			(function() if (EJ.take == r) and not r.opened then EJ.send(0x033, 'IHH', 0, 0, 0) end end):once(1); -- accept
+		elseif (r == nil) then
+			return;
+		elseif (id == 0x023) then
+			r.counter = struct.unpack('H', d, 0x08 + 1);
+			local num, item, slot = struct.unpack('I', d, 0x04 + 1), struct.unpack('H', d, 0x0A + 1), string.byte(d, 0x0D + 1);
+			r.items[slot] = (num > 0) and item or nil;
+		elseif (id == 0x022) and (struct.unpack('I', d, 0x04 + 1) == r.from) then
+			local kind = struct.unpack('I', d, 0x08 + 1);
+			if (kind == 2) then
+				local lamps = 0;
+				for _, item in pairs(r.items) do
+					if (item ~= EJ.glow) then return end -- something else offered: yours to decide
+					lamps = lamps + 1;
+				end
+				if (lamps > 0) then EJ.send(0x033, 'IHH', 2, r.counter, 0) end
+			elseif (kind == 0) then
+				r.opened, r.counter = true, 0;
+			else
+				EJ.take = nil;
+			end
+		end
+	end
+
+	local EJ_BLOCK = { [0x032] = true, [0x034] = true, [0x05C] = true, [0x052] = true, [0x037] = true };
+	local EJ_TRADE = { [0x021] = true, [0x022] = true, [0x023] = true, [0x025] = true };
+	function gcinclude.EinherjarPacket(e)
+		if e.injected then return end
+		local id = e.id;
+		if EJ_TRADE[id] then
+			local key = string.sub(e.data, 1, 4); -- skip resends
+			if (EJ.tseen[id] ~= key) then
+				EJ.tseen[id] = key;
+				EJ.tradePacket(id, e.data);
+			end
+			return;
+		end
+		local s = EJ.run;
+		if (s == nil) then return end
+		if not EJ_BLOCK[id] and (id ~= 0x02A) and (id ~= 0x036) then return end
+		local d = e.data;
+		local key = string.sub(d, 1, 4); -- id, size, sync: a resend repeats them (Valkyrie skips resends)
+		local dup = (s.seen[id] == key);
+		s.seen[id] = key;
+		if EJ_BLOCK[id] then e.blocked = true end
+		if dup or (id == 0x037) then return end
+		local c = EJ.chambers[s.chamber];
+		if (id == 0x032) or (id == 0x034) then
+			if (s.step ~= 'trade') or (struct.unpack('I', d, 0x04 + 1) ~= s.gate) then return end
+			if (id == 0x032) then -- Valkyrie expects the menu with parameters (0x034); answer anything else with option 0
+				s.menu = struct.unpack('H', d, 0x0C + 1);
+				EJ.option(s, 0, false, 0);
+				EJ.stop('unexpected Entry Gate menu, cancelled', true);
+				return;
+			end
+			s.menu = struct.unpack('H', d, 0x2C + 1);
+			if (s.kind == 'register') then
+				EJ.option(s, s.chamber, true, 0);
+				EJ.step(s, 'pick');
+			else -- 0x05C: x, z (height), y, id, _unknown1 1, zone, menu, index, _unknown2 1, heading
+				EJ.send(0x05C, 'fffIIHHHBB', c[2], c[4], c[3], s.gate, 1, EJ.zone, s.menu, s.idx, 1, c[5]);
+				EJ.step(s, 'warp');
+			end
+		elseif (id == 0x05C) then
+			s.err = string.byte(d, 0x04 + 1); -- register: 0 = chamber free; enter: only that it came
+		elseif (id == 0x052) then
+			if (s.step == 'trade') then
+				EJ.stop('the Entry Gate refused the lamp', true);
+			elseif (s.err == nil) then
+				EJ.stop('the Entry Gate closed the menu', true);
+			elseif (s.step == 'pick') then
+				s.free = (s.err == 0);
+				EJ.option(s, (s.free and 64 or 48) + s.chamber, false, 0);
+				EJ.step(s, 'confirm');
+			elseif (s.step == 'warp') then
+				EJ.option(s, 1, false, 0);
+				EJ.step(s, 'go');
+			elseif (s.step == 'confirm') then
+				if s.free then
+					EJ.stop(c[1] .. ' reserved');
+					(function() EJ.handout(0) end):once(1);
+				else
+					EJ.stop(c[1] .. ' is taken', true);
+				end
+			else
+				EJ.stop(nil); -- moved
+			end
+		elseif (id == 0x036) and (s.kind == 'enter') then -- NPC text: Valkyrie's enter ends on it
+			EJ.stop(nil);
+		elseif (id == 0x02A) and (s.kind == 'register') then
+			-- Valkyrie: Param 1-4 = 1, 23, 2964, 1, Message ID 40799, _unknown1 6 is "timed out from entering Einherjar"
+			local p1, p2, p3, p4 = struct.unpack('IIII', d, 0x08 + 1);
+			if (p1 == 1) and (p2 == 23) and (p3 == 2964) and (p4 == 1) and (struct.unpack('H', d, 0x1A + 1) == 40799)
+				and (struct.unpack('I', d, 0x1C + 1) == 6) then
+				EJ.stop('still locked out of Einherjar', true);
+			end
+		end
+	end
+
+	-- /ejenter <chamber>: reserve it with the Smoldering Lamp. /ejenter: enter with the Glowing Lamp's chamber.
+	-- /ejlamps: copy the Glowing Lamp and trade one to each party member here (done by itself after a reservation).
+	-- /ejexit: drop the Glowing Lamp, which takes you out.
+	function gcinclude.Einherjar(cmd, arg)
+		if (windower ~= nil) then
+			gcinclude.Err('/' .. cmd .. ' is Ashita only. Windower: Valkyrie (//valk register <chamber>, //valk enter, //valk drop)');
+			return;
+		end
+		local mm = AshitaCore:GetMemoryManager();
+		if (mm:GetParty():GetMemberZone(0) ~= EJ.zone) then
+			gcinclude.Err('/' .. cmd .. ': only in Hazhalm Testing Grounds');
+			return;
+		end
+		if (cmd == 'ejexit') then EJ.drop(0); return end
+		if (cmd == 'ejlamps') then EJ.handout(5); return end
+		if (EJ.run ~= nil) then
+			gcinclude.Err('/ejenter: already talking to the Entry Gate');
+			return;
+		end
+		local ent = mm:GetEntity();
+		local idx = EJ.findGate();
+		if (idx == nil) then
+			gcinclude.Err('/ejenter: no Entry Gate found; target it and try again');
+			return;
+		end
+		if ((ent:GetDistance(idx) or 99) > 25) then -- squared, Valkyrie's maxdistance
+			gcinclude.Err('/ejenter: stand within 5 yalms of the Entry Gate');
+			return;
+		end
+		if (EJ.free() < 1) then
+			gcinclude.Err('/ejenter: inventory full');
+			return;
+		end
+		local s = { idx = idx, gate = ent:GetServerId(idx), seen = {} };
+		if (arg ~= nil) then
+			s.kind, s.chamber = 'register', EJ.chamber(arg);
+			if (s.chamber == nil) then
+				local names = {};
+				for i, c in ipairs(EJ.chambers) do names[i] = i .. ' ' .. c[1] end
+				gcinclude.Err('/ejenter: chamber? ' .. table.concat(names, ', '));
+				return;
+			end
+			s.slot = EJ.slot(EJ.smolder, false);
+			if (s.slot == nil) then
+				gcinclude.Err('/ejenter ' .. arg .. ': no Smoldering Lamp in inventory');
+				return;
+			end
+		else
+			local slot, it = EJ.slot(EJ.glow, true);
+			if (slot == nil) then
+				gcinclude.Err('/ejenter: no active Glowing Lamp (to reserve: /ejenter <chamber> with the Smoldering Lamp)');
+				return;
+			end
+			s.kind, s.slot, s.chamber = 'enter', slot, struct.unpack('H', it.Extra, 1) - 0x1D;
+			if (EJ.chambers[s.chamber] == nil) then
+				gcinclude.Err('/ejenter: unknown chamber on the Glowing Lamp');
+				return;
+			end
+		end
+		EJ.run = s;
+		EJ.step(s, 'trade');
+		-- 0x036: id, counts[10], slots[10], index, number of items
+		EJ.send(0x036, 'I' .. string.rep('I', 10) .. string.rep('B', 10) .. 'HB', s.gate,
+			1, 0, 0, 0, 0, 0, 0, 0, 0, 0, s.slot, 0, 0, 0, 0, 0, 0, 0, 0, 0, idx, 1);
+		gcinclude.Say('/ejenter: ' .. ((s.kind == 'register') and 'reserving ' or 'entering ') .. EJ.chambers[s.chamber][1] .. ' (gate ' .. s.gate .. ')');
+	end
+
 	function gcinclude.DoNukes(tier)
 		local cast = gcdisplay.GetCycle('Element');
 		if (cast == 'Light') or (cast == 'Dark') then
@@ -3315,6 +3764,7 @@ end
 			gcinclude.ClearKeybinds();
 			gcauto.Stop();
 			ashita.events.unregister('d3d_present', 'gcinclude_tphold');
+			ashita.events.unregister('packet_in', 'gcinclude_ej');
 			if (gchud ~= nil) then gchud.Stop() end
 			gcinclude.UnlockSlots(nil);
 			gcinclude.UnlockWeapons();
@@ -3385,6 +3835,7 @@ end
 		gcinclude.ApplyLockstyle();
 		gcauto.Start();
 		ashita.events.register('d3d_present', 'gcinclude_tphold', gcinclude.HoldTick);
+		ashita.events.register('packet_in', 'gcinclude_ej', gcinclude.EinherjarPacket);
 		if (gchud ~= nil) then gchud.Start() end
 	end
 
