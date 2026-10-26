@@ -3277,7 +3277,9 @@ end
 	end
 
 	-- Giving: trades this box started. Taking: a party member's trade request here is accepted and, when everything
-	-- offered is a Glowing Lamp, confirmed after they confirm (Ivaar's Trade addon does the same for its whitelist).
+	-- offered is a Glowing Lamp, confirmed after they confirm (Ivaar's Trade addon and Alexandria do the same for their
+	-- trusted names). The accept waits 1s, as Alexandria's does, so a trade you, Bellhop or Alexandria opened isn't
+	-- accepted twice.
 	function EJ.tradePacket(id, d)
 		local g = EJ.give;
 		if (g ~= nil) and (g.phase ~= nil) then
@@ -3309,8 +3311,9 @@ end
 			if (party:GetMemberZone(0) ~= EJ.zone) or (EJ.member(from) == nil) then return end
 			local st = mm:GetEntity():GetStatus(party:GetMemberTargetIndex(0));
 			if (st ~= nil) and (st >= 2) and (st <= 4) then return end -- Ivaar's check: dead or in an event
-			EJ.take = { from = from, counter = 0, items = {} };
-			EJ.send(0x033, 'IHH', 0, 0, 0); -- accept
+			local r = { from = from, counter = 0, items = {} };
+			EJ.take = r;
+			(function() if (EJ.take == r) and not r.opened then EJ.send(0x033, 'IHH', 0, 0, 0) end end):once(1); -- accept
 		elseif (r == nil) then
 			return;
 		elseif (id == 0x023) then
@@ -3326,7 +3329,9 @@ end
 					lamps = lamps + 1;
 				end
 				if (lamps > 0) then EJ.send(0x033, 'IHH', 2, r.counter, 0) end
-			elseif (kind ~= 0) then
+			elseif (kind == 0) then
+				r.opened, r.counter = true, 0;
+			else
 				EJ.take = nil;
 			end
 		end
