@@ -1,6 +1,11 @@
 -- GoomSwap for Windower: just enough of ImGui to draw common/gchud.lua and the gcdisplay bar as Windower
--- text boxes, so those files run unchanged. Display only: buttons draw as text and never report a click
--- (use the commands). Boxes can be dragged; gchud/gcdisplay save the new position as they do on Ashita.
+-- text boxes, so those files run unchanged. Buttons click: a left press and release on the same button makes
+-- it return true on the next frame (Ctrl held = GetIO().KeyCtrl). A press anywhere else on a box drags it;
+-- gchud/gcdisplay save the new position as they do on Ashita. As in TrackItTom, the box isn't the texts
+-- library's draggable, and every press, move and release that belongs to a box is swallowed, so the game
+-- camera doesn't move. A button is found from the cursor's line and column: the cell size is the box's
+-- extents over its lines and widest line (monospace font). Hover works the same way: IsItemHovered is true
+-- for the item under the cursor (last frame's layout), and SetTooltip shows a box by the cursor.
 --
 -- Layout: widths are measured in character cells (CalcTextSize = characters * CW), and the box uses a
 -- monospace font, so the column positions gchud computes line up.
@@ -12,6 +17,7 @@ local I = {};
 local CW, LH = 7, 14;           -- pixels per character cell / line, only used to convert gchud's positions
 local ITEM_SPACING = 7;          -- SameLine() gap: one character cell (gchud pushes 4px, gcdisplay 6px)
 local FONT, SIZE = 'Consolas', 10;
+local PAD = 2;                   -- texts padding, both sides
 
 local windows = {};
 local frame = 0;
@@ -19,6 +25,11 @@ local cur = nil;
 local nextPos = nil;
 local colorIdx, colorVal, colorN = {}, {}, 0; -- style color stack
 local mouseDown = false;
+local ctrl = false;
+local press, drag = nil, nil;    -- { w, id } of a pressed button / { w, dx, dy } of a box being moved
+local mx, my = nil, nil;         -- cursor
+local hovW, hovOrd = nil, nil;   -- box and item number under the cursor this frame
+local tipText, tipBox, tipShown = nil, nil, nil;
 
 local K = {
     ImGuiCol_Text = 0, ImGuiCol_WindowBg = 2, ImGuiCol_Border = 5, ImGuiCol_Button = 21,
@@ -57,7 +68,7 @@ local function pad(n)
 end
 
 -- Items are kept in call order: { line, x, text, prefix }. A changed item marks the window dirty.
-local function add_item(text, padPx)
+local function add_item(text, padPx, id)
     text = tostring(text or '');
     local w = cur;
     if (w == nil) then return end
@@ -71,6 +82,11 @@ local function add_item(text, padPx)
         seg.line, seg.x, seg.text, seg.pre = w.line, w.cx, text, pre;
         w.dirty = true;
     end
+    local col = math.floor(w.cx / CW + 0.5); -- every item, for hover; id = a button's label, for clicks
+    w.nb = w.nb + 1;
+    local b = w.btns[w.nb];
+    if (b == nil) then b = {}; w.btns[w.nb] = b end
+    b.line, b.c0, b.c1, b.id, b.ord = w.line, col, col + #text - 1, id, k;
     w.lastEnd = w.cx + #text * CW + (padPx or 0);
     w.cx = 0;
     w.same = false;
@@ -90,7 +106,7 @@ local function render(w)
         if (line == nil) then line = {}; lines[seg.line] = line end
         line[#line + 1] = seg;
     end
-    local out = {};
+    local out, widest = {}, 0;
     for li = 1, w.line do
         local line = lines[li] or {};
         table.sort(line, by_x);
@@ -105,8 +121,10 @@ local function render(w)
             end
             pos = pos + #seg.text;
         end
+        if (pos > widest) then widest = pos end
         out[#out + 1] = table.concat(s);
     end
+    w.cols, w.lines = widest, w.line;
     return table.concat(out, '\n');
 end
 
@@ -118,14 +136,14 @@ local imgui = setmetatable({
                 pos = { x = 0, y = 0 },
                 bg = { alpha = 115, red = 0, green = 0, blue = 0, visible = true },
                 text = { font = FONT, size = SIZE, red = 255, green = 255, blue = 255 },
-                flags = { draggable = true },
-                padding = 2,
-            }), shown = '', segs = {}, shownN = -1 };
+                flags = { draggable = false },
+                padding = PAD,
+            }), shown = '', segs = {}, shownN = -1, btns = {} };
             windows[name] = w;
         end
         if (nextPos ~= nil) then w.text:pos(nextPos[1], nextPos[2]); nextPos = nil end
         w.frame = frame;
-        w.n, w.line, w.dirty = 0, 1, false;
+        w.n, w.line, w.dirty, w.nb = 0, 1, false, 0;
         w.cx, w.lastEnd, w.same, w.hasItem, w.scale, w.bgAlpha = 0, 0, false, false, 1.0, nil;
         for i = colorN, 1, -1 do
             if (colorIdx[i] == K.ImGuiCol_WindowBg) then w.bgAlpha = colorVal[i][4]; break end
@@ -142,14 +160,15 @@ local imgui = setmetatable({
             if (str ~= w.shown) then w.text:text(str); w.shown = str end
             w.shownN = w.n;
         end
+        w.clicked = nil; -- a click no button of this frame took
         local size = math.max(6, math.floor(SIZE * (w.scale or 1) + 0.5));
         if (size ~= w.size) then w.text:size(size); w.size = size end
         if (w.bgAlpha ~= nil) and (w.bgAlpha ~= w.alpha) then w.text:bg_alpha(channel(w.bgAlpha)); w.alpha = w.bgAlpha end
         if not w.visible then w.text:show(); w.visible = true end
     end,
     Text = function(t) add_item(t) end,
-    SmallButton = function(label) add_item(strip_id(label), 2); return false end,
-    Button = function(label) add_item(strip_id(label), 2); return false end,
+    SmallButton = function(label) return I.Button(label) end,
+    Button = function(label) return I.Button(label) end,
     SameLine = function(offset, spacing)
         if (cur == nil) then return end
         cur.same = true;
@@ -168,9 +187,9 @@ local imgui = setmetatable({
         return cur.text:pos();
     end,
     IsMouseDown = function() return mouseDown end,
-    IsItemHovered = function() return false end,
-    SetTooltip = function() end,
-    GetIO = function() return { KeyCtrl = false } end,
+    IsItemHovered = function() return (cur ~= nil) and (cur == hovW) and (cur.n == hovOrd) end,
+    SetTooltip = function(t) tipText = (string.gsub(tostring(t or ''), '%%%%', '%%')) end,
+    GetIO = function() return { KeyCtrl = ctrl } end,
     PushStyleColor = function(idx, col) colorN = colorN + 1; colorIdx[colorN], colorVal[colorN] = idx, col end,
     PopStyleColor = function(n)
         for _ = 1, (tonumber(n) or 1) do
@@ -182,8 +201,15 @@ local imgui = setmetatable({
     SetWindowFontScale = function(s) if (cur ~= nil) then cur.scale = tonumber(s) or 1 end end,
 }, { __index = function() return function() end end });
 
+local hit;
+
 function I.BeginFrame()
     frame = frame + 1;
+    hovW, hovOrd, tipText = nil, nil, nil;
+    if (mx ~= nil) and (drag == nil) then
+        local w, b = hit(mx, my);
+        if (b ~= nil) then hovW, hovOrd = w, b.ord end
+    end
     for i = colorN, 1, -1 do colorIdx[i], colorVal[i] = nil, nil end
     colorN = 0;
 end
@@ -193,12 +219,104 @@ function I.EndFrame()
     for _, w in pairs(windows) do
         if w.visible and (w.frame ~= frame) then w.text:hide(); w.visible = false end
     end
+    if (tipText == nil) or (tipText == '') then
+        if (tipBox ~= nil) and tipBox:visible() then tipBox:hide() end
+        return;
+    end
+    if (tipBox == nil) then
+        tipBox = texts.new('', {
+            pos = { x = 0, y = 0 },
+            bg = { alpha = 220, red = 20, green = 20, blue = 20, visible = true },
+            text = { font = FONT, size = SIZE, red = 255, green = 255, blue = 255 },
+            flags = { draggable = false },
+            padding = 4,
+        });
+    end
+    if (tipText ~= tipShown) then tipBox:text(tipText); tipShown = tipText end
+    -- Right and below the cursor; flipped when it would leave the screen
+    local x, y = mx + 16, my + 16;
+    local ok, ws = pcall(windower.get_windower_settings);
+    local ew, eh = tipBox:extents();
+    if ok and (type(ws) == 'table') and (ew ~= nil) and (eh ~= nil) then
+        if (x + ew > (ws.ui_x_res or 1e9)) then x = mx - ew - 4 end
+        if (y + eh > (ws.ui_y_res or 1e9)) then y = my - eh - 4 end
+    end
+    tipBox:pos(math.floor(x), math.floor(y));
+    if not tipBox:visible() then tipBox:show() end
 end
 
-function I.SetMouseDown(v) mouseDown = v end
+function I.Button(label)
+    add_item(strip_id(label), 2, label);
+    local w = cur;
+    if (w ~= nil) and (w.clicked == label) then
+        w.clicked = nil;
+        return true;
+    end
+    return false;
+end
+
+-- The box under the cursor, and the item there (nil between items).
+function hit(x, y)
+    for _, w in pairs(windows) do
+        if w.visible and w.text:hover(x, y) then
+            local ew, eh = w.text:extents();
+            local px, py = w.text:pos();
+            if (ew == nil) or (eh == nil) or ((w.cols or 0) < 1) or ((w.lines or 0) < 1) then return w, nil end
+            local cw, lh = (ew - 2 * PAD) / w.cols, (eh - 2 * PAD) / w.lines;
+            if (cw <= 0) or (lh <= 0) then return w, nil end
+            local col, line = math.floor((x - px - PAD) / cw), math.floor((y - py - PAD) / lh) + 1;
+            for k = 1, w.nb do
+                local b = w.btns[k];
+                if (b.line == line) and (col >= b.c0) and (col <= b.c1) then return w, b end
+            end
+            return w, nil;
+        end
+    end
+    return nil, nil;
+end
+
+-- Windower mouse event; true = swallow it. Kinds (as TrackItTom): 0 move, 1 left down, 2 left up, 3 double click.
+function I.Mouse(kind, x, y)
+    kind = (tonumber(kind) or -1) % 256;
+    if (tonumber(x) ~= nil) and (tonumber(y) ~= nil) then mx, my = x, y end
+    if (kind == 2) then
+        mouseDown = false;
+        if (drag ~= nil) then drag = nil; return true end
+        if (press ~= nil) then
+            local p = press;
+            press = nil;
+            local w, b = hit(x, y);
+            if (w == p.w) and (b ~= nil) and (b.id == p.id) then w.clicked = p.id end
+            return true;
+        end
+        return false;
+    end
+    if (kind == 1) then mouseDown = true end
+    if (drag ~= nil) then
+        if (kind == 0) then drag.w.text:pos(math.floor(x - drag.dx + 0.5), math.floor(y - drag.dy + 0.5)) end
+        return true;
+    end
+    if (press ~= nil) then return (kind == 0) or (kind == 1) or (kind == 3) end
+    if (kind ~= 1) and (kind ~= 3) then return false end
+    local w, b = hit(x, y);
+    if (w == nil) then return false end
+    if (kind == 1) then
+        if (b ~= nil) and (b.id ~= nil) then
+            press = { w = w, id = b.id };
+        else
+            local px, py = w.text:pos();
+            drag = { w = w, dx = x - px, dy = y - py };
+        end
+    end
+    return true;
+end
+
+function I.SetCtrl(v) ctrl = v end
 
 function I.Install()
-    windows, cur, nextPos = {}, nil, nil;
+    windows, cur, nextPos, press, drag = {}, nil, nil, nil, nil;
+    if (tipBox ~= nil) then tipBox:hide() end
+    mx, my, hovW, hovOrd, tipText, tipShown = nil, nil, nil, nil, nil, nil;
     for i = colorN, 1, -1 do colorIdx[i], colorVal[i] = nil, nil end
     colorN = 0;
     for k, v in pairs(K) do _G[k] = v end

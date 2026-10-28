@@ -1264,6 +1264,11 @@ windower.raw_register_event('ipc message', function(msg)
     end
 end);
 
-windower.raw_register_event('mouse', function(kind)
-    if (kind == 1) then I.SetMouseDown(true) elseif (kind == 2) then I.SetMouseDown(false) end
+windower.raw_register_event('mouse', function(kind, x, y)
+    return I.Mouse(kind, x, y);
+end);
+
+-- Ctrl for Ctrl+click (DirectInput codes 0x1D left, 0x9D right)
+windower.raw_register_event('keyboard', function(dik, down)
+    if (dik == 0x1D) or (dik == 0x9D) then I.SetCtrl(down == true) end
 end);

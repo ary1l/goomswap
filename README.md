@@ -35,7 +35,7 @@ Windower/addons/GearSwap/data/
 | Command | `/wm` | `//wm` or `//gs c wm` |
 | All boxes | `/mss /wm` (Multisend) | `//send @all gs c wm` |
 | Reload after edits | `/lac reload` | `//gs reload` |
-| HUD | `/gchud`, click cells | `//gchud`, display only |
+| HUD | `/gchud`, click cells | `//gchud`, click cells |
 | Augmented gear | `{ Name = 'X', Augment = {...} }` (LAC strings) | Same file works: the carried copy best matching the list is worn (names differ a bit between the two, so not exact). Or GearSwap's own `{ name="X", augments={...} }`, pasted from `//gs export`, matched exactly |
 
 Windower augment strings: wear the gear, `//gs export` (file in `GearSwap/data/export/`) or `//gs export copy`

@@ -171,7 +171,7 @@ checked; the game's own message says when it refuses.
 One row per box (each writes `hud/<name>.txt` 4x/s); opens on load for `HUDOwners`. `.` off, glyph on, blank = job
 lacks it, `-` none. Bright = changed, dim = default, orange = off but loads on. Toggle columns (and `def`, `mb`) at
 load default on every box hide unless in `HUDPinned`; cycle columns hide only when None/Off on every box. Ashita: click a cell runs it on that box, click a name shows hidden columns, Ctrl+click `mb`
-cycles its tier. Windower: display only, boxes share state over IPC.
+cycles its tier. Windower: the same clicks and tooltips; drag a box by any spot off a cell; boxes share state over IPC.
 Glyphs: `wpn` Weapons, `ml` MeleeSet, `m` `s` `r` `a` slots, `nk` NukeSet, `el` Element, `tk` TankSet, `hx` Hoxne,
 `pp` PupMode, `w` Weapon, `th` TH, `kt` Kite, `fd` AutoFood, `sd` AutoSoda, `hp` String, `sl` SongLock, `pr` PROC,
 `dh` Death, `tier` MBTier, `mb` AutoMB (`Off`, or `Auto` + tier; `+F` = `/burst`). Tune: `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
