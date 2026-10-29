@@ -1029,6 +1029,7 @@ local function hud_file(p) -- '' for the folder, the file name for a file in it,
     if (string.sub(n, 1, #HUD_DIR) == HUD_DIR) then return string.sub(n, #HUD_DIR + 1) end
     return nil;
 end
+local hudMsgs = {}; -- name -> that box's hud\<Name>.msg (gchud's message relay), over IPC like the state lines
 local function hud_store(line)
     local name = string.match(line or '', '^([^\t]+)');
     if (name ~= nil) then hudLines[string.lower(name)] = line end
@@ -1055,6 +1056,24 @@ io = setmetatable({
     open = function(path, mode)
         local f = hud_file(path);
         if (f == nil) or (f == '') then return real_io.open(path, mode) end
+        local mkey = string.match(f, '^(.-)%.msg$');
+        if (mkey ~= nil) then
+            if (string.sub(mode or 'r', 1, 1) == 'w') then
+                local buf = {};
+                return {
+                    write = function(self, ...) for i = 1, select('#', ...) do buf[#buf + 1] = tostring((select(i, ...))) end return self end,
+                    close = function()
+                        local body = table.concat(buf);
+                        hudMsgs[string.lower(mkey)] = body;
+                        windower.send_ipc_message('goomswap msg ' .. mkey .. '\t' .. (string.gsub(body, '\n', '\1')));
+                        return true;
+                    end,
+                };
+            end
+            local body = hudMsgs[string.lower(mkey)];
+            if (body == nil) then return nil end
+            return { read = function() return body end, close = function() return true end };
+        end
         local key = string.match(f, '^(.-)%.txt$');
         if (key == nil) then return nil end
         if (string.sub(mode or 'r', 1, 1) == 'w') then
@@ -1258,6 +1277,9 @@ windower.raw_register_event('ipc message', function(msg)
     local kind, rest = string.match(msg, '^goomswap (%S+) (.*)$');
     if (kind == 'hud') and (rest ~= nil) then
         hud_store(rest);
+    elseif (kind == 'msg') and (rest ~= nil) then
+        local name, body = string.match(rest, '^([^\t]+)\t(.*)$');
+        if (name ~= nil) then hudMsgs[string.lower(name)] = (string.gsub(body, '\1', '\n')) end
     elseif (kind == 'cmd') and (rest ~= nil) then
         local who, cmd = string.match(rest, '^(%S+) (.*)$');
         if (who ~= nil) and (string.lower(who) == my_name()) then queue_command(cmd) end

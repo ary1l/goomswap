@@ -31,6 +31,7 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
   off at the tag with the rest of `TH` (a swap resets TP). Sub only if you can dual wield.
 - **TP hold:** at 1000+ TP Main/Sub/Range don't change (except songs, rolls, cures, enfeebling, enhancing,
   geomancy). Weapon commands (`/wm`, `/mainset`…, `/setcycle`) always swap, at any TP. `WeaponTPGuard = 0` disables the hold. Asleep, slots your `Sleeping` set names are let go.
+  With a weapon mode on, only its weapons are held: another weapon worn at 1000+ TP (a song set's dagger when Wild Card gave TP) is swapped back to the mode's, and that TP is lost.
 - `Weapon_<Mode>_1h` when you can't dual wield: NIN Lv10+, DNC Lv20+, THF Lv83+ main or sub at the effective level
   (FFXIclopedia; SJ Restriction / Sheol Gaol sub Lv0 doesn't count). Losing DW puts `_1h` on at once; regaining waits
   for the TP hold. `gcinclude.AlwaysDualWield = true` forces DW (BLU, THF). If the game refuses a Sub weapon for
@@ -168,7 +169,7 @@ checked; the game's own message says when it refuses.
 | `/gchud debug` | Files found, rows parsed |
 | `/gcbar [on\|off]` / `/gcbar pos 300 0` | One-line status bar (Windower: Atk/Def show 0) |
 
-One row per box (each writes `hud/<name>.txt` 4x/s); opens on load for `HUDOwners`. `.` off, glyph on, blank = job
+One row per box (each writes `hud/<name>.txt` 4x/s); opens on load for `HUDOwners`. With the HUD open you also get the other boxes' GCinclude/GCauto lines as `[Name] …` (`HUDMessages = false` to stop). `.` off, glyph on, blank = job
 lacks it, `-` none. Bright = changed, dim = default, orange = off but loads on. Toggle columns (and `def`, `mb`) at
 load default on every box hide unless in `HUDPinned`; cycle columns hide only when None/Off on every box. Ashita: click a cell runs it on that box, click a name shows hidden columns, Ctrl+click `mb`
 cycles its tier. Windower: the same clicks and tooltips; drag a box by any spot off a cell; boxes share state over IPC.
