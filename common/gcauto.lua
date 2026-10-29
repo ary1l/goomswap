@@ -26,6 +26,7 @@ local ROLL_RECAST = 193;
 
 local function say(msg)
     print(chat.header('GCauto'):append(chat.message(msg)));
+    if (inc ~= nil) and (inc.Relay ~= nil) then inc.Relay(msg, false) end
 end
 
 local function warn_once(key, msg)

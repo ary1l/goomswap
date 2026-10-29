@@ -280,6 +280,53 @@ local function read_all()
     rows = out;
 end
 
+-- Messages: every box keeps its last GCinclude/GCauto lines in hud\<Name>.msg, one "seq\tS|E\ttext" per line;
+-- the box with the HUD open prints the other boxes' new ones as [Name]. seq is time based, so it keeps rising
+-- across reloads; a box seen for the first time has its backlog skipped.
+local MSG_KEEP = 10;
+local outbox, lastSeq, seenSeq = {}, 0, {};
+
+function gchud.Relay(text, isErr)
+    local player = me();
+    if (player == nil) then return end
+    lastSeq = math.max(lastSeq + 1, os.time() * 1000);
+    outbox[#outbox + 1] = lastSeq .. '\t' .. (isErr and 'E' or 'S') .. '\t' .. (string.gsub(tostring(text), '[\r\n\t]', ' '));
+    while (#outbox > MSG_KEEP) do table.remove(outbox, 1) end
+    local d = dir();
+    if not ashita.fs.exists(d) then ashita.fs.create_directory(d) end
+    local f = io.open(d .. player.Name .. '.msg', 'w');
+    if (f == nil) then return end
+    f:write(table.concat(outbox, '\n'));
+    f:close();
+end
+
+local function read_msgs()
+    local player = me();
+    if (player == nil) then return end
+    for _, row in ipairs(rows) do
+        if (row.Name ~= player.Name) then
+            local f = io.open(dir() .. row.Name .. '.msg', 'r');
+            if (f ~= nil) then
+                local text = f:read('*a') or '';
+                f:close();
+                local last = seenSeq[row.Name];
+                local top = last or 0;
+                for line in string.gmatch(text, '[^\n]+') do
+                    local seq, kind, msg = string.match(line, '^(%d+)\t([SE])\t(.*)$');
+                    seq = tonumber(seq);
+                    if (seq ~= nil) then
+                        if (last ~= nil) and (seq > last) then
+                            print(chat.header(row.Name):append((kind == 'E') and chat.error(msg) or chat.message(msg)));
+                        end
+                        if (seq > top) then top = seq end
+                    end
+                end
+                seenSeq[row.Name] = top;
+            end
+        end
+    end
+end
+
 local savedX, savedY = nil, nil;
 
 -- Two looks: 'compact' (default, tight) and 'large' (bigger text, more room, full names). /gchud large|compact,
@@ -732,6 +779,7 @@ local function present()
                 gchud.Errors = true;
                 print(chat.header('GCHUD'):append(chat.error('read failed: ' .. tostring(err))));
             end
+            if (inc.settings.HUDMessages ~= false) then pcall(read_msgs) end
         end
         local ok, err = pcall(render);
         if (ok ~= true) and (gchud.Errors ~= true) then
@@ -771,6 +819,7 @@ function gchud.Start()
     abbrChecked = false;
     abbrCache = {};
     boxCache = {};
+    seenSeq = {};
     placed = false;
     ashita.events.register('d3d_present', 'gchud_present', present);
     local player = me();
