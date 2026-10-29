@@ -1,6 +1,9 @@
 	local gcinclude = T{};
-	function gcinclude.Say(msg) print(chat.header('GCinclude'):append(chat.message(msg))) end
-	function gcinclude.Err(msg) print(chat.header('GCinclude'):append(chat.error(msg))) end
+	function gcinclude.Relay(msg, isErr) -- also shown on the box with the HUD open (gchud)
+		if (gchud ~= nil) and (gchud.Relay ~= nil) then pcall(gchud.Relay, msg, isErr) end
+	end
+	function gcinclude.Say(msg) print(chat.header('GCinclude'):append(chat.message(msg))); gcinclude.Relay(msg, false) end
+	function gcinclude.Err(msg) print(chat.header('GCinclude'):append(chat.error(msg))); gcinclude.Relay(msg, true) end
 
 	--[[
 	Only edit the next two small sections here. See the readme on my github for more information on usages for my profiles.
@@ -75,7 +78,7 @@
 		mea_Ring = 'Dim. Ring (Mea)';
 		dem_Ring = 'Dim. Ring (Dem)';
 		holla_Ring = 'Dim. Ring (Holla)';
-		WeaponTPGuard = 1000; -- at or above this TP (engaged or not), main/sub/range are held against automatic swaps (action sets, idle/engaged sets); weapon commands (/wm, /mainset...) still swap; 0 to disable
+		WeaponTPGuard = 1000; -- at or above this TP (engaged or not), main/sub/range are held against automatic swaps (action sets, idle/engaged sets); weapon commands (/wm, /mainset...) still swap; with a /wm mode only its weapons are held; 0 to disable
 		HoldExemptSkills = T{'Singing', 'Geomancy', 'Healing Magic', 'Enfeebling Magic', 'Enhancing Magic'}; -- spells of these skills always get their weapon swaps
 		HoldExemptAbilities = T{'Corsair Roll'}; -- ability types that always get their weapon swaps
 		SmartSwap = true; -- keep main/sub/range on the spells below instead of losing TP to a weapon swap, /smartswap to toggle
@@ -162,6 +165,7 @@
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
 		HUDOwners = T{'Shaymin'}; -- character names that open the alt HUD on load
+		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GCinclude/GCauto lines, as [Name]
 		HUDX = 300; -- alt HUD position; drag it in game, saved per character
 		HUDY = 40;
 		HUDAlpha = 0.45; -- HUD background opacity, 0 = none
@@ -1210,13 +1214,50 @@ end
 		return free;
 	end
 
+	-- With a weapon mode (/wm, /mainset...): its slots that hold another weapon, e.g. a song set's dagger when
+	-- Wild Card III/IV gave 1000/3000 TP mid-song (FFXIclopedia). Holding those would keep the wrong weapon, so
+	-- they are let go and the mode's weapon goes back on; that TP is lost. Returns slot -> { worn item, mode's item }.
+	function gcinclude.OffModeSlots()
+		local layer = gcinclude.BuildWeaponLayer();
+		if (layer == nil) then return nil end
+		local off = nil;
+		for _, slot in ipairs(gcinclude.HoldSlots) do
+			local want = layer[gcinclude.WeaponSlotNames[slot]];
+			if (type(want) == 'table') then want = want.Name end
+			if (type(want) == 'string') then
+				local id = gcinclude.EquippedId(slot);
+				local r = (id ~= nil) and AshitaCore:GetResourceManager():GetItemById(id) or nil;
+				local have = ((r ~= nil) and (r.Name ~= nil)) and r.Name[1] or nil;
+				if (have == nil) or (string.lower(have) ~= string.lower(want)) then
+					off = off or {};
+					off[slot] = { have or 'nothing', want };
+				end
+			end
+		end
+		return off;
+	end
+
 	gcinclude.SleepFreed = {}; -- slots the last UpdateHold let go for the Sleeping set
+	gcinclude.OffModeSaid = false;
 	function gcinclude.UpdateHold()
 		gcinclude.SleepFreed = {};
 		if gcinclude.HoldActive() then
 			local free = gcinclude.SleepFreeSlots();
+			local off = gcinclude.OffModeSlots();
+			if (off ~= nil) and not gcinclude.OffModeSaid then
+				gcinclude.OffModeSaid = true;
+				local o = off[1] or off[2] or off[3];
+				gcinclude.Say('TP hold: ' .. o[1] .. ' is on, not your ' .. o[2] .. '; ' .. o[2] .. ' goes back on (that TP is lost)');
+			elseif (off == nil) then
+				gcinclude.OffModeSaid = false;
+			end
 			for _, slot in ipairs(gcinclude.HoldSlots) do
-				if (free ~= nil) and free[slot] then
+				if (off ~= nil) and (off[slot] ~= nil) then
+					if (gcinclude.HeldSlots[slot] ~= nil) then
+						if (gcinclude.LockedSlots[slot] == nil) then gState.Disabled[slot] = false end
+						gcinclude.HeldSlots[slot] = nil;
+					end
+				elseif (free ~= nil) and free[slot] then
 					gcinclude.SleepFreed[slot] = true;
 					if (gcinclude.HeldSlots[slot] ~= nil) then
 						if (gcinclude.LockedSlots[slot] == nil) then gState.Disabled[slot] = false end
@@ -1227,8 +1268,9 @@ end
 					gcinclude.HeldSlots[slot] = true;
 				end
 			end
-		elseif (next(gcinclude.HeldSlots) ~= nil) then
-			gcinclude.UnlockWeapons();
+		else
+			gcinclude.OffModeSaid = false;
+			if (next(gcinclude.HeldSlots) ~= nil) then gcinclude.UnlockWeapons() end
 		end
 	end
 
