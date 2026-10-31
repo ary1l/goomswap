@@ -131,7 +131,7 @@ local sets = {
     ['Healing Magic'] = {
         Ammo = 'Pemphredo Tathlum',
         Neck = 'Incanter\'s Torque',
-        Ear1 = 'Mendi. Earring',
+        Ear2 = 'Mendi. Earring',
         Ring1 = 'Stikini Ring +1',
         Ring2 = { Name = 'Metamor. Ring +1', AugPath='A' },
         Back = 'Solemnity Cape',
@@ -140,8 +140,8 @@ local sets = {
     ['Enhancing Magic'] = {
         Ammo = 'Pemphredo Tathlum',
         Neck = 'Incanter\'s Torque',
-        Ear1 = 'Mendi. Earring',
-        Ear2 = 'Andoaa Earring',
+        Ear2 = 'Mendi. Earring',
+        Ear1 = 'Andoaa Earring',
         Ring2 = { Name = 'Metamor. Ring +1', AugPath='A' },
     },
     ['Enfeebling Magic'] = {
@@ -153,7 +153,7 @@ local sets = {
         Ammo = 'Pemphredo Tathlum',
         Head = 'Nyame Helm',
         Neck = 'Baetyl Pendant',
-        Ear1 = 'Crematio Earring',
+        Ear2 = 'Crematio Earring',
         Body = 'Nyame Mail',
         Hands = 'Nyame Gauntlets',
         Ring1 = 'Shiva Ring +1',
