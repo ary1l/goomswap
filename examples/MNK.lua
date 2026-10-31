@@ -26,7 +26,7 @@ local sets = {
         Ear1 = 'Infused Earring',
         Body = 'Hiza. Haramaki +2',
         Hands = 'Rao Kote',
-        Ring1 = 'Chirich Ring +1',
+        Ring2 = 'Chirich Ring +1',
     },
     Idle_Refresh = {},
     Town = {
@@ -75,8 +75,8 @@ local sets = {
     Tp_Acc = {
         Ear2 = 'Mache Earring +1',
         Hands = 'Tatena. Gote +1',
-        Ring1 = 'Chirich Ring +1',
-        Ring2 = 'Cacoethic Ring +1',
+        Ring2 = 'Chirich Ring +1',
+        Ring1 = 'Cacoethic Ring +1',
         Feet = 'Tatena. Sune. +1',
     },
 
@@ -112,7 +112,7 @@ local sets = {
     },
 
     Victory_Default = {
-        Ear1 = 'Sherida Earring',
+        Ear2 = 'Sherida Earring',
         Back = { Name = 'Segomo\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Legs = 'Mpaca\'s Hose',
     },

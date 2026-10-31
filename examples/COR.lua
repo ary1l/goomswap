@@ -157,18 +157,18 @@ local sets = {
         Neck = 'Incanter\'s Torque',
         Ear1 = 'Andoaa Earring',
         Ear2 = 'Mendi. Earring',
-        Ring2 = 'Metamor. Ring +1',
+        Ring1 = 'Metamor. Ring +1',
     },
 
     Enfeebling = {
         Neck = 'Erra Pendant',
-        Ring2 = 'Metamor. Ring +1',
+        Ring1 = 'Metamor. Ring +1',
     },
     Macc = {},
 
     Drain = {
         Neck = 'Erra Pendant',
-        Ring2 = 'Metamor. Ring +1',
+        Ring1 = 'Metamor. Ring +1',
     },
 
     Nuke = {
