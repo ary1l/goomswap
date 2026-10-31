@@ -1217,6 +1217,7 @@ end
 	-- With a weapon mode (/wm, /mainset...): its slots that hold another weapon, e.g. a song set's dagger when
 	-- Wild Card III/IV gave 1000/3000 TP mid-song (FFXIclopedia). Holding those would keep the wrong weapon, so
 	-- they are let go and the mode's weapon goes back on; that TP is lost. Returns slot -> { worn item, mode's item }.
+	-- An empty read doesn't count: the slot reads empty for a moment while gear changes.
 	function gcinclude.OffModeSlots()
 		local layer = gcinclude.BuildWeaponLayer();
 		if (layer == nil) then return nil end
@@ -1228,9 +1229,9 @@ end
 				local id = gcinclude.EquippedId(slot);
 				local r = (id ~= nil) and AshitaCore:GetResourceManager():GetItemById(id) or nil;
 				local have = ((r ~= nil) and (r.Name ~= nil)) and r.Name[1] or nil;
-				if (have == nil) or (string.lower(have) ~= string.lower(want)) then
+				if (have ~= nil) and (string.lower(have) ~= string.lower(want)) then
 					off = off or {};
-					off[slot] = { have or 'nothing', want };
+					off[slot] = { have, want };
 				end
 			end
 		end
@@ -1239,11 +1240,31 @@ end
 
 	gcinclude.SleepFreed = {}; -- slots the last UpdateHold let go for the Sleeping set
 	gcinclude.OffModeSaid = false;
+	gcinclude.OffSince = {}; -- slot -> when the other weapon was first seen there
+	-- Another weapon only counts after 1.5s with no action going: action sets and swaps change weapons briefly.
+	function gcinclude.SteadyOffModeSlots()
+		local raw = gcinclude.OffModeSlots();
+		local now, off = os.clock(), nil;
+		for _, slot in ipairs(gcinclude.HoldSlots) do
+			if (raw ~= nil) and (raw[slot] ~= nil) then
+				local t = gcinclude.OffSince[slot] or now;
+				gcinclude.OffSince[slot] = t;
+				if ((now - t) >= 1.5) and (gState.PlayerAction == nil) then
+					off = off or {};
+					off[slot] = raw[slot];
+				end
+			else
+				gcinclude.OffSince[slot] = nil;
+			end
+		end
+		return off;
+	end
+
 	function gcinclude.UpdateHold()
 		gcinclude.SleepFreed = {};
 		if gcinclude.HoldActive() then
 			local free = gcinclude.SleepFreeSlots();
-			local off = gcinclude.OffModeSlots();
+			local off = gcinclude.SteadyOffModeSlots();
 			if (off ~= nil) and not gcinclude.OffModeSaid then
 				gcinclude.OffModeSaid = true;
 				local o = off[1] or off[2] or off[3];
@@ -1270,6 +1291,7 @@ end
 			end
 		else
 			gcinclude.OffModeSaid = false;
+			gcinclude.OffSince = {};
 			if (next(gcinclude.HeldSlots) ~= nil) then gcinclude.UnlockWeapons() end
 		end
 	end
