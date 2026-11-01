@@ -131,6 +131,7 @@ checked; the game's own message says when it refuses.
 | Command | Does |
 |---|---|
 | `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb`): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). `Weapon_<Mode>Acc` comes on with Acc, so Acc weapons aren't `/wm` modes (swaps at any TP, like `/wm`). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
+| `/wsset [mid\|high]` | Weapon skill buff level (Rahvin GS's Buff Level): `HighBuff` wears `<WS set>_HighBuff` over each WS set the handler wore (`Ws_HighBuff`, `Savage_HighBuff`, `Savage_Acc_HighBuff`). Default `MidBuff` = nothing extra. HUD `wb` |
 | `/kite` / `/th` | Movement gear / `TH` until tagged |
 | `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). No word shows thresholds (doesn't flip). Regen/Refresh out of combat, not over `/dt`; Dt/Pet_Dt any time |
 | `/received <spell>` | Wear that `*_Received` set |
@@ -184,6 +185,7 @@ Order: README How sets stack.
 
 | Set | Worn |
 |---|---|
+| `<set>_Self` / `_Others` / `_Burst` | Spell child sets: after your midcast, each set it wore gets its `_Self` (spell on you), `_Others` (on anyone but a monster) and `_Burst` (a burst, see Magic burst) when you have one: `Enhancing_Self`, `Cure_Others`, `Nuke_Burst`. `<prefix>_Default` also takes `<prefix>_Self` |
 | `Weapon_<Mode>` / `_1h` | Weapon mode. `Weapon_<Mode>Acc` (or `_Acc`, `_Acc_1h`): used instead while `/mset Acc`; any `/mset` value works the same |
 | `Dt`, `mdt`, `Aminon`, `SIR` | With their toggles |
 | `Incapacitated` | Slept, petrified, stunned, terrorized: `Aminon` if `/aminon` (no Aminon set: `mdt`), else `mdt` if `/mdt`, else `Dt` (even with `/dt` off), minus Main/Sub/Range/Ammo; then this set; then `*_Received`. Over all job sets incl. `Dt`, and over `mdt`/`Aminon`, `TH`, `Buffs`, XIRoll. Under `Sleeping`, `Doomed`, `Reraise`, util sets. Not charmed (the client can't change gear) |
@@ -191,7 +193,7 @@ Order: README How sets stack.
 | `TH` | `/th`: engaged with an untagged mob targeted, and over precast/midcast/midshot at one, until tagged (your swing hit or miss, shot, WS, JA; a spell, step or Effusion that lands). Not at rest. THF main: tag ignored, on the whole time incl. at rest (`gcinclude.THFullTime = true/false` in a job file overrides, any job). Not on you/allies, not `THSkip` (those don't tag). BLU: only `BluMagTH`. Its waist beats obi/Orpheus on that cast |
 | `Absorb` / `Absorb_TP` | Every Absorb- spell / Absorb-TP on top. Without `Absorb_TP`, a spell-named set (`['Absorb-TP']`, `['Absorb-STR']`) goes on again over `Absorb`. TH worn on the cast goes back on top |
 | `LightBonus` | Healing Magic midcast |
-| `Buffs`, `Buffs_Ws`, `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }`: while that buff is up, at rest / over WS / over midcast |
+| `Buffs`, `Buffs_Ws`, `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }`: while that buff is up, at rest / over WS / over midcast. A buff counts as up as soon as the action giving it lands on you (its "gains/receives the effect of" message), up to 2s before the buff list shows it: every buff check (buff sets, Aftermath hold, sleep…) |
 | `Hoxne_Tp`, `Hoxne_Idle`, `Hoxne_Dt` | `/hoxne` Locked + Enchantment up: engaged / idle not moving / instead of both while `/dt`. None while `/kite` |
 | `Hoxne_Ws`, `Hoxne_<ws>` | Same gate, over every WS, then that WS (`['Hoxne_Victory Smite']`) |
 | `Hoxne_<set>_<buff>` | Over it while the buff is up (`Hoxne_Tp_Impetus`); `&` = all up (`['Hoxne_Ws_Sneak Attack&Trick Attack']`). Fewest buffs first, then A-Z |

@@ -18,6 +18,7 @@ local STALE = 15;
 
 gchud.CycleCommands = {
     MeleeSet = 'meleeset',
+    WsSet = 'wsset',
     Weapons = 'wm',
     Main = 'mainset',
     Sub = 'subset',
@@ -49,7 +50,7 @@ gchud.ToggleCommands = {
     Death = 'death',
 };
 
-gchud.CycleOrder = { 'Weapons', 'MeleeSet', 'Main', 'Sub', 'Range', 'Ammo' };
+gchud.CycleOrder = { 'Weapons', 'MeleeSet', 'WsSet', 'Main', 'Sub', 'Range', 'Ammo' };
 gchud.ToggleOrder = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'AutoFood', 'AutoSoda' };
 
 -- Column header glyphs. Override any with settings.HUDLabels = { Main = 'mn' }.
@@ -58,7 +59,7 @@ local SHORT = {
     AutoFood = 'fd', AutoSoda = 'sd', PROC = 'pr',
     Burst = 'bs', AutoNuke = 'an', String = 'hp', SongLock = 'sl', Death = 'dh',
     Def = 'def', MB = 'mb', MBTier = 'tier',
-    Weapons = 'wpn', MeleeSet = 'ml', Main = 'm', Sub = 's', Range = 'r', Ammo = 'a',
+    Weapons = 'wpn', MeleeSet = 'ml', WsSet = 'wb', Main = 'm', Sub = 's', Range = 'r', Ammo = 'a',
     NukeSet = 'nk', Element = 'el', TankSet = 'tk', Hoxne = 'hx', PupMode = 'pp', Weapon = 'w',
 };
 
@@ -67,7 +68,7 @@ local FULL = {
     DTset = 'DT set', MDTset = 'MDT set', Aminon = 'Aminon', SIR = 'Spell interrupt', TH = 'Treasure Hunter',
     Kite = 'Kite', AutoFood = 'Auto food', AutoSoda = 'Auto soda', PROC = 'Proc',
     Burst = 'Burst (force)', AutoNuke = 'Auto MB (casts bursts)', String = 'Harp (force string)', SongLock = 'Song lock (enemy songs keep main/sub)',
-    Death = 'Death', Weapons = 'Weapon set',
+    Death = 'Death', Weapons = 'Weapon set', WsSet = 'WS buff level (/wsset: HighBuff wears <WS set>_HighBuff)',
     Def = 'Defense (click = /def: DT > MDT > Aminon > none)',
     MB = 'Auto MB (click = /automb on/off, Ctrl+click = /mbtier); Auto shows its nuke tier, +F = /burst on',
     MBTier = 'Autonuke tier (click = /mbtier: Low I > Mid III > High V)', MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',

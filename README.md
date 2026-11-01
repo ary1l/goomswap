@@ -115,6 +115,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
 | `/mainset` `/subset` `[name]` | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
 | `/mset [sb\|acc\|default]` | `_SubtleBlow` / `_Acc` versions of TP and WS sets (`/meleeset` same). DT is `/dt`, on top of any |
+| `/wsset [mid\|high]` | `HighBuff`: each WS set also wears its `_HighBuff` (`Savage_HighBuff`) |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
 | `/th` | `TH` set while engaged with or acting on a mob, until it's tagged: your first swing, shot, WS or JA on it (not `THSkip`). Not at rest. THF main: the whole time, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
@@ -146,11 +147,11 @@ Later wins, slot by slot; a set changes only the slots it lists.
    TH, Buffs and everything in 1-3.**
 5. `Sleeping` (asleep) → `Doomed` → `Reraise` (Weakness) → craft / zeni / fish / rr sets.
 
-**Spells (midcast):** your job file → `TH` (not `THSkip`) → `Absorb` (TH back on top) → `Buffs_Midcast` →
+**Spells (midcast):** your job file → `TH` (not `THSkip`) → its `_Self` / `_Others` / `_Burst` sets → `Absorb` (TH back on top) → `Buffs_Midcast` →
 `LightBonus` → obi/Orpheus/back/ring (a `TH` waist stays) → `SIR` (`/sir`, not `SIRSkip`). WHM cures:
 `Cure` → `Self_Cure` → `Cure_LowMP` or `Cure_LowMP_Storm` (MP ≤ 50%) → `Cure_Dt` (`/dt`) → Hachirin-no-Obi → `SIR`.
 
-**Weapon skills:** your job file → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
+**Weapon skills:** your job file → its `_HighBuff` sets (`/wsset high`) → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
 
 Defense toggles change idle/engaged gear only (`/aminon` also locks weapons); a spell wears DT gear only where the
 job file says so (WHM `Cure_Dt`).
