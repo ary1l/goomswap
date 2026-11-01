@@ -68,8 +68,8 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 Setup:
 1. Fill the job's `Burst` set (magic burst damage gear). It goes on by itself when a nuke lands in a live skillchain
    of its element; `/burst` puts it on every nuke.
-2. Tier for `/automb`: `MBTier = 'Mid'` in settings (Low = I, Mid = III, High = V), or one job: `gcinclude.MBTier =
-   'High'` in OnLoad before `Initialize()`. In game: `/mbtier high` (`low`/`mid`/`high`, `1`/`3`/`5`; lasts until reload or job change).
+2. Tier for `/automb`: `MBTier = 'III'` in settings (`'I'` to `'V'`), or one job: `gcinclude.MBTier =
+   'V'` in OnLoad before `Initialize()`. In game: `/mbtier 5` (`1`-`5` or `i`-`v`; old `low`/`mid`/`high` = I/III/V; lasts until reload or job change).
 3. `/automb on` (Win+grave) to cast bursts by itself; `AutoNuke = true` starts it on.
 4. Optional settings: `MBCasts` (bursts per chain, 1), `MBRotate` (spread them over the chain's elements), `MBMinMP`
    (hold below this MP), `MBFallback` (next tier down when the tier can't go), `MBSkills` (skills that wear Burst).
@@ -77,7 +77,7 @@ Setup:
 | Command | Does |
 |---|---|
 | `/automb [on\|off]` | Casts into live skillchains by itself (Win+grave; `/autonuke`, `/mbmode` same) |
-| `/mbtier [low\|mid\|high]` | Its nuke tier I / III / V (`1\|3\|5` too); no word cycles. HUD: Ctrl+click `mb` |
+| `/mbtier [1-5]` | Its nuke tier I to V (`i`-`v` too); no word cycles I → V. HUD: Ctrl+click `mb` |
 | `/burst` | Burst set on every nuke, not only live skillchains |
 | `/mbinfo` | Last skillchain seen |
 
@@ -95,8 +95,7 @@ Spells, abilities and WS that would fail are cancelled before any gear moves, re
 | Check | Result |
 |---|---|
 | KO, sleep, stun, petrify, terror, charm; Mute; Amnesia (JA/WS) | Cancelled |
-| Silence | Cancelled; uses Echo Drops, else Remedy (Remedy first if paralyzed). `AutoRemedy`, not under Muddle. One item at a time; if the status is still on after the item lands (an aura, e.g. Triboulex), no more items for it for 60s or until it's gone |
-| Paralysis on an ability | Uses a Remedy instead, if carried |
+| Silence | Cancelled (no item use: leave Echo Drops / Remedy to another addon) |
 | Recast | Cancelled, shows `m:ss` left (Ready/Sic/Quick Draw: charges, not checked) |
 | While you cast (also before "starts casting" is back) | Spell/JA/WS cancelled so your cast keeps its gear, `casting` in chat. Same spell again: cancelled, no message. `/item`, `/ra`: cancelled. A spell the server refuses ("Unable to cast…") stops counting at once. The game's own resend (Sequencer) isn't checked, unless that cast already started |
 | MP short | Arts-adjusted (own school -10%, other +20%); skipped under Manafont, Manawell, Parsimony, Penury, Addenda, Tabula Rasa. Gear MP cost not counted: `ValidateMP = false` |
@@ -177,7 +176,7 @@ load default on every box hide unless in `HUDPinned`; cycle columns hide only wh
 cycles its tier. Windower: the same clicks and tooltips; drag a box by any spot off a cell; boxes share state over IPC.
 Glyphs: `wpn` Weapons (teal: `/hoxne` on), `mmode` MeleeSet (purple: `/wsset high`), `m` `s` `r` `a` slots, `nk` NukeSet, `el` Element, `tk` TankSet, `hx` Hoxne,
 `pp` PupMode, `w` Weapon, `th` TH, `kt` Kite, `fd` AutoFood, `sd` AutoSoda, `hp` String, `sl` SongLock, `pr` PROC,
-`dh` Death, `tier` MBTier, `mb` AutoMB (`Off`, or `Auto` + tier; `+F` = `/burst`). Tune: `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
+`dh` Death, `tier` MBTier, `mb` AutoMB (`-` off, else its tier `I`-`V`; `/burst` in its tooltip). Tune: `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
 
 ## Sets the engine uses
 
@@ -246,7 +245,7 @@ profile.OnLoad = function()
     gcinclude.AlwaysDualWield = true;
     gcinclude.AutoFood = 'Grape Daifuku +1';
     gcinclude.BuffSetOrder = T{'Saboteur', 'Aftermath'};
-    gcinclude.MBTier = 'High';
+    gcinclude.MBTier = 'V';
     gcinclude.settings.RefreshGearMPP = 50;       -- any setting, this job only
     gcinclude.Initialize();
 end

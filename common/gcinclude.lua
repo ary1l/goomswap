@@ -137,9 +137,9 @@
 		MBMinMP = 0; -- hold fire below this MP (sync: mp)
 		MBWindow = 10; -- magic burst window in seconds from the skillchain (BG: 10); another WS on the mob ends it
 		-- /autonuke casts the chain element's single-target nuke (Fire, Blizzard, Aero, Stone, Thunder,
-		-- Water) at this tier: 'Low' = I, 'Mid' = III, 'High' = V. /mbtier changes it in game.
-		-- Light/Dark have no tiered nuke: SCH falls back to Luminohelix/Noctohelix. Per job: gcinclude.MBTier = 'High'.
-		MBTier = 'Mid';
+		-- Water) at this tier: 'I' 'II' 'III' 'IV' 'V' (old names: 'Low' = I, 'Mid' = III, 'High' = V). /mbtier changes it in game.
+		-- Light/Dark have no tiered nuke: SCH falls back to Luminohelix/Noctohelix. Per job: gcinclude.MBTier = 'V'.
+		MBTier = 'III';
 		MBFallback = true; -- tier not castable / on recast / short MP: try the next tier down (V > IV > III > II > I)
 		MBSkills = T{'Elemental Magic'}; -- skills /automb dresses; add 'Dark Magic' etc. as you like
 		ElementSkills = T{'Elemental Magic','Blue Magic'}; -- spell skills that get obi/Orpheus/element ring
@@ -179,7 +179,6 @@
 		HUDLabels = {}; -- HUD column glyph overrides, e.g. { Main = 'mn', AutoSoda = 'so' }
 		Validate = true; -- cancel spells/abilities/WS that would fail: KO, sleep/stun/petrify/terror/charm, mute, silence, recast, MP, stratagems, Waltz TP, amnesia
 		ValidateMP = true; -- the MP part; gear "MP cost -%" isn't counted, so turn off if it stops casts that would go off
-		AutoRemedy = true; -- silenced: Echo Drops, else Remedy (Remedy first if also paralyzed); paralyzed on an ability: Remedy. Not under Muddle
 		WaltzTPCut = 0; -- total "Waltz TP cost" reduction on your Waltz gear, in TP
 		Trace = false; -- /gctrace: one chat line per action naming each set put on
 		LockstyleSet = nil; -- /lockstyleset N 4s after load and job change; per job gcinclude.LockstyleSet = N in OnLoad
@@ -271,22 +270,21 @@
 		return nextOne[2];
 	end
 
-	-- /mbtier: Low (tier I) / Mid (tier III) / High (tier V) for /autonuke. Accepts low|mid|high|hi|1|3|5.
-	gcinclude.MBTierAlias = { low = 'Low', l = 'Low', ['1'] = 'Low', i = 'Low', mid = 'Mid', m = 'Mid', ['3'] = 'Mid', iii = 'Mid',
-		high = 'High', hi = 'High', h = 'High', ['5'] = 'High', v = 'High' };
-	gcinclude.MBTierNum = { Low = 1, Mid = 3, High = 5 };
+	-- /mbtier: the /automb nuke tier, I to V. Accepts 1-5, i-v, and the old low (I) / mid (III) / high (V).
+	gcinclude.MBTiers = {'I', 'II', 'III', 'IV', 'V'};
+	gcinclude.MBTierAlias = { ['1'] = 'I', i = 'I', low = 'I', l = 'I', ['2'] = 'II', ii = 'II', ['3'] = 'III', iii = 'III',
+		mid = 'III', m = 'III', ['4'] = 'IV', iv = 'IV', ['5'] = 'V', v = 'V', high = 'V', hi = 'V', h = 'V' };
+	gcinclude.MBTierNum = { I = 1, II = 2, III = 3, IV = 4, V = 5 };
 	function gcinclude.SetMBTier(v, quiet)
 		local t = gcinclude.MBTierAlias[string.lower(tostring(v or ''))];
 		if (t == nil) then
-			if not quiet then gcinclude.Err('/mbtier low|mid|high (tier I / III / V)') end
+			if not quiet then gcinclude.Err('/mbtier 1-5 (tier I to V)') end
 			return;
 		end
 		gcdisplay.SetCycle('MBTier', t);
 	end
 	function gcinclude.MBTierText()
-		local t = gcdisplay.GetCycle('MBTier');
-		local roman = { Low = 'I', Mid = 'III', High = 'V' };
-		return tostring(t) .. ' (tier ' .. (roman[t] or '?') .. ')';
+		return 'tier ' .. tostring(gcdisplay.GetCycle('MBTier'));
 	end
 
 	-- Toggle commands: 'on' or 'off' sets it, no argument flips it.
@@ -372,8 +370,8 @@ function gcinclude.SetVariables()
         gcdisplay.CreateToggle('Burst', false); -- /burst: Burst set on every nuke, not only on live skillchains
         gcdisplay.CreateToggle('AutoNuke', gcinclude.settings.AutoNuke == true); -- /automb: cast into live skillchains
         gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM/GEO: 'OccultAcumen')
-        gcdisplay.CreateCycle('MBTier', {[1] = 'Low', [2] = 'Mid', [3] = 'High'}); -- /mbtier: I / III / V
-        gcinclude.SetMBTier(gcinclude.MBTier or gcinclude.settings.MBTier or 'Mid', true);
+        gcdisplay.CreateCycle('MBTier', gcinclude.MBTiers); -- /mbtier: I to V
+        gcinclude.SetMBTier(gcinclude.MBTier or gcinclude.settings.MBTier or 'III', true);
         if (mJob == 'BLM') or (mJob == 'SCH') then
             gcdisplay.CreateCycle('Weapon', {[1] = 'Club', [2] = 'Staff'});
             gcdisplay.CreateCycle('Element', {[1] = 'Thunder', [2] = 'Blizzard', [3] = 'Fire', [4] = 'Stone', [5] = 'Aero', [6] = 'Water', [7] = 'Light', [8] = 'Dark'});
@@ -1401,7 +1399,6 @@ end
 
 	-- From gcauto's 0x0028 reader: my item use started (cmd 9), was interrupted (cmd 9, id 0) or finished (cmd 5).
 	function gcinclude.OnItemAction(cmd, id)
-		if (gcaction ~= nil) and (gcaction.OnItemAction ~= nil) then gcaction.OnItemAction(cmd, id) end -- AutoRemedy
 		local now = os.clock();
 		for _, e in pairs(gcinclude.Enchants) do
 			if (e.doneAt == nil) and (e.equippedAt ~= nil) then
@@ -2777,7 +2774,7 @@ end
 			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N]',
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
-			'nuke   : Burst set is automatic on live skillchains; /automb [on|off] = cast bursts by itself; /mbtier low|mid|high = its tier I|III|V; /burst = Burst set on every nuke',
+			'nuke   : Burst set is automatic on live skillchains; /automb [on|off] = cast bursts by itself; /mbtier 1-5 = its tier I to V (no word: next); /burst = Burst set on every nuke',
 			'keys   : Ctrl+grave wm, Shift+grave wm default, Ctrl+Shift+grave def, Alt+grave hoxne, Win+grave automb (no bare grave); /gckey <key> <command>',
 			'every box: /mss /<command> (Multisend), one box: /ms sendto <name> /<command>',
 		};
