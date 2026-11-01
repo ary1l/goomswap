@@ -115,7 +115,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 |---|---|
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
 | `/mainset` `/subset` `[name]` (`/mw` `/sw`) | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
-| `/mmode [sb\|acc\|base]` | Melee mode: Base (your `_Default` sets) → `_SubtleBlow` → `_Acc` versions of TP and WS sets. No word = next. DT is `/dt`, on top of any |
+| `/mmode [sb\|acc\|base]` (`/melee`) | Melee mode: Base (your `_Default` sets) → `_SubtleBlow` → `_Acc` versions of TP and WS sets. No word = next. DT is `/dt`, on top of any |
 | `/wsset [mid\|high]` | `high`: each WS set also wears its `_HighBuff` (`Savage_HighBuff`) |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
@@ -151,7 +151,7 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
 - **Layout:** top left; `HUDOwners` first, then party order. The owner sees its own line until the mouse is over the HUD,
   then every box (`HUDHover = false`: always all). Every column a box's job has always shows, so the width never changes.
   Name colour: blue SIR, gold TH, green kite, red PROC. Food, soda, harp, song lock, death: a chat line when they change.
-  A box on `/wsset high` shows its `mmode` cell purple; `/hoxne` on, its `wpn` cell teal. `HUDAbbr` shortens values.
+  A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal. `HUDAbbr` shortens values.
 
 ## How sets stack
 

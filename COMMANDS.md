@@ -130,8 +130,8 @@ checked; the game's own message says when it refuses.
 
 | Command | Does |
 |---|---|
-| `/mmode [value]` (`/meleeset`) | Base → SubtleBlow → Acc, no word = next (`/mmode sb`). Base wears your `_Default` sets: `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). `Weapon_<Mode>Acc` comes on with Acc, so Acc weapons aren't `/wm` modes (swaps at any TP, like `/wm`). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
-| `/wsset [mid\|high]` | Weapon skill buff level: `high` wears `<WS set>_HighBuff` over each WS set the handler wore (`Ws_HighBuff`, `Savage_HighBuff`, `Savage_Acc_HighBuff`). `mid` (load default) = nothing extra. HUD: that box's `mmode` cell turns purple |
+| `/mmode [value]` (`/melee`, `/meleeset`) | Base → SubtleBlow → Acc, no word = next (`/mmode sb`). Base wears your `_Default` sets: `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). `Weapon_<Mode>Acc` comes on with Acc, so Acc weapons aren't `/wm` modes (swaps at any TP, like `/wm`). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
+| `/wsset [mid\|high]` | Weapon skill buff level: `high` wears `<WS set>_HighBuff` over each WS set the handler wore (`Ws_HighBuff`, `Savage_HighBuff`, `Savage_Acc_HighBuff`). `mid` (load default) = nothing extra. HUD: that box's `melee` cell turns purple |
 | `/kite` / `/th` | Movement gear / `TH` until tagged |
 | `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). No word shows thresholds (doesn't flip). Regen/Refresh out of combat, not over `/dt`; Dt/Pet_Dt any time |
 | `/received <spell>` | Wear that `*_Received` set |
@@ -175,7 +175,7 @@ One row per box (each writes `hud/<name>.txt` 4x/s), `HUDOwners` first, then par
 (this box) until the mouse is over it, then every box with headers (`HUDHover = false`: always every box). On a box not in
 `HUDOwners` it shows only that box's row. With the HUD open you also get the other boxes' GoomSwap lines as `[Name] …`
 (`HUDMessages = false` to stop). Every column a box's job has always shows, set or not, so the width never changes. Modes: `wpn`
-Weapons (teal: `/hoxne` on), `mmode` MeleeSet (purple: `/wsset high`), `main` `sub` `rng` `ammo` slot picks, `nuke` NukeSet, `elem`
+Weapons (teal: `/hoxne` on), `melee` MeleeSet (purple: `/wsset high`), `main` `sub` `rng` `ammo` slot picks, `nuke` NukeSet, `elem`
 Element, `tank` TankSet, `pup` PupMode, `w` Weapon (`-` = None, blank = job lacks it). `def` DT/MDT/Aminon (`-` none), `mb` AutoMB
 (`-` off, else its tier `I`-`V`). The name's colour: blue SIR, gold TH, green Kite, red PROC (first one on; its tooltip lists
 all). No HUD: `/gcmodes` prints this box's modes and the toggles on, `/gcmodes all` every box's. Food, soda, harp, song lock and death have no HUD spot: turning them on/off prints a chat line (`[Name] Food on`).

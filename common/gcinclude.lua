@@ -207,7 +207,7 @@
 		gcinclude.Err('HUD disabled: gchud.lua failed to load.');
 	end
 
-	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
+	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
 	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
@@ -446,7 +446,7 @@ end
 			gcinclude.FlipToggle('MDTset', args[2]);
 			toggle = 'MDT Set';
 			status = gcdisplay.GetToggle('MDTset');
-		elseif (args[1] == 'meleeset') or (args[1] == 'mmode') then
+		elseif (args[1] == 'meleeset') or (args[1] == 'mmode') or (args[1] == 'melee') then
 			local before = gcinclude.WeaponLayerKey();
 			gcinclude.PickCycle('MeleeSet', args[2]);
 			if (gcinclude.WeaponLayerKey() ~= before) then gcinclude.ApplyWeapons(true) end -- a Weapon_<mode>Acc: you asked, swaps at any TP
@@ -745,7 +745,7 @@ end
 
 	-- /gcmodes: this box's modes and the toggles that are on, in chat (for playing without the HUD); /gcmodes all: every
 	-- box reporting to the HUD folder.
-	gcinclude.ModeNames = { {'Weapons', 'wpn'}, {'MeleeSet', 'mmode'}, {'WsSet', 'wsset'}, {'Main', 'main'}, {'Sub', 'sub'},
+	gcinclude.ModeNames = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'WsSet', 'wsset'}, {'Main', 'main'}, {'Sub', 'sub'},
 		{'Range', 'rng'}, {'Ammo', 'ammo'}, {'NukeSet', 'nuke'}, {'Element', 'elem'}, {'TankSet', 'tank'}, {'PupMode', 'pup'},
 		{'Weapon', 'weapon'}, {'MBTier', 'mb tier'}, {'Hoxne', 'hoxne'} };
 	gcinclude.ToggleNames = { DTset = 'DT', MDTset = 'MDT', Aminon = 'Aminon', SIR = 'SIR', TH = 'TH', Kite = 'Kite',
