@@ -171,13 +171,14 @@ checked; the game's own message says when it refuses.
 | `/gchud debug` | Files found, rows parsed |
 | `/gcbar [on\|off]` / `/gcbar pos 300 0` | One-line status bar (Windower: Atk/Def show 0) |
 
-One row per box (each writes `hud/<name>.txt` 4x/s); opens on load for `HUDOwners`; on a box not in `HUDOwners` it shows only that box's row. With the HUD open you also get the other boxes' GCinclude/GCauto lines as `[Name] …` (`HUDMessages = false` to stop). `.` off, glyph on, blank = job
-lacks it, `-` none. Bright = changed, dim = default, orange = off but loads on. Toggle columns (and `def`, `mb`) at
-load default on every box hide unless in `HUDPinned`; a mode column shows whenever any box's job has that mode (`-` = None), so setting it doesn't widen the HUD. Ashita: click a cell runs it on that box, click a name shows hidden columns, Ctrl+click `mb`
-cycles its tier. Windower: the same clicks and tooltips; drag a box by any spot off a cell; boxes share state over IPC.
-Glyphs: `wpn` Weapons (teal: `/hoxne` on), `mmode` MeleeSet (purple: `/wsset high`), `m` `s` `r` `a` slots, `nk` NukeSet, `el` Element, `tk` TankSet, `hx` Hoxne,
-`pp` PupMode, `w` Weapon, `th` TH, `kt` Kite, `fd` AutoFood, `sd` AutoSoda, `hp` String, `sl` SongLock, `pr` PROC,
-`dh` Death, `tier` MBTier, `mb` AutoMB (`-` off, else its tier `I`-`V`; `/burst` in its tooltip). Tune: `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
+One row per box (each writes `hud/<name>.txt` 4x/s); opens on load for `HUDOwners`; on a box not in `HUDOwners` it shows only that box's row. With the HUD open you also get the other boxes' GCinclude/GCauto lines as `[Name] …` (`HUDMessages = false` to stop).
+Every column a box's job has always shows, set or not, so the width never changes. Modes: `wpn` Weapons (teal: `/hoxne` on), `mmode`
+MeleeSet (purple: `/wsset high`), `main` `sub` `rng` `ammo` slot picks, `nuke` NukeSet, `elem` Element, `tank` TankSet, `pup` PupMode,
+`w` Weapon (`-` = None, blank = job lacks it). `def` DT/MDT/Aminon (`-` none), `mb` AutoMB (`-` off, else its tier `I`-`V`; `/burst` in
+its tooltip). Toggles are one-letter flags side by side, header letters above: `T` TH, `I` SIR, `K` Kite, `F` AutoFood, `S` AutoSoda,
+`P` PROC, `H` String, `L` SongLock, `D` Death; the letter = on, `.` = off. Bright = changed, dim = default, orange = off but loads on.
+Ashita: click a cell runs it on that box, click a name shows the rest, Ctrl+click `mb` cycles its tier. Windower: the same clicks and
+tooltips; drag a box by any spot off a cell; boxes share state over IPC. Tune: `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
 
 ## Sets the engine uses
 

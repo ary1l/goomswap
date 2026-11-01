@@ -172,11 +172,10 @@
 		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GCinclude/GCauto lines, as [Name]
 		HUDX = 300; -- alt HUD position; drag it in game, saved per character
 		HUDY = 40;
-		HUDAlpha = 0.45; -- HUD background opacity, 0 = none
+		HUDAlpha = 0.70; -- HUD background opacity, 0 = none
 		HUDScale = 0.9; -- HUD text size (compact style)
 		HUDStyle = 'compact'; -- HUD look: 'compact' (tight) or 'large' (bigger text, more spacing, full names); /gchud large|compact, saved per character
 		HUDScaleLarge = 1.1; -- HUD text size in the large style
-		HUDPinned = T{'Def', 'MB', 'Kite', 'AutoFood', 'AutoSoda'}; -- HUD columns always shown (Def = DT/MDT/Aminon via /def, MB = /mbmode); others only once a box changes them
 		HUDAbbr = {}; -- HUD short value overrides, e.g. { ['Carnwenhan'] = 'Carn' }; auto-shortened otherwise
 		HUDLabels = {}; -- HUD column glyph overrides, e.g. { Main = 'mn', AutoSoda = 'so' }
 		Validate = true; -- cancel spells/abilities/WS that would fail: KO, sleep/stun/petrify/terror/charm, mute, silence, recast, MP, stratagems, Waltz TP, amnesia

@@ -104,7 +104,7 @@ Copying a newer `common/` over yours erases your edits: note them, or set them p
 | Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
 | Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
 | Action checks | `Validate`, `ValidateMP`, `WaltzTPCut` |
-| HUD / bar | `HUDOwners`, `HUDMessages`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDPinned`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
+| HUD / bar | `HUDOwners`, `HUDMessages`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
 | Other | `Keybinds`, `Messages`, `Trace`, `LockstyleSet`, `CombatWindow`, `XIRollSet`, `CapacityCapes`, `JubileeSlot`, `AmmoWarn`, `NinjaToolWarn`, `SleepCancelStoneskin`, `ElementReport`, `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
 
 Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
@@ -147,8 +147,8 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
 - **Use:** click a cell = run it on that box; click a name = its hidden modes; Ctrl+click `mb` = tier. The owner also
   prints the other boxes' GCinclude/GCauto lines as `[Name]` (`HUDMessages = false` to stop).
 - **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
-- **Columns:** a mode shows whenever any box's job has it (`-` = None), a toggle while any box changed it
-  from its load default. Always show some: `HUDPinned = T{'th', 'kite'}`. `HUDAbbr` shortens values, `HUDLabels`
+- **Columns:** everything a box's job has always shows, so the width never changes. Toggles are one-letter flags
+  (`T` TH, `I` SIR, `K` kite, `F` food, `S` soda…): letter = on, `.` = off. `HUDAbbr` shortens values, `HUDLabels`
   renames headers. A box on `/wsset high` shows its `mmode` cell purple; a box with `/hoxne` on shows its `wpn` cell teal.
 
 ## How sets stack

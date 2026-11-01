@@ -55,12 +55,12 @@ gchud.ToggleOrder = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'AutoFoo
 
 -- Column header glyphs. Override any with settings.HUDLabels = { Main = 'mn' }.
 local SHORT = {
-    DTset = 'dt', MDTset = 'md', Aminon = 'am', SIR = 'si', TH = 'th', Kite = 'kt',
-    AutoFood = 'fd', AutoSoda = 'sd', PROC = 'pr',
-    Burst = 'bs', AutoNuke = 'an', String = 'hp', SongLock = 'sl', Death = 'dh',
+    DTset = 'dt', MDTset = 'md', Aminon = 'am', -- in the def cell
+    SIR = 'I', TH = 'T', Kite = 'K', AutoFood = 'F', AutoSoda = 'S', PROC = 'P', -- toggles: one-letter flags
+    Burst = 'bs', AutoNuke = 'an', String = 'H', SongLock = 'L', Death = 'D',
     Def = 'def', MB = 'mb', MBTier = 'tier',
-    Weapons = 'wpn', MeleeSet = 'mmode', WsSet = 'buff', Main = 'm', Sub = 's', Range = 'r', Ammo = 'a',
-    NukeSet = 'nk', Element = 'el', TankSet = 'tk', Hoxne = 'hx', PupMode = 'pp', Weapon = 'w',
+    Weapons = 'wpn', MeleeSet = 'mmode', WsSet = 'buff', Main = 'main', Sub = 'sub', Range = 'rng', Ammo = 'ammo',
+    NukeSet = 'nuke', Element = 'elem', TankSet = 'tank', Hoxne = 'hx', PupMode = 'pup', Weapon = 'w',
 };
 
 -- Full names, hover tooltips only.
@@ -149,16 +149,16 @@ local COL_HOVER = { 1.0, 1.0, 1.0, 0.12 };
 -- bright = changed since load, dim = still at load default
 local COL_ON = { 0.35, 0.95, 0.45, 1.0 };      -- on, changed
 local COL_ON_DEF = { 0.30, 0.70, 0.38, 0.85 }; -- on, default
-local COL_OFF = { 0.40, 0.40, 0.45, 0.70 };    -- off, default
+local COL_OFF = { 0.50, 0.50, 0.56, 0.85 };    -- off, default
 local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off something that loads on)
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
-local COL_VAL_DEF = { 0.75, 0.68, 0.35, 0.85 };-- cycle, default
-local COL_EMPTY = { 0.45, 0.45, 0.50, 0.60 };  -- cycle at None/Off
+local COL_VAL_DEF = { 0.82, 0.74, 0.42, 1.0 }; -- cycle, default
+local COL_EMPTY = { 0.55, 0.55, 0.60, 0.80 };  -- cycle at None/Off
 local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- mmode cell while /wsset high (no column of its own): purple
 local COL_HOXNE = { 0.35, 0.85, 0.85, 1.0 };    -- wpn cell while /hoxne is on (no column of its own): teal
 local COL_NAME = { 0.75, 0.85, 1.00, 1.0 };
 local COL_JOB = { 0.60, 0.65, 0.75, 1.0 };
-local COL_KEY = { 0.55, 0.58, 0.65, 1.0 };
+local COL_KEY = { 0.78, 0.82, 0.90, 1.0 };     -- headers
 
 local function dir()
     return string.format('%sconfig\\addons\\luashitacast\\hud\\', AshitaCore:GetInstallPath());
@@ -431,8 +431,7 @@ end
 
 -- Grid: one header line, one line per box, columns aligned by measured text width.
 -- Cycle columns first (weapon set leads), then toggle columns. Clicking a cell drives that box.
--- Cycle columns: shown while any box's job has that cycle, None or not, so setting one doesn't widen the HUD. Hidden: toggle columns at load default on
--- every box, unless pinned (settings.HUDPinned). They show up as soon as any box changes them.
+-- Columns show while any box's job has them, set or not, so the width doesn't change; toggles are one-letter flags.
 -- DT/MDT/Aminon merge into one 'def' column (/def); SIR (a casting mode) keeps its own 'si' column, AutoNuke/Burst into 'mb' (/automb).
 -- Clicking a name adds a detail line under it: job + that box's hidden cycles and toggles.
 local PADX = 1; -- cell padding; set from the style each frame in render()
@@ -607,28 +606,19 @@ local function build_grid(x0)
     for _, k in ipairs(ccols) do
         if shown[k] then vis[#vis + 1] = k end
     end
-    local pinned = {};
-    for _, k in ipairs(inc.settings.HUDPinned or {}) do pinned[k] = true end
+    -- def, mb and every toggle a box's job has always show (toggles as one-letter flags side by side), so turning
+    -- something on or off never changes the width.
     local gvis, gshown = {}, {};
     for _, k in ipairs(GROUP_ORDER) do
-        local present, keep = false, (pinned[k] == true) or (pinned[label(k)] == true);
         for i = 1, #rows do
-            local c = cells[i].g[k];
-            if (c ~= nil) then
-                present = true;
-                if not c.def then keep = true end
-            end
+            if (cells[i].g[k] ~= nil) then gvis[#gvis + 1] = k; gshown[k] = true; break end
         end
-        if present and keep then gvis[#gvis + 1] = k; gshown[k] = true end
     end
     local tvis, tshown = {}, {};
     for _, k in ipairs(tcols) do
-        local keep = (pinned[k] == true) or (pinned[label(k)] == true);
         for i = 1, #rows do
-            local c = cells[i].t[k];
-            if (c ~= nil) and not c.def then keep = true end
+            if (cells[i].t[k] ~= nil) then tvis[#tvis + 1] = k; tshown[k] = true; break end
         end
-        if keep then tvis[#tvis + 1] = k; tshown[k] = true end
     end
 
     -- measure
@@ -652,13 +642,15 @@ local function build_grid(x0)
         end
         w = math.max(w, widthMax[kind .. key] or 0);
         widthMax[kind .. key] = w;
-        w = w + PADX * 2;
+        local flag = (kind == 't'); -- one-letter flags sit side by side
+        w = w + (flag and 0 or PADX * 2);
         cols[#cols + 1] = { key = key, kind = kind, x = x, w = w, center = center, label = l, labelW = lw, tip = FULL[key] or key };
-        x = x + w + gap;
+        x = x + w + (flag and 0 or gap);
     end
     for _, k in ipairs(vis) do add(k, 'c', false) end
     x = x + gap; -- group gap
     for _, k in ipairs(gvis) do add(k, 'g', false) end
+    x = x + gap; -- before the flags
     for _, k in ipairs(tvis) do add(k, 't', true) end
     local nameIds = {};
     for i, row in ipairs(rows) do nameIds[i] = short_name(row.Name) .. '##' .. row.Name .. 'row' end
