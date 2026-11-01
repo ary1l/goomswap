@@ -131,7 +131,7 @@ checked; the game's own message says when it refuses.
 | Command | Does |
 |---|---|
 | `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb`): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). `Weapon_<Mode>Acc` comes on with Acc, so Acc weapons aren't `/wm` modes (swaps at any TP, like `/wm`). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
-| `/wsset [mid\|high]` | Weapon skill buff level: `HighBuff` wears `<WS set>_HighBuff` over each WS set the handler wore (`Ws_HighBuff`, `Savage_HighBuff`, `Savage_Acc_HighBuff`). Default `MidBuff` = nothing extra. HUD `wb` |
+| `/wsset [mid\|high]` | Weapon skill buff level: `high` wears `<WS set>_HighBuff` over each WS set the handler wore (`Ws_HighBuff`, `Savage_HighBuff`, `Savage_Acc_HighBuff`). `mid` (load default) = nothing extra. HUD `buff` column, only while a box is on High |
 | `/kite` / `/th` | Movement gear / `TH` until tagged |
 | `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). No word shows thresholds (doesn't flip). Regen/Refresh out of combat, not over `/dt`; Dt/Pet_Dt any time |
 | `/received <spell>` | Wear that `*_Received` set |

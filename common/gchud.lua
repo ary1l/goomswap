@@ -59,7 +59,7 @@ local SHORT = {
     AutoFood = 'fd', AutoSoda = 'sd', PROC = 'pr',
     Burst = 'bs', AutoNuke = 'an', String = 'hp', SongLock = 'sl', Death = 'dh',
     Def = 'def', MB = 'mb', MBTier = 'tier',
-    Weapons = 'wpn', MeleeSet = 'ml', WsSet = 'wb', Main = 'm', Sub = 's', Range = 'r', Ammo = 'a',
+    Weapons = 'wpn', MeleeSet = 'ml', WsSet = 'buff', Main = 'm', Sub = 's', Range = 'r', Ammo = 'a',
     NukeSet = 'nk', Element = 'el', TankSet = 'tk', Hoxne = 'hx', PupMode = 'pp', Weapon = 'w',
 };
 
@@ -68,7 +68,7 @@ local FULL = {
     DTset = 'DT set', MDTset = 'MDT set', Aminon = 'Aminon', SIR = 'Spell interrupt', TH = 'Treasure Hunter',
     Kite = 'Kite', AutoFood = 'Auto food', AutoSoda = 'Auto soda', PROC = 'Proc',
     Burst = 'Burst (force)', AutoNuke = 'Auto MB (casts bursts)', String = 'Harp (force string)', SongLock = 'Song lock (enemy songs keep main/sub)',
-    Death = 'Death', Weapons = 'Weapon set', WsSet = 'WS buff level (/wsset: HighBuff wears <WS set>_HighBuff)',
+    Death = 'Death', Weapons = 'Weapon set', WsSet = 'WS buff level (/wsset): High wears <WS set>_HighBuff',
     Def = 'Defense (click = /def: DT > MDT > Aminon > none)',
     MB = 'Auto MB (click = /automb on/off, Ctrl+click = /mbtier); Auto shows its nuke tier, +F = /burst on',
     MBTier = 'Autonuke tier (click = /mbtier: Low I > Mid III > High V)', MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',
@@ -558,6 +558,7 @@ end
 
 -- Cells, visible columns and widths depend only on the rows (re-read every 0.5s), the style, the text
 -- scale and the window origin, so they are built when one of those changes, not every frame.
+local QUIET = { WsSet = true }; -- cycle columns shown only while a box has changed them (/wsset high)
 local function build_grid(x0)
     local ccols = columns('CycleOrder', gchud.CycleOrder);
     local tcols = columns('ToggleOrder', gchud.ToggleOrder);
@@ -568,7 +569,7 @@ local function build_grid(x0)
         for _, k in ipairs(ccols) do
             local c = cycle_cell(row, k);
             cells[i].c[k] = c;
-            if (c ~= nil) and not c.empty and (k ~= 'MBTier') then shown[k] = true end -- MBTier: in mb cell + detail line
+            if (c ~= nil) and not c.empty and (k ~= 'MBTier') and not (QUIET[k] and c.def) then shown[k] = true end -- MBTier: in mb cell + detail line
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};
