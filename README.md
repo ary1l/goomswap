@@ -10,7 +10,7 @@ through `windower/`), same job files. Full reference: [`COMMANDS.md`](COMMANDS.m
   combat. No automatic swap throws away TP (`WeaponTPGuard`, per job) or Aftermath; songs, rolls, cures still swap.
 - **Defense:** `/dt` `/mdt` `/aminon`; regen/refresh/DT idle by HP/MP; sleep, stun, doom, weakness sets.
 - **Casting:** TH until tagged, SIR, obi/Orpheus/elemental ring and back, Moonshade, auto magic burst (RDM BLM SCH GEO).
-- **Items:** food, soda, holy water, enchanted items and warp/dim rings, Hoxne Ampulla.
+- **Items:** food (per job), packer (keeps a list of items in inventory on every job change), soda, holy water, enchanted items and warp/dim rings, Hoxne Ampulla.
 - **Multibox:** one HUD for every box (click a cell to drive it, the boxes' messages show there); Einherjar entry,
   lamp copies and hand-out (`/ejenter`, Ashita).
 - **Checks:** refused actions say why; `/checksets` finds empty sets and misspellings; `/gctrace` shows what each action wore.
@@ -99,7 +99,7 @@ Copying a newer `common/` over yours erases your edits: note them, or set them p
 | Auto idle sets | `AutoGear`, `RegenGearHPP`, `RefreshGearMPP`, `DTGearHPP`, `PetDTGearHPP` |
 | Weapon skills | `WScheck`, `WSdistance`, `MoonshadeTP`, `MoonshadeSlot`, `MoonshadeSkip`, `ElementalWS` |
 | Magic burst | `AutoNuke`, `MBTier`, `MBCasts`, `MBRotate`, `MBMinMP`, `MBWindow`, `MBFallback`, `MBSkills` |
-| Items | `AutoFood`, `AutoFoodItems`, `AutoSoda`, `SodaItem`, `AutoHolyWater`, `HolyWaterItem`, `AutoRevitalizer`, `AutoUseItems`, `EnchantDelays`, `EnchantWindow`, `ConsumableMaxTries` |
+| Items | `AutoFood`, `AutoFoodItems`, `PackerItems`, `PackerFood`, `AutoSoda`, `SodaItem`, `AutoHolyWater`, `HolyWaterItem`, `AutoRevitalizer`, `AutoUseItems`, `EnchantDelays`, `EnchantWindow`, `ConsumableMaxTries` |
 | Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
 | Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
 | Action checks | `Validate`, `ValidateMP`, `WaltzTPCut` |
@@ -120,6 +120,8 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
 | `/th` | `TH` set while engaged with or acting on a mob, until it's tagged: your first swing, shot, WS or JA on it (not `THSkip`). Not at rest. THF main: the whole time, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
 | `/kite` | Movement gear |
+| `/autofood` | Eats this job's food: `gcinclude.AutoFood = {...}` in the job file (`gcinclude.settings.AutoFood = true` = on at load) |
+| `/packer` | Gets missing items into inventory (Bellhop): `gcinclude.Packer = { ['Echo Drops'] = 'stack' }` per job, `PackerItems` every job; runs on job change |
 | `/hoxne` | Off ↔ Locked (ampulla kept in Ammo and used). `/hoxne off` releases it |
 | `/nukeset [power\|macc\|oa]` | Nuke sets: power, or Macc (`NukeACC`) on top. RDM, GEO: OccultAcumen (`OccultAcumen` set on top, TP from nukes) |
 | `/automb` | Auto magic burst on/off (RDM BLM SCH GEO). Setup (Burst set, tier, settings): COMMANDS.md Magic burst |

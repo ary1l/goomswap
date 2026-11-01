@@ -91,6 +91,8 @@
 		};
 		AutoFood = false; -- default state of the AutoFood toggle on load
 		AutoFoodItems = T{'Grape Daifuku +1', 'Grape Daifuku'}; -- eaten in this order, a job can override with gcinclude.AutoFood
+		PackerItems = {}; -- kept in inventory on every job: { ['Echo Drops'] = 'stack', ['Holy Water'] = 12 }; a job adds its own with gcinclude.Packer (/packer)
+		PackerFood = true; -- the packer also keeps a stack of the job's first AutoFood item
 		AutoRevitalizer = true; -- master switch for AutoUseItems below, /revit off to stop
 		AutoUseItems = T{ -- use one of these the moment it lands in your bags in a matching zone
 			{ Zone = 'Ghoyu', Item = 'Revitalizer' },
@@ -206,7 +208,7 @@
 	end
 
 	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
-	'pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
+	'packer','pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
@@ -449,6 +451,8 @@ end
 			if (gcinclude.WeaponLayerKey() ~= before) then gcinclude.ApplyWeapons(true) end -- a Weapon_<mode>Acc: you asked, swaps at any TP
 			toggle = 'Melee mode';
 			status = gcinclude.ModeLabel('MeleeSet', gcdisplay.GetCycle('MeleeSet'));
+		elseif (args[1] == 'packer') then
+			gcinclude.RunPacker(false);
 		elseif (args[1] == 'wsset') then
 			gcinclude.PickCycle('WsSet', args[2]);
 			toggle = 'WS Set';
@@ -2017,6 +2021,89 @@ end
 			name = setNameOf[set];
 		end
 		if (type(name) == 'string') then table.insert(gcinclude.WornSets, name) end
+	end
+
+	-- Packer: keeps items in inventory. settings.PackerItems (every job) and gcinclude.Packer (this job; wins, false
+	-- drops one) list item = count or 'stack'; PackerFood adds a stack of the job's first AutoFood item. On job load
+	-- and /packer, what inventory lacks is fetched with Thorny's Bellhop plugin (/bh get "item" n, from any bag it can
+	-- reach); a few seconds later anything still short is named. Ashita only.
+	local function invCount(id)
+		local inv, n = AshitaCore:GetMemoryManager():GetInventory(), 0;
+		for i = 1, gData.GetContainerMax(0) or 0 do
+			local it = inv:GetContainerItem(0, i);
+			if (it ~= nil) and (it.Id == id) then n = n + it.Count end
+		end
+		return n;
+	end
+
+	function gcinclude.PackerList()
+		local want, order = {}, {};
+		local function add(name, n)
+			if (type(name) ~= 'string') then return end
+			local k = string.lower(name);
+			if (want[k] == nil) then order[#order + 1] = k end
+			want[k] = { name = name, n = n };
+		end
+		for name, n in pairs(gcinclude.settings.PackerItems or {}) do add(name, n) end
+		for name, n in pairs(gcinclude.Packer or {}) do add(name, n) end
+		if (gcinclude.settings.PackerFood ~= false) then
+			local food = gcinclude.AutoFood or gcinclude.settings.AutoFoodItems;
+			if (type(food) == 'string') then food = { food } end
+			if (type(food) == 'table') and (type(food[1]) == 'string') and (want[string.lower(food[1])] == nil) then add(food[1], 'stack') end
+		end
+		local list, res = {}, AshitaCore:GetResourceManager();
+		for _, k in ipairs(order) do
+			local w = want[k];
+			if (w.n ~= false) then
+				local r = res:GetItemByName(w.name, 0);
+				if (r == nil) then
+					gcinclude.Err('/packer: no item named ' .. w.name);
+				else
+					local n = ((w.n == 'stack') or (w.n == true)) and (r.StackSize or 1) or tonumber(w.n);
+					if (n ~= nil) and (n > 0) then list[#list + 1] = { name = r.Name[1], id = r.Id, n = n } end
+				end
+			end
+		end
+		return list;
+	end
+
+	function gcinclude.RunPacker(quiet)
+		if (windower ~= nil) then
+			if not quiet then gcinclude.Err('/packer is Ashita only (Bellhop plugin)') end
+			return;
+		end
+		local list = gcinclude.PackerList();
+		if (#list == 0) then
+			if not quiet then gcinclude.Say('/packer: nothing listed (PackerItems, gcinclude.Packer)') end
+			return;
+		end
+		local pm = AshitaCore:GetPluginManager();
+		local bellhop = (pm ~= nil) and ((pm:Get('Bellhop') ~= nil) or (pm:Get('bellhop') ~= nil));
+		local fetch = {};
+		for _, it in ipairs(list) do
+			local need = it.n - invCount(it.id);
+			if (need > 0) then
+				fetch[#fetch + 1] = it.name .. ' +' .. need;
+				if bellhop then AshitaCore:GetChatManager():QueueCommand(-1, '/bh get "' .. it.name .. '" ' .. need) end
+			end
+		end
+		if (#fetch == 0) then
+			if not quiet then gcinclude.Say('/packer: all in inventory') end
+			return;
+		end
+		if not bellhop then
+			gcinclude.Err('/packer needs the Bellhop plugin (/load bellhop): short ' .. table.concat(fetch, ', '));
+			return;
+		end
+		gcinclude.Say('/packer: ' .. table.concat(fetch, ', '));
+		(function()
+			local still = {};
+			for _, it in ipairs(list) do
+				local have = invCount(it.id);
+				if (have < it.n) then still[#still + 1] = it.name .. ' ' .. have .. '/' .. it.n end
+			end
+			if (#still > 0) then gcinclude.Err('/packer: still short (none in reach, or inventory full): ' .. table.concat(still, ', ')) end
+		end):once(4 + #fetch);
 	end
 
 	function gcinclude.WearChildren(names, keys)
@@ -4012,6 +4099,7 @@ end
 		gcinclude.ApplyLockstyle();
 		gcauto.Start();
 		ashita.events.register('d3d_present', 'gcinclude_tphold', gcinclude.HoldTick);
+		(function() gcinclude.RunPacker(true) end):once(3); -- job change: fetch what inventory lacks
 		ashita.events.register('packet_in', 'gcinclude_ej', gcinclude.EinherjarPacket);
 		if (gchud ~= nil) then gchud.Start() end
 	end

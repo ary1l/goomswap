@@ -108,7 +108,8 @@ checked; the game's own message says when it refuses.
 
 | Command | Does |
 |---|---|
-| `/autofood [on\|off]` | Eat when Food is missing (outside town, not moving) |
+| `/autofood [on\|off]` | Eat when Food is missing (outside town, not moving). Per job/character (job file): `gcinclude.AutoFood = {'Grape Daifuku +1', 'Grape Daifuku'}` = its food, in order; `gcinclude.settings.AutoFood = true` = on at load. Every job: `AutoFoodItems`, `AutoFood` settings |
+| `/packer` | Fetch what inventory lacks of your packer list (Ashita, Thorny's Bellhop plugin: `/bh get`, from any bag it can reach), also on every job change. Every job: `PackerItems = { ['Echo Drops'] = 'stack', ['Holy Water'] = 12 }`; one job/character (job file): `gcinclude.Packer = { ['Instant Reraise'] = 2, ['Holy Water'] = false }` (adds, wins, `false` drops one). `'stack'` = a full stack. `PackerFood` (on) adds a stack of the job's first AutoFood. Still short a few seconds later: named in chat |
 | `/autosoda [on\|off]` | `SodaItem` when Regain is missing; 20s between tries, off after `ConsumableMaxTries` |
 | `/revit [on\|off]` | `AutoUseItems` per zone: `{ Zone = 'Ghoyu', Item = 'Revitalizer' }` |
 | `/holywater [on\|off]` | Holy Water on Doom (on by default) |
@@ -244,6 +245,7 @@ profile.OnLoad = function()
     gcinclude.RangeModes = {'None', 'Annihilator'};
     gcinclude.AlwaysDualWield = true;
     gcinclude.AutoFood = 'Grape Daifuku +1';
+    gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Instant Reraise'] = 2 };
     gcinclude.BuffSetOrder = T{'Saboteur', 'Aftermath'};
     gcinclude.MBTier = 'V';
     gcinclude.settings.RefreshGearMPP = 50;       -- any setting, this job only

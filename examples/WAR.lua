@@ -1,6 +1,8 @@
 local profile = {};
 if (gFunc == nil) then error('GoomSwap: GearSwap loaded this job file directly. Windower: move it to data/goomswap/<Name>/<JOB>.lua and delete it from data/<Name>/ (see README Install)', 0) end
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+-- gcinclude.AutoFood = {'Grape Daifuku +1', 'Grape Daifuku'}; -- this job's food, in order (/autofood); on at load: gcinclude.settings.AutoFood = true
+-- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 
 -- WAR example: swap in your own gear.
 -- Sets named after an ability, spell, skill or weapon skill (['Berserk'], ['Savage Blade'])
