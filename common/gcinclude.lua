@@ -354,7 +354,7 @@ function gcinclude.SetVariables()
     -- OnLoad, before Initialize). DT is not a mode: /dt layers the Dt set over any of them.
     local melee = (type(gcinclude.MeleeModes) == 'table') and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or {'Default', 'SubtleBlow', 'Acc'};
     gcdisplay.CreateCycle('MeleeSet', melee);
-    -- /wsset: how buffed you are, for weapon skills only. HighBuff wears <WS set>_HighBuff over each WS set (Rahvin GS's Buff Level).
+    -- /wsset: how buffed you are, for weapon skills only. HighBuff wears <WS set>_HighBuff over each WS set.
     gcdisplay.CreateCycle('WsSet', {'MidBuff', 'HighBuff'});
     gcinclude.BuildWeaponCycles(mJob);
     if (type(gcinclude.DefaultWeapons) == 'string') then
@@ -1277,7 +1277,7 @@ end
 	-- The slot stays locked until that finish packet, so normal gear can't come back mid-use.
 	-- Several can run at once (one per slot).
 	gcinclude.Enchants = {}; -- [LAC slot] = { item, id, slot, index, alreadyOn, preAct, delay, start, equippedAt, extPending, nextTry, tries, doneAt }
-	local ENCHANT_MARGIN = 3.0;    -- after the equip delay, before the first try (the server refuses ~3s past it: Rahvin's notes)
+	local ENCHANT_MARGIN = 3.0;    -- after the equip delay, before the first try (the server refuses ~3s past it)
 	local ENCHANT_RETRY = 2.0;     -- between tries while no Item (Start) is seen
 	local ENCHANT_TRIES = 5;
 	local ENCHANT_EQUIP_WAIT = 10; -- give up if the item never shows up in the slot
@@ -1999,7 +1999,7 @@ end
 		return setIndex[string.lower(name)];
 	end
 
-	-- Child sets (Rahvin GS's midcast children and Buff Level): while a handler runs, the sets it wears are noted by
+	-- Child sets: while a handler runs, the sets it wears are noted by
 	-- name; then each one's <name>_<key> goes on, in the order they went on, and for <prefix>_Default also
 	-- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: HighBuff on weapon skills
 	-- (/wsset HighBuff); Self or Others (a spell on you / on anyone but a monster) and Burst (BurstWanted) on spells.

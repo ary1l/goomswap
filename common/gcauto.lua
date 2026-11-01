@@ -274,7 +274,7 @@ local function parse_action(data)
     return A;
 end
 
--- Buffs counted early (Rahvin GS 2.2): a result on me whose message names its status (Windower res action_messages:
+-- Buffs counted early: a result on me whose message names its status (Windower res action_messages:
 -- "gains/receives the effect of ${status}", the result's param = the buff id) counts as up for 2s, until the buff
 -- list has it. gcinclude.BuffCount reads gcauto.Predicted.
 local GAIN_MSG = { [166] = true, [186] = true, [194] = true, [205] = true, [230] = true, [237] = true, [243] = true,
