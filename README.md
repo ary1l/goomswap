@@ -118,7 +118,7 @@ one; Windower `//send @all gs c wm default`. Toggles take `on`/`off`, no word fl
 | Command | Does |
 |---|---|
 | `/wm [name\|N\|none\|default]` (`/weaponset`) | Weapon mode: next, by name/number, `default` (`DefaultWeapons`), a `WeaponRoles` name (`/wm melee`); `none` = hands off. `/wm <mode> force` re-applies it |
-| `/mw` `/sw` `/rw` `/ammoset` `[name\|none]` | One slot's pick (`/mainset` `/subset` `/rangeset` long names), e.g. PLD `/sw duban`. Swaps at any TP |
+| `/mw` `/sw` `/rw` `/ammoset` `[name\|none]` | One slot's pick (`/mainset` `/subset` `/rangeset` long names), e.g. PLD `/sw duban`. `none`, `default` or the mode's own item (`/sw thibron`) = back to the mode's. Swaps at any TP |
 | `/dw [on\|off\|auto]` | Dual Wield: shows why; `off` = `_1h` sets always, `on` = DW always |
 | `/smartswap` | Light spells (Dia, Blink…) keep your weapons at `SmartSwapTP`+ |
 | `/setcycle <cycle> <value>` | Set any mode by its name |
@@ -294,8 +294,9 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
   so the width never changes.
   Name colour: blue SIR, gold TH, green kite, red PROC. Food, soda, harp, song lock, death: a chat line when they change.
   A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal. Bright = changed, dim = default.
-- **Columns:** `wpn` weapon mode, `melee`, `main` `sub` `rng` `ammo` slot picks, `nuke`, `elem`, `tank`, `pup`, `w` BLM/SCH
-  weapon, `def` (`-` none), `mb` (`-` off, else tier). Tune: `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
+- **Columns:** `wpn` weapon mode, then any slot pick that's on (`Tiz/Bun`: Tizona mode, Bunzi's Rod sub; a pick at
+  none: click the name), `melee`, `nuke`, `elem`, `tank`, `pup`, `w` BLM/SCH weapon, `def` (`-` none), `mb` (`-` off,
+  else tier). Tune: `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
 
 ## How sets stack
 

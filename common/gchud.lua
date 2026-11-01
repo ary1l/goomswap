@@ -68,7 +68,7 @@ local FULL = {
     DTset = 'DT set', MDTset = 'MDT set', Aminon = 'Aminon', SIR = 'Spell interrupt', TH = 'Treasure Hunter',
     Kite = 'Kite', AutoFood = 'Auto food', AutoSoda = 'Auto soda', PROC = 'Proc',
     Burst = 'Burst (force)', AutoNuke = 'Auto MB (casts bursts)', String = 'Harp (force string)', SongLock = 'Song lock (enemy songs keep main/sub)',
-    Death = 'Death', Weapons = 'Weapon set', WsSet = 'WS buff level (/wsset): High wears <WS set>_HighBuff',
+    Death = 'Death', Weapons = 'Weapons: the mode, then any slot pick that is on (/wm, /mw /sw /rw /ammoset)', WsSet = 'WS buff level (/wsset): High wears <WS set>_HighBuff',
     Def = 'Defense (click = /def: DT > MDT > Aminon > none)',
     MB = 'Auto MB (click = /automb on/off, Ctrl+click = /mbtier): - off, else its nuke tier I to V',
     MBTier = 'Autonuke tier (click = /mbtier: I > II > III > IV > V)', MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',
@@ -79,10 +79,11 @@ local FULL = {
 -- Cycle values drawn as '-'. A cycle column empty on every box is hidden from the grid.
 local EMPTY = { none = true, off = true, unknown = true };
 
--- Short value: first word (whole if <= 4 letters, else 3), initial of each later word, '+N' kept.
--- 'Death Penalty' / 'DeathPenalty' -> DeaP, 'Anarchy +2' -> Ana+2, 'RostamB' -> RosB, 'Gleti's Knife' -> GleK.
--- Override any with settings.HUDAbbr = { ['Carnwenhan'] = 'Carn' } (case-insensitive).
-local abbrCache = {};
+-- Short value: first word (whole if <= 4 letters, else 3), '+N' and one-letter words (paths) kept.
+-- 'Bunzi's Rod' -> Bun, 'Anarchy +2' -> Ana+2, 'RostamB' -> RosB. Two of this box's choices that would match get
+-- the initial of each later word too ('Death Penalty' -> DeaP). Override any with
+-- settings.HUDAbbr = { ['Carnwenhan'] = 'Carn' } (case-insensitive).
+local abbrCache, abbrLong = {}, {};
 local function user_abbr(value)
     local user = inc.settings.HUDAbbr;
     if (type(user) ~= 'table') then return nil end
@@ -110,7 +111,7 @@ local function abbr(value)
             out[1] = string.upper(string.sub(w, 1, 1)) .. string.sub(w, 2);
         elseif string.match(tok, '^%+?%d+$') then
             out[#out + 1] = tok;
-        else
+        elseif (#tok == 1) or abbrLong[value] then
             out[#out + 1] = string.upper(string.sub(tok, 1, 1));
         end
     end
@@ -119,11 +120,13 @@ local function abbr(value)
     return hit;
 end
 
--- Once per load: warn if two of this box's weapon choices shorten to the same text.
+-- Once per load: two of this box's weapon choices that shorten to the same text get the long form; still the
+-- same: a warning.
 local abbrChecked = false;
 local function check_abbr()
     abbrChecked = true;
     if (type(inc.WeaponCycleList) ~= 'function') then return end
+    for pass = 1, 2 do
     for _, cname in ipairs({ 'Weapons', 'Main', 'Sub', 'Range', 'Ammo' }) do
         local list = inc.WeaponCycleList(cname);
         if (type(list) == 'table') then
@@ -132,7 +135,10 @@ local function check_abbr()
                 local full = (type(inc.WeaponLabel) == 'function') and inc.WeaponLabel(v) or v;
                 if (type(full) == 'string') and (EMPTY[string.lower(full)] ~= true) then
                     local a = abbr(full);
-                    if (seen[a] ~= nil) and (seen[a] ~= full) then
+                    if (pass == 1) then
+                        if (seen[a] ~= nil) and (seen[a] ~= full) then abbrLong[seen[a]], abbrLong[full] = true, true end
+                        seen[a] = full;
+                    elseif (seen[a] ~= nil) and (seen[a] ~= full) then
                         print(chat.header('GCHUD'):append(chat.error(string.format(
                             '%s: "%s" and "%s" both show as %s. Set settings.HUDAbbr.', cname, seen[a], full, a))));
                     else
@@ -141,6 +147,8 @@ local function check_abbr()
                 end
             end
         end
+    end
+    abbrCache = {}; -- pass 2 and drawing see the long forms
     end
 end
 
@@ -514,6 +522,8 @@ end
 local DEF_PARTS = { { 'DTset', 'DT' }, { 'MDTset', 'MDT' }, { 'Aminon', 'Amin' } };
 local GROUP_PART = { DTset = true, MDTset = true, Aminon = true, AutoNuke = true, Burst = true };
 local GROUP_ORDER = { 'Def', 'MB' };
+local SLOT_KEYS = { 'Main', 'Sub', 'Range', 'Ammo' }; -- weapon slot picks: shown in the wpn cell
+local SLOT = { Main = true, Sub = true, Range = true, Ammo = true };
 
 local function part(row, key)
     local raw = row.Toggles[key];
@@ -567,7 +577,21 @@ local function group_cell(row, key)
     return nil;
 end
 
-local function draw_cell(row, key, c)
+local draw_cell;
+draw_cell = function(row, key, c)
+    if (c.parts ~= nil) then -- wpn: mode/picks, each its own button
+        for j, p in ipairs(c.parts) do
+            if (j > 1) then
+                imgui.SameLine(0, 0);
+                imgui.PushStyleColor(ImGuiCol_Text, COL_EMPTY);
+                imgui.Text('/');
+                imgui.PopStyleColor();
+                imgui.SameLine(0, 0);
+            end
+            draw_cell(row, p.key, p);
+        end
+        return;
+    end
     imgui.PushStyleColor(ImGuiCol_Text, c.col);
     local clicked = false;
     if (c.cmd == nil) then
@@ -630,13 +654,37 @@ local function build_grid(x0)
                 c.col = COL_HOXNE; -- /hoxne on: shown on the wpn cell, so the HUD doesn't widen
                 c.tip = c.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
             end
-            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
+            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') and not SLOT[k] then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
+        end
+        -- wpn shows MAIN/SUB: the mode, then each slot pick that is on ('Tiz/Bun'); the picks have no columns (a
+        -- pick at None: click the name). Width kept for each pick the box has, so setting one doesn't widen it.
+        local wc, parts, slots = cells[i].c.Weapons, {}, 0;
+        if (wc ~= nil) and not wc.empty then parts[1] = wc end
+        for _, sk in ipairs(SLOT_KEYS) do
+            local sc = cells[i].c[sk];
+            if (sc ~= nil) then
+                slots = slots + 1;
+                if not sc.empty then
+                    parts[#parts + 1] = { text = sc.text, col = sc.col, cmd = sc.cmd, tip = sc.tip, key = sk .. 'w' };
+                end
+            end
+        end
+        if (slots > 0) then
+            if (#parts == 0) then parts[1] = wc or { text = '-', col = COL_EMPTY, cmd = gchud.CycleCommands.Weapons, tip = row.Name .. '  Weapon set: None', key = 'Weapons' } end
+            if (parts[1] == wc) then wc.key = 'Weapons' end
+            cells[i].c.Weapons = { parts = parts, slots = slots, modeText = (wc ~= nil) and wc.text or '-' };
+            shown.Weapons = true;
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};
         for _, k in ipairs(GROUP_ORDER) do cells[i].g[k] = group_cell(row, k) end
     end
     local vis = {};
+    if shown.Weapons and (ccols[1] ~= 'Weapons') then -- a box with picks but no weapon modes
+        local has = false;
+        for _, k in ipairs(ccols) do if (k == 'Weapons') then has = true end end
+        if not has then table.insert(ccols, 1, 'Weapons') end
+    end
     for _, k in ipairs(ccols) do
         if shown[k] then vis[#vis + 1] = k end
     end
@@ -667,7 +715,17 @@ local function build_grid(x0)
         if (FIXED_TEXT[key] ~= nil) then w = math.max(w, textw(FIXED_TEXT[key])) end
         for i = 1, #view do
             local c = cells[i][kind][key];
-            if (c ~= nil) then c.w = textw(c.text); w = math.max(w, c.w) end -- reused when the row is drawn
+            if (c ~= nil) and (c.parts ~= nil) then
+                -- each button adds its frame padding; '/' between; room for every pick the box has ('Mmm')
+                local sep = textw('/') + PADX * 2;
+                c.w = -PADX * 2;
+                for _, p in ipairs(c.parts) do p.w = textw(p.text); c.w = c.w + p.w + PADX * 2 end
+                c.w = c.w + (#c.parts - 1) * textw('/');
+                local room = textw(c.modeText) + c.slots * (sep + textw('Mmm'));
+                w = math.max(w, c.w, room);
+            elseif (c ~= nil) then
+                c.w = textw(c.text); w = math.max(w, c.w); -- reused when the row is drawn
+            end
         end
         w = math.max(w, widthMax[kind .. key] or 0);
         widthMax[kind .. key] = w;
@@ -938,7 +996,7 @@ end
 function gchud.Start()
     pcall(load_pos);
     abbrChecked = false;
-    abbrCache = {};
+    abbrCache, abbrLong = {}, {};
     boxCache = {};
     seenSeq = {};
     placed = false;

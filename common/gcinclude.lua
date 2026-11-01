@@ -812,7 +812,36 @@ end
 		return string.lower(out);
 	end
 
-	-- Exact name, else the one value it starts, else the one whose initials it is, else the one containing it; or a number.
+	-- What the HUD shows for a value (gchud's short form, both lengths, and settings.HUDAbbr), lower case, so typing
+	-- what you see works: 'Anarchy +2' -> ana+2, 'Rostam B' -> rosb, 'Death Penalty' -> dea / deap.
+	local function hudForms(v)
+		local t = string.gsub(v, "['%.]", '');
+		t = string.gsub(t, '[^%w%+]', ' ');
+		t = string.gsub(t, '(%l)(%u)', '%1 %2');
+		t = string.gsub(t, '(%w)(%+)', '%1 %2');
+		local short, long, first = '', '', true;
+		for tok in string.gmatch(t, '%S+') do
+			if first then
+				local w = (#tok <= 4) and tok or string.sub(tok, 1, 3);
+				short, long, first = w, w, false;
+			elseif string.match(tok, '^%+?%d+$') or (#tok == 1) then
+				short, long = short .. tok, long .. tok;
+			else
+				long = long .. string.sub(tok, 1, 1);
+			end
+		end
+		local forms = { string.lower(short), string.lower(long) };
+		local user = gcinclude.settings.HUDAbbr;
+		if (type(user) == 'table') then
+			for k, a in pairs(user) do
+				if (string.lower(tostring(k)) == string.lower(v)) then forms[#forms + 1] = string.lower(tostring(a)) end
+			end
+		end
+		return forms;
+	end
+
+	-- Exact name, else the one value it starts, else the one whose initials it is, else what the HUD shows for it,
+	-- else the one containing it; or a number.
 	function gcinclude.SetCycleFrom(cname, list, val, quiet)
 		local wantBase = string.lower(tostring(val or ''));
 		if (cname == 'MeleeSet') and (wantBase ~= '') and (string.sub('base', 1, #wantBase) == wantBase) then val = 'Default' end -- Base = Default
@@ -838,6 +867,13 @@ end
 		end
 		if (#hits == 0) then
 			for _, v in ipairs(list) do
+				for _, f in ipairs(hudForms(v)) do
+					if (f == want) then hits:append(v); break end
+				end
+			end
+		end
+		if (#hits == 0) then
+			for _, v in ipairs(list) do
 				if (string.find(string.lower(v), want, 1, true) ~= nil) then hits:append(v) end
 			end
 		end
@@ -857,9 +893,21 @@ end
 		elseif (#hits > 1) then
 			gcinclude.Err(cname .. ' match is ambiguous: ' .. table.concat(hits, ', '));
 		else
-			gcinclude.Err('No ' .. cname .. ' match for: ' .. val);
+			local names = {};
+			for _, v in ipairs(list) do names[#names + 1] = tostring(v) end
+			gcinclude.Err('No ' .. cname .. ' match for: ' .. val .. '. Choices: ' .. table.concat(names, ', '));
 		end
 		return false;
+	end
+
+	-- The current weapon mode's own item for a slot (Weapon_<Mode>[_1h].Sub...), lower case, or nil.
+	local function modeSlotItem(cname)
+		local mode = gcdisplay.GetCycle('Weapons');
+		if (not gcinclude.IsWeaponValue(mode)) then return nil end
+		local set = gcinclude.WeaponSetFor(mode);
+		local item = (type(set) == 'table') and set[cname] or nil;
+		if (type(item) == 'table') then item = item.Name end
+		return (type(item) == 'string') and string.lower(item) or nil;
 	end
 
 	function gcinclude.WeaponCommand(cname, args)
@@ -891,9 +939,19 @@ end
 				elseif gcinclude.WeaponRoleNames:contains(want) then
 					arg = nil;
 				end
+			elseif (cname ~= 'Hoxne') and ((want == 'default') or (want == 'def') or (want == 'mode') or (want == 'off')) then
+				arg = 'None'; -- slot picks: back to the weapon mode's own
 			end
 			if (arg == nil) then return end
-			if not gcinclude.SetWeaponCycle(cname, arg, quiet) then return end
+			if not gcinclude.SetWeaponCycle(cname, arg, true) then
+				-- naming the mode's own item for the slot (/sw thibron while the mode wears Thibron) = None
+				local own = (cname ~= 'Weapons') and (cname ~= 'Hoxne') and modeSlotItem(cname) or nil;
+				if (own ~= nil) and (string.sub(own, 1, #want) == want) and gcinclude.SetWeaponCycle(cname, 'None', true) then
+					gcinclude.Say(cname .. ': None (the weapon mode\'s own)');
+				elseif not gcinclude.SetWeaponCycle(cname, arg, quiet) then
+					return;
+				end
+			end
 		end
 		local new = gcdisplay.GetCycle(cname);
 		if (new == old) and (not force) then return end -- force re-applies the current mode: a lock may have kept it off
