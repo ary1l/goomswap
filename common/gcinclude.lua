@@ -857,9 +857,21 @@ end
 		elseif (#hits > 1) then
 			gcinclude.Err(cname .. ' match is ambiguous: ' .. table.concat(hits, ', '));
 		else
-			gcinclude.Err('No ' .. cname .. ' match for: ' .. val);
+			local names = {};
+			for _, v in ipairs(list) do names[#names + 1] = tostring(v) end
+			gcinclude.Err('No ' .. cname .. ' match for: ' .. val .. '. Choices: ' .. table.concat(names, ', '));
 		end
 		return false;
+	end
+
+	-- The current weapon mode's own item for a slot (Weapon_<Mode>[_1h].Sub...), lower case, or nil.
+	local function modeSlotItem(cname)
+		local mode = gcdisplay.GetCycle('Weapons');
+		if (not gcinclude.IsWeaponValue(mode)) then return nil end
+		local set = gcinclude.WeaponSetFor(mode);
+		local item = (type(set) == 'table') and set[cname] or nil;
+		if (type(item) == 'table') then item = item.Name end
+		return (type(item) == 'string') and string.lower(item) or nil;
 	end
 
 	function gcinclude.WeaponCommand(cname, args)
@@ -891,9 +903,19 @@ end
 				elseif gcinclude.WeaponRoleNames:contains(want) then
 					arg = nil;
 				end
+			elseif (cname ~= 'Hoxne') and ((want == 'default') or (want == 'def') or (want == 'mode') or (want == 'off')) then
+				arg = 'None'; -- slot picks: back to the weapon mode's own
 			end
 			if (arg == nil) then return end
-			if not gcinclude.SetWeaponCycle(cname, arg, quiet) then return end
+			if not gcinclude.SetWeaponCycle(cname, arg, true) then
+				-- naming the mode's own item for the slot (/sw thibron while the mode wears Thibron) = None
+				local own = (cname ~= 'Weapons') and (cname ~= 'Hoxne') and modeSlotItem(cname) or nil;
+				if (own ~= nil) and (string.sub(own, 1, #want) == want) and gcinclude.SetWeaponCycle(cname, 'None', true) then
+					gcinclude.Say(cname .. ': None (the weapon mode\'s own)');
+				elseif not gcinclude.SetWeaponCycle(cname, arg, quiet) then
+					return;
+				end
+			end
 		end
 		local new = gcdisplay.GetCycle(cname);
 		if (new == old) and (not force) then return end -- force re-applies the current mode: a lock may have kept it off
