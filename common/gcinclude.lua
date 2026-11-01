@@ -208,7 +208,7 @@
 	end
 
 	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
-	'packer','pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
+	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
@@ -682,7 +682,7 @@ end
 
 	gcinclude.WeaponSlots = T{1, 2, 3, 4};
 	gcinclude.WeaponSlotNames = T{'Main', 'Sub', 'Range', 'Ammo'};
-	gcinclude.WeaponCommands = T{weaponset = 'Weapons', wm = 'Weapons', mainset = 'Main', subset = 'Sub', rangeset = 'Range', ammoset = 'Ammo'};
+	gcinclude.WeaponCommands = T{weaponset = 'Weapons', wm = 'Weapons', mainset = 'Main', mw = 'Main', subset = 'Sub', sw = 'Sub', rangeset = 'Range', rw = 'Range', ammoset = 'Ammo'}; -- mw/sw/rw: short /mainset /subset /rangeset
 	gcinclude.WeaponRoleNames = T{'melee', 'ranged', 'caster', 'tank'};
 	gcinclude.WeaponKeywords = T{'remove', 'displaced', 'ignore'};
 	gcinclude.BlockedAmmo = T{'hauksbok'};
@@ -2847,7 +2847,7 @@ end
 	function gcinclude.Help()
 		local skip, thskip = gcinclude.SkipList('SIRSkip'), gcinclude.SkipList('THSkip');
 		local lines = T{
-			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset',
+			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset (short: /mw /sw /rw)',
 			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots|all] /unlock [slots|all]',
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',

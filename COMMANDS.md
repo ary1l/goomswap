@@ -21,7 +21,7 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 | `/wm none` | Stop managing weapons (THF: `TH`-set weapons still apply while `/th` is on) |
 | `/wm default` / `/wm melee` | This job's `DefaultWeapons` / a role from `gcinclude.WeaponRoles` |
 | `/wm leaden force` | Re-apply a mode you're already on (a lock or the TP hold kept it off) |
-| `/mainset` `/subset` `/rangeset` `/ammoset` `[name\|N\|none]` | Per-slot cycles (jobs that define them), e.g. PLD `/subset`: None → Aegis → Duban. Swaps at any TP |
+| `/mainset` `/subset` `/rangeset` `/ammoset` `[name\|N\|none]` (short: `/mw` `/sw` `/rw`) | Per-slot cycles (jobs that define them), e.g. PLD `/subset`: None → Aegis → Duban. Swaps at any TP |
 | `/dw [on\|off\|auto]` | Dual Wield: no word shows yes/no and why; `off` = always `_1h` sets, `on` = always DW, `auto` = detect |
 | `/smartswap [on\|off]` | At `SmartSwapTP`+: `NoWeaponSpells` (Dia, Blink, spikes…) don't swap weapons; `KeepWeaponsFor` (Cure/Cura) keep Daybreak or Bunzi's Rod |
 
@@ -173,7 +173,7 @@ checked; the game's own message says when it refuses.
 
 One row per box (each writes `hud/<name>.txt` 4x/s); opens on load for `HUDOwners`; on a box not in `HUDOwners` it shows only that box's row. With the HUD open you also get the other boxes' GCinclude/GCauto lines as `[Name] …` (`HUDMessages = false` to stop). `.` off, glyph on, blank = job
 lacks it, `-` none. Bright = changed, dim = default, orange = off but loads on. Toggle columns (and `def`, `mb`) at
-load default on every box hide unless in `HUDPinned`; cycle columns hide only when None/Off on every box. Ashita: click a cell runs it on that box, click a name shows hidden columns, Ctrl+click `mb`
+load default on every box hide unless in `HUDPinned`; a mode column shows whenever any box's job has that mode (`-` = None), so setting it doesn't widen the HUD. Ashita: click a cell runs it on that box, click a name shows hidden columns, Ctrl+click `mb`
 cycles its tier. Windower: the same clicks and tooltips; drag a box by any spot off a cell; boxes share state over IPC.
 Glyphs: `wpn` Weapons (teal: `/hoxne` on), `mmode` MeleeSet (purple: `/wsset high`), `m` `s` `r` `a` slots, `nk` NukeSet, `el` Element, `tk` TankSet, `hx` Hoxne,
 `pp` PupMode, `w` Weapon, `th` TH, `kt` Kite, `fd` AutoFood, `sd` AutoSoda, `hp` String, `sl` SongLock, `pr` PROC,

@@ -114,7 +114,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | Command | Does |
 |---|---|
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
-| `/mainset` `/subset` `[name]` | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
+| `/mainset` `/subset` `[name]` (`/mw` `/sw`) | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
 | `/mmode [sb\|acc\|base]` | Melee mode: Base (your `_Default` sets) → `_SubtleBlow` → `_Acc` versions of TP and WS sets. No word = next. DT is `/dt`, on top of any |
 | `/wsset [mid\|high]` | `high`: each WS set also wears its `_HighBuff` (`Savage_HighBuff`) |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
@@ -147,7 +147,7 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
 - **Use:** click a cell = run it on that box; click a name = its hidden modes; Ctrl+click `mb` = tier. The owner also
   prints the other boxes' GCinclude/GCauto lines as `[Name]` (`HUDMessages = false` to stop).
 - **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
-- **Columns:** a mode shows while any box has it on something other than None/Off, a toggle while any box changed it
+- **Columns:** a mode shows whenever any box's job has it (`-` = None), a toggle while any box changed it
   from its load default. Always show some: `HUDPinned = T{'th', 'kite'}`. `HUDAbbr` shortens values, `HUDLabels`
   renames headers. A box on `/wsset high` shows its `mmode` cell purple; a box with `/hoxne` on shows its `wpn` cell teal.
 

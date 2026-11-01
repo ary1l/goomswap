@@ -431,7 +431,7 @@ end
 
 -- Grid: one header line, one line per box, columns aligned by measured text width.
 -- Cycle columns first (weapon set leads), then toggle columns. Clicking a cell drives that box.
--- Hidden to save width: cycle columns None/Off on every box; toggle columns at load default on
+-- Cycle columns: shown while any box's job has that cycle, None or not, so setting one doesn't widen the HUD. Hidden: toggle columns at load default on
 -- every box, unless pinned (settings.HUDPinned). They show up as soon as any box changes them.
 -- DT/MDT/Aminon merge into one 'def' column (/def); SIR (a casting mode) keeps its own 'si' column, AutoNuke/Burst into 'mb' (/automb).
 -- Clicking a name adds a detail line under it: job + that box's hidden cycles and toggles.
@@ -597,7 +597,7 @@ local function build_grid(x0)
                 c.col = COL_HOXNE; -- /hoxne on: shown on the wpn cell, so the HUD doesn't widen
                 c.tip = c.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
             end
-            if (c ~= nil) and not c.empty and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- MBTier: in mb cell; WsSet, Hoxne: colours; all on the detail line
+            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};
