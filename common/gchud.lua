@@ -576,6 +576,8 @@ end
 
 -- Cells, visible columns and widths depend only on the rows (re-read every 0.5s), the style, the text
 -- scale and the window origin, so they are built when one of those changes, not every frame.
+local FIXED_TEXT = { MB = 'AutoIII+F', Def = 'Amin+' }; -- widest text those cells can show
+local widthUnit, widthMax = nil, {};
 local function build_grid(x0)
     local ccols = columns('CycleOrder', gchud.CycleOrder);
     local tcols = columns('ToggleOrder', gchud.ToggleOrder);
@@ -635,14 +637,21 @@ local function build_grid(x0)
     for _, row in ipairs(rows) do nameW = math.max(nameW, textw(short_name(row.Name)) + PADX * 2) end
     local cols = {};
     local x = x0 + nameW + gap;
+    -- Widths don't jump: mb/def take their widest possible text, every column keeps the widest it has been
+    -- (until the style or text size changes), so a value changing doesn't resize the HUD.
+    local unit = style_name() .. textw('M');
+    if (unit ~= widthUnit) then widthUnit, widthMax = unit, {} end
     local function add(key, kind, center)
         local l = label(key);
         local lw = textw(l);
         local w = lw;
+        if (FIXED_TEXT[key] ~= nil) then w = math.max(w, textw(FIXED_TEXT[key])) end
         for i = 1, #rows do
             local c = cells[i][kind][key];
             if (c ~= nil) then c.w = textw(c.text); w = math.max(w, c.w) end -- reused when the row is drawn
         end
+        w = math.max(w, widthMax[kind .. key] or 0);
+        widthMax[kind .. key] = w;
         w = w + PADX * 2;
         cols[#cols + 1] = { key = key, kind = kind, x = x, w = w, center = center, label = l, labelW = lw, tip = FULL[key] or key };
         x = x + w + gap;
