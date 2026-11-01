@@ -103,10 +103,6 @@ local sets = {
         Main = 'Naegling',
         Sub = 'Genmei Shield',
     },
-    Weapon_Hoxne = {
-        Range = 'displaced',
-        Ammo = 'Hoxne Ampulla',
-    },
     Tp_Default = {
 		Main = 'naegling',
         Sub = 'fusetto +2',
@@ -671,7 +667,7 @@ end
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
-    gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan', 'Hoxne'}; -- Weapon_CarnwenhanAcc goes on with /mset Acc
+    gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan'}; -- Weapon_CarnwenhanAcc goes on with /mset Acc; Hoxne is /hoxne
     gcinclude.DefaultWeapons = 'Naegling';
     gcinclude.Initialize();
 end
