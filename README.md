@@ -109,28 +109,86 @@ Copying a newer `common/` over yours erases your edits: note them, or set them p
 
 Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 
-## Everyday commands
+## Commands
 
+Every command, one line each; details and examples: [`COMMANDS.md`](COMMANDS.md). Toggles take `on`/`off`, no word flips.
+
+**Weapons**
 | Command | Does |
 |---|---|
-| `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
-| `/mainset` `/subset` `[name]` (`/mw` `/sw`) | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
-| `/mmode [sb\|acc\|base]` (`/melee`) | Melee mode: Base (your `_Default` sets) → `_SubtleBlow` → `_Acc` versions of TP and WS sets. No word = next. DT is `/dt`, on top of any |
-| `/wsset [mid\|high]` | `high`: each WS set also wears its `_HighBuff` (`Savage_HighBuff`) |
-| `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
-| `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
-| `/th` | `TH` set while engaged with or acting on a mob, until it's tagged: your first swing, shot, WS or JA on it (not `THSkip`). Not at rest. THF main: the whole time, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
+| `/wm [name\|N\|none\|default]` (`/weaponset`) | Weapon mode: next, or by name/number. `/wm <mode> force` re-applies it |
+| `/mw` `/sw` `/rw` `/ammoset` `[name\|none]` | One slot's pick (`/mainset` `/subset` `/rangeset` long names), e.g. PLD `/sw duban`. Swaps at any TP |
+| `/dw [on\|off\|auto]` | Dual Wield: shows why; `off` = `_1h` sets always, `on` = DW always |
+| `/smartswap` | Light spells (Dia, Blink…) keep your weapons at `SmartSwapTP`+ |
+| `/setcycle <cycle> <value>` | Set any mode by its name |
+
+**Melee and weapon skills**
+| Command | Does |
+|---|---|
+| `/mmode [sb\|acc\|base]` (`/melee`, `/meleeset`) | Melee mode: Base (`_Default` sets) → `_SubtleBlow` → `_Acc` TP and WS sets |
+| `/wsset [mid\|high]` | `high`: each WS set also wears its `_HighBuff` |
+| `/th` | `TH` set until the mob is tagged (THF main: always) |
+| `/wsdistance [yalms]` | WS range check on/off or its distance |
+
+**Defense**
+| Command | Does |
+|---|---|
+| `/def [dt\|mdt\|aminon\|off]` | DT → MDT → Aminon → off; `/dt` `/mdt` `/aminon` toggle one |
+| `/sir` | `SIR` set over spell midcasts (not `SIRSkip`) |
 | `/kite` | Movement gear |
-| `/autofood` | Eats your food: `AutoFood` in `char.lua` (every job of that character), or `gcinclude.AutoFood = {...}` in a job file (that job) |
-| `/packer` | Gets missing items into inventory (Bellhop), also on every job change: `Packer` in `char.lua`, plus `gcinclude.Packer = {...}` in a job file (adds; COR `['Trump Card'] = 99`) |
-| `/hoxne` | Off ↔ Locked (ampulla kept in Ammo and used). `/hoxne off` releases it |
-| `/nukeset [power\|macc\|oa]` | Nuke sets: power, or Macc (`NukeACC`) on top. RDM, GEO: OccultAcumen (`OccultAcumen` set on top, TP from nukes) |
-| `/automb` | Auto magic burst on/off (RDM BLM SCH GEO). Setup (Burst set, tier, settings): COMMANDS.md Magic burst |
-| `/mbtier [1-5]` | Its nuke tier I to V (no word: next). Load default: `MBTier` setting, or `gcinclude.MBTier` per job |
-| `/lock [slots\|all]` `/unlock` | Freeze slots (none named: Main, Sub, Ammo). `/unlock` frees only yours, and says what else holds a slot |
+| `/autogear [regen\|refresh\|dt\|petdt N]` | Auto Regen/Refresh/DT idle sets by HP/MP %; no word shows the thresholds |
+| `/lock [slots\|all]` `/unlock [slot]` | Freeze slots (none named: Main, Sub, Ammo); `/unlock` says what else holds one |
+| `/naked` `/weaponsonly` `/abysseaproc` | Keep all 16 / armor / head-hands-legs-feet bare |
+| `/rrset` `/craftset` `/zeniset` `/fishset` | Reraise / crafting / Zeni / fishing set over everything until toggled off |
+| `/received <spell>` | Wear that `*_Received` set |
+
+**Magic**
+| Command | Does |
+|---|---|
+| `/nukeset [power\|macc\|oa]` | Nuke sets (RDM GEO: `oa` = OccultAcumen) |
+| `/automb` (`/autonuke`, `/mbmode`) | Cast into live skillchains by itself (RDM BLM SCH GEO) |
+| `/mbtier [1-5]` | Its tier I to V; no word: next |
+| `/burst` | Burst set on every nuke, not only live skillchains |
+| `/mbinfo` | Last skillchain seen |
+| `/gcaspir` `/gcdrain` | Best castable tier on `<t>` |
+| `/nuke <1-6>` `/helix` `/weather` `/elecycle` `/weapon` | BLM/SCH: element's nuke, helix, storm, element, Club ↔ Staff |
+| `/death` | BLM Death mode |
+
+**Items, travel and content**
+| Command | Does |
+|---|---|
+| `/autofood` `/autosoda` | Eat food / drink soda when the buff is missing (food: `char.lua` or `gcinclude.AutoFood`) |
+| `/packer` | Fetch what inventory lacks of your packer list (Bellhop); also on every job change |
+| `/holywater` `/revit` | Holy Water on Doom / per-zone item use (`AutoUseItems`) |
+| `/hoxne [off\|use]` | Keep Hoxne Ampulla in Ammo and use it |
+| `/gce <item>` / `/gce cancel` | Equip an enchanted item (Volte Harness, Reraise Earring…), wait its delay, use it, free the slot |
+| `/warpring` `/mea` `/holla` `/dem` | Warp / Dimensional ring, the same way |
+| `/ontic` `/shard` | Use Ontic Extremity / V. Con. Shard (more: `gcinclude.ExitItems`) |
+| `/temps` | Every carried Escha drink |
+| `/capacity` `/jubilee` `/dynamisrp` | Hold capacity cape / Jubilee Ring / Dynamis job neck |
 | `/ejenter [chamber]` `/ejlamps` `/ejexit` | Einherjar (Ashita): reserve, lamps to the party, enter, leave |
-| `/gcmodes [all]` | This box's modes and the toggles on, in chat; `all`: every box (no HUD needed) |
-| `/gchelp` | Command list in game |
+
+**Jobs**
+| Command | Does |
+|---|---|
+| `/tankset` | PLD RUN: None → Main → MEVA |
+| `/proc` | SAM NIN: proc set |
+| `/pupmode` | PUP: Tank → Melee → Ranger → Mage |
+| `/forcestring` `/songlock` | BRD: force harp / enemy songs keep main-sub |
+| `/cormsg` `/xiroll` | COR: roll messages / roll tracking |
+| `/siphon` | SMN: Elemental Siphon with the day's spirit |
+
+**Display and help**
+| Command | Does |
+|---|---|
+| `/gchud [on\|off\|large\|compact\|pos X Y\|debug]` | The multibox HUD (see HUD below) |
+| `/gcbar [on\|off\|pos X Y]` | One-line status bar |
+| `/gcmodes [all]` | This box's modes and toggles in chat; `all`: every box |
+| `/checksets` | Empty sets, bad item names |
+| `/gctrace` | What each action wore (and its obi/Orpheus pick) |
+| `/gcstyle [N]` | Lockstyle set now |
+| `/gcmessages` | Chat confirmations on/off |
+| `/gchelp` / `/gckey <key> <cmd>` | Command list in game / bind a key |
 
 Picking a value, any case: no word = next; else exact name, the one it starts, its initials, the one containing it, or
 a number: `/wm max` (Maxentius), `/nukeset oa` (OccultAcumen), `/mmode sb` (SubtleBlow), `/wm 3`. Two matches: it lists them.
