@@ -79,6 +79,7 @@
 		dem_Ring = 'Dim. Ring (Dem)';
 		holla_Ring = 'Dim. Ring (Holla)';
 		WeaponTPGuard = 1000; -- at or above this TP (engaged or not), main/sub/range are held against automatic swaps (action sets, idle/engaged sets); weapon commands (/wm, /mainset...) still swap; with a /wm mode only its weapons are held; 0 to disable
+		IdleWeapons = true; -- not engaged: weapons your idle sets name (Idle, Idle_Regen/Refresh, Town, Dt...) beat the weapon mode; false = the weapon mode always
 		HoldExemptSkills = T{'Singing', 'Geomancy', 'Healing Magic', 'Enfeebling Magic', 'Enhancing Magic'}; -- spells of these skills always get their weapon swaps
 		HoldExemptAbilities = T{'Corsair Roll'}; -- ability types that always get their weapon swaps
 		SmartSwap = true; -- keep main/sub/range on the spells below instead of losing TP to a weapon swap, /smartswap to toggle
@@ -1222,8 +1223,9 @@ end
 		local layer = gcinclude.BuildWeaponLayer();
 		if (layer == nil) then return nil end
 		local off = nil;
+		local idle = gcinclude.IdleWeaponSlots or {};
 		for _, slot in ipairs(gcinclude.HoldSlots) do
-			local want = layer[gcinclude.WeaponSlotNames[slot]];
+			local want = (idle[slot] == nil) and layer[gcinclude.WeaponSlotNames[slot]] or nil; -- idle weapons are expected there
 			if (type(want) == 'table') then want = want.Name end
 			if (type(want) == 'string') then
 				local id = gcinclude.EquippedId(slot);
@@ -2189,6 +2191,11 @@ end
 	function gcinclude.ApplyWeapons(force)
 		local set = gcinclude.BuildWeaponLayer();
 		if (set == nil) then return end
+		local p = gData.GetPlayer();
+		if (gcinclude.IdleWeaponSlots ~= nil) and (p ~= nil) and (p.Status ~= 'Engaged') then -- idle weapons stay; the mode's come on when you engage
+			for n, _ in pairs(gcinclude.IdleWeaponSlots) do set[gcinclude.WeaponSlotNames[n]] = nil end
+			if (next(set) == nil) then return end
+		end
 		if (force == true) then
 			gcinclude.UnlockWeapons(); -- force lifts the TP hold only; /lock stays absolute
 			gcinclude.NextHoldCheck = os.clock() + 0.5; -- let the swap land before the hold re-checks
@@ -2430,6 +2437,7 @@ end
 		if (gEquip == nil) or (gEquip.GcRawToBuffer ~= nil) then return end
 		gEquip.GcRawToBuffer, gEquip.GcRawClear, gEquip.GcRawProcess = gEquip.EquipItemToBuffer, gEquip.ClearBuffer, gEquip.ProcessBuffer;
 		local shadow = {};
+		gcinclude.ShadowItem = function(slot) return shadow[slot] end
 		gEquip.ClearBuffer = function(...)
 			shadow = {};
 			return gEquip.GcRawClear(...);
@@ -2842,9 +2850,35 @@ end
 		end
 	end
 
+	-- What this handler has put in a slot so far (LAC's buffer; Windower's core keeps its own).
+	function gcinclude.BufferedItem(slot)
+		if (gEquip ~= nil) and (gEquip.Buffered ~= nil) then return gEquip.Buffered(slot) end
+		if (gcinclude.ShadowItem ~= nil) then return gcinclude.ShadowItem(slot) end
+		return nil;
+	end
+
+	-- Not engaged (settings.IdleWeapons): weapons your idle sets named in this handler (Idle, Idle_Regen/Refresh,
+	-- Town, Dt...) beat the weapon mode; slots they leave alone still get the mode's. Main and Sub go as a pair, so
+	-- do Range and Ammo (Ammo alone: only Ammo). The TP hold still keeps weapons at 1000+ TP.
+	gcinclude.IdleWeaponSlots = nil; -- slots left to the idle sets in the last handler (OffModeSlots, ApplyWeapons)
+	function gcinclude.IdleWeaponDrop(set, player)
+		if (set == nil) or (gcinclude.settings.IdleWeapons == false) or (player == nil) or (player.Status == 'Engaged') then return nil end
+		local function named(n) return gcinclude.BufferedItem(n) ~= nil end
+		local drop = nil;
+		local function add(...) drop = drop or {}; for _, n in ipairs({ ... }) do drop[n] = true end end
+		if named(1) or named(2) then add(1, 2) end
+		if named(3) then add(3, 4) elseif named(4) then add(4) end
+		return drop;
+	end
+
 	function gcinclude.CheckWeapons(player)
 		local set = gcinclude.BuildWeaponLayer();
-		if (set ~= nil) then gFunc.EquipSet(set) end
+		local drop = gcinclude.IdleWeaponDrop(set, player);
+		gcinclude.IdleWeaponSlots = drop;
+		if (drop ~= nil) then
+			for n, _ in pairs(drop) do set[gcinclude.WeaponSlotNames[n]] = nil end
+		end
+		if (set ~= nil) and (next(set) ~= nil) then gFunc.EquipSet(set) end
 		gcinclude.CheckMDT();
 		gcinclude.CheckHoxne();
 		gcinclude.CheckTH();

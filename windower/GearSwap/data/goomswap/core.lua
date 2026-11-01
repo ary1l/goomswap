@@ -697,8 +697,10 @@ gData = setmetatable({
     if UNSUPPORTED.gData[k] then return function() A.Unsupported('gData.' .. tostring(k)) end end
 end });
 
--- LAC's equip module, only GetCurrentEquip (gcinclude.CheckLockingRings).
+-- LAC's equip module, only GetCurrentEquip (gcinclude.CheckLockingRings) and what this handler has buffered
+-- for a slot (gcinclude.BufferedItem: idle weapons over the weapon mode).
 gEquip = {
+    Buffered = function(slot) return buffer[slot] end,
     GetCurrentEquip = function(slot)
         local items = ffxi.get_items();
         local eq = (type(items) == 'table') and items.equipment or nil;

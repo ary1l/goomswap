@@ -29,6 +29,8 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
   override the mode for their slot. COR/RNG modes are named for the gun, so `/mainset` changes the melee weapon.
 - `/th` on, THF: Main/Sub/Range in `TH` override mode and cycles the whole time, tagged or not. Other jobs: they come
   off at the tag with the rest of `TH` (a swap resets TP). Sub only if you can dual wield.
+- **Idle weapons:** not engaged, weapons your idle sets name (`Idle`, `Idle_Regen`/`Idle_Refresh`, `Town`, `Dt`…) win over
+  the weapon mode; you get the mode's on engage. Main+Sub and Range+Ammo go as pairs. `IdleWeapons = false`: mode always.
 - **TP hold:** at 1000+ TP Main/Sub/Range don't change (except songs, rolls, cures, enfeebling, enhancing,
   geomancy). Weapon commands (`/wm`, `/mainset`…, `/setcycle`) always swap, at any TP. `WeaponTPGuard = 0` disables the hold. Asleep, slots your `Sleeping` set names are let go.
   With a weapon mode on, only its weapons are held: another weapon worn at 1000+ TP (a song set's dagger when Wild Card gave TP) is swapped back to the mode's, and that TP is lost.
