@@ -80,7 +80,7 @@
 		holla_Ring = 'Dim. Ring (Holla)';
 		WeaponTPGuard = 1000; -- at or above this TP (engaged or not), the main/sub/range on are held against automatic swaps (action sets, idle/engaged sets); weapon commands (/wm, /mainset...) still swap; 0 = action sets always get their weapons (mages, BRD, GEO, COR); per job in the job file
 		IdleWeapons = true; -- not engaged: weapons your idle sets name (Idle, Idle_Regen/Refresh, Town, Dt...) beat the weapon mode; false = the weapon mode always
-		AftermathHold = true; -- while Aftermath is up, main/sub/range are held like the TP hold (same exemptions; /wm still swaps): a weapon change ends Aftermath
+		AftermathHold = true; -- engaged with Aftermath up, main/sub/range are held like the TP hold (same exemptions; /wm still swaps): a weapon change ends Aftermath
 		HoldExemptSkills = T{'Singing', 'Geomancy', 'Healing Magic', 'Enfeebling Magic', 'Enhancing Magic'}; -- spells of these skills always get their weapon swaps
 		HoldExemptAbilities = T{'Corsair Roll'}; -- ability types that always get their weapon swaps
 		SmartSwap = true; -- keep main/sub/range on the spells below instead of losing TP to a weapon swap, /smartswap to toggle
@@ -1208,7 +1208,7 @@ end
 	end
 
 	-- Aftermath (buffs 270-272 Lv.1-3, 273 relic): any weapon equipped, switched or unequipped ends it, ammo doesn't
-	-- (FFXIclopedia Aftermath), so it holds Main/Sub/Range like TP does, whatever WeaponTPGuard is.
+	-- (FFXIclopedia Aftermath), so engaged it holds Main/Sub/Range like TP does, whatever WeaponTPGuard is.
 	function gcinclude.AftermathUp()
 		for id = 270, 273 do
 			if (gcinclude.BuffCount(id) > 0) then return true end
@@ -1217,7 +1217,10 @@ end
 	end
 
 	function gcinclude.HoldActive()
-		if (gcinclude.settings.AftermathHold ~= false) and gcinclude.AftermathUp() then return true end
+		if (gcinclude.settings.AftermathHold ~= false) and gcinclude.AftermathUp() then
+			local p = gData.GetPlayer();
+			if (p ~= nil) and (p.Status == 'Engaged') then return true end
+		end
 		local guard = gcinclude.settings.WeaponTPGuard or 0;
 		if (guard <= 0) then return false end
 		return (AshitaCore:GetMemoryManager():GetParty():GetMemberTP(0) >= guard); -- any status: a Main/Sub/Range swap resets TP idle too
