@@ -74,7 +74,7 @@ local function queue(cmd, hold, mode)
 end
 
 local function food_list()
-    local food = inc.AutoFood;
+    local food = inc.AutoFood or inc.CharFood; -- the job file's, else char.lua's
     if (food == nil) then food = inc.settings.AutoFoodItems end
     if (type(food) == 'string') then return { food } end
     if (type(food) == 'table') and (#food > 0) then return food end
@@ -581,7 +581,7 @@ local NUKE = { Fire = 'Fire', Ice = 'Blizzard', Wind = 'Aero', Earth = 'Stone', 
 local HELIX = { Light = { 'Luminohelix II', 'Luminohelix' }, Dark = { 'Noctohelix II', 'Noctohelix' } };
 local ROMAN = { '', ' II', ' III', ' IV', ' V' };
 
--- Spell for the next burst on chain r. Tier = /mbtier (Low I, Mid III, High V). Tries that tier on
+-- Spell for the next burst on chain r. Tier = /mbtier (I to V). Tries that tier on
 -- each of the chain's elements (in chain order; MBRotate starts one element further per burst),
 -- then the next tier down on each (settings.MBFallback), so Water V beats Blizzard IV.
 -- SCH needs Addendum: Black or Enlightenment for tiers IV/V (BG-Wiki/FFXIclopedia); CanCast only

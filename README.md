@@ -10,7 +10,7 @@ through `windower/`), same job files. Full reference: [`COMMANDS.md`](COMMANDS.m
   combat. No automatic swap throws away TP (`WeaponTPGuard`, per job) or Aftermath; songs, rolls, cures still swap.
 - **Defense:** `/dt` `/mdt` `/aminon`; regen/refresh/DT idle by HP/MP; sleep, stun, doom, weakness sets.
 - **Casting:** TH until tagged, SIR, obi/Orpheus/elemental ring and back, Moonshade, auto magic burst (RDM BLM SCH GEO).
-- **Items:** food, soda, remedies/echo drops, holy water, enchanted items and warp/dim rings, Hoxne Ampulla.
+- **Items:** food (per job), packer (keeps a list of items in inventory on every job change), soda, holy water, enchanted items and warp/dim rings, Hoxne Ampulla.
 - **Multibox:** one HUD for every box (click a cell to drive it, the boxes' messages show there); Einherjar entry,
   lamp copies and hand-out (`/ejenter`, Ashita).
 - **Checks:** refused actions say why; `/checksets` finds empty sets and misspellings; `/gctrace` shows what each action wore.
@@ -19,7 +19,8 @@ through `windower/`), same job files. Full reference: [`COMMANDS.md`](COMMANDS.m
 
 **Ashita v4**
 1. Copy `common/` and `examples/` into `Ashita/config/addons/luashitacast/`.
-2. Copy `examples/<JOB>.lua` into your character folder `luashitacast/<Name>_<id>/`, put your gear in.
+2. Copy `examples/<JOB>.lua` into your character folder `luashitacast/<Name>_<id>/`, put your gear in. Optional:
+   `examples/char.lua` there too, for that character's food, packer list and settings on every job.
 3. `/addon load luashitacast`, then `/lac load`.
 4. Recommended: Thorny's [Sequencer](https://github.com/ThornyFFXI/Sequencer) and [PacketFlow](https://github.com/ThornyFFXI/PacketFlow) plugins
    (`/load sequencer`, `/load packetflow`, or in your startup script). Without Sequencer, LuAshitacast blocks the
@@ -99,10 +100,10 @@ Copying a newer `common/` over yours erases your edits: note them, or set them p
 | Auto idle sets | `AutoGear`, `RegenGearHPP`, `RefreshGearMPP`, `DTGearHPP`, `PetDTGearHPP` |
 | Weapon skills | `WScheck`, `WSdistance`, `MoonshadeTP`, `MoonshadeSlot`, `MoonshadeSkip`, `ElementalWS` |
 | Magic burst | `AutoNuke`, `MBTier`, `MBCasts`, `MBRotate`, `MBMinMP`, `MBWindow`, `MBFallback`, `MBSkills` |
-| Items | `AutoFood`, `AutoFoodItems`, `AutoSoda`, `SodaItem`, `AutoHolyWater`, `HolyWaterItem`, `AutoRevitalizer`, `AutoUseItems`, `EnchantDelays`, `EnchantWindow`, `ConsumableMaxTries` |
+| Items | `AutoFood`, `AutoFoodItems`, `PackerItems`, `PackerFood`, `AutoSoda`, `SodaItem`, `AutoHolyWater`, `HolyWaterItem`, `AutoRevitalizer`, `AutoUseItems`, `EnchantDelays`, `EnchantWindow`, `ConsumableMaxTries` |
 | Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
 | Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
-| Action checks | `Validate`, `ValidateMP`, `AutoRemedy`, `WaltzTPCut` |
+| Action checks | `Validate`, `ValidateMP`, `WaltzTPCut` |
 | HUD / bar | `HUDOwners`, `HUDMessages`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDPinned`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
 | Other | `Keybinds`, `Messages`, `Trace`, `LockstyleSet`, `CombatWindow`, `XIRollSet`, `CapacityCapes`, `JubileeSlot`, `AmmoWarn`, `NinjaToolWarn`, `SleepCancelStoneskin`, `ElementReport`, `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
 
@@ -120,10 +121,12 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
 | `/th` | `TH` set while engaged with or acting on a mob, until it's tagged: your first swing, shot, WS or JA on it (not `THSkip`). Not at rest. THF main: the whole time, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
 | `/kite` | Movement gear |
+| `/autofood` | Eats your food: `AutoFood` in `char.lua` (every job of that character), or `gcinclude.AutoFood = {...}` in a job file (that job) |
+| `/packer` | Gets missing items into inventory (Bellhop), also on every job change: `Packer` in `char.lua`, plus `gcinclude.Packer = {...}` in a job file (adds; COR `['Trump Card'] = 99`) |
 | `/hoxne` | Off ↔ Locked (ampulla kept in Ammo and used). `/hoxne off` releases it |
 | `/nukeset [power\|macc\|oa]` | Nuke sets: power, or Macc (`NukeACC`) on top. RDM, GEO: OccultAcumen (`OccultAcumen` set on top, TP from nukes) |
 | `/automb` | Auto magic burst on/off (RDM BLM SCH GEO). Setup (Burst set, tier, settings): COMMANDS.md Magic burst |
-| `/mbtier [low\|mid\|high]` | Its nuke tier I / III / V. Load default: `MBTier` setting, or `gcinclude.MBTier` per job |
+| `/mbtier [1-5]` | Its nuke tier I to V (no word: next). Load default: `MBTier` setting, or `gcinclude.MBTier` per job |
 | `/lock [slots\|all]` `/unlock` | Freeze slots (none named: Main, Sub, Ammo). `/unlock` frees only yours, and says what else holds a slot |
 | `/ejenter [chamber]` `/ejlamps` `/ejexit` | Einherjar (Ashita): reserve, lamps to the party, enter, leave |
 | `/gchelp` | Command list in game |

@@ -70,8 +70,8 @@ local FULL = {
     Burst = 'Burst (force)', AutoNuke = 'Auto MB (casts bursts)', String = 'Harp (force string)', SongLock = 'Song lock (enemy songs keep main/sub)',
     Death = 'Death', Weapons = 'Weapon set', WsSet = 'WS buff level (/wsset): High wears <WS set>_HighBuff',
     Def = 'Defense (click = /def: DT > MDT > Aminon > none)',
-    MB = 'Auto MB (click = /automb on/off, Ctrl+click = /mbtier); Auto shows its nuke tier, +F = /burst on',
-    MBTier = 'Autonuke tier (click = /mbtier: Low I > Mid III > High V)', MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',
+    MB = 'Auto MB (click = /automb on/off, Ctrl+click = /mbtier): - off, else its nuke tier I to V',
+    MBTier = 'Autonuke tier (click = /mbtier: I > II > III > IV > V)', MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',
     Range = 'Range', Ammo = 'Ammo', NukeSet = 'Nuke set', Element = 'Element', TankSet = 'Tank set',
     Hoxne = 'Hoxne', PupMode = 'Pup mode', Weapon = 'Weapon',
 };
@@ -521,9 +521,9 @@ local function group_cell(row, key)
         local burst, d3 = part(row, 'Burst');
         local tier, d4 = strip_default(row.Cycles.MBTier);
         if (row.Cycles.MBTier == nil) then d4 = true end
-        local roman = ({ Low = 'I', Mid = 'III', High = 'V' })[tier] or '';
+        local roman = ({ Low = 'I', Mid = 'III', High = 'V', I = 'I', II = 'II', III = 'III', IV = 'IV', V = 'V' })[tier] or ''; -- old boxes send Low/Mid/High
         local alldef = (d2 ~= false) and (d3 ~= false) and d4;
-        local text = (nuke and ('Auto' .. roman) or 'Off') .. (burst and '+F' or '');
+        local text = nuke and ((roman ~= '') and roman or 'on') or '-'; -- off, else its tier
         return {
             text = text,
             col = (not nuke and not burst) and (alldef and COL_EMPTY or COL_OFF_CHG) or (alldef and COL_VAL_DEF or COL_VAL),
@@ -576,6 +576,8 @@ end
 
 -- Cells, visible columns and widths depend only on the rows (re-read every 0.5s), the style, the text
 -- scale and the window origin, so they are built when one of those changes, not every frame.
+local FIXED_TEXT = { MB = 'III', Def = 'Amin+' }; -- widest text those cells can show
+local widthUnit, widthMax = nil, {};
 local function build_grid(x0)
     local ccols = columns('CycleOrder', gchud.CycleOrder);
     local tcols = columns('ToggleOrder', gchud.ToggleOrder);
@@ -635,14 +637,21 @@ local function build_grid(x0)
     for _, row in ipairs(rows) do nameW = math.max(nameW, textw(short_name(row.Name)) + PADX * 2) end
     local cols = {};
     local x = x0 + nameW + gap;
+    -- Widths don't jump: mb/def take their widest possible text, every column keeps the widest it has been
+    -- (until the style or text size changes), so a value changing doesn't resize the HUD.
+    local unit = style_name() .. textw('M');
+    if (unit ~= widthUnit) then widthUnit, widthMax = unit, {} end
     local function add(key, kind, center)
         local l = label(key);
         local lw = textw(l);
         local w = lw;
+        if (FIXED_TEXT[key] ~= nil) then w = math.max(w, textw(FIXED_TEXT[key])) end
         for i = 1, #rows do
             local c = cells[i][kind][key];
             if (c ~= nil) then c.w = textw(c.text); w = math.max(w, c.w) end -- reused when the row is drawn
         end
+        w = math.max(w, widthMax[kind .. key] or 0);
+        widthMax[kind .. key] = w;
         w = w + PADX * 2;
         cols[#cols + 1] = { key = key, kind = kind, x = x, w = w, center = center, label = l, labelW = lw, tip = FULL[key] or key };
         x = x + w + gap;

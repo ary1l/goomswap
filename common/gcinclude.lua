@@ -91,6 +91,8 @@
 		};
 		AutoFood = false; -- default state of the AutoFood toggle on load
 		AutoFoodItems = T{'Grape Daifuku +1', 'Grape Daifuku'}; -- eaten in this order, a job can override with gcinclude.AutoFood
+		PackerItems = {}; -- kept in inventory on every job: { ['Echo Drops'] = 'stack', ['Holy Water'] = 12 }; a job adds its own with gcinclude.Packer (/packer)
+		PackerFood = true; -- the packer also keeps a stack of the job's first AutoFood item
 		AutoRevitalizer = true; -- master switch for AutoUseItems below, /revit off to stop
 		AutoUseItems = T{ -- use one of these the moment it lands in your bags in a matching zone
 			{ Zone = 'Ghoyu', Item = 'Revitalizer' },
@@ -137,9 +139,9 @@
 		MBMinMP = 0; -- hold fire below this MP (sync: mp)
 		MBWindow = 10; -- magic burst window in seconds from the skillchain (BG: 10); another WS on the mob ends it
 		-- /autonuke casts the chain element's single-target nuke (Fire, Blizzard, Aero, Stone, Thunder,
-		-- Water) at this tier: 'Low' = I, 'Mid' = III, 'High' = V. /mbtier changes it in game.
-		-- Light/Dark have no tiered nuke: SCH falls back to Luminohelix/Noctohelix. Per job: gcinclude.MBTier = 'High'.
-		MBTier = 'Mid';
+		-- Water) at this tier: 'I' 'II' 'III' 'IV' 'V' (old names: 'Low' = I, 'Mid' = III, 'High' = V). /mbtier changes it in game.
+		-- Light/Dark have no tiered nuke: SCH falls back to Luminohelix/Noctohelix. Per job: gcinclude.MBTier = 'V'.
+		MBTier = 'III';
 		MBFallback = true; -- tier not castable / on recast / short MP: try the next tier down (V > IV > III > II > I)
 		MBSkills = T{'Elemental Magic'}; -- skills /automb dresses; add 'Dark Magic' etc. as you like
 		ElementSkills = T{'Elemental Magic','Blue Magic'}; -- spell skills that get obi/Orpheus/element ring
@@ -179,7 +181,6 @@
 		HUDLabels = {}; -- HUD column glyph overrides, e.g. { Main = 'mn', AutoSoda = 'so' }
 		Validate = true; -- cancel spells/abilities/WS that would fail: KO, sleep/stun/petrify/terror/charm, mute, silence, recast, MP, stratagems, Waltz TP, amnesia
 		ValidateMP = true; -- the MP part; gear "MP cost -%" isn't counted, so turn off if it stops casts that would go off
-		AutoRemedy = true; -- silenced: Echo Drops, else Remedy (Remedy first if also paralyzed); paralyzed on an ability: Remedy. Not under Muddle
 		WaltzTPCut = 0; -- total "Waltz TP cost" reduction on your Waltz gear, in TP
 		Trace = false; -- /gctrace: one chat line per action naming each set put on
 		LockstyleSet = nil; -- /lockstyleset N 4s after load and job change; per job gcinclude.LockstyleSet = N in OnLoad
@@ -207,7 +208,7 @@
 	end
 
 	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
-	'pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
+	'packer','pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
@@ -271,22 +272,21 @@
 		return nextOne[2];
 	end
 
-	-- /mbtier: Low (tier I) / Mid (tier III) / High (tier V) for /autonuke. Accepts low|mid|high|hi|1|3|5.
-	gcinclude.MBTierAlias = { low = 'Low', l = 'Low', ['1'] = 'Low', i = 'Low', mid = 'Mid', m = 'Mid', ['3'] = 'Mid', iii = 'Mid',
-		high = 'High', hi = 'High', h = 'High', ['5'] = 'High', v = 'High' };
-	gcinclude.MBTierNum = { Low = 1, Mid = 3, High = 5 };
+	-- /mbtier: the /automb nuke tier, I to V. Accepts 1-5, i-v, and the old low (I) / mid (III) / high (V).
+	gcinclude.MBTiers = {'I', 'II', 'III', 'IV', 'V'};
+	gcinclude.MBTierAlias = { ['1'] = 'I', i = 'I', low = 'I', l = 'I', ['2'] = 'II', ii = 'II', ['3'] = 'III', iii = 'III',
+		mid = 'III', m = 'III', ['4'] = 'IV', iv = 'IV', ['5'] = 'V', v = 'V', high = 'V', hi = 'V', h = 'V' };
+	gcinclude.MBTierNum = { I = 1, II = 2, III = 3, IV = 4, V = 5 };
 	function gcinclude.SetMBTier(v, quiet)
 		local t = gcinclude.MBTierAlias[string.lower(tostring(v or ''))];
 		if (t == nil) then
-			if not quiet then gcinclude.Err('/mbtier low|mid|high (tier I / III / V)') end
+			if not quiet then gcinclude.Err('/mbtier 1-5 (tier I to V)') end
 			return;
 		end
 		gcdisplay.SetCycle('MBTier', t);
 	end
 	function gcinclude.MBTierText()
-		local t = gcdisplay.GetCycle('MBTier');
-		local roman = { Low = 'I', Mid = 'III', High = 'V' };
-		return tostring(t) .. ' (tier ' .. (roman[t] or '?') .. ')';
+		return 'tier ' .. tostring(gcdisplay.GetCycle('MBTier'));
 	end
 
 	-- Toggle commands: 'on' or 'off' sets it, no argument flips it.
@@ -372,8 +372,8 @@ function gcinclude.SetVariables()
         gcdisplay.CreateToggle('Burst', false); -- /burst: Burst set on every nuke, not only on live skillchains
         gcdisplay.CreateToggle('AutoNuke', gcinclude.settings.AutoNuke == true); -- /automb: cast into live skillchains
         gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM/GEO: 'OccultAcumen')
-        gcdisplay.CreateCycle('MBTier', {[1] = 'Low', [2] = 'Mid', [3] = 'High'}); -- /mbtier: I / III / V
-        gcinclude.SetMBTier(gcinclude.MBTier or gcinclude.settings.MBTier or 'Mid', true);
+        gcdisplay.CreateCycle('MBTier', gcinclude.MBTiers); -- /mbtier: I to V
+        gcinclude.SetMBTier(gcinclude.MBTier or gcinclude.settings.MBTier or 'III', true);
         if (mJob == 'BLM') or (mJob == 'SCH') then
             gcdisplay.CreateCycle('Weapon', {[1] = 'Club', [2] = 'Staff'});
             gcdisplay.CreateCycle('Element', {[1] = 'Thunder', [2] = 'Blizzard', [3] = 'Fire', [4] = 'Stone', [5] = 'Aero', [6] = 'Water', [7] = 'Light', [8] = 'Dark'});
@@ -451,6 +451,8 @@ end
 			if (gcinclude.WeaponLayerKey() ~= before) then gcinclude.ApplyWeapons(true) end -- a Weapon_<mode>Acc: you asked, swaps at any TP
 			toggle = 'Melee mode';
 			status = gcinclude.ModeLabel('MeleeSet', gcdisplay.GetCycle('MeleeSet'));
+		elseif (args[1] == 'packer') then
+			gcinclude.RunPacker(false);
 		elseif (args[1] == 'wsset') then
 			gcinclude.PickCycle('WsSet', args[2]);
 			toggle = 'WS Set';
@@ -1401,7 +1403,6 @@ end
 
 	-- From gcauto's 0x0028 reader: my item use started (cmd 9), was interrupted (cmd 9, id 0) or finished (cmd 5).
 	function gcinclude.OnItemAction(cmd, id)
-		if (gcaction ~= nil) and (gcaction.OnItemAction ~= nil) then gcaction.OnItemAction(cmd, id) end -- AutoRemedy
 		local now = os.clock();
 		for _, e in pairs(gcinclude.Enchants) do
 			if (e.doneAt == nil) and (e.equippedAt ~= nil) then
@@ -2020,6 +2021,90 @@ end
 			name = setNameOf[set];
 		end
 		if (type(name) == 'string') then table.insert(gcinclude.WornSets, name) end
+	end
+
+	-- Packer: keeps items in inventory. settings.PackerItems (every character), char.lua's Packer (this character) and
+	-- gcinclude.Packer (this job), each adding to and winning over the one before (false drops one), list item = count or 'stack'; PackerFood adds a stack of the job's first AutoFood item. On job load
+	-- and /packer, what inventory lacks is fetched with Thorny's Bellhop plugin (/bh get "item" n, from any bag it can
+	-- reach); a few seconds later anything still short is named. Ashita only.
+	local function invCount(id)
+		local inv, n = AshitaCore:GetMemoryManager():GetInventory(), 0;
+		for i = 1, gData.GetContainerMax(0) or 0 do
+			local it = inv:GetContainerItem(0, i);
+			if (it ~= nil) and (it.Id == id) then n = n + it.Count end
+		end
+		return n;
+	end
+
+	function gcinclude.PackerList()
+		local want, order = {}, {};
+		local function add(name, n)
+			if (type(name) ~= 'string') then return end
+			local k = string.lower(name);
+			if (want[k] == nil) then order[#order + 1] = k end
+			want[k] = { name = name, n = n };
+		end
+		for name, n in pairs(gcinclude.settings.PackerItems or {}) do add(name, n) end
+		for name, n in pairs(gcinclude.CharPacker or {}) do add(name, n) end -- char.lua
+		for name, n in pairs(gcinclude.Packer or {}) do add(name, n) end -- the job file
+		if (gcinclude.settings.PackerFood ~= false) then
+			local food = gcinclude.AutoFood or gcinclude.CharFood or gcinclude.settings.AutoFoodItems;
+			if (type(food) == 'string') then food = { food } end
+			if (type(food) == 'table') and (type(food[1]) == 'string') and (want[string.lower(food[1])] == nil) then add(food[1], 'stack') end
+		end
+		local list, res = {}, AshitaCore:GetResourceManager();
+		for _, k in ipairs(order) do
+			local w = want[k];
+			if (w.n ~= false) then
+				local r = res:GetItemByName(w.name, 0);
+				if (r == nil) then
+					gcinclude.Err('/packer: no item named ' .. w.name);
+				else
+					local n = ((w.n == 'stack') or (w.n == true)) and (r.StackSize or 1) or tonumber(w.n);
+					if (n ~= nil) and (n > 0) then list[#list + 1] = { name = r.Name[1], id = r.Id, n = n } end
+				end
+			end
+		end
+		return list;
+	end
+
+	function gcinclude.RunPacker(quiet)
+		if (windower ~= nil) then
+			if not quiet then gcinclude.Err('/packer is Ashita only (Bellhop plugin)') end
+			return;
+		end
+		local list = gcinclude.PackerList();
+		if (#list == 0) then
+			if not quiet then gcinclude.Say('/packer: nothing listed (PackerItems, gcinclude.Packer)') end
+			return;
+		end
+		local pm = AshitaCore:GetPluginManager();
+		local bellhop = (pm ~= nil) and ((pm:Get('Bellhop') ~= nil) or (pm:Get('bellhop') ~= nil));
+		local fetch = {};
+		for _, it in ipairs(list) do
+			local need = it.n - invCount(it.id);
+			if (need > 0) then
+				fetch[#fetch + 1] = it.name .. ' +' .. need;
+				if bellhop then AshitaCore:GetChatManager():QueueCommand(-1, '/bh get "' .. it.name .. '" ' .. need) end
+			end
+		end
+		if (#fetch == 0) then
+			if not quiet then gcinclude.Say('/packer: all in inventory') end
+			return;
+		end
+		if not bellhop then
+			gcinclude.Err('/packer needs the Bellhop plugin (/load bellhop): short ' .. table.concat(fetch, ', '));
+			return;
+		end
+		gcinclude.Say('/packer: ' .. table.concat(fetch, ', '));
+		(function()
+			local still = {};
+			for _, it in ipairs(list) do
+				local have = invCount(it.id);
+				if (have < it.n) then still[#still + 1] = it.name .. ' ' .. have .. '/' .. it.n end
+			end
+			if (#still > 0) then gcinclude.Err('/packer: still short (none in reach, or inventory full): ' .. table.concat(still, ', ')) end
+		end):once(4 + #fetch);
 	end
 
 	function gcinclude.WearChildren(names, keys)
@@ -2777,7 +2862,7 @@ end
 			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N]',
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
-			'nuke   : Burst set is automatic on live skillchains; /automb [on|off] = cast bursts by itself; /mbtier low|mid|high = its tier I|III|V; /burst = Burst set on every nuke',
+			'nuke   : Burst set is automatic on live skillchains; /automb [on|off] = cast bursts by itself; /mbtier 1-5 = its tier I to V (no word: next); /burst = Burst set on every nuke',
 			'keys   : Ctrl+grave wm, Shift+grave wm default, Ctrl+Shift+grave def, Alt+grave hoxne, Win+grave automb (no bare grave); /gckey <key> <command>',
 			'every box: /mss /<command> (Multisend), one box: /ms sendto <name> /<command>',
 		};
@@ -4015,6 +4100,7 @@ end
 		gcinclude.ApplyLockstyle();
 		gcauto.Start();
 		ashita.events.register('d3d_present', 'gcinclude_tphold', gcinclude.HoldTick);
+		(function() gcinclude.RunPacker(true) end):once(3); -- job change: fetch what inventory lacks
 		ashita.events.register('packet_in', 'gcinclude_ej', gcinclude.EinherjarPacket);
 		if (gchud ~= nil) then gchud.Start() end
 	end
@@ -4085,6 +4171,29 @@ end
 		gcinclude.WrapBuffer();
 		gcinclude.WrapActionPacket();
 		gcinclude.InitStep(0);
+	end
+
+	-- This character, every job: char.lua in the character's folder (Ashita <Name>_<id>/, Windower data/goomswap/<Name>/),
+	-- when there. It returns { AutoFood = {...}, Packer = {...}, settings = { HUDOwners = T{...}, ... } }; the job file runs
+	-- after it, so gcinclude.AutoFood / gcinclude.Packer / gcinclude.settings.X there change it for that job.
+	local function charFile()
+		if (windower ~= nil) then
+			local p = windower.ffxi.get_player();
+			if (p == nil) or not windower.file_exists(windower.addon_path .. 'data/goomswap/' .. p.name .. '/char.lua') then return nil end
+		elseif not ashita.fs.exists(string.format('%sconfig\\addons\\luashitacast\\%s_%u\\char.lua', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId)) then
+			return nil;
+		end
+		return gFunc.LoadFile('char.lua');
+	end
+	local okChar, char = pcall(charFile);
+	if okChar and (type(char) == 'table') then
+		gcinclude.CharFood = char.AutoFood;
+		gcinclude.CharPacker = char.Packer;
+		if (type(char.settings) == 'table') then
+			for k, v in pairs(char.settings) do gcinclude.settings[k] = v end
+		end
+	elseif not okChar then
+		gcinclude.Err('char.lua: ' .. tostring(char));
 	end
 
 	return gcinclude;
