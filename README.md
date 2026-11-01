@@ -4,6 +4,17 @@ Gear-swap engine for FFXI multiboxing. You write sets in a job file; GoomSwap we
 layers (weapons, defense, TH, obi, and more) on top. **Ashita v4** (LuAshitacast) and **Windower 4** (GearSwap,
 through `windower/`), same job files. Full reference: [`COMMANDS.md`](COMMANDS.md).
 
+## What it does on its own
+
+- **Weapons:** `/wm` modes (`_1h` sets when you can't dual wield, `/mset Acc` variants), idle/town weapons out of
+  combat. No automatic swap throws away TP (`WeaponTPGuard`, per job) or Aftermath; songs, rolls, cures still swap.
+- **Defense:** `/dt` `/mdt` `/aminon`; regen/refresh/DT idle by HP/MP; sleep, stun, doom, weakness sets.
+- **Casting:** TH until tagged, SIR, obi/Orpheus/elemental ring and back, Moonshade, auto magic burst (RDM BLM SCH GEO).
+- **Items:** food, soda, remedies/echo drops, holy water, enchanted items and warp/dim rings, Hoxne Ampulla.
+- **Multibox:** one HUD for every box (click a cell to drive it, the boxes' messages show there); Einherjar entry,
+  lamp copies and hand-out (`/ejenter`, Ashita).
+- **Checks:** refused actions say why; `/checksets` finds empty sets and misspellings; `/gctrace` shows what each action wore.
+
 ## Install
 
 **Ashita v4**
@@ -83,7 +94,7 @@ Copying a newer `common/` over yours erases your edits: note them, or set them p
 
 | Area | Settings |
 |---|---|
-| Weapons / TP | `WeaponTPGuard`, `IdleWeapons`, `HoldExemptSkills`, `HoldExemptAbilities`, `SmartSwap`, `SmartSwapTP`, `NoWeaponSpells`, `KeepWeaponsFor` |
+| Weapons / TP | `WeaponTPGuard`, `AftermathHold`, `IdleWeapons`, `HoldExemptSkills`, `HoldExemptAbilities`, `SmartSwap`, `SmartSwapTP`, `NoWeaponSpells`, `KeepWeaponsFor` |
 | Casting | `SIRSkip`, `THSkip`, `ElementGear` (obi, Orpheus, ring, back, `Cures`), `ElementSkills`, `OrpheusPoints` |
 | Auto idle sets | `AutoGear`, `RegenGearHPP`, `RefreshGearMPP`, `DTGearHPP`, `PetDTGearHPP` |
 | Weapon skills | `WScheck`, `WSdistance`, `MoonshadeTP`, `MoonshadeSlot`, `MoonshadeSkip`, `ElementalWS` |
@@ -104,6 +115,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
 | `/mainset` `/subset` `[name]` | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
 | `/mset [sb\|acc\|default]` | `_SubtleBlow` / `_Acc` versions of TP and WS sets (`/meleeset` same). DT is `/dt`, on top of any |
+| `/wsset [mid\|high]` | `HighBuff`: each WS set also wears its `_HighBuff` (`Savage_HighBuff`) |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
 | `/th` | `TH` set while engaged with or acting on a mob, until it's tagged: your first swing, shot, WS or JA on it (not `THSkip`). Not at rest. THF main: the whole time, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
@@ -113,6 +125,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/automb` | Auto magic burst on/off (RDM BLM SCH GEO). Setup (Burst set, tier, settings): COMMANDS.md Magic burst |
 | `/mbtier [low\|mid\|high]` | Its nuke tier I / III / V. Load default: `MBTier` setting, or `gcinclude.MBTier` per job |
 | `/lock [slots\|all]` `/unlock` | Freeze slots (none named: Main, Sub, Ammo). `/unlock` frees only yours, and says what else holds a slot |
+| `/ejenter [chamber]` `/ejlamps` `/ejexit` | Einherjar (Ashita): reserve, lamps to the party, enter, leave |
 | `/gchelp` | Command list in game |
 
 Picking a value, any case: no word = next; else exact name, the one it starts, its initials, the one containing it, or
@@ -128,17 +141,17 @@ Later wins, slot by slot; a set changes only the slots it lists.
 **Idle / engaged**, lowest to highest:
 1. Your job file: `Idle` / `Tp_Default` → `Tp_<mset>` → buff sets (`Impetus`) → `Dt` (`/dt`) → `Movement` (`/kite`).
 2. Hoxne sets → auto `Idle_Regen` / `Idle_Refresh` / `Dt` (low HP/MP) → `Town`.
-3. Weapon mode (not engaged: only slots 1-2 left empty; `IdleWeapons = false` = always) → `mdt` (`/mdt`) or `Aminon` (`/aminon`) → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll.
+3. Weapon mode (not engaged: only the weapon slots your idle sets leave empty; `IdleWeapons = false` = all) → `mdt` (`/mdt`) or `Aminon` (`/aminon`) → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll.
 4. **`Incapacitated`** (slept, petrified, stunned, terrorized): `Aminon` if `/aminon` is on, else `mdt` if `/mdt`,
    else `Dt` (even with `/dt` off), without Main/Sub/Range/Ammo; then the `Incapacitated` set, then `*_Received`. **Over DT, MDT, Aminon,
    TH, Buffs and everything in 1-3.**
 5. `Sleeping` (asleep) → `Doomed` → `Reraise` (Weakness) → craft / zeni / fish / rr sets.
 
-**Spells (midcast):** your job file → `TH` (not `THSkip`) → `Absorb` (TH back on top) → `Buffs_Midcast` →
+**Spells (midcast):** your job file → `TH` (not `THSkip`) → its `_Self` / `_Others` / `_Burst` sets → `Absorb` (TH back on top) → `Buffs_Midcast` →
 `LightBonus` → obi/Orpheus/back/ring (a `TH` waist stays) → `SIR` (`/sir`, not `SIRSkip`). WHM cures:
 `Cure` → `Self_Cure` → `Cure_LowMP` or `Cure_LowMP_Storm` (MP ≤ 50%) → `Cure_Dt` (`/dt`) → Hachirin-no-Obi → `SIR`.
 
-**Weapon skills:** your job file → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
+**Weapon skills:** your job file → its `_HighBuff` sets (`/wsset high`) → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
 
 Defense toggles change idle/engaged gear only (`/aminon` also locks weapons); a spell wears DT gear only where the
 job file says so (WHM `Cure_Dt`).
@@ -185,8 +198,8 @@ THSkip  = T{'Absorb-TP', 'Stun'};
 | Edit does nothing | `/lac reload` (`//gs reload`) |
 | Windower: nothing loads | Red `[GoomSwap]`/`[LuAshitacast]` line: do what it says. No `[GoomSwap]` line at all: see Install |
 | Windower: `attempt to index global 'gFunc'` or `GearSwap loaded this job file directly` | Job file is in `data/<Name>/` (GearSwap's own spot): move it to `data/goomswap/<Name>/<JOB>.lua`, delete `data/<Name>/` |
-| A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapon at 1000+ TP is held against automatic swaps (`/wm <mode>` swaps it; `/wm <current mode> force` re-applies); `TH`-set weapon while `/th` is on (THF) |
-| Weapon in Idle/TP never shows | The weapon layer wins: `/wm none`, and `/mainset none` / `/subset none` for slot picks (PLD has only those) |
+| A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapons are held at `WeaponTPGuard`+ TP and while Aftermath is up (`/wm <mode>` swaps; `/wm <current mode> force` re-applies); `TH`-set weapon while `/th` is on (THF) |
+| Weapon in TP set never shows | Engaged, the weapon mode wins: `/wm none`, and `/mainset none` / `/subset none` for slot picks (PLD has only those). Out of combat your idle sets' weapons win (`IdleWeapons = false` to stop) |
 | Wrong or no gear | `/checksets`, item spelling, `/gctrace` |
 | Action cancelled | Chat says why (`COMMANDS.md` Action checks) |
 | HUD gone | `/gchud on`, `/gchud pos 500 120` |

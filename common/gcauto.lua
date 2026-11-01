@@ -274,6 +274,32 @@ local function parse_action(data)
     return A;
 end
 
+-- Buffs counted early: a result on me whose message names its status (Windower res action_messages:
+-- "gains/receives the effect of ${status}", the result's param = the buff id) counts as up for 2s, until the buff
+-- list has it. gcinclude.BuffCount reads gcauto.Predicted.
+local GAIN_MSG = { [166] = true, [186] = true, [194] = true, [205] = true, [230] = true, [237] = true, [243] = true,
+    [266] = true, [267] = true, [268] = true, [269] = true, [278] = true, [280] = true, [319] = true, [320] = true,
+    [375] = true, [412] = true, [755] = true, [804] = true };
+local PREDICT_FOR = 2.0;
+local predicted = {}; -- buff id -> until (os.clock)
+local function predict_packet(P)
+    if (P.me == nil) then return end
+    for t = 1, P.ntgt do
+        if (P.tgt[t] == P.me) then
+            for k = P.first[t], P.first[t] + P.nres[t] - 1 do
+                if GAIN_MSG[P.rmsg[k]] then predicted[P.rval[k]] = os.clock() + PREDICT_FOR end
+            end
+        end
+    end
+end
+
+function gcauto.Predicted(id)
+    local untilT = predicted[id];
+    if (untilT == nil) then return false end
+    if (os.clock() > untilT) then predicted[id] = nil; return false end
+    return true;
+end
+
 local function roll_abilities()
     if (rollAbilities ~= nil) then return rollAbilities end
     rollAbilities = {};
@@ -902,12 +928,12 @@ function gcauto.Start()
     ashita.events.register('packet_in', 'gcauto_packet', function (e)
         if (e.id == 0x0028) then
             local ok, P = pcall(parse_action, e.data);
-            if ok then pcall(roll_packet, P); pcall(lock_packet, P); pcall(combat_packet, P); pcall(cast_packet, P); pcall(mb_packet, P); pcall(item_packet, P); pcall(incoming_cast, P); pcall(incoming_end, P) end
+            if ok then pcall(roll_packet, P); pcall(lock_packet, P); pcall(combat_packet, P); pcall(cast_packet, P); pcall(mb_packet, P); pcall(item_packet, P); pcall(incoming_cast, P); pcall(incoming_end, P); pcall(predict_packet, P) end
         end
         if (e.id == 0x0029) then pcall(refused_packet, e.data) end
         if (e.id == 0x000B) and (inc ~= nil) and (inc.OnZoneOut ~= nil) then pcall(function() inc.OnZoneOut(struct.unpack('L', e.data, 0x04 + 1)) end) end -- LogoutState
         if (e.id == 0x000A) and (inc ~= nil) and (inc.OnZone ~= nil) then pcall(inc.OnZone) end
-        if (e.id == 0x000A) then gcauto.RollReset(); gcauto.ClearTags(); lockUntil = 0; lastCombat = -1e9; monsterCache = {}; soda = { lock = 0, tries = 0 }; mbres = {}; mbst = {} end
+        if (e.id == 0x000A) then predicted = {}; gcauto.RollReset(); gcauto.ClearTags(); lockUntil = 0; lastCombat = -1e9; monsterCache = {}; soda = { lock = 0, tries = 0 }; mbres = {}; mbst = {} end
         if (e.id == 0x000A) and (disp ~= nil) then -- AutoFood and AutoSoda go off on zoning
             for _, name in ipairs({ 'AutoFood', 'AutoSoda' }) do
                 if (disp.GetToggle(name) == true) then

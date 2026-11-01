@@ -206,7 +206,7 @@
 		gcinclude.Err('HUD disabled: gchud.lua failed to load.');
 	end
 
-	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
+	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mset','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
 	'pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
@@ -354,6 +354,8 @@ function gcinclude.SetVariables()
     -- OnLoad, before Initialize). DT is not a mode: /dt layers the Dt set over any of them.
     local melee = (type(gcinclude.MeleeModes) == 'table') and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or {'Default', 'SubtleBlow', 'Acc'};
     gcdisplay.CreateCycle('MeleeSet', melee);
+    -- /wsset: how buffed you are, for weapon skills only. HighBuff wears <WS set>_HighBuff over each WS set.
+    gcdisplay.CreateCycle('WsSet', {'MidBuff', 'HighBuff'});
     gcinclude.BuildWeaponCycles(mJob);
     if (type(gcinclude.DefaultWeapons) == 'string') then
         gcinclude.SetWeaponCycle('Weapons', gcinclude.DefaultWeapons, true);
@@ -449,6 +451,10 @@ end
 			if (gcinclude.WeaponLayerKey() ~= before) then gcinclude.ApplyWeapons(true) end -- a Weapon_<mode>Acc: you asked, swaps at any TP
 			toggle = 'Melee Set';
 			status = gcdisplay.GetCycle('MeleeSet');
+		elseif (args[1] == 'wsset') then
+			gcinclude.PickCycle('WsSet', args[2]);
+			toggle = 'WS Set';
+			status = gcdisplay.GetCycle('WsSet');
 		elseif (gcinclude.WeaponCommands[args[1]] ~= nil) then
 			local cname = gcinclude.WeaponCommands[args[1]];
 			gcinclude.WeaponCommand(cname, args);
@@ -1271,7 +1277,7 @@ end
 	-- The slot stays locked until that finish packet, so normal gear can't come back mid-use.
 	-- Several can run at once (one per slot).
 	gcinclude.Enchants = {}; -- [LAC slot] = { item, id, slot, index, alreadyOn, preAct, delay, start, equippedAt, extPending, nextTry, tries, doneAt }
-	local ENCHANT_MARGIN = 3.0;    -- after the equip delay, before the first try (the server refuses ~3s past it: Rahvin's notes)
+	local ENCHANT_MARGIN = 3.0;    -- after the equip delay, before the first try (the server refuses ~3s past it)
 	local ENCHANT_RETRY = 2.0;     -- between tries while no Item (Start) is seen
 	local ENCHANT_TRIES = 5;
 	local ENCHANT_EQUIP_WAIT = 10; -- give up if the item never shows up in the slot
@@ -1869,8 +1875,12 @@ end
 						gcinclude.SmartKeep = gcinclude.SmartKeepFor(gData.GetAction());
 					end
 					gcinclude.THWorn = false;
+					gcinclude.WornSets = (name == 'HandleMidcast') and {} or nil;
 					local result = original(...);
+					local worn = gcinclude.WornSets;
+					gcinclude.WornSets = nil;
 					if (name == 'HandleMidcast') then
+						gcinclude.WearChildren(worn, gcinclude.SpellChildKeys());
 						gcinclude.CheckAbsorb(); -- before the buff layer: a buff piece (Nether Void, Dark Seal) beats the Absorb sets
 						gcinclude.CheckBuffSets('Buffs_Midcast');
 						gcinclude.CheckLightBonus();
@@ -1895,7 +1905,11 @@ end
 				if gcaction.Check() then gFunc.CancelAction(); return end
 				gcaction.TraceStart();
 				local result, trail = gcinclude.TrackEars(function(...)
+					gcinclude.WornSets = {};
 					local r = ws(...);
+					local worn = gcinclude.WornSets;
+					gcinclude.WornSets = nil;
+					if (gcdisplay.GetCycle('WsSet') == 'HighBuff') then gcinclude.WearChildren(worn, {'HighBuff'}) end
 					gcinclude.CheckHoxneWs();
 					gcinclude.CheckBuffSets('Buffs_Ws');
 					return r;
@@ -1941,6 +1955,7 @@ end
 			for _, b in pairs(buffs) do
 				if (b == m) then count = count + 1 end
 			end
+			if (count == 0) and (gcauto ~= nil) and (gcauto.Predicted ~= nil) and gcauto.Predicted(m) then count = 1 end -- landed, not listed yet
 			return count;
 		end
 		if (type(m) ~= 'string') then return 0 end
@@ -1958,22 +1973,74 @@ end
 		for _, b in pairs(buffs) do
 			if ids[b] then count = count + 1 end
 		end
+		if (count == 0) and (gcauto ~= nil) and (gcauto.Predicted ~= nil) then -- landed, not listed yet
+			for id in pairs(ids) do
+				if gcauto.Predicted(id) then return 1 end
+			end
+		end
 		return count;
 	end
 
 	-- Lowercase name -> set, built once per Sets table. HandleDefault looks up ~10 sets per call;
 	-- scanning every set each time was the costliest part of it. /lac addset reloads the profile,
 	-- which gives a new Sets table and so a fresh index.
-	local setIndex, setIndexOf = {}, nil;
+	local setIndex, setIndexOf, setNameOf = {}, nil, {};
 	function gcinclude.FindSet(name)
 		if (gProfile == nil) or (type(gProfile.Sets) ~= 'table') or (type(name) ~= 'string') then return nil end
 		if (setIndexOf ~= gProfile.Sets) then
-			setIndex, setIndexOf = {}, gProfile.Sets;
+			setIndex, setIndexOf, setNameOf = {}, gProfile.Sets, {};
 			for key, set in pairs(gProfile.Sets) do
-				if (type(key) == 'string') and (type(set) == 'table') then setIndex[string.lower(key)] = set end
+				if (type(key) == 'string') and (type(set) == 'table') then
+					setIndex[string.lower(key)] = set;
+					setNameOf[set] = key;
+				end
 			end
 		end
 		return setIndex[string.lower(name)];
+	end
+
+	-- Child sets: while a handler runs, the sets it wears are noted by
+	-- name; then each one's <name>_<key> goes on, in the order they went on, and for <prefix>_Default also
+	-- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: HighBuff on weapon skills
+	-- (/wsset HighBuff); Self or Others (a spell on you / on anyone but a monster) and Burst (BurstWanted) on spells.
+	gcinclude.WornSets = nil; -- the names, while a handler runs
+	function gcinclude.NoteSet(set)
+		if (gcinclude.WornSets == nil) or (#gcinclude.WornSets >= 64) then return end -- capped: a handler that errored leaves it on
+		local name = set;
+		if (type(set) == 'table') then
+			gcinclude.FindSet('');
+			name = setNameOf[set];
+		end
+		if (type(name) == 'string') then table.insert(gcinclude.WornSets, name) end
+	end
+
+	function gcinclude.WearChildren(names, keys)
+		if (names == nil) or (#keys == 0) then return end
+		local done = {};
+		for _, n in ipairs(names) do
+			local prefix = string.match(n, '^(.-)_[Dd][Ee][Ff][Aa][Uu][Ll][Tt]$');
+			for _, key in ipairs(keys) do
+				for _, cand in ipairs({ n .. '_' .. key, (prefix ~= nil) and (prefix .. '_' .. key) or nil }) do
+					local set = gcinclude.FindSet(cand);
+					if (set ~= nil) and not done[set] then
+						done[set] = true;
+						gFunc.EquipSet(set);
+					end
+				end
+			end
+		end
+	end
+
+	-- The midcast child keys for the current spell.
+	function gcinclude.SpellChildKeys()
+		local keys = {};
+		local target, player = gData.GetActionTarget(), gData.GetPlayer();
+		if (target ~= nil) and (player ~= nil) then
+			if (target.Name == player.Name) then keys[#keys + 1] = 'Self'
+			elseif (target.Type ~= 'Monster') then keys[#keys + 1] = 'Others' end
+		end
+		if gcinclude.BurstWanted() then keys[#keys + 1] = 'Burst' end
+		return keys;
 	end
 
 	-- Job-file helpers.
@@ -2359,6 +2426,7 @@ end
 		if (gFunc.GcRawEquipSet ~= nil) then return end
 		gFunc.GcRawEquipSet, gFunc.GcRawEquip = gFunc.EquipSet, gFunc.Equip;
 		gFunc.EquipSet = function(set)
+			if (gcinclude ~= nil) and (gcinclude.NoteSet ~= nil) then gcinclude.NoteSet(set) end
 			if (gcinclude ~= nil) and (gcinclude.DropAmmoWeapon ~= nil) then set = gcinclude.DropAmmoWeapon(set) end
 			return gFunc.GcRawEquipSet(set);
 		end
@@ -2690,7 +2758,7 @@ end
 			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots|all] /unlock [slots|all]',
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
-			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /meleeset or /mset [sb|acc|default] (no word: Default > SubtleBlow > Acc)',
+			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /meleeset or /mset [sb|acc|default] (no word: Default > SubtleBlow > Acc), /wsset [mid|high] (HighBuff: <WS set>_HighBuff)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
 			'hud    : /gchud [on|off|pos x y|debug]',
 			'checks : /checksets, /xiroll, /mbinfo',

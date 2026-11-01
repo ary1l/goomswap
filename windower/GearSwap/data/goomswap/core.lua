@@ -5,7 +5,7 @@
 --     (gState.Disabled) are dropped when it is sent, as LAC's equip.lua does. ForceEquip* send at once
 --     and also skip locked slots (LAC CheckEquipTable).
 --   * HandleDefault runs while no action is pending. LAC runs it on every outgoing packet chunk; here
---     the outgoing chunk sends 'gs c __ss tick' at most every TICK seconds (Rahvin GS's pattern:
+--     the outgoing chunk sends 'gs c __ss tick' at most every TICK seconds (because
 --     GearSwap only sends an equip made inside a GearSwap event).
 --   * An action is pending from precast until your action packet says it finished or was interrupted,
 --     or its LAC timeout passes (LAC packethandlers.lua).
