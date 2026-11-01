@@ -146,7 +146,7 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
 - **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
 - **Columns:** a mode shows while any box has it on something other than None/Off, a toggle while any box changed it
   from its load default. Always show some: `HUDPinned = T{'th', 'kite'}`. `HUDAbbr` shortens values, `HUDLabels`
-  renames headers. A box on `/wsset high` shows its `ml` cell pink.
+  renames headers. A box on `/wsset high` shows its `mset` cell purple.
 
 ## How sets stack
 

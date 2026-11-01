@@ -59,7 +59,7 @@ local SHORT = {
     AutoFood = 'fd', AutoSoda = 'sd', PROC = 'pr',
     Burst = 'bs', AutoNuke = 'an', String = 'hp', SongLock = 'sl', Death = 'dh',
     Def = 'def', MB = 'mb', MBTier = 'tier',
-    Weapons = 'wpn', MeleeSet = 'ml', WsSet = 'buff', Main = 'm', Sub = 's', Range = 'r', Ammo = 'a',
+    Weapons = 'wpn', MeleeSet = 'mset', WsSet = 'buff', Main = 'm', Sub = 's', Range = 'r', Ammo = 'a',
     NukeSet = 'nk', Element = 'el', TankSet = 'tk', Hoxne = 'hx', PupMode = 'pp', Weapon = 'w',
 };
 
@@ -154,7 +154,7 @@ local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off somet
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
 local COL_VAL_DEF = { 0.75, 0.68, 0.35, 0.85 };-- cycle, default
 local COL_EMPTY = { 0.45, 0.45, 0.50, 0.60 };  -- cycle at None/Off
-local COL_HIGHBUFF = { 1.00, 0.45, 0.80, 1.0 }; -- melee set cell while /wsset high (no column of its own)
+local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- melee set cell while /wsset high (no column of its own): purple
 local COL_NAME = { 0.75, 0.85, 1.00, 1.0 };
 local COL_JOB = { 0.60, 0.65, 0.75, 1.0 };
 local COL_KEY = { 0.55, 0.58, 0.65, 1.0 };

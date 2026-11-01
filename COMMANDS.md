@@ -131,7 +131,7 @@ checked; the game's own message says when it refuses.
 | Command | Does |
 |---|---|
 | `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb`): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). `Weapon_<Mode>Acc` comes on with Acc, so Acc weapons aren't `/wm` modes (swaps at any TP, like `/wm`). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
-| `/wsset [mid\|high]` | Weapon skill buff level: `high` wears `<WS set>_HighBuff` over each WS set the handler wore (`Ws_HighBuff`, `Savage_HighBuff`, `Savage_Acc_HighBuff`). `mid` (load default) = nothing extra. HUD: that box's `ml` cell turns pink |
+| `/wsset [mid\|high]` | Weapon skill buff level: `high` wears `<WS set>_HighBuff` over each WS set the handler wore (`Ws_HighBuff`, `Savage_HighBuff`, `Savage_Acc_HighBuff`). `mid` (load default) = nothing extra. HUD: that box's `mset` cell turns purple |
 | `/kite` / `/th` | Movement gear / `TH` until tagged |
 | `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). No word shows thresholds (doesn't flip). Regen/Refresh out of combat, not over `/dt`; Dt/Pet_Dt any time |
 | `/received <spell>` | Wear that `*_Received` set |
@@ -175,7 +175,7 @@ One row per box (each writes `hud/<name>.txt` 4x/s); opens on load for `HUDOwner
 lacks it, `-` none. Bright = changed, dim = default, orange = off but loads on. Toggle columns (and `def`, `mb`) at
 load default on every box hide unless in `HUDPinned`; cycle columns hide only when None/Off on every box. Ashita: click a cell runs it on that box, click a name shows hidden columns, Ctrl+click `mb`
 cycles its tier. Windower: the same clicks and tooltips; drag a box by any spot off a cell; boxes share state over IPC.
-Glyphs: `wpn` Weapons, `ml` MeleeSet, `m` `s` `r` `a` slots, `nk` NukeSet, `el` Element, `tk` TankSet, `hx` Hoxne,
+Glyphs: `wpn` Weapons, `mset` MeleeSet, `m` `s` `r` `a` slots, `nk` NukeSet, `el` Element, `tk` TankSet, `hx` Hoxne,
 `pp` PupMode, `w` Weapon, `th` TH, `kt` Kite, `fd` AutoFood, `sd` AutoSoda, `hp` String, `sl` SongLock, `pr` PROC,
 `dh` Death, `tier` MBTier, `mb` AutoMB (`Off`, or `Auto` + tier; `+F` = `/burst`). Tune: `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
 
