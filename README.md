@@ -6,7 +6,7 @@ through `windower/`), same job files. Full reference: [`COMMANDS.md`](COMMANDS.m
 
 ## What it does on its own
 
-- **Weapons:** `/wm` modes (`_1h` sets when you can't dual wield, `/mset Acc` variants), idle/town weapons out of
+- **Weapons:** `/wm` modes (`_1h` sets when you can't dual wield, `/mmode Acc` variants), idle/town weapons out of
   combat. No automatic swap throws away TP (`WeaponTPGuard`, per job) or Aftermath; songs, rolls, cures still swap.
 - **Defense:** `/dt` `/mdt` `/aminon`; regen/refresh/DT idle by HP/MP; sleep, stun, doom, weakness sets.
 - **Casting:** TH until tagged, SIR, obi/Orpheus/elemental ring and back, Moonshade, auto magic burst (RDM BLM SCH GEO).
@@ -114,7 +114,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 |---|---|
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
 | `/mainset` `/subset` `[name]` | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
-| `/mset [sb\|acc\|default]` | `_SubtleBlow` / `_Acc` versions of TP and WS sets (`/meleeset` same). DT is `/dt`, on top of any |
+| `/mmode [sb\|acc\|base]` | Melee mode: Base (your `_Default` sets) → `_SubtleBlow` → `_Acc` versions of TP and WS sets. No word = next. DT is `/dt`, on top of any |
 | `/wsset [mid\|high]` | `high`: each WS set also wears its `_HighBuff` (`Savage_HighBuff`) |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
@@ -129,7 +129,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/gchelp` | Command list in game |
 
 Picking a value, any case: no word = next; else exact name, the one it starts, its initials, the one containing it, or
-a number: `/wm max` (Maxentius), `/nukeset oa` (OccultAcumen), `/mset sb` (SubtleBlow), `/wm 3`. Two matches: it lists them.
+a number: `/wm max` (Maxentius), `/nukeset oa` (OccultAcumen), `/mmode sb` (SubtleBlow), `/wm 3`. Two matches: it lists them.
 
 Keys: Ctrl+grave `/wm`, Shift+grave `/wm default`, Ctrl+Shift+grave `/def`, Alt+grave `/hoxne`, Win+grave `/automb`.
 `/gckey <key> <cmd>` rebinds.
@@ -146,7 +146,7 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
 - **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
 - **Columns:** a mode shows while any box has it on something other than None/Off, a toggle while any box changed it
   from its load default. Always show some: `HUDPinned = T{'th', 'kite'}`. `HUDAbbr` shortens values, `HUDLabels`
-  renames headers. A box on `/wsset high` shows its `mset` cell purple.
+  renames headers. A box on `/wsset high` shows its `mmode` cell purple; a box with `/hoxne` on shows its `wpn` cell teal.
 
 ## How sets stack
 

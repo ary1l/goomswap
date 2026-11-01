@@ -102,7 +102,7 @@ local sets = {
         Legs = 'Samnuha Tights',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Accuracy+7', [2] = 'Attack+18', [3] = 'Spell interruption rate down -8%', [4] = 'Quadruple Attack +2' } },
     },
-    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear2 = 'Mache Earring +1',

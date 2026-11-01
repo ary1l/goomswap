@@ -167,7 +167,7 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         --Head = 'Blistering Sallet +1',

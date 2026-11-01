@@ -120,7 +120,7 @@ local sets = {
         Legs = 'revelation brais',
         Feet = 'revelation sab.',
     },
-    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
     },
@@ -668,7 +668,7 @@ end
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
-    gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan'}; -- Weapon_CarnwenhanAcc goes on with /mset Acc; Hoxne is /hoxne
+    gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan'}; -- Weapon_CarnwenhanAcc goes on with /mmode Acc; Hoxne is /hoxne
     gcinclude.DefaultWeapons = 'Naegling';
     gcinclude.Initialize();
 end

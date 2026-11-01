@@ -88,7 +88,7 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
 		--Ammo = "Ginsen",
@@ -338,7 +338,7 @@ profile.Sets = sets;
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
     gcinclude.AlwaysDualWield = true;
-    gcinclude.WeaponModes = {'None', 'Mpu', 'Naegling'}; -- Weapon_MpuAcc goes on with /mset Acc
+    gcinclude.WeaponModes = {'None', 'Mpu', 'Naegling'}; -- Weapon_MpuAcc goes on with /mmode Acc
     gcinclude.DefaultWeapons = 'Mpu';
     gcinclude.MainModes = {'None', 'Mpu Gandring', 'Naegling'};
     gcinclude.SubModes = {'None', 'Gleti\'s Knife', 'Fusetto +2', 'Gandring'};

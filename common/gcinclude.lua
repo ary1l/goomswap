@@ -206,7 +206,7 @@
 		gcinclude.Err('HUD disabled: gchud.lua failed to load.');
 	end
 
-	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mset','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
+	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
 	'pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
@@ -350,7 +350,7 @@ function gcinclude.SetVariables()
     gcdisplay.CreateCycle('Hoxne', {[1] = 'Off', [2] = 'Locked'});
     gcdisplay.CreateToggle('Kite', false);
     gcdisplay.CreateToggle('TH', false);
-    -- /mset modes: <set>_<mode> over <set>_Default. A job file can set its own list (gcinclude.MeleeModes = {...} in
+    -- /mmode modes: <set>_<mode> over <set>_Default (shown and typed as Base). A job file can set its own list (gcinclude.MeleeModes = {...} in
     -- OnLoad, before Initialize). DT is not a mode: /dt layers the Dt set over any of them.
     local melee = (type(gcinclude.MeleeModes) == 'table') and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or {'Default', 'SubtleBlow', 'Acc'};
     gcdisplay.CreateCycle('MeleeSet', melee);
@@ -445,12 +445,12 @@ end
 			gcinclude.FlipToggle('MDTset', args[2]);
 			toggle = 'MDT Set';
 			status = gcdisplay.GetToggle('MDTset');
-		elseif (args[1] == 'meleeset') or (args[1] == 'mset') then
+		elseif (args[1] == 'meleeset') or (args[1] == 'mmode') then
 			local before = gcinclude.WeaponLayerKey();
 			gcinclude.PickCycle('MeleeSet', args[2]);
 			if (gcinclude.WeaponLayerKey() ~= before) then gcinclude.ApplyWeapons(true) end -- a Weapon_<mode>Acc: you asked, swaps at any TP
-			toggle = 'Melee Set';
-			status = gcdisplay.GetCycle('MeleeSet');
+			toggle = 'Melee mode';
+			status = gcinclude.ModeLabel('MeleeSet', gcdisplay.GetCycle('MeleeSet'));
 		elseif (args[1] == 'wsset') then
 			gcinclude.PickCycle('WsSet', args[2]);
 			toggle = 'WS Set';
@@ -742,6 +742,12 @@ end
 		return gcinclude.SetCycleFrom(cname, list, val);
 	end
 
+	-- How a cycle value reads in chat and the HUD: the melee mode Default is 'Base' (its sets stay <set>_Default).
+	function gcinclude.ModeLabel(cname, v)
+		if (cname == 'MeleeSet') and (v == 'Default') then return 'Base' end
+		return v;
+	end
+
 	-- A cycle's name in any case ('meleeset' -> 'MeleeSet'); nil if there is none.
 	function gcinclude.CycleName(name)
 		if (type(name) ~= 'string') then return nil end
@@ -768,6 +774,8 @@ end
 
 	-- Exact name, else the one value it starts, else the one whose initials it is, else the one containing it; or a number.
 	function gcinclude.SetCycleFrom(cname, list, val, quiet)
+		local wantBase = string.lower(tostring(val or ''));
+		if (cname == 'MeleeSet') and (wantBase ~= '') and (string.sub('base', 1, #wantBase) == wantBase) then val = 'Default' end -- Base = Default
 		local index = tonumber(val);
 		if (index ~= nil) and (index >= 1) and (index <= #list) then
 			return gcdisplay.SetCycle(cname, list[index]);
@@ -2058,7 +2066,7 @@ end
 			gFunc.EquipSet(set);
 		elseif (mode == 'Acc') and (modeWarned[n] == nil) then -- other modes (SubtleBlow, a job's own) are optional per set
 			modeWarned[n] = true;
-			gcinclude.Err('no ' .. n .. ' set: ' .. prefix .. '_Default stays (add ' .. n .. ' or /mset default)');
+			gcinclude.Err('no ' .. n .. ' set: ' .. prefix .. '_Default stays (add ' .. n .. ' or /mmode base)');
 		end
 	end
 
@@ -2191,7 +2199,7 @@ end
 		local equip = {};
 		local mode = gcdisplay.GetCycle('Weapons');
 		if gcinclude.IsWeaponValue(mode) then
-			-- /mset variant first: Weapon_Carnwenhan_Acc or Weapon_CarnwenhanAcc while /mset Acc, when you have one
+			-- /mmode variant first: Weapon_Carnwenhan_Acc or Weapon_CarnwenhanAcc while /mmode Acc, when you have one
 			local set = nil;
 			local ms = gcdisplay.GetCycle('MeleeSet');
 			if (type(ms) == 'string') and (ms ~= 'Default') then
@@ -2758,7 +2766,7 @@ end
 			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots|all] /unlock [slots|all]',
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
-			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /meleeset or /mset [sb|acc|default] (no word: Default > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
+			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /mmode or /meleeset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
 			'hud    : /gchud [on|off|pos x y|debug]',
 			'checks : /checksets, /xiroll, /mbinfo',
@@ -3866,7 +3874,7 @@ end
 		if (set ~= nil) then
 			gFunc.EquipSet(set);
 		else
-			gcinclude.ByName(spell.Name); -- with its /mset version, as the job file wore it
+			gcinclude.ByName(spell.Name); -- with its /mmode version, as the job file wore it
 		end
 		if (gcinclude.THWorn == true) then gcinclude.CheckTH() end -- TH that this cast already wore stays over it
 	end

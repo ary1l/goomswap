@@ -220,7 +220,7 @@ local sets = {
         Legs = 'Mpaca\'s Hose',
         Feet = 'Mpaca\'s Boots',
     },
-    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear1 = 'Telos Earring',

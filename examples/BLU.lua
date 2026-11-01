@@ -133,7 +133,7 @@ local sets = {
         Legs = 'malignance tights',
 		Feet = 'malignance boots',
     },
-	Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+	Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
 	    Body = 'volte harness', -- Subtle Blow+10
 	},
 	Tp_Acc = {
@@ -392,7 +392,7 @@ local sets = {
     },
     Expiacion_Acc = {
     },
-    Expiacion_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Expiacion_Default (any WS: <its set>_SubtleBlow)
+    Expiacion_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Expiacion_Default (any WS: <its set>_SubtleBlow)
     },
     Requiescat_Default = {
         Head = 'Hashishin Kavuk +3',

@@ -101,7 +101,7 @@ local sets = {
         Legs = 'Sakpata\'s Cuisses',--af+3
         Feet = 'Flam. Gambieras +2',
     },
-    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ammo = 'Seeth. Bomblet +1',
