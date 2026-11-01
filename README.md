@@ -288,15 +288,15 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
 - **Use:** click a cell = run it on that box; click a name = its hidden modes; Ctrl+click `mb` = tier. The owner also
   prints the other boxes' GoomSwap lines as `[Name]` (`HUDMessages = false` to stop).
 - **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
-- **Layout:** top left; `HUDOwners` first, then party order. The owner sees its own line until the mouse is over the HUD,
-  then every box (`HUDHover = false`: always all). In the bottom half of the screen it opens upward: your line stays
-  put, the other boxes stack above it (`HUDGrow = 'up'`, `'down'`, `'auto'`). Every column a box's job has always shows,
-  so the width never changes.
+- **Layout:** top left; `HUDOwners` first, then party order. The owner sees the headers and its own line until the
+  mouse is over the HUD, then every box (`HUDHover = false`: always all). In the bottom half of the screen it opens
+  upward: your line stays put, the other boxes stack above it (`HUDGrow = 'up'`, `'down'`, `'auto'`). Every column a
+  box's job has always shows, so the width never changes.
   Name colour: blue SIR, gold TH, green kite, red PROC. Food, soda, harp, song lock, death: a chat line when they change.
   A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal. Bright = changed, dim = default.
-- **Columns:** `wpn` weapon mode, then any slot pick that's on (`Tiz/Bun`: Tizona mode, Bunzi's Rod sub; a pick at
-  none: click the name), `melee`, `nuke`, `elem`, `tank`, `pup`, `w` BLM/SCH weapon, `def` (`-` none), `mb` (`-` off,
-  else tier). Tune: `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
+- **Columns:** `wpn` weapon mode, then the slot picks `main` `sub` `rng` `ammo` (`-` none), `melee`, `nuke`, `elem`,
+  `tank`, `pup`, `w` BLM/SCH weapon, `def` (`-` none), `mb` (`-` off, else tier). Tune: `HUDAbbr`, `HUDLabels`,
+  `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
 
 ## How sets stack
 
