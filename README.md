@@ -104,7 +104,7 @@ Copying a newer `common/` over yours erases your edits: note them, or set them p
 | Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
 | Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
 | Action checks | `Validate`, `ValidateMP`, `WaltzTPCut` |
-| HUD / bar | `HUDOwners`, `HUDHover`, `HUDMessages`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
+| HUD / bar | `HUDOwners`, `HUDHover`, `HUDGrow`, `HUDMessages`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
 | Other | `Keybinds`, `Messages`, `Trace`, `LockstyleSet`, `CombatWindow`, `XIRollSet`, `CapacityCapes`, `JubileeSlot`, `AmmoWarn`, `NinjaToolWarn`, `SleepCancelStoneskin`, `ElementReport`, `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
 
 Weapon modes, default weapons, job helpers: see Job file.
@@ -289,7 +289,9 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
   prints the other boxes' GoomSwap lines as `[Name]` (`HUDMessages = false` to stop).
 - **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
 - **Layout:** top left; `HUDOwners` first, then party order. The owner sees its own line until the mouse is over the HUD,
-  then every box (`HUDHover = false`: always all). Every column a box's job has always shows, so the width never changes.
+  then every box (`HUDHover = false`: always all). In the bottom half of the screen it opens upward: your line stays
+  put, the other boxes stack above it (`HUDGrow = 'up'`, `'down'`, `'auto'`). Every column a box's job has always shows,
+  so the width never changes.
   Name colour: blue SIR, gold TH, green kite, red PROC. Food, soda, harp, song lock, death: a chat line when they change.
   A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal. Bright = changed, dim = default.
 - **Columns:** `wpn` weapon mode, `melee`, `main` `sub` `rng` `ammo` slot picks, `nuke`, `elem`, `tank`, `pup`, `w` BLM/SCH

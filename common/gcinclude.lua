@@ -170,9 +170,10 @@
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
 		HUDOwners = T{}; -- your main(s), e.g. T{'YourMain'}: open the HUD with every box on load; on other boxes /gchud shows only their own line; T{} = every box sees all
 		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GoomSwap lines, as [Name]
-		HUDX = 2; -- HUD position (top left); drag it in game, saved per character
+		HUDX = 2; -- HUD position (top left of your own line); drag it in game, saved per character
 		HUDY = 2;
 		HUDHover = true; -- the HUD owner sees its own line until the mouse is over the HUD, then every box; false = always every box
+		HUDGrow = 'auto'; -- which way the HUD opens on hover: 'up' (your line stays at the bottom), 'down', or 'auto' = up in the bottom half of the screen
 		HUDAlpha = 0.70; -- HUD background opacity, 0 = none
 		HUDScale = 0.9; -- HUD text size (compact style)
 		HUDStyle = 'compact'; -- HUD look: 'compact' (tight) or 'large' (bigger text, more spacing, full names); /gchud large|compact, saved per character

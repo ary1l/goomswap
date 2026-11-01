@@ -142,7 +142,16 @@ local imgui = setmetatable({
             }), shown = '', segs = {}, shownN = -1, btns = {} };
             windows[name] = w;
         end
-        if (nextPos ~= nil) then w.text:pos(nextPos[1], nextPos[2]); nextPos = nil end
+        if (nextPos ~= nil) then
+            -- pivot (0..1 of the box's size, last frame's): { 0, 1 } = pos is the bottom left corner
+            local x, y = nextPos[1], nextPos[2];
+            if (nextPos[3] ~= 0) or (nextPos[4] ~= 0) then
+                local ew, eh = w.text:extents();
+                x, y = x - nextPos[3] * (tonumber(ew) or 0), y - nextPos[4] * (tonumber(eh) or 0);
+            end
+            w.text:pos(math.floor(x + 0.5), math.floor(y + 0.5));
+            nextPos = nil;
+        end
         w.frame = frame;
         w.n, w.line, w.dirty, w.nb = 0, 1, false, 0;
         w.cx, w.lastEnd, w.same, w.hasItem, w.scale, w.bgAlpha = 0, 0, false, false, 1.0, nil;
@@ -182,10 +191,24 @@ local imgui = setmetatable({
     SetCursorPosX = function(x) if (cur ~= nil) then cur.cx = tonumber(x) or 0 end end,
     GetCursorPosX = function() return (cur ~= nil) and cur.cx or 0 end,
     CalcTextSize = function(t) return #tostring(t or '') * CW, LH end,
-    SetNextWindowPos = function(pos) if (type(pos) == 'table') then nextPos = { pos[1] or pos.x or 0, pos[2] or pos.y or 0 } end end,
+    SetNextWindowPos = function(pos, cond, pivot)
+        if (type(pos) ~= 'table') then return end
+        local pv = (type(pivot) == 'table') and pivot or {};
+        nextPos = { pos[1] or pos.x or 0, pos[2] or pos.y or 0, tonumber(pv[1] or pv.x) or 0, tonumber(pv[2] or pv.y) or 0 };
+    end,
     GetWindowPos = function()
         if (cur == nil) then return 0, 0 end
         return cur.text:pos();
+    end,
+    GetWindowSize = function()
+        if (cur == nil) then return 0, 0 end
+        local ew, eh = cur.text:extents();
+        return tonumber(ew) or 0, tonumber(eh) or 0;
+    end,
+    GetMainViewport = function()
+        local ok, ws = pcall(windower.get_windower_settings);
+        ws = (ok and (type(ws) == 'table')) and ws or {};
+        return { Size = { x = ws.ui_x_res or 0, y = ws.ui_y_res or 0 } };
     end,
     IsMouseDown = function() return mouseDown end,
     IsItemHovered = function() return (cur ~= nil) and (cur == hovW) and (cur.n == hovOrd) end,
