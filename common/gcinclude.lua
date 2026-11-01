@@ -2023,8 +2023,8 @@ end
 		if (type(name) == 'string') then table.insert(gcinclude.WornSets, name) end
 	end
 
-	-- Packer: keeps items in inventory. settings.PackerItems (every job) and gcinclude.Packer (this job; wins, false
-	-- drops one) list item = count or 'stack'; PackerFood adds a stack of the job's first AutoFood item. On job load
+	-- Packer: keeps items in inventory. settings.PackerItems (every character), char.lua's Packer (this character) and
+	-- gcinclude.Packer (this job), each adding to and winning over the one before (false drops one), list item = count or 'stack'; PackerFood adds a stack of the job's first AutoFood item. On job load
 	-- and /packer, what inventory lacks is fetched with Thorny's Bellhop plugin (/bh get "item" n, from any bag it can
 	-- reach); a few seconds later anything still short is named. Ashita only.
 	local function invCount(id)
@@ -2045,9 +2045,10 @@ end
 			want[k] = { name = name, n = n };
 		end
 		for name, n in pairs(gcinclude.settings.PackerItems or {}) do add(name, n) end
-		for name, n in pairs(gcinclude.Packer or {}) do add(name, n) end
+		for name, n in pairs(gcinclude.CharPacker or {}) do add(name, n) end -- char.lua
+		for name, n in pairs(gcinclude.Packer or {}) do add(name, n) end -- the job file
 		if (gcinclude.settings.PackerFood ~= false) then
-			local food = gcinclude.AutoFood or gcinclude.settings.AutoFoodItems;
+			local food = gcinclude.AutoFood or gcinclude.CharFood or gcinclude.settings.AutoFoodItems;
 			if (type(food) == 'string') then food = { food } end
 			if (type(food) == 'table') and (type(food[1]) == 'string') and (want[string.lower(food[1])] == nil) then add(food[1], 'stack') end
 		end
@@ -4170,6 +4171,29 @@ end
 		gcinclude.WrapBuffer();
 		gcinclude.WrapActionPacket();
 		gcinclude.InitStep(0);
+	end
+
+	-- This character, every job: char.lua in the character's folder (Ashita <Name>_<id>/, Windower data/goomswap/<Name>/),
+	-- when there. It returns { AutoFood = {...}, Packer = {...}, settings = { HUDOwners = T{...}, ... } }; the job file runs
+	-- after it, so gcinclude.AutoFood / gcinclude.Packer / gcinclude.settings.X there change it for that job.
+	local function charFile()
+		if (windower ~= nil) then
+			local p = windower.ffxi.get_player();
+			if (p == nil) or not windower.file_exists(windower.addon_path .. 'data/goomswap/' .. p.name .. '/char.lua') then return nil end
+		elseif not ashita.fs.exists(string.format('%sconfig\\addons\\luashitacast\\%s_%u\\char.lua', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId)) then
+			return nil;
+		end
+		return gFunc.LoadFile('char.lua');
+	end
+	local okChar, char = pcall(charFile);
+	if okChar and (type(char) == 'table') then
+		gcinclude.CharFood = char.AutoFood;
+		gcinclude.CharPacker = char.Packer;
+		if (type(char.settings) == 'table') then
+			for k, v in pairs(char.settings) do gcinclude.settings[k] = v end
+		end
+	elseif not okChar then
+		gcinclude.Err('char.lua: ' .. tostring(char));
 	end
 
 	return gcinclude;

@@ -19,7 +19,8 @@ through `windower/`), same job files. Full reference: [`COMMANDS.md`](COMMANDS.m
 
 **Ashita v4**
 1. Copy `common/` and `examples/` into `Ashita/config/addons/luashitacast/`.
-2. Copy `examples/<JOB>.lua` into your character folder `luashitacast/<Name>_<id>/`, put your gear in.
+2. Copy `examples/<JOB>.lua` into your character folder `luashitacast/<Name>_<id>/`, put your gear in. Optional:
+   `examples/char.lua` there too, for that character's food, packer list and settings on every job.
 3. `/addon load luashitacast`, then `/lac load`.
 4. Recommended: Thorny's [Sequencer](https://github.com/ThornyFFXI/Sequencer) and [PacketFlow](https://github.com/ThornyFFXI/PacketFlow) plugins
    (`/load sequencer`, `/load packetflow`, or in your startup script). Without Sequencer, LuAshitacast blocks the
@@ -120,8 +121,8 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
 | `/th` | `TH` set while engaged with or acting on a mob, until it's tagged: your first swing, shot, WS or JA on it (not `THSkip`). Not at rest. THF main: the whole time, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
 | `/kite` | Movement gear |
-| `/autofood` | Eats this job's food: `gcinclude.AutoFood = {...}` in the job file (`gcinclude.settings.AutoFood = true` = on at load) |
-| `/packer` | Gets missing items into inventory (Bellhop): `gcinclude.Packer = { ['Echo Drops'] = 'stack' }` per job, `PackerItems` every job; runs on job change |
+| `/autofood` | Eats your food: `AutoFood` in `char.lua` (every job of that character), or `gcinclude.AutoFood = {...}` in a job file (that job) |
+| `/packer` | Gets missing items into inventory (Bellhop), also on every job change: `Packer` in `char.lua`, plus `gcinclude.Packer = {...}` in a job file (adds; COR `['Trump Card'] = 99`) |
 | `/hoxne` | Off ↔ Locked (ampulla kept in Ammo and used). `/hoxne off` releases it |
 | `/nukeset [power\|macc\|oa]` | Nuke sets: power, or Macc (`NukeACC`) on top. RDM, GEO: OccultAcumen (`OccultAcumen` set on top, TP from nukes) |
 | `/automb` | Auto magic burst on/off (RDM BLM SCH GEO). Setup (Burst set, tier, settings): COMMANDS.md Magic burst |

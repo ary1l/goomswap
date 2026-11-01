@@ -74,7 +74,7 @@ local function queue(cmd, hold, mode)
 end
 
 local function food_list()
-    local food = inc.AutoFood;
+    local food = inc.AutoFood or inc.CharFood; -- the job file's, else char.lua's
     if (food == nil) then food = inc.settings.AutoFoodItems end
     if (type(food) == 'string') then return { food } end
     if (type(food) == 'table') and (#food > 0) then return food end
