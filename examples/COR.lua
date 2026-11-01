@@ -1,6 +1,7 @@
 local profile = {};
 if (gFunc == nil) then error('GoomSwap: GearSwap loaded this job file directly. Windower: move it to data/goomswap/<Name>/<JOB>.lua and delete it from data/<Name>/ (see README Install)', 0) end
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+gcinclude.settings.WeaponTPGuard = 0; -- rolls, Quick Draw and JAs always get their weapons: worth the TP
 
 local sets = {
     Incapacitated = { -- slept, petrified, stunned or terrorized: worn over your /def set (else Dt) minus Main/Sub/Range/Ammo; add extra pieces here

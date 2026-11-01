@@ -1,6 +1,7 @@
 local profile = {};
 if (gFunc == nil) then error('GoomSwap: GearSwap loaded this job file directly. Windower: move it to data/goomswap/<Name>/<JOB>.lua and delete it from data/<Name>/ (see README Install)', 0) end
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+gcinclude.settings.WeaponTPGuard = 0; -- spells and pacts always get their weapons: worth the TP
 
 -- SMN example: swap in your own gear.
 -- Sets named after an ability, spell, skill or weapon skill (['Astral Flow'], ['Savage Blade'])

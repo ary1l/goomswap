@@ -1,6 +1,7 @@
 local profile = {};
 if (gFunc == nil) then error('GoomSwap: GearSwap loaded this job file directly. Windower: move it to data/goomswap/<Name>/<JOB>.lua and delete it from data/<Name>/ (see README Install)', 0) end
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+gcinclude.settings.WeaponTPGuard = 100; -- weapons held from 100 TP, so soda TP survives JAs; 0 = always swap
 -- gcinclude.CureObi = true; -- uncomment: Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts)
 gcinclude.SIRSkip = T{'Phalanx','Reprisal'}; -- /sir leaves these midcasts alone, on top of the default Absorb-TP and Stun
 

@@ -1,6 +1,7 @@
 local profile = {};
 if (gFunc == nil) then error('GoomSwap: GearSwap loaded this job file directly. Windower: move it to data/goomswap/<Name>/<JOB>.lua and delete it from data/<Name>/ (see README Install)', 0) end
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+gcinclude.settings.WeaponTPGuard = 0; -- spells always get their weapons: worth the TP
 gcinclude.CureObi = true; -- Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts); false = never
 
 local sets = {

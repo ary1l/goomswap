@@ -31,9 +31,8 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
   off at the tag with the rest of `TH` (a swap resets TP). Sub only if you can dual wield.
 - **Idle weapons:** not engaged, weapons your idle sets name (`Idle`, `Idle_Regen`/`Idle_Refresh`, `Town`, `Dt`…) win over
   the weapon mode; you get the mode's on engage. Main+Sub and Range+Ammo go as pairs. `IdleWeapons = false`: mode always.
-- **TP hold:** at 1000+ TP Main/Sub/Range don't change (except songs, rolls, cures, enfeebling, enhancing,
+- **TP hold:** at `WeaponTPGuard`+ TP (default 1000; examples: 0 on BLM BRD COR GEO RDM SCH SMN WHM, 100 on PLD) Main/Sub/Range don't change (except songs, rolls, cures, enfeebling, enhancing,
   geomancy). Weapon commands (`/wm`, `/mainset`…, `/setcycle`) always swap, at any TP. `WeaponTPGuard = 0` disables the hold. Asleep, slots your `Sleeping` set names are let go.
-  With a weapon mode on, only its weapons are held: another weapon worn at 1000+ TP (a song set's dagger when Wild Card gave TP) is swapped back to the mode's, and that TP is lost.
 - `Weapon_<Mode>_1h` when you can't dual wield: NIN Lv10+, DNC Lv20+, THF Lv83+ main or sub at the effective level
   (FFXIclopedia; SJ Restriction / Sheol Gaol sub Lv0 doesn't count). Losing DW puts `_1h` on at once; regaining waits
   for the TP hold. `gcinclude.AlwaysDualWield = true` forces DW (BLU, THF). If the game refuses a Sub weapon for
