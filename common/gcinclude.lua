@@ -113,7 +113,7 @@
 			['divine waltz'] = 'Waltz_Received',
 		};
 		ReceivedWindow = 8; -- seconds the received gear stays on before it gives up
-		MyBoxes = T{}; -- your own characters that get the Multisend 'received' notice; boxes running this engine are found by themselves (HUD state file), so only needed if that fails, e.g. T{'Shaymin','Muunch'}
+		MyBoxes = T{}; -- your own characters that get the Multisend 'received' notice; boxes running this engine are found by themselves (HUD state file), so only needed if that fails, e.g. T{'YourMain','YourBox'}
 		ElementReport = false;
 		OrpheusPoints = T{ {1.93, 15}, {13, 1} }; -- {yalms, affinity %}: BG's two documented ends; linear between them is assumed. Add tested points in order. -- /gcinfo prints what the element picker chose and why
 		ElementGear = T{ -- waist chosen by the spell's element, day and weather
@@ -166,7 +166,7 @@
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
-		HUDOwners = T{'Shaymin'}; -- character names that open the alt HUD on load
+		HUDOwners = T{}; -- your main(s), e.g. T{'YourMain'}: open the HUD with every box on load; on other boxes /gchud shows only their own line; T{} = every box sees all
 		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GCinclude/GCauto lines, as [Name]
 		HUDX = 300; -- alt HUD position; drag it in game, saved per character
 		HUDY = 40;
@@ -354,8 +354,8 @@ function gcinclude.SetVariables()
     -- OnLoad, before Initialize). DT is not a mode: /dt layers the Dt set over any of them.
     local melee = (type(gcinclude.MeleeModes) == 'table') and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or {'Default', 'SubtleBlow', 'Acc'};
     gcdisplay.CreateCycle('MeleeSet', melee);
-    -- /wsset: how buffed you are, for weapon skills only. HighBuff wears <WS set>_HighBuff over each WS set.
-    gcdisplay.CreateCycle('WsSet', {'MidBuff', 'HighBuff'});
+    -- /wsset: how buffed you are, for weapon skills only. High wears <WS set>_HighBuff over each WS set.
+    gcdisplay.CreateCycle('WsSet', {'Mid', 'High'});
     gcinclude.BuildWeaponCycles(mJob);
     if (type(gcinclude.DefaultWeapons) == 'string') then
         gcinclude.SetWeaponCycle('Weapons', gcinclude.DefaultWeapons, true);
@@ -1909,7 +1909,7 @@ end
 					local r = ws(...);
 					local worn = gcinclude.WornSets;
 					gcinclude.WornSets = nil;
-					if (gcdisplay.GetCycle('WsSet') == 'HighBuff') then gcinclude.WearChildren(worn, {'HighBuff'}) end
+					if (gcdisplay.GetCycle('WsSet') == 'High') then gcinclude.WearChildren(worn, {'HighBuff'}) end
 					gcinclude.CheckHoxneWs();
 					gcinclude.CheckBuffSets('Buffs_Ws');
 					return r;
@@ -2002,7 +2002,7 @@ end
 	-- Child sets: while a handler runs, the sets it wears are noted by
 	-- name; then each one's <name>_<key> goes on, in the order they went on, and for <prefix>_Default also
 	-- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: HighBuff on weapon skills
-	-- (/wsset HighBuff); Self or Others (a spell on you / on anyone but a monster) and Burst (BurstWanted) on spells.
+	-- (/wsset high); Self or Others (a spell on you / on anyone but a monster) and Burst (BurstWanted) on spells.
 	gcinclude.WornSets = nil; -- the names, while a handler runs
 	function gcinclude.NoteSet(set)
 		if (gcinclude.WornSets == nil) or (#gcinclude.WornSets >= 64) then return end -- capped: a handler that errored leaves it on
@@ -2758,7 +2758,7 @@ end
 			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots|all] /unlock [slots|all]',
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
-			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /meleeset or /mset [sb|acc|default] (no word: Default > SubtleBlow > Acc), /wsset [mid|high] (HighBuff: <WS set>_HighBuff)',
+			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /meleeset or /mset [sb|acc|default] (no word: Default > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
 			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
 			'hud    : /gchud [on|off|pos x y|debug]',
 			'checks : /checksets, /xiroll, /mbinfo',

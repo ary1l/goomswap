@@ -115,7 +115,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/wm [name]` | Weapon mode: next, or by name. `/wm default`, `/wm none` |
 | `/mainset` `/subset` `[name]` | One slot's weapon (PLD `/subset duban`). Swaps at any TP: you asked for it |
 | `/mset [sb\|acc\|default]` | `_SubtleBlow` / `_Acc` versions of TP and WS sets (`/meleeset` same). DT is `/dt`, on top of any |
-| `/wsset [mid\|high]` | `HighBuff`: each WS set also wears its `_HighBuff` (`Savage_HighBuff`) |
+| `/wsset [mid\|high]` | `high`: each WS set also wears its `_HighBuff` (`Savage_HighBuff`) |
 | `/def` | DT → MDT → Aminon → off. `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`). Aminon turns it off |
 | `/th` | `TH` set while engaged with or acting on a mob, until it's tagged: your first swing, shot, WS or JA on it (not `THSkip`). Not at rest. THF main: the whole time, automatic (`gcinclude.THFullTime = false` in a job file turns it off) |
@@ -133,6 +133,20 @@ a number: `/wm max` (Maxentius), `/nukeset oa` (OccultAcumen), `/mset sb` (Subtl
 
 Keys: Ctrl+grave `/wm`, Shift+grave `/wm default`, Ctrl+Shift+grave `/def`, Alt+grave `/hoxne`, Win+grave `/automb`.
 `/gckey <key> <cmd>` rebinds.
+
+## HUD (multibox)
+
+Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower: over IPC); one box shows them all.
+
+- **Who gets the grid:** in `common/gcinclude.lua` settings, `HUDOwners = T{'YourMain'};` (per job: `gcinclude.settings.HUDOwners`
+  in `OnLoad`). Those characters open it on load with every box; on any other box `/gchud` shows only that box's line.
+  Empty list: any box's `/gchud` shows every box.
+- **Use:** click a cell = run it on that box; click a name = its hidden modes; Ctrl+click `mb` = tier. The owner also
+  prints the other boxes' GCinclude/GCauto lines as `[Name]` (`HUDMessages = false` to stop).
+- **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
+- **Columns:** a mode shows while any box has it on something other than None/Off, a toggle while any box changed it
+  from its load default. Always show some: `HUDPinned = T{'th', 'kite'}`. `HUDAbbr` shortens values, `HUDLabels`
+  renames headers. A box on `/wsset high` shows its `mset` cell purple.
 
 ## How sets stack
 
