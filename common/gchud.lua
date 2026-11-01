@@ -50,7 +50,7 @@ gchud.ToggleCommands = {
     Death = 'death',
 };
 
-gchud.CycleOrder = { 'Weapons', 'MeleeSet', 'WsSet', 'Main', 'Sub', 'Range', 'Ammo' };
+gchud.CycleOrder = { 'Weapons', 'Main', 'Sub', 'Range', 'Ammo', 'MeleeSet', 'WsSet' }; -- slot picks right after wpn
 gchud.ToggleOrder = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'AutoFood', 'AutoSoda' };
 
 -- Column header glyphs. Override any with settings.HUDLabels = { Main = 'mn' }.
@@ -68,7 +68,7 @@ local FULL = {
     DTset = 'DT set', MDTset = 'MDT set', Aminon = 'Aminon', SIR = 'Spell interrupt', TH = 'Treasure Hunter',
     Kite = 'Kite', AutoFood = 'Auto food', AutoSoda = 'Auto soda', PROC = 'Proc',
     Burst = 'Burst (force)', AutoNuke = 'Auto MB (casts bursts)', String = 'Harp (force string)', SongLock = 'Song lock (enemy songs keep main/sub)',
-    Death = 'Death', Weapons = 'Weapons: the mode, then any slot pick that is on (/wm, /mw /sw /rw /ammoset)', WsSet = 'WS buff level (/wsset): High wears <WS set>_HighBuff',
+    Death = 'Death', Weapons = 'Weapon set', WsSet = 'WS buff level (/wsset): High wears <WS set>_HighBuff',
     Def = 'Defense (click = /def: DT > MDT > Aminon > none)',
     MB = 'Auto MB (click = /automb on/off, Ctrl+click = /mbtier): - off, else its nuke tier I to V',
     MBTier = 'Autonuke tier (click = /mbtier: I > II > III > IV > V)', MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',
@@ -522,8 +522,6 @@ end
 local DEF_PARTS = { { 'DTset', 'DT' }, { 'MDTset', 'MDT' }, { 'Aminon', 'Amin' } };
 local GROUP_PART = { DTset = true, MDTset = true, Aminon = true, AutoNuke = true, Burst = true };
 local GROUP_ORDER = { 'Def', 'MB' };
-local SLOT_KEYS = { 'Main', 'Sub', 'Range', 'Ammo' }; -- weapon slot picks: shown in the wpn cell
-local SLOT = { Main = true, Sub = true, Range = true, Ammo = true };
 
 local function part(row, key)
     local raw = row.Toggles[key];
@@ -577,21 +575,7 @@ local function group_cell(row, key)
     return nil;
 end
 
-local draw_cell;
-draw_cell = function(row, key, c)
-    if (c.parts ~= nil) then -- wpn: mode/picks, each its own button
-        for j, p in ipairs(c.parts) do
-            if (j > 1) then
-                imgui.SameLine(0, 0);
-                imgui.PushStyleColor(ImGuiCol_Text, COL_EMPTY);
-                imgui.Text('/');
-                imgui.PopStyleColor();
-                imgui.SameLine(0, 0);
-            end
-            draw_cell(row, p.key, p);
-        end
-        return;
-    end
+local function draw_cell(row, key, c)
     imgui.PushStyleColor(ImGuiCol_Text, c.col);
     local clicked = false;
     if (c.cmd == nil) then
@@ -654,37 +638,13 @@ local function build_grid(x0)
                 c.col = COL_HOXNE; -- /hoxne on: shown on the wpn cell, so the HUD doesn't widen
                 c.tip = c.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
             end
-            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') and not SLOT[k] then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
-        end
-        -- wpn shows MAIN/SUB: the mode, then each slot pick that is on ('Tiz/Bun'); the picks have no columns (a
-        -- pick at None: click the name). Width kept for each pick the box has, so setting one doesn't widen it.
-        local wc, parts, slots = cells[i].c.Weapons, {}, 0;
-        if (wc ~= nil) and not wc.empty then parts[1] = wc end
-        for _, sk in ipairs(SLOT_KEYS) do
-            local sc = cells[i].c[sk];
-            if (sc ~= nil) then
-                slots = slots + 1;
-                if not sc.empty then
-                    parts[#parts + 1] = { text = sc.text, col = sc.col, cmd = sc.cmd, tip = sc.tip, key = sk .. 'w' };
-                end
-            end
-        end
-        if (slots > 0) then
-            if (#parts == 0) then parts[1] = wc or { text = '-', col = COL_EMPTY, cmd = gchud.CycleCommands.Weapons, tip = row.Name .. '  Weapon set: None', key = 'Weapons' } end
-            if (parts[1] == wc) then wc.key = 'Weapons' end
-            cells[i].c.Weapons = { parts = parts, slots = slots, modeText = (wc ~= nil) and wc.text or '-' };
-            shown.Weapons = true;
+            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};
         for _, k in ipairs(GROUP_ORDER) do cells[i].g[k] = group_cell(row, k) end
     end
     local vis = {};
-    if shown.Weapons and (ccols[1] ~= 'Weapons') then -- a box with picks but no weapon modes
-        local has = false;
-        for _, k in ipairs(ccols) do if (k == 'Weapons') then has = true end end
-        if not has then table.insert(ccols, 1, 'Weapons') end
-    end
     for _, k in ipairs(ccols) do
         if shown[k] then vis[#vis + 1] = k end
     end
@@ -715,17 +675,7 @@ local function build_grid(x0)
         if (FIXED_TEXT[key] ~= nil) then w = math.max(w, textw(FIXED_TEXT[key])) end
         for i = 1, #view do
             local c = cells[i][kind][key];
-            if (c ~= nil) and (c.parts ~= nil) then
-                -- each button adds its frame padding; '/' between; room for every pick the box has ('Mmm')
-                local sep = textw('/') + PADX * 2;
-                c.w = -PADX * 2;
-                for _, p in ipairs(c.parts) do p.w = textw(p.text); c.w = c.w + p.w + PADX * 2 end
-                c.w = c.w + (#c.parts - 1) * textw('/');
-                local room = textw(c.modeText) + c.slots * (sep + textw('Mmm'));
-                w = math.max(w, c.w, room);
-            elseif (c ~= nil) then
-                c.w = textw(c.text); w = math.max(w, c.w); -- reused when the row is drawn
-            end
+            if (c ~= nil) then c.w = textw(c.text); w = math.max(w, c.w) end -- reused when the row is drawn
         end
         w = math.max(w, widthMax[kind .. key] or 0);
         widthMax[kind .. key] = w;
@@ -766,8 +716,8 @@ local function body(scale)
         if first then imgui.SetCursorPosX(cx) else imgui.SameLine(cx) end
     end
 
-    -- header (not on the owner's one-line view)
-    if not collapsedView then
+    -- header (also over the owner's one-line view)
+    do
     imgui.PushStyleColor(ImGuiCol_Text, COL_KEY);
     for i, col in ipairs(cols) do
         at(col, col.labelW, i == 1);
