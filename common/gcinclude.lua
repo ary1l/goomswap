@@ -116,8 +116,8 @@
 		};
 		ReceivedWindow = 8; -- seconds the received gear stays on before it gives up
 		MyBoxes = T{}; -- your own characters that get the Multisend 'received' notice; boxes running this engine are found by themselves (HUD state file), so only needed if that fails, e.g. T{'YourMain','YourBox'}
-		ElementReport = false;
-		OrpheusPoints = T{ {1.93, 15}, {13, 1} }; -- {yalms, affinity %}: BG's two documented ends; linear between them is assumed. Add tested points in order. -- /gcinfo prints what the element picker chose and why
+		ElementReport = false; -- chat line naming the obi/Orpheus/ring/back each nuke or WS got; /gctrace shows it too
+		OrpheusPoints = T{ {1.93, 15}, {13, 1} }; -- {yalms, affinity %}: BG's two documented ends; linear between them is assumed. Add tested points in order. /gctrace prints what the element picker chose
 		ElementGear = T{ -- waist chosen by the spell's element, day and weather
 			Obis = T{ Dark = 'Anrin Obi' }, -- element obis you own; add as you get them
 			AnyObi = 'Hachirin-no-Obi', -- every element; worn only when day/weather nets positive
@@ -208,7 +208,7 @@
 	end
 
 	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
-	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
+	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
@@ -480,10 +480,8 @@ end
 			status = gcdisplay.GetCycle('Hoxne');
 		elseif (args[1] == 'received') then
 			gcinclude.ReceivedCommand(args);
-		elseif (args[1] == 'gcinfo') then
-			gcinclude.settings.ElementReport = not (gcinclude.settings.ElementReport == true);
-			toggle = 'Element report';
-			status = gcinclude.settings.ElementReport;
+		elseif (args[1] == 'gcmodes') then
+			gcinclude.ShowModes(string.lower(tostring(args[2] or '')) == 'all');
 		elseif (args[1] == 'gce') then
 			gcinclude.EnchantCommand(args);
 		elseif (args[1] == 'gchelp') then
@@ -743,6 +741,44 @@ end
 		local list = gcdisplay.GetCycleValues(cname);
 		if (type(list) ~= 'table') then return false end
 		return gcinclude.SetCycleFrom(cname, list, val);
+	end
+
+	-- /gcmodes: this box's modes and the toggles that are on, in chat (for playing without the HUD); /gcmodes all: every
+	-- box reporting to the HUD folder.
+	gcinclude.ModeNames = { {'Weapons', 'wpn'}, {'MeleeSet', 'mmode'}, {'WsSet', 'wsset'}, {'Main', 'main'}, {'Sub', 'sub'},
+		{'Range', 'rng'}, {'Ammo', 'ammo'}, {'NukeSet', 'nuke'}, {'Element', 'elem'}, {'TankSet', 'tank'}, {'PupMode', 'pup'},
+		{'Weapon', 'weapon'}, {'MBTier', 'mb tier'}, {'Hoxne', 'hoxne'} };
+	gcinclude.ToggleNames = { DTset = 'DT', MDTset = 'MDT', Aminon = 'Aminon', SIR = 'SIR', TH = 'TH', Kite = 'Kite',
+		AutoFood = 'Food', AutoSoda = 'Soda', PROC = 'PROC', String = 'Harp', SongLock = 'Song lock', Death = 'Death',
+		Burst = 'Burst', AutoNuke = 'Auto MB' };
+	function gcinclude.ModesLine(cycles, toggles)
+		local parts = {};
+		for _, m in ipairs(gcinclude.ModeNames) do
+			local v = cycles[m[1]];
+			if (v ~= nil) then
+				v = string.gsub(tostring(v), '^~', '');
+				parts[#parts + 1] = m[2] .. ' ' .. (((v == 'None') or (v == 'Off')) and '-' or gcinclude.ModeLabel(m[1], v));
+			end
+		end
+		local on = {};
+		for k, v in pairs(toggles) do
+			v = string.gsub(tostring(v), '^~', '');
+			if (v == 'true') then on[#on + 1] = gcinclude.ToggleNames[k] or k end
+		end
+		table.sort(on);
+		parts[#parts + 1] = 'on: ' .. ((#on > 0) and table.concat(on, ', ') or '-');
+		return table.concat(parts, ' | ');
+	end
+	function gcinclude.ShowModes(all)
+		if all and (gchud ~= nil) and (gchud.AllRows ~= nil) then
+			local list = gchud.AllRows();
+			if (#list == 0) then gcinclude.Say('/gcmodes all: no box reporting (each writes its HUD state while GoomSwap runs)') end
+			for _, r in ipairs(list) do
+				print(chat.header(r.Name):append(chat.message(tostring(r.Job) .. ' | ' .. gcinclude.ModesLine(r.Cycles, r.Toggles))));
+			end
+			return;
+		end
+		gcinclude.Say(gcinclude.ModesLine(gcdisplay.GetCycles(), gcdisplay.GetToggles()));
 	end
 
 	-- How a cycle value reads in chat and the HUD: the melee mode Default is 'Base' (its sets stay <set>_Default).
@@ -1769,7 +1805,7 @@ end
 		end
 		if (next(set) == nil) then return end
 		gFunc.EquipSet(set);
-		if (gcinclude.settings.ElementReport == true) then
+		if (gcinclude.settings.ElementReport == true) or (gcinclude.settings.Trace == true) then -- /gctrace shows it too
 			print(chat.header('GoomSwap'):append(chat.message((label or element) .. ' [' .. element .. ']: ' .. table.concat(report, ', '))));
 		end
 	end

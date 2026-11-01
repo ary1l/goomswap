@@ -158,8 +158,8 @@ checked; the game's own message says when it refuses.
 | Command | Does |
 |---|---|
 | `/checksets` | Empty sets, bad item names, `_Default` gaps, ear/ring swaps, leftover Moonshade |
-| `/gctrace` | One line per action: `[Cure IV] Precast > Cure_Precast \| Midcast > Cure`; `{Waist}` = engine-made |
-| `/gcinfo` / `/xiroll` | Element gear picks / roll tracking |
+| `/gctrace` | One line per action: `[Cure IV] Precast > Cure_Precast \| Midcast > Cure`; `{Waist}` = engine-made. Also names the obi/Orpheus/ring/back a nuke or WS got |
+| `/xiroll` | Roll tracking |
 | `/gchelp` / `/gckey <key> <cmd>` | Command list / bind a key |
 
 ## HUD
@@ -177,8 +177,8 @@ One row per box (each writes `hud/<name>.txt` 4x/s), `HUDOwners` first, then par
 (`HUDMessages = false` to stop). Every column a box's job has always shows, set or not, so the width never changes. Modes: `wpn`
 Weapons (teal: `/hoxne` on), `mmode` MeleeSet (purple: `/wsset high`), `main` `sub` `rng` `ammo` slot picks, `nuke` NukeSet, `elem`
 Element, `tank` TankSet, `pup` PupMode, `w` Weapon (`-` = None, blank = job lacks it). `def` DT/MDT/Aminon (`-` none), `mb` AutoMB
-(`-` off, else its tier `I`-`V`). The name's colour: red SIR, orange TH, cyan Kite, yellow PROC (first one on; its tooltip lists
-all). Food, soda, harp, song lock and death have no HUD spot: turning them on/off prints a chat line (`[Name] Food on`).
+(`-` off, else its tier `I`-`V`). The name's colour: blue SIR, gold TH, green Kite, red PROC (first one on; its tooltip lists
+all). No HUD: `/gcmodes` prints this box's modes and the toggles on, `/gcmodes all` every box's. Food, soda, harp, song lock and death have no HUD spot: turning them on/off prints a chat line (`[Name] Food on`).
 Bright = changed, dim = default. Click a cell: runs it on that box; click a name: the rest of its modes and toggles; Ctrl+click
 `mb`: its tier. Windower: the same clicks and tooltips; drag a box by any spot off a cell; boxes share state over IPC. Tune:
 `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.

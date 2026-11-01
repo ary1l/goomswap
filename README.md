@@ -129,6 +129,7 @@ Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
 | `/mbtier [1-5]` | Its nuke tier I to V (no word: next). Load default: `MBTier` setting, or `gcinclude.MBTier` per job |
 | `/lock [slots\|all]` `/unlock` | Freeze slots (none named: Main, Sub, Ammo). `/unlock` frees only yours, and says what else holds a slot |
 | `/ejenter [chamber]` `/ejlamps` `/ejexit` | Einherjar (Ashita): reserve, lamps to the party, enter, leave |
+| `/gcmodes [all]` | This box's modes and the toggles on, in chat; `all`: every box (no HUD needed) |
 | `/gchelp` | Command list in game |
 
 Picking a value, any case: no word = next; else exact name, the one it starts, its initials, the one containing it, or
@@ -149,7 +150,7 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
 - **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
 - **Layout:** top left; `HUDOwners` first, then party order. The owner sees its own line until the mouse is over the HUD,
   then every box (`HUDHover = false`: always all). Every column a box's job has always shows, so the width never changes.
-  Name colour: red SIR, orange TH, cyan kite, yellow PROC. Food, soda, harp, song lock, death: a chat line when they change.
+  Name colour: blue SIR, gold TH, green kite, red PROC. Food, soda, harp, song lock, death: a chat line when they change.
   A box on `/wsset high` shows its `mmode` cell purple; `/hoxne` on, its `wpn` cell teal. `HUDAbbr` shortens values.
 
 ## How sets stack

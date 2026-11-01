@@ -156,11 +156,11 @@ local COL_VAL_DEF = { 0.82, 0.74, 0.42, 1.0 }; -- cycle, default
 local COL_EMPTY = { 0.55, 0.55, 0.60, 0.80 };  -- cycle at None/Off
 local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- mmode cell while /wsset high (no column of its own): purple
 local COL_HOXNE = { 0.35, 0.85, 0.85, 1.0 };    -- wpn cell while /hoxne is on (no column of its own): teal
-local COL_NAME = { 0.75, 0.85, 1.00, 1.0 };
+local COL_NAME = { 0.93, 0.93, 0.96, 1.0 };     -- white: SIR/TH/Kite/PROC colours stand out
 -- The name shows SIR, TH, Kite, PROC (first one on, in this order; its tooltip lists all on). The rest of the toggles
 -- (food, soda, harp, song lock, death) have no place on the HUD: their changes come in as chat lines.
-local NAME_STATES = { { 'SIR', 'SIR', { 1.00, 0.45, 0.45, 1.0 } }, { 'TH', 'TH', { 1.00, 0.62, 0.25, 1.0 } },
-    { 'Kite', 'Kite', { 0.40, 0.90, 1.00, 1.0 } }, { 'PROC', 'PROC', { 1.00, 0.90, 0.30, 1.0 } } };
+local NAME_STATES = { { 'SIR', 'SIR', { 0.35, 0.55, 1.00, 1.0 } }, { 'TH', 'TH', { 1.00, 0.80, 0.20, 1.0 } },
+    { 'Kite', 'Kite', { 0.35, 0.95, 0.45, 1.0 } }, { 'PROC', 'PROC', { 1.00, 0.35, 0.35, 1.0 } } }; -- blue, gold, green, red
 local COL_JOB = { 0.60, 0.65, 0.75, 1.0 };
 local COL_KEY = { 0.78, 0.82, 0.90, 1.0 };     -- headers
 
@@ -249,7 +249,7 @@ local function write_state()
     lastWriteTime = now;
 end
 
-local function read_all()
+local function read_all(everyBox)
     local files = listing();
     if (type(files) ~= 'table') then return end
     local now = os.time();
@@ -298,7 +298,7 @@ local function read_all()
     end);
     -- With HUDOwners set, a box not in it shows only its own line.
     local owners, player = inc.settings.HUDOwners, me();
-    if (type(owners) == 'table') and (#owners > 0) and (player ~= nil) then
+    if (everyBox ~= true) and (type(owners) == 'table') and (#owners > 0) and (player ~= nil) then
         local owner = false;
         for _, n in ipairs(owners) do
             if (string.lower(n) == string.lower(player.Name)) then owner = true end
@@ -852,6 +852,15 @@ end
 -- True when <name> is one of my boxes: every box running this engine rewrites hud\<Name>.txt every
 -- 0.25s (write_state), so a fresh file means a box that can take '/lac fwd'. Cached 5s per name.
 local boxCache = {};
+-- Every reporting box's modes (for /gcmodes all): { Name, Job, Toggles, Cycles }, owner first.
+function gchud.AllRows()
+    local keep = rows;
+    pcall(read_all, true);
+    local all = rows;
+    rows = keep;
+    return all;
+end
+
 function gchud.IsBox(name)
     if (type(name) ~= 'string') or (name == '') then return false end
     local key = string.lower(name);
