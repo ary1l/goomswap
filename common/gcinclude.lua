@@ -113,7 +113,7 @@
 			['divine waltz'] = 'Waltz_Received',
 		};
 		ReceivedWindow = 8; -- seconds the received gear stays on before it gives up
-		MyBoxes = T{}; -- your own characters that get the Multisend 'received' notice; boxes running this engine are found by themselves (HUD state file), so only needed if that fails, e.g. T{'Shaymin','Muunch'}
+		MyBoxes = T{}; -- your own characters that get the Multisend 'received' notice; boxes running this engine are found by themselves (HUD state file), so only needed if that fails, e.g. T{'YourMain','YourBox'}
 		ElementReport = false;
 		OrpheusPoints = T{ {1.93, 15}, {13, 1} }; -- {yalms, affinity %}: BG's two documented ends; linear between them is assumed. Add tested points in order. -- /gcinfo prints what the element picker chose and why
 		ElementGear = T{ -- waist chosen by the spell's element, day and weather
@@ -166,7 +166,7 @@
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
-		HUDOwners = T{'Shaymin'}; -- your main(s): open the HUD with every box on load; on other boxes /gchud shows only their own line; T{} = every box sees all
+		HUDOwners = T{}; -- your main(s), e.g. T{'YourMain'}: open the HUD with every box on load; on other boxes /gchud shows only their own line; T{} = every box sees all
 		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GCinclude/GCauto lines, as [Name]
 		HUDX = 300; -- alt HUD position; drag it in game, saved per character
 		HUDY = 40;
