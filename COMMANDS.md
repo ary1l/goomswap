@@ -32,7 +32,7 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 - **Idle weapons:** not engaged, weapons your idle sets name (`Idle`, `Idle_Regen`/`Idle_Refresh`, `Town`, `Dt`…) win over
   the weapon mode; you get the mode's on engage. Main+Sub and Range+Ammo go as pairs. `IdleWeapons = false`: mode always.
 - **TP hold:** at `WeaponTPGuard`+ TP (default 1000; examples: 0 on BLM BRD COR GEO RDM SCH SMN WHM, 100 on PLD) Main/Sub/Range don't change (except songs, rolls, cures, enfeebling, enhancing,
-  geomancy). Weapon commands (`/wm`, `/mainset`…, `/setcycle`) always swap, at any TP. `WeaponTPGuard = 0` disables the hold. Engaged with Aftermath up holds them too, at any TP (a weapon change ends it; same exemptions; `AftermathHold = false` to stop). Asleep, slots your `Sleeping` set names are let go.
+  geomancy). Weapon commands (`/wm`, `/mainset`…, `/setcycle`) always swap, at any TP. `WeaponTPGuard = 0` disables the hold. Aftermath up holds them too, at any TP, against idle/engaged sets (a weapon change ends it); spells still get their weapons; `AftermathHold = false` to stop. Asleep, slots your `Sleeping` set names are let go.
 - `Weapon_<Mode>_1h` when you can't dual wield: NIN Lv10+, DNC Lv20+, THF Lv83+ main or sub at the effective level
   (FFXIclopedia; SJ Restriction / Sheol Gaol sub Lv0 doesn't count). Losing DW puts `_1h` on at once; regaining waits
   for the TP hold. `gcinclude.AlwaysDualWield = true` forces DW (BLU, THF). If the game refuses a Sub weapon for
