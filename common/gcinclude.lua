@@ -812,7 +812,36 @@ end
 		return string.lower(out);
 	end
 
-	-- Exact name, else the one value it starts, else the one whose initials it is, else the one containing it; or a number.
+	-- What the HUD shows for a value (gchud's short form, both lengths, and settings.HUDAbbr), lower case, so typing
+	-- what you see works: 'Anarchy +2' -> ana+2, 'Rostam B' -> rosb, 'Death Penalty' -> dea / deap.
+	local function hudForms(v)
+		local t = string.gsub(v, "['%.]", '');
+		t = string.gsub(t, '[^%w%+]', ' ');
+		t = string.gsub(t, '(%l)(%u)', '%1 %2');
+		t = string.gsub(t, '(%w)(%+)', '%1 %2');
+		local short, long, first = '', '', true;
+		for tok in string.gmatch(t, '%S+') do
+			if first then
+				local w = (#tok <= 4) and tok or string.sub(tok, 1, 3);
+				short, long, first = w, w, false;
+			elseif string.match(tok, '^%+?%d+$') or (#tok == 1) then
+				short, long = short .. tok, long .. tok;
+			else
+				long = long .. string.sub(tok, 1, 1);
+			end
+		end
+		local forms = { string.lower(short), string.lower(long) };
+		local user = gcinclude.settings.HUDAbbr;
+		if (type(user) == 'table') then
+			for k, a in pairs(user) do
+				if (string.lower(tostring(k)) == string.lower(v)) then forms[#forms + 1] = string.lower(tostring(a)) end
+			end
+		end
+		return forms;
+	end
+
+	-- Exact name, else the one value it starts, else the one whose initials it is, else what the HUD shows for it,
+	-- else the one containing it; or a number.
 	function gcinclude.SetCycleFrom(cname, list, val, quiet)
 		local wantBase = string.lower(tostring(val or ''));
 		if (cname == 'MeleeSet') and (wantBase ~= '') and (string.sub('base', 1, #wantBase) == wantBase) then val = 'Default' end -- Base = Default
@@ -834,6 +863,13 @@ end
 		if (#hits == 0) then
 			for _, v in ipairs(list) do
 				if (initials(v) == want) then hits:append(v) end
+			end
+		end
+		if (#hits == 0) then
+			for _, v in ipairs(list) do
+				for _, f in ipairs(hudForms(v)) do
+					if (f == want) then hits:append(v); break end
+				end
 			end
 		end
 		if (#hits == 0) then
