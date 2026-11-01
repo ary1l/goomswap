@@ -671,7 +671,7 @@ end
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
-    gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan', 'CarnwenhanAcc', 'Hoxne'};
+    gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan', 'Hoxne'}; -- Weapon_CarnwenhanAcc goes on with /mset Acc
     gcinclude.DefaultWeapons = 'Naegling';
     gcinclude.Initialize();
 end

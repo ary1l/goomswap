@@ -130,7 +130,7 @@ checked; the game's own message says when it refuses.
 
 | Command | Does |
 |---|---|
-| `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb`): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
+| `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb`): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). `Weapon_<Mode>Acc` comes on with Acc, so Acc weapons aren't `/wm` modes (swaps at any TP, like `/wm`). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
 | `/kite` / `/th` | Movement gear / `TH` until tagged |
 | `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). No word shows thresholds (doesn't flip). Regen/Refresh out of combat, not over `/dt`; Dt/Pet_Dt any time |
 | `/received <spell>` | Wear that `*_Received` set |
@@ -184,7 +184,7 @@ Order: README How sets stack.
 
 | Set | Worn |
 |---|---|
-| `Weapon_<Mode>` / `_1h` | Weapon mode |
+| `Weapon_<Mode>` / `_1h` | Weapon mode. `Weapon_<Mode>Acc` (or `_Acc`, `_Acc_1h`): used instead while `/mset Acc`; any `/mset` value works the same |
 | `Dt`, `mdt`, `Aminon`, `SIR` | With their toggles |
 | `Incapacitated` | Slept, petrified, stunned, terrorized: `Aminon` if `/aminon` (no Aminon set: `mdt`), else `mdt` if `/mdt`, else `Dt` (even with `/dt` off), minus Main/Sub/Range/Ammo; then this set; then `*_Received`. Over all job sets incl. `Dt`, and over `mdt`/`Aminon`, `TH`, `Buffs`, XIRoll. Under `Sleeping`, `Doomed`, `Reraise`, util sets. Not charmed (the client can't change gear) |
 | `Sleeping` | Asleep, over `Incapacitated` (else `gcinclude.sets.Sleeping`). Main/Sub/Range in it pass the TP hold, not any lock (`/lock`, `/aminon` Main/Sub, `/hoxne` Range): e.g. a Prime stage 1-2 weapon drains 1 HP/MP every 3s, which wakes you (BG-Wiki; not Diabolos' Nightmare). Weapon comes back when awake |

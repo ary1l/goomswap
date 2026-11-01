@@ -174,7 +174,7 @@
 		HUDStyle = 'compact'; -- HUD look: 'compact' (tight) or 'large' (bigger text, more spacing, full names); /gchud large|compact, saved per character
 		HUDScaleLarge = 1.1; -- HUD text size in the large style
 		HUDPinned = T{'Def', 'MB', 'Kite', 'AutoFood', 'AutoSoda'}; -- HUD columns always shown (Def = DT/MDT/Aminon via /def, MB = /mbmode); others only once a box changes them
-		HUDAbbr = {}; -- HUD short value overrides, e.g. { ['CarnwenhanAcc'] = 'CarnA' }; auto-shortened otherwise
+		HUDAbbr = {}; -- HUD short value overrides, e.g. { ['Carnwenhan'] = 'Carn' }; auto-shortened otherwise
 		HUDLabels = {}; -- HUD column glyph overrides, e.g. { Main = 'mn', AutoSoda = 'so' }
 		Validate = true; -- cancel spells/abilities/WS that would fail: KO, sleep/stun/petrify/terror/charm, mute, silence, recast, MP, stratagems, Waltz TP, amnesia
 		ValidateMP = true; -- the MP part; gear "MP cost -%" isn't counted, so turn off if it stops casts that would go off
@@ -443,7 +443,9 @@ end
 			toggle = 'MDT Set';
 			status = gcdisplay.GetToggle('MDTset');
 		elseif (args[1] == 'meleeset') or (args[1] == 'mset') then
+			local before = gcinclude.WeaponLayerKey();
 			gcinclude.PickCycle('MeleeSet', args[2]);
+			if (gcinclude.WeaponLayerKey() ~= before) then gcinclude.ApplyWeapons(true) end -- a Weapon_<mode>Acc: you asked, swaps at any TP
 			toggle = 'Melee Set';
 			status = gcdisplay.GetCycle('MeleeSet');
 		elseif (gcinclude.WeaponCommands[args[1]] ~= nil) then
@@ -782,6 +784,15 @@ end
 		if (#hits == 0) then
 			for _, v in ipairs(list) do
 				if (string.find(string.lower(v), want, 1, true) ~= nil) then hits:append(v) end
+			end
+		end
+		if (#hits > 1) then -- 'carn' with Carnwenhan and CarnwenhanTP: the one every other hit extends
+			for _, h in ipairs(hits) do
+				local lh, all = string.lower(h), true;
+				for _, o in ipairs(hits) do
+					if (string.sub(string.lower(o), 1, #lh) ~= lh) then all = false; break end
+				end
+				if all then return gcdisplay.SetCycle(cname, h) end
 			end
 		end
 		if (#hits == 1) then
@@ -2083,17 +2094,26 @@ end
 		return (f == true);
 	end
 
+	-- Weapon_<name>, Weapon_<name>_1h first when you can't dual wield.
+	function gcinclude.WeaponSetFor(name)
+		if not gcinclude.CanDualWield() then
+			local s = gcinclude.FindSet('Weapon_' .. name .. '_1h');
+			if (s ~= nil) then return s end
+		end
+		return gcinclude.FindSet('Weapon_' .. name);
+	end
+
 	function gcinclude.BuildWeaponLayer()
 		local equip = {};
 		local mode = gcdisplay.GetCycle('Weapons');
 		if gcinclude.IsWeaponValue(mode) then
+			-- /mset variant first: Weapon_Carnwenhan_Acc or Weapon_CarnwenhanAcc while /mset Acc, when you have one
 			local set = nil;
-			if not gcinclude.CanDualWield() then
-				set = gcinclude.FindSet('Weapon_' .. mode .. '_1h');
+			local ms = gcdisplay.GetCycle('MeleeSet');
+			if (type(ms) == 'string') and (ms ~= 'Default') then
+				set = gcinclude.WeaponSetFor(mode .. '_' .. ms) or gcinclude.WeaponSetFor(mode .. ms);
 			end
-			if (set == nil) then
-				set = gcinclude.FindSet('Weapon_' .. mode);
-			end
+			if (set == nil) then set = gcinclude.WeaponSetFor(mode) end
 			if (set == nil) then
 				if (gcinclude.MissingWarned[mode] == nil) then
 					gcinclude.MissingWarned[mode] = true;
@@ -2125,6 +2145,14 @@ end
 			end
 		end
 		return (next(equip) ~= nil) and equip or nil;
+	end
+
+	-- The weapon layer as one string, to tell whether a command changed it.
+	function gcinclude.WeaponLayerKey()
+		local set = gcinclude.BuildWeaponLayer() or {};
+		local out = {};
+		for _, cname in ipairs(gcinclude.WeaponSlotNames) do out[#out + 1] = tostring(gcinclude.WeaponLabel(set[cname])) end
+		return table.concat(out, '|');
 	end
 
 	function gcinclude.ApplyWeapons(force)
