@@ -29,6 +29,7 @@ local ctrl = false;
 local press, drag = nil, nil;    -- { w, id } of a pressed button / { w, dx, dy } of a box being moved
 local mx, my = nil, nil;         -- cursor
 local hovW, hovOrd = nil, nil;   -- box and item number under the cursor this frame
+local hovWin = nil;              -- box under the cursor this frame
 local tipText, tipBox, tipShown = nil, nil, nil;
 
 local K = {
@@ -188,6 +189,7 @@ local imgui = setmetatable({
     end,
     IsMouseDown = function() return mouseDown end,
     IsItemHovered = function() return (cur ~= nil) and (cur == hovW) and (cur.n == hovOrd) end,
+    IsWindowHovered = function() return (cur ~= nil) and (cur == hovWin) end,
     SetTooltip = function(t) tipText = (string.gsub(tostring(t or ''), '%%%%', '%%')) end,
     GetIO = function() return { KeyCtrl = ctrl } end,
     PushStyleColor = function(idx, col) colorN = colorN + 1; colorIdx[colorN], colorVal[colorN] = idx, col end,
@@ -205,10 +207,11 @@ local hit;
 
 function I.BeginFrame()
     frame = frame + 1;
-    hovW, hovOrd, tipText = nil, nil, nil;
-    if (mx ~= nil) and (drag == nil) then
+    hovW, hovOrd, tipText, hovWin = nil, nil, nil, nil;
+    if (mx ~= nil) then
         local w, b = hit(mx, my);
-        if (b ~= nil) then hovW, hovOrd = w, b.ord end
+        hovWin = w;
+        if (b ~= nil) and (drag == nil) then hovW, hovOrd = w, b.ord end
     end
     for i = colorN, 1, -1 do colorIdx[i], colorVal[i] = nil, nil end
     colorN = 0;

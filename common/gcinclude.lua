@@ -2,8 +2,8 @@
 	function gcinclude.Relay(msg, isErr) -- also shown on the box with the HUD open (gchud)
 		if (gchud ~= nil) and (gchud.Relay ~= nil) then pcall(gchud.Relay, msg, isErr) end
 	end
-	function gcinclude.Say(msg) print(chat.header('GCinclude'):append(chat.message(msg))); gcinclude.Relay(msg, false) end
-	function gcinclude.Err(msg) print(chat.header('GCinclude'):append(chat.error(msg))); gcinclude.Relay(msg, true) end
+	function gcinclude.Say(msg) print(chat.header('GoomSwap'):append(chat.message(msg))); gcinclude.Relay(msg, false) end
+	function gcinclude.Err(msg) print(chat.header('GoomSwap'):append(chat.error(msg))); gcinclude.Relay(msg, true) end
 
 	--[[
 	Only edit the next two small sections here. See the readme on my github for more information on usages for my profiles.
@@ -169,9 +169,10 @@
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
 		HUDOwners = T{}; -- your main(s), e.g. T{'YourMain'}: open the HUD with every box on load; on other boxes /gchud shows only their own line; T{} = every box sees all
-		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GCinclude/GCauto lines, as [Name]
-		HUDX = 300; -- alt HUD position; drag it in game, saved per character
-		HUDY = 40;
+		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GoomSwap lines, as [Name]
+		HUDX = 2; -- HUD position (top left); drag it in game, saved per character
+		HUDY = 2;
+		HUDHover = true; -- the HUD owner sees its own line until the mouse is over the HUD, then every box; false = always every box
 		HUDAlpha = 0.70; -- HUD background opacity, 0 = none
 		HUDScale = 0.9; -- HUD text size (compact style)
 		HUDStyle = 'compact'; -- HUD look: 'compact' (tight) or 'large' (bigger text, more spacing, full names); /gchud large|compact, saved per character
@@ -311,7 +312,8 @@
 
 	function gcinclude.Message(toggle, status)
 		if toggle ~= nil and status ~= nil then
-			gcinclude.Say(toggle .. ' is now ' .. tostring(status))
+			if (type(status) == 'boolean') then status = status and 'on' or 'off' end
+			gcinclude.Say(toggle .. ' ' .. tostring(status))
 		end
 	end
 
@@ -1821,7 +1823,7 @@ end
 			gcinclude.Err('usage: /autogear [on|off|regen N|refresh N|dt N|petdt N], 0 = never');
 			return;
 		end
-		print(chat.header('GCinclude'):append(chat.message(string.format('AutoGear %s | regen <%d%% hp, refresh <%d%% mp (both out of combat) | dt <%d%% hp | petdt <%d%% pet hp',
+		print(chat.header('GoomSwap'):append(chat.message(string.format('AutoGear %s | regen <%d%% hp, refresh <%d%% mp (both out of combat) | dt <%d%% hp | petdt <%d%% pet hp',
 			(cfg.AutoGear ~= false) and 'on' or 'off', cfg.RegenGearHPP or 0, cfg.RefreshGearMPP or 0, cfg.DTGearHPP or 0, cfg.PetDTGearHPP or 0))));
 	end
 
@@ -3786,7 +3788,7 @@ end
 
 		for n = 1, #gcinclude.Rolls do
 			if gcinclude.Rolls[n][1] == roll then
-				print(chat.header('GCinclude'):append('[' .. chat.warning(roll) .. ']' .. '  [Lucky: ' .. chat.success(gcinclude.Rolls[n][2]) .. ']  [Unlucky: ' .. chat.error(gcinclude.Rolls[n][3]) .. ']'));
+				print(chat.header('GoomSwap'):append('[' .. chat.warning(roll) .. ']' .. '  [Lucky: ' .. chat.success(gcinclude.Rolls[n][2]) .. ']  [Unlucky: ' .. chat.error(gcinclude.Rolls[n][3]) .. ']'));
 				return;
 			end
 		end
@@ -3852,7 +3854,7 @@ end
 	function gcinclude.DoSiphon()
 		local recast = gcinclude.CheckAbilityRecast('Elemental Siphon');
 		if recast ~= 0 then
-			print(chat.header('GCinclude'):append(chat.warning('Elemental Siphon not available yet!')));
+			print(chat.header('GoomSwap'):append(chat.warning('Elemental Siphon not available yet!')));
 			return;
 		end
 		local pet = gData.GetPet();

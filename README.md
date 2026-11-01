@@ -104,7 +104,7 @@ Copying a newer `common/` over yours erases your edits: note them, or set them p
 | Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
 | Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
 | Action checks | `Validate`, `ValidateMP`, `WaltzTPCut` |
-| HUD / bar | `HUDOwners`, `HUDMessages`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
+| HUD / bar | `HUDOwners`, `HUDHover`, `HUDMessages`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
 | Other | `Keybinds`, `Messages`, `Trace`, `LockstyleSet`, `CombatWindow`, `XIRollSet`, `CapacityCapes`, `JubileeSlot`, `AmmoWarn`, `NinjaToolWarn`, `SleepCancelStoneskin`, `ElementReport`, `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
 
 Weapon modes, default weapons, job helpers: `COMMANDS.md` Job file.
@@ -141,15 +141,16 @@ Keys: Ctrl+grave `/wm`, Shift+grave `/wm default`, Ctrl+Shift+grave `/def`, Alt+
 
 Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower: over IPC); one box shows them all.
 
-- **Who gets the grid:** in `common/gcinclude.lua` settings, `HUDOwners = T{'YourMain'};` (per job: `gcinclude.settings.HUDOwners`
-  in `OnLoad`). Those characters open it on load with every box; on any other box `/gchud` shows only that box's line.
+- **Who gets the grid:** in `common/gcinclude.lua` settings, `HUDOwners = T{'YourMain'};` (per character: `settings` in
+  `char.lua`). Those characters open it on load with every box; on any other box `/gchud` shows only that box's line.
   Empty list: any box's `/gchud` shows every box.
 - **Use:** click a cell = run it on that box; click a name = its hidden modes; Ctrl+click `mb` = tier. The owner also
-  prints the other boxes' GCinclude/GCauto lines as `[Name]` (`HUDMessages = false` to stop).
+  prints the other boxes' GoomSwap lines as `[Name]` (`HUDMessages = false` to stop).
 - **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
-- **Columns:** everything a box's job has always shows, so the width never changes. Toggles are one-letter flags
-  (`T` TH, `I` SIR, `K` kite, `F` food, `S` soda…): letter = on, `.` = off. `HUDAbbr` shortens values, `HUDLabels`
-  renames headers. A box on `/wsset high` shows its `mmode` cell purple; a box with `/hoxne` on shows its `wpn` cell teal.
+- **Layout:** top left; `HUDOwners` first, then party order. The owner sees its own line until the mouse is over the HUD,
+  then every box (`HUDHover = false`: always all). Every column a box's job has always shows, so the width never changes.
+  Name colour: red SIR, orange TH, cyan kite, yellow PROC. Food, soda, harp, song lock, death: a chat line when they change.
+  A box on `/wsset high` shows its `mmode` cell purple; `/hoxne` on, its `wpn` cell teal. `HUDAbbr` shortens values.
 
 ## How sets stack
 

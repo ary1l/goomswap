@@ -248,7 +248,7 @@ function gcdisplay.BarCommand(args)
 	gcdisplay.Update();
 	barPlaced = false;
 	bar_save();
-	print(chat.header('GCinclude'):append(chat.message('Display bar: ' .. (cfg.DisplayBar and 'On' or 'Off'))));
+	print(chat.header('GoomSwap'):append(chat.message('Display bar: ' .. (cfg.DisplayBar and 'On' or 'Off'))));
 end
 
 function gcdisplay.Unload()
@@ -264,7 +264,7 @@ function gcdisplay.Initialize(settings)
 		local ok, err = pcall(render_bar);
 		if (not ok) and (cfg ~= nil) and (cfg.DisplayBar == true) then
 			cfg.DisplayBar = false;
-			print(chat.header('GCinclude'):append(chat.error('Display bar off after an error: ' .. tostring(err))));
+			print(chat.header('GoomSwap'):append(chat.error('Display bar off after an error: ' .. tostring(err))));
 		end
 	end);
 end
