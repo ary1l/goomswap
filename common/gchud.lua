@@ -55,12 +55,12 @@ gchud.ToggleOrder = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'AutoFoo
 
 -- Column header glyphs. Override any with settings.HUDLabels = { Main = 'mn' }.
 local SHORT = {
-    DTset = 'dt', MDTset = 'md', Aminon = 'am', SIR = 'si', TH = 'th', Kite = 'kt',
-    AutoFood = 'fd', AutoSoda = 'sd', PROC = 'pr',
+    DTset = 'dt', MDTset = 'md', Aminon = 'am', -- in the def cell
+    SIR = 'si', TH = 'th', Kite = 'kt', AutoFood = 'fd', AutoSoda = 'sd', PROC = 'pr', -- toggles: no columns (name colour or chat), detail line
     Burst = 'bs', AutoNuke = 'an', String = 'hp', SongLock = 'sl', Death = 'dh',
     Def = 'def', MB = 'mb', MBTier = 'tier',
-    Weapons = 'wpn', MeleeSet = 'mmode', WsSet = 'buff', Main = 'm', Sub = 's', Range = 'r', Ammo = 'a',
-    NukeSet = 'nk', Element = 'el', TankSet = 'tk', Hoxne = 'hx', PupMode = 'pp', Weapon = 'w',
+    Weapons = 'wpn', MeleeSet = 'melee', WsSet = 'buff', Main = 'main', Sub = 'sub', Range = 'rng', Ammo = 'ammo',
+    NukeSet = 'nuke', Element = 'elem', TankSet = 'tank', Hoxne = 'hx', PupMode = 'pup', Weapon = 'w',
 };
 
 -- Full names, hover tooltips only.
@@ -149,16 +149,20 @@ local COL_HOVER = { 1.0, 1.0, 1.0, 0.12 };
 -- bright = changed since load, dim = still at load default
 local COL_ON = { 0.35, 0.95, 0.45, 1.0 };      -- on, changed
 local COL_ON_DEF = { 0.30, 0.70, 0.38, 0.85 }; -- on, default
-local COL_OFF = { 0.40, 0.40, 0.45, 0.70 };    -- off, default
+local COL_OFF = { 0.50, 0.50, 0.56, 0.85 };    -- off, default
 local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off something that loads on)
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
-local COL_VAL_DEF = { 0.75, 0.68, 0.35, 0.85 };-- cycle, default
-local COL_EMPTY = { 0.45, 0.45, 0.50, 0.60 };  -- cycle at None/Off
+local COL_VAL_DEF = { 0.82, 0.74, 0.42, 1.0 }; -- cycle, default
+local COL_EMPTY = { 0.55, 0.55, 0.60, 0.80 };  -- cycle at None/Off
 local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- mmode cell while /wsset high (no column of its own): purple
 local COL_HOXNE = { 0.35, 0.85, 0.85, 1.0 };    -- wpn cell while /hoxne is on (no column of its own): teal
-local COL_NAME = { 0.75, 0.85, 1.00, 1.0 };
+local COL_NAME = { 0.93, 0.93, 0.96, 1.0 };     -- white: SIR/TH/Kite/PROC colours stand out
+-- The name shows SIR, TH, Kite, PROC (first one on, in this order; its tooltip lists all on). The rest of the toggles
+-- (food, soda, harp, song lock, death) have no place on the HUD: their changes come in as chat lines.
+local NAME_STATES = { { 'SIR', 'SIR', { 0.35, 0.55, 1.00, 1.0 } }, { 'TH', 'TH', { 1.00, 0.80, 0.20, 1.0 } },
+    { 'Kite', 'Kite', { 0.35, 0.95, 0.45, 1.0 } }, { 'PROC', 'PROC', { 1.00, 0.35, 0.35, 1.0 } } }; -- blue, gold, green, red
 local COL_JOB = { 0.60, 0.65, 0.75, 1.0 };
-local COL_KEY = { 0.55, 0.58, 0.65, 1.0 };
+local COL_KEY = { 0.78, 0.82, 0.90, 1.0 };     -- headers
 
 local function dir()
     return string.format('%sconfig\\addons\\luashitacast\\hud\\', AshitaCore:GetInstallPath());
@@ -245,7 +249,7 @@ local function write_state()
     lastWriteTime = now;
 end
 
-local function read_all()
+local function read_all(everyBox)
     local files = listing();
     if (type(files) ~= 'table') then return end
     local now = os.time();
@@ -279,10 +283,22 @@ local function read_all()
             end
         end
     end
-    table.sort(out, function (a, b) return a.Name < b.Name end);
+    -- Order: HUDOwners first (in their order), then party/alliance order, then by name.
+    local rank = {};
+    for i, n in ipairs(inc.settings.HUDOwners or {}) do rank[string.lower(n)] = i end
+    local okp, party = pcall(function() return AshitaCore:GetMemoryManager():GetParty() end);
+    for i = 0, 17 do
+        local okn, n = pcall(function() return party:GetMemberName(i) end);
+        if okp and okn and (type(n) == 'string') and (n ~= '') and (rank[string.lower(n)] == nil) then rank[string.lower(n)] = 100 + i end
+    end
+    table.sort(out, function (a, b)
+        local ra, rb = rank[string.lower(a.Name)] or 1000, rank[string.lower(b.Name)] or 1000;
+        if (ra ~= rb) then return ra < rb end
+        return a.Name < b.Name;
+    end);
     -- With HUDOwners set, a box not in it shows only its own line.
     local owners, player = inc.settings.HUDOwners, me();
-    if (type(owners) == 'table') and (#owners > 0) and (player ~= nil) then
+    if (everyBox ~= true) and (type(owners) == 'table') and (#owners > 0) and (player ~= nil) then
         local owner = false;
         for _, n in ipairs(owners) do
             if (string.lower(n) == string.lower(player.Name)) then owner = true end
@@ -298,7 +314,7 @@ local function read_all()
     rows = out;
 end
 
--- Messages: every box keeps its last GCinclude/GCauto lines in hud\<Name>.msg, one "seq\tS|E\ttext" per line;
+-- Messages: every box keeps its last GoomSwap lines in hud\<Name>.msg, one "seq\tS|E\ttext" per line;
 -- the box with the HUD open prints the other boxes' new ones as [Name]. seq is time based, so it keeps rising
 -- across reloads; a box seen for the first time has its backlog skipped.
 local MSG_KEEP = 10;
@@ -431,8 +447,7 @@ end
 
 -- Grid: one header line, one line per box, columns aligned by measured text width.
 -- Cycle columns first (weapon set leads), then toggle columns. Clicking a cell drives that box.
--- Hidden to save width: cycle columns None/Off on every box; toggle columns at load default on
--- every box, unless pinned (settings.HUDPinned). They show up as soon as any box changes them.
+-- Columns show while any box's job has them, set or not, so the width doesn't change; toggles are one-letter flags.
 -- DT/MDT/Aminon merge into one 'def' column (/def); SIR (a casting mode) keeps its own 'si' column, AutoNuke/Burst into 'mb' (/automb).
 -- Clicking a name adds a detail line under it: job + that box's hidden cycles and toggles.
 local PADX = 1; -- cell padding; set from the style each frame in render()
@@ -556,9 +571,11 @@ local function draw_cell(row, key, c)
 end
 
 -- Keys present on any box: canonical order first, then the rest as they appear.
+local view = {}; -- the rows the grid is built from (all of them)
+local collapsedView, hoverUntil = false, 0; -- collapsed: only this box's line is drawn, in the full grid's columns
 local function columns(orderKey, canonical)
     local out, seen, present = {}, {}, {};
-    for _, row in ipairs(rows) do
+    for _, row in ipairs(view) do
         for _, k in ipairs(row[orderKey]) do
             if (orderKey ~= 'ToggleOrder') or not GROUP_PART[k] then present[k] = true end
         end
@@ -566,7 +583,7 @@ local function columns(orderKey, canonical)
     for _, k in ipairs(canonical) do
         if present[k] and not seen[k] then seen[k] = true; out[#out + 1] = k end
     end
-    for _, row in ipairs(rows) do
+    for _, row in ipairs(view) do
         for _, k in ipairs(row[orderKey]) do
             if present[k] and not seen[k] then seen[k] = true; out[#out + 1] = k end
         end
@@ -583,7 +600,7 @@ local function build_grid(x0)
     local tcols = columns('ToggleOrder', gchud.ToggleOrder);
     local cells = {};
     local shown = {};
-    for i, row in ipairs(rows) do
+    for i, row in ipairs(view) do
         cells[i] = { c = {}, t = {} };
         for _, k in ipairs(ccols) do
             local c = cycle_cell(row, k);
@@ -597,7 +614,7 @@ local function build_grid(x0)
                 c.col = COL_HOXNE; -- /hoxne on: shown on the wpn cell, so the HUD doesn't widen
                 c.tip = c.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
             end
-            if (c ~= nil) and not c.empty and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- MBTier: in mb cell; WsSet, Hoxne: colours; all on the detail line
+            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};
@@ -607,34 +624,20 @@ local function build_grid(x0)
     for _, k in ipairs(ccols) do
         if shown[k] then vis[#vis + 1] = k end
     end
-    local pinned = {};
-    for _, k in ipairs(inc.settings.HUDPinned or {}) do pinned[k] = true end
+    -- def, mb and every toggle a box's job has always show (toggles as one-letter flags side by side), so turning
+    -- something on or off never changes the width.
     local gvis, gshown = {}, {};
     for _, k in ipairs(GROUP_ORDER) do
-        local present, keep = false, (pinned[k] == true) or (pinned[label(k)] == true);
-        for i = 1, #rows do
-            local c = cells[i].g[k];
-            if (c ~= nil) then
-                present = true;
-                if not c.def then keep = true end
-            end
+        for i = 1, #view do
+            if (cells[i].g[k] ~= nil) then gvis[#gvis + 1] = k; gshown[k] = true; break end
         end
-        if present and keep then gvis[#gvis + 1] = k; gshown[k] = true end
     end
-    local tvis, tshown = {}, {};
-    for _, k in ipairs(tcols) do
-        local keep = (pinned[k] == true) or (pinned[label(k)] == true);
-        for i = 1, #rows do
-            local c = cells[i].t[k];
-            if (c ~= nil) and not c.def then keep = true end
-        end
-        if keep then tvis[#tvis + 1] = k; tshown[k] = true end
-    end
+    local tvis, tshown = {}, {}; -- toggles: no columns (name colour, chat lines, detail line)
 
     -- measure
     local gap = textw(string.rep(' ', style().gap));
     local nameW = 0;
-    for _, row in ipairs(rows) do nameW = math.max(nameW, textw(short_name(row.Name)) + PADX * 2) end
+    for _, row in ipairs(view) do nameW = math.max(nameW, textw(short_name(row.Name)) + PADX * 2) end
     local cols = {};
     local x = x0 + nameW + gap;
     -- Widths don't jump: mb/def take their widest possible text, every column keeps the widest it has been
@@ -646,36 +649,38 @@ local function build_grid(x0)
         local lw = textw(l);
         local w = lw;
         if (FIXED_TEXT[key] ~= nil) then w = math.max(w, textw(FIXED_TEXT[key])) end
-        for i = 1, #rows do
+        for i = 1, #view do
             local c = cells[i][kind][key];
             if (c ~= nil) then c.w = textw(c.text); w = math.max(w, c.w) end -- reused when the row is drawn
         end
         w = math.max(w, widthMax[kind .. key] or 0);
         widthMax[kind .. key] = w;
-        w = w + PADX * 2;
+        local flag = (kind == 't'); -- one-letter flags sit side by side
+        w = w + (flag and 0 or PADX * 2);
         cols[#cols + 1] = { key = key, kind = kind, x = x, w = w, center = center, label = l, labelW = lw, tip = FULL[key] or key };
-        x = x + w + gap;
+        x = x + w + (flag and 0 or gap);
     end
     for _, k in ipairs(vis) do add(k, 'c', false) end
     x = x + gap; -- group gap
     for _, k in ipairs(gvis) do add(k, 'g', false) end
+    x = x + gap; -- before the flags
     for _, k in ipairs(tvis) do add(k, 't', true) end
     local nameIds = {};
-    for i, row in ipairs(rows) do nameIds[i] = short_name(row.Name) .. '##' .. row.Name .. 'row' end
-    return { rows = rows, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds,
+    for i, row in ipairs(view) do nameIds[i] = short_name(row.Name) .. '##' .. row.Name .. 'row' end
+    return { view = view, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds,
         ccols = ccols, tcols = tcols, shown = shown, gshown = gshown, tshown = tshown };
 end
 
 local grid = nil;
 local function body(scale)
-    if (#rows == 0) then
+    if (#view == 0) then
         imgui.Text('no characters reporting');
         track_drag();
         return;
     end
     local x0 = imgui.GetCursorPosX();
     local g = grid;
-    if (g == nil) or (g.rows ~= rows) or (g.style ~= style_name()) or (g.scale ~= scale) or (g.x0 ~= x0) then
+    if (g == nil) or (g.view ~= view) or (g.style ~= style_name()) or (g.scale ~= scale) or (g.x0 ~= x0) then
         g = build_grid(x0);
         g.scale = scale;
         grid = g;
@@ -687,7 +692,8 @@ local function body(scale)
         if first then imgui.SetCursorPosX(cx) else imgui.SameLine(cx) end
     end
 
-    -- header
+    -- header (not on the owner's one-line view)
+    if not collapsedView then
     imgui.PushStyleColor(ImGuiCol_Text, COL_KEY);
     for i, col in ipairs(cols) do
         at(col, col.labelW, i == 1);
@@ -696,16 +702,27 @@ local function body(scale)
         tip(col.tip);
     end
     imgui.PopStyleColor();
+    end
 
     -- rows
-    for i, row in ipairs(rows) do
+    local mine = me();
+    for i, row in ipairs(view) do
+      if not collapsedView or ((mine ~= nil) and (string.lower(row.Name) == string.lower(mine.Name))) then
         local open = (expanded[row.Name] == true);
         imgui.SetCursorPosX(x0);
-        imgui.PushStyleColor(ImGuiCol_Text, COL_NAME);
+        local ncol, states = COL_NAME, {};
+        for _, st in ipairs(NAME_STATES) do
+            if (part(row, st[1]) == true) then
+                if (#states == 0) then ncol = st[3] end
+                states[#states + 1] = st[2];
+            end
+        end
+        imgui.PushStyleColor(ImGuiCol_Text, ncol);
         local clicked = imgui.SmallButton(g.nameIds[i]);
         imgui.PopStyleColor();
         if imgui.IsItemHovered() then
-            tip(row.Name .. '  ' .. tostring(row.Job) .. '  (click: ' .. (open and 'hide' or 'show') .. ' details)');
+            tip(row.Name .. '  ' .. tostring(row.Job) .. ((#states > 0) and ('  |  on: ' .. table.concat(states, ', ')) or '')
+                .. '  (click: ' .. (open and 'hide' or 'show') .. ' details)');
         end
         for _, col in ipairs(cols) do
             local c = cells[i][col.kind][col.key];
@@ -752,6 +769,7 @@ local function body(scale)
             end
         end
         if clicked then expanded[row.Name] = not open end
+      end
     end
     track_drag();
 end
@@ -790,6 +808,11 @@ local function render()
     imgui.PushStyleColor(ImGuiCol_Border, COL_CLEAR);
     local ok, err = true, nil;
     if imgui.Begin('GC##gchud', true, flags) then
+        -- Owner: one line (this box) until the mouse is over the HUD, then every box (HUDHover = false: always all).
+        local now = os.clock();
+        if (imgui.IsWindowHovered ~= nil) and imgui.IsWindowHovered() then hoverUntil = now + 0.6 end
+        collapsedView = (inc.settings.HUDHover ~= false) and (now >= hoverUntil) and (#rows > 1);
+        view = rows;
         -- any error between Begin and End must not skip PopFont/End/Pop*, or ImGui asserts every frame after
         ok, err = pcall(inner);
         if fontPushed then imgui.PopFont(); fontPushed = false; end
@@ -829,6 +852,15 @@ end
 -- True when <name> is one of my boxes: every box running this engine rewrites hud\<Name>.txt every
 -- 0.25s (write_state), so a fresh file means a box that can take '/lac fwd'. Cached 5s per name.
 local boxCache = {};
+-- Every reporting box's modes (for /gcmodes all): { Name, Job, Toggles, Cycles }, owner first.
+function gchud.AllRows()
+    local keep = rows;
+    pcall(read_all, true);
+    local all = rows;
+    rows = keep;
+    return all;
+end
+
 function gchud.IsBox(name)
     if (type(name) ~= 'string') or (name == '') then return false end
     local key = string.lower(name);

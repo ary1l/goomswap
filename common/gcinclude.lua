@@ -2,8 +2,8 @@
 	function gcinclude.Relay(msg, isErr) -- also shown on the box with the HUD open (gchud)
 		if (gchud ~= nil) and (gchud.Relay ~= nil) then pcall(gchud.Relay, msg, isErr) end
 	end
-	function gcinclude.Say(msg) print(chat.header('GCinclude'):append(chat.message(msg))); gcinclude.Relay(msg, false) end
-	function gcinclude.Err(msg) print(chat.header('GCinclude'):append(chat.error(msg))); gcinclude.Relay(msg, true) end
+	function gcinclude.Say(msg) print(chat.header('GoomSwap'):append(chat.message(msg))); gcinclude.Relay(msg, false) end
+	function gcinclude.Err(msg) print(chat.header('GoomSwap'):append(chat.error(msg))); gcinclude.Relay(msg, true) end
 
 	--[[
 	Only edit the next two small sections here. See the readme on my github for more information on usages for my profiles.
@@ -116,8 +116,8 @@
 		};
 		ReceivedWindow = 8; -- seconds the received gear stays on before it gives up
 		MyBoxes = T{}; -- your own characters that get the Multisend 'received' notice; boxes running this engine are found by themselves (HUD state file), so only needed if that fails, e.g. T{'YourMain','YourBox'}
-		ElementReport = false;
-		OrpheusPoints = T{ {1.93, 15}, {13, 1} }; -- {yalms, affinity %}: BG's two documented ends; linear between them is assumed. Add tested points in order. -- /gcinfo prints what the element picker chose and why
+		ElementReport = false; -- chat line naming the obi/Orpheus/ring/back each nuke or WS got; /gctrace shows it too
+		OrpheusPoints = T{ {1.93, 15}, {13, 1} }; -- {yalms, affinity %}: BG's two documented ends; linear between them is assumed. Add tested points in order. /gctrace prints what the element picker chose
 		ElementGear = T{ -- waist chosen by the spell's element, day and weather
 			Obis = T{ Dark = 'Anrin Obi' }, -- element obis you own; add as you get them
 			AnyObi = 'Hachirin-no-Obi', -- every element; worn only when day/weather nets positive
@@ -169,14 +169,14 @@
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
 		HUDOwners = T{}; -- your main(s), e.g. T{'YourMain'}: open the HUD with every box on load; on other boxes /gchud shows only their own line; T{} = every box sees all
-		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GCinclude/GCauto lines, as [Name]
-		HUDX = 300; -- alt HUD position; drag it in game, saved per character
-		HUDY = 40;
-		HUDAlpha = 0.45; -- HUD background opacity, 0 = none
+		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GoomSwap lines, as [Name]
+		HUDX = 2; -- HUD position (top left); drag it in game, saved per character
+		HUDY = 2;
+		HUDHover = true; -- the HUD owner sees its own line until the mouse is over the HUD, then every box; false = always every box
+		HUDAlpha = 0.70; -- HUD background opacity, 0 = none
 		HUDScale = 0.9; -- HUD text size (compact style)
 		HUDStyle = 'compact'; -- HUD look: 'compact' (tight) or 'large' (bigger text, more spacing, full names); /gchud large|compact, saved per character
 		HUDScaleLarge = 1.1; -- HUD text size in the large style
-		HUDPinned = T{'Def', 'MB', 'Kite', 'AutoFood', 'AutoSoda'}; -- HUD columns always shown (Def = DT/MDT/Aminon via /def, MB = /mbmode); others only once a box changes them
 		HUDAbbr = {}; -- HUD short value overrides, e.g. { ['Carnwenhan'] = 'Carn' }; auto-shortened otherwise
 		HUDLabels = {}; -- HUD column glyph overrides, e.g. { Main = 'mn', AutoSoda = 'so' }
 		Validate = true; -- cancel spells/abilities/WS that would fail: KO, sleep/stun/petrify/terror/charm, mute, silence, recast, MP, stratagems, Waltz TP, amnesia
@@ -207,8 +207,8 @@
 		gcinclude.Err('HUD disabled: gchud.lua failed to load.');
 	end
 
-	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
-	'packer','pupmode','weaponset','wm','mainset','subset','rangeset','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcinfo','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
+	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
+	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
@@ -312,7 +312,8 @@
 
 	function gcinclude.Message(toggle, status)
 		if toggle ~= nil and status ~= nil then
-			gcinclude.Say(toggle .. ' is now ' .. tostring(status))
+			if (type(status) == 'boolean') then status = status and 'on' or 'off' end
+			gcinclude.Say(toggle .. ' ' .. tostring(status))
 		end
 	end
 
@@ -445,7 +446,7 @@ end
 			gcinclude.FlipToggle('MDTset', args[2]);
 			toggle = 'MDT Set';
 			status = gcdisplay.GetToggle('MDTset');
-		elseif (args[1] == 'meleeset') or (args[1] == 'mmode') then
+		elseif (args[1] == 'meleeset') or (args[1] == 'mmode') or (args[1] == 'melee') then
 			local before = gcinclude.WeaponLayerKey();
 			gcinclude.PickCycle('MeleeSet', args[2]);
 			if (gcinclude.WeaponLayerKey() ~= before) then gcinclude.ApplyWeapons(true) end -- a Weapon_<mode>Acc: you asked, swaps at any TP
@@ -479,10 +480,8 @@ end
 			status = gcdisplay.GetCycle('Hoxne');
 		elseif (args[1] == 'received') then
 			gcinclude.ReceivedCommand(args);
-		elseif (args[1] == 'gcinfo') then
-			gcinclude.settings.ElementReport = not (gcinclude.settings.ElementReport == true);
-			toggle = 'Element report';
-			status = gcinclude.settings.ElementReport;
+		elseif (args[1] == 'gcmodes') then
+			gcinclude.ShowModes(string.lower(tostring(args[2] or '')) == 'all');
 		elseif (args[1] == 'gce') then
 			gcinclude.EnchantCommand(args);
 		elseif (args[1] == 'gchelp') then
@@ -682,7 +681,7 @@ end
 
 	gcinclude.WeaponSlots = T{1, 2, 3, 4};
 	gcinclude.WeaponSlotNames = T{'Main', 'Sub', 'Range', 'Ammo'};
-	gcinclude.WeaponCommands = T{weaponset = 'Weapons', wm = 'Weapons', mainset = 'Main', subset = 'Sub', rangeset = 'Range', ammoset = 'Ammo'};
+	gcinclude.WeaponCommands = T{weaponset = 'Weapons', wm = 'Weapons', mainset = 'Main', mw = 'Main', subset = 'Sub', sw = 'Sub', rangeset = 'Range', rw = 'Range', ammoset = 'Ammo'}; -- mw/sw/rw: short /mainset /subset /rangeset
 	gcinclude.WeaponRoleNames = T{'melee', 'ranged', 'caster', 'tank'};
 	gcinclude.WeaponKeywords = T{'remove', 'displaced', 'ignore'};
 	gcinclude.BlockedAmmo = T{'hauksbok'};
@@ -742,6 +741,44 @@ end
 		local list = gcdisplay.GetCycleValues(cname);
 		if (type(list) ~= 'table') then return false end
 		return gcinclude.SetCycleFrom(cname, list, val);
+	end
+
+	-- /gcmodes: this box's modes and the toggles that are on, in chat (for playing without the HUD); /gcmodes all: every
+	-- box reporting to the HUD folder.
+	gcinclude.ModeNames = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'WsSet', 'wsset'}, {'Main', 'main'}, {'Sub', 'sub'},
+		{'Range', 'rng'}, {'Ammo', 'ammo'}, {'NukeSet', 'nuke'}, {'Element', 'elem'}, {'TankSet', 'tank'}, {'PupMode', 'pup'},
+		{'Weapon', 'weapon'}, {'MBTier', 'mb tier'}, {'Hoxne', 'hoxne'} };
+	gcinclude.ToggleNames = { DTset = 'DT', MDTset = 'MDT', Aminon = 'Aminon', SIR = 'SIR', TH = 'TH', Kite = 'Kite',
+		AutoFood = 'Food', AutoSoda = 'Soda', PROC = 'PROC', String = 'Harp', SongLock = 'Song lock', Death = 'Death',
+		Burst = 'Burst', AutoNuke = 'Auto MB' };
+	function gcinclude.ModesLine(cycles, toggles)
+		local parts = {};
+		for _, m in ipairs(gcinclude.ModeNames) do
+			local v = cycles[m[1]];
+			if (v ~= nil) then
+				v = string.gsub(tostring(v), '^~', '');
+				parts[#parts + 1] = m[2] .. ' ' .. (((v == 'None') or (v == 'Off')) and '-' or gcinclude.ModeLabel(m[1], v));
+			end
+		end
+		local on = {};
+		for k, v in pairs(toggles) do
+			v = string.gsub(tostring(v), '^~', '');
+			if (v == 'true') then on[#on + 1] = gcinclude.ToggleNames[k] or k end
+		end
+		table.sort(on);
+		parts[#parts + 1] = 'on: ' .. ((#on > 0) and table.concat(on, ', ') or '-');
+		return table.concat(parts, ' | ');
+	end
+	function gcinclude.ShowModes(all)
+		if all and (gchud ~= nil) and (gchud.AllRows ~= nil) then
+			local list = gchud.AllRows();
+			if (#list == 0) then gcinclude.Say('/gcmodes all: no box reporting (each writes its HUD state while GoomSwap runs)') end
+			for _, r in ipairs(list) do
+				print(chat.header(r.Name):append(chat.message(tostring(r.Job) .. ' | ' .. gcinclude.ModesLine(r.Cycles, r.Toggles))));
+			end
+			return;
+		end
+		gcinclude.Say(gcinclude.ModesLine(gcdisplay.GetCycles(), gcdisplay.GetToggles()));
 	end
 
 	-- How a cycle value reads in chat and the HUD: the melee mode Default is 'Base' (its sets stay <set>_Default).
@@ -1768,7 +1805,7 @@ end
 		end
 		if (next(set) == nil) then return end
 		gFunc.EquipSet(set);
-		if (gcinclude.settings.ElementReport == true) then
+		if (gcinclude.settings.ElementReport == true) or (gcinclude.settings.Trace == true) then -- /gctrace shows it too
 			print(chat.header('GoomSwap'):append(chat.message((label or element) .. ' [' .. element .. ']: ' .. table.concat(report, ', '))));
 		end
 	end
@@ -1822,7 +1859,7 @@ end
 			gcinclude.Err('usage: /autogear [on|off|regen N|refresh N|dt N|petdt N], 0 = never');
 			return;
 		end
-		print(chat.header('GCinclude'):append(chat.message(string.format('AutoGear %s | regen <%d%% hp, refresh <%d%% mp (both out of combat) | dt <%d%% hp | petdt <%d%% pet hp',
+		print(chat.header('GoomSwap'):append(chat.message(string.format('AutoGear %s | regen <%d%% hp, refresh <%d%% mp (both out of combat) | dt <%d%% hp | petdt <%d%% pet hp',
 			(cfg.AutoGear ~= false) and 'on' or 'off', cfg.RegenGearHPP or 0, cfg.RefreshGearMPP or 0, cfg.DTGearHPP or 0, cfg.PetDTGearHPP or 0))));
 	end
 
@@ -2847,7 +2884,7 @@ end
 	function gcinclude.Help()
 		local skip, thskip = gcinclude.SkipList('SIRSkip'), gcinclude.SkipList('THSkip');
 		local lines = T{
-			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset',
+			'weapons: /wm [name|N|none|default|role] [force], /mainset /subset /rangeset /ammoset (short: /mw /sw /rw)',
 			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots|all] /unlock [slots|all]',
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
@@ -3787,7 +3824,7 @@ end
 
 		for n = 1, #gcinclude.Rolls do
 			if gcinclude.Rolls[n][1] == roll then
-				print(chat.header('GCinclude'):append('[' .. chat.warning(roll) .. ']' .. '  [Lucky: ' .. chat.success(gcinclude.Rolls[n][2]) .. ']  [Unlucky: ' .. chat.error(gcinclude.Rolls[n][3]) .. ']'));
+				print(chat.header('GoomSwap'):append('[' .. chat.warning(roll) .. ']' .. '  [Lucky: ' .. chat.success(gcinclude.Rolls[n][2]) .. ']  [Unlucky: ' .. chat.error(gcinclude.Rolls[n][3]) .. ']'));
 				return;
 			end
 		end
@@ -3853,7 +3890,7 @@ end
 	function gcinclude.DoSiphon()
 		local recast = gcinclude.CheckAbilityRecast('Elemental Siphon');
 		if recast ~= 0 then
-			print(chat.header('GCinclude'):append(chat.warning('Elemental Siphon not available yet!')));
+			print(chat.header('GoomSwap'):append(chat.warning('Elemental Siphon not available yet!')));
 			return;
 		end
 		local pet = gData.GetPet();
