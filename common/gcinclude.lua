@@ -80,6 +80,7 @@
 		holla_Ring = 'Dim. Ring (Holla)';
 		WeaponTPGuard = 1000; -- at or above this TP (engaged or not), the main/sub/range on are held against automatic swaps (action sets, idle/engaged sets); weapon commands (/wm, /mainset...) still swap; 0 = action sets always get their weapons (mages, BRD, GEO, COR); per job in the job file
 		IdleWeapons = true; -- not engaged: weapons your idle sets name (Idle, Idle_Regen/Refresh, Town, Dt...) beat the weapon mode; false = the weapon mode always
+		AftermathHold = true; -- Aftermath up: main/sub/range held against idle/engaged swaps (a weapon change ends it); spells still get their weapons; /wm still swaps
 		HoldExemptSkills = T{'Singing', 'Geomancy', 'Healing Magic', 'Enfeebling Magic', 'Enhancing Magic'}; -- spells of these skills always get their weapon swaps
 		HoldExemptAbilities = T{'Corsair Roll'}; -- ability types that always get their weapon swaps
 		SmartSwap = true; -- keep main/sub/range on the spells below instead of losing TP to a weapon swap, /smartswap to toggle
@@ -677,7 +678,7 @@ end
 	gcinclude.WeaponRoleNames = T{'melee', 'ranged', 'caster', 'tank'};
 	gcinclude.WeaponKeywords = T{'remove', 'displaced', 'ignore'};
 	gcinclude.BlockedAmmo = T{'hauksbok'};
-	gcinclude.ExtraAmmo = T{'Hoxne Ampulla'};
+	gcinclude.ExtraAmmo = T{}; -- ammo put in every job's /ammoset cycle; none: Hoxne Ampulla is /hoxne's, not a weapon cycle
 	gcinclude.WeaponItems = {};
 
 	function gcinclude.WeaponCycleList(cname)
@@ -1206,10 +1207,25 @@ end
 		return true;
 	end
 
-	function gcinclude.HoldActive()
+	-- Aftermath (buffs 270-272 Lv.1-3, 273 relic): any weapon equipped, switched or unequipped ends it, ammo doesn't
+	-- (FFXIclopedia Aftermath), so it holds Main/Sub/Range against idle/engaged sets whatever WeaponTPGuard is; a spell
+	-- still gets its weapons (IsHoldExempt), as do the TP hold's exemptions.
+	function gcinclude.AftermathUp()
+		for id = 270, 273 do
+			if (gcinclude.BuffCount(id) > 0) then return true end
+		end
+		return false;
+	end
+
+	function gcinclude.TPHoldActive()
 		local guard = gcinclude.settings.WeaponTPGuard or 0;
 		if (guard <= 0) then return false end
 		return (AshitaCore:GetMemoryManager():GetParty():GetMemberTP(0) >= guard); -- any status: a Main/Sub/Range swap resets TP idle too
+	end
+
+	function gcinclude.HoldActive()
+		if gcinclude.TPHoldActive() then return true end
+		return (gcinclude.settings.AftermathHold ~= false) and gcinclude.AftermathUp();
 	end
 
 	-- Asleep: Main/Sub/Range named in the Sleeping set skip the TP hold, so a wake-up weapon can go on
@@ -1753,7 +1769,8 @@ end
 		local action = gData.GetAction();
 		if (action == nil) then return false end
 		if (action.ActionType == 'Spell') then
-			return gcinclude.settings.HoldExemptSkills:contains(action.Skill);
+			if gcinclude.settings.HoldExemptSkills:contains(action.Skill) then return true end
+			return gcinclude.AftermathUp() and not gcinclude.TPHoldActive(); -- held only for Aftermath: a cast still gets its weapons
 		elseif (action.ActionType == 'Ability') then
 			return gcinclude.settings.HoldExemptAbilities:contains(action.Type);
 		end

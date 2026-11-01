@@ -103,10 +103,6 @@ local sets = {
         Main = 'Naegling',
         Sub = 'Genmei Shield',
     },
-    Weapon_Hoxne = {
-        Range = 'displaced',
-        Ammo = 'Hoxne Ampulla',
-    },
     Tp_Default = {
 		Main = 'naegling',
         Sub = 'fusetto +2',
@@ -585,16 +581,17 @@ local sets = {
     },
     Savage_Acc = {},
 
-	Ruthless_Default = {
+	Ruthless_Default = { -- Ruthless Stroke (Mpu Gandring): guide Mid buff set with your gear. Moonshade: the engine's (Ear2 under 1750 TP);
+	                     -- Epaminondas's Ring -> Ephramad's Ring, Alabaster Mantle -> Intarabus's Cape (WSD)
         Range = { Name = 'Linos', Augment = { [1] = 'Weapon skill damage +2%', [2] = 'Attack+13', [3] = 'STR+8' } },
 		Head = 'nyame helm',
         Neck = 'Bard\'s Charm +2',
-		Ear1 = 'regal earring',
-		Ear2 = 'telos earring',
+		Ear1 = 'Hoxne Earring',
+		Ear2 = 'Ishvara Earring',
 		Body = 'Bihu Just. +4',
 		Hands = 'nyame Gauntlets',
         Ring1 = 'Ephramad\'s Ring',
-        Ring2 = 'sroda ring',
+        Ring2 = 'Ilabrat Ring',
         Back = { Name = 'Intarabus\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'Sailfi Belt +1',
 		Legs = 'Nyame Flanchard',
@@ -671,7 +668,7 @@ end
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
-    gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan', 'Hoxne'}; -- Weapon_CarnwenhanAcc goes on with /mset Acc
+    gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan'}; -- Weapon_CarnwenhanAcc goes on with /mset Acc; Hoxne is /hoxne
     gcinclude.DefaultWeapons = 'Naegling';
     gcinclude.Initialize();
 end
