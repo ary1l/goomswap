@@ -111,7 +111,7 @@ local sets = {
         Legs = 'sworn brais',
         Feet = 'sworn sabatons',
     },
-    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear2 = 'Digni. Earring',

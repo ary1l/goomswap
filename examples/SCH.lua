@@ -112,7 +112,7 @@ local sets = {
         Legs = 'Agwu\'s Slops',
         Feet = 'Agwu\'s Pigaches',
     },
-    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
     },

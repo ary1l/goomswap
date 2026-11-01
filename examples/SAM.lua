@@ -144,7 +144,7 @@ local sets = {
         Legs = { Name = 'Tatena. Haidate +1', AugPath='A' },
         Feet = { Name = 'Tatena. Sune. +1', AugPath='A' },
     },
-    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear1 = 'Mache Earring +1',

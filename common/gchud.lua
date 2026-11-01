@@ -17,7 +17,7 @@ local placed = false;
 local STALE = 15;
 
 gchud.CycleCommands = {
-    MeleeSet = 'meleeset',
+    MeleeSet = 'mmode',
     WsSet = 'wsset',
     Weapons = 'wm',
     Main = 'mainset',
@@ -59,7 +59,7 @@ local SHORT = {
     AutoFood = 'fd', AutoSoda = 'sd', PROC = 'pr',
     Burst = 'bs', AutoNuke = 'an', String = 'hp', SongLock = 'sl', Death = 'dh',
     Def = 'def', MB = 'mb', MBTier = 'tier',
-    Weapons = 'wpn', MeleeSet = 'mset', WsSet = 'buff', Main = 'm', Sub = 's', Range = 'r', Ammo = 'a',
+    Weapons = 'wpn', MeleeSet = 'mmode', WsSet = 'buff', Main = 'm', Sub = 's', Range = 'r', Ammo = 'a',
     NukeSet = 'nk', Element = 'el', TankSet = 'tk', Hoxne = 'hx', PupMode = 'pp', Weapon = 'w',
 };
 
@@ -154,7 +154,8 @@ local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off somet
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
 local COL_VAL_DEF = { 0.75, 0.68, 0.35, 0.85 };-- cycle, default
 local COL_EMPTY = { 0.45, 0.45, 0.50, 0.60 };  -- cycle at None/Off
-local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- melee set cell while /wsset high (no column of its own): purple
+local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- mmode cell while /wsset high (no column of its own): purple
+local COL_HOXNE = { 0.35, 0.85, 0.85, 1.0 };    -- wpn cell while /hoxne is on (no column of its own): teal
 local COL_NAME = { 0.75, 0.85, 1.00, 1.0 };
 local COL_JOB = { 0.60, 0.65, 0.75, 1.0 };
 local COL_KEY = { 0.55, 0.58, 0.65, 1.0 };
@@ -467,6 +468,7 @@ local function cycle_cell(row, key)
     local raw = row.Cycles[key];
     if (raw == nil) then return nil end
     local value, def = strip_default(raw);
+    if (key == 'MeleeSet') and (value == 'Default') then value = 'Base' end -- the melee mode Default reads Base
     local empty = (EMPTY[string.lower(value)] == true);
     local cmd = gchud.CycleCommands[key];
     return {
@@ -585,10 +587,15 @@ local function build_grid(x0)
             local c = cycle_cell(row, k);
             cells[i].c[k] = c;
             if (k == 'MeleeSet') and (c ~= nil) and (strip_default(row.Cycles.WsSet or '') == 'High') then
-                c.col = COL_HIGHBUFF; -- /wsset high: shown on the melee set cell, so the HUD doesn't widen
+                c.col = COL_HIGHBUFF; -- /wsset high: shown on the mmode cell, so the HUD doesn't widen
                 c.tip = c.tip .. '  |  WS buff: High (/wsset)';
             end
-            if (c ~= nil) and not c.empty and (k ~= 'MBTier') and (k ~= 'WsSet') then shown[k] = true end -- MBTier: in mb cell; WsSet: ml colour; both on the detail line
+            local hx = strip_default(row.Cycles.Hoxne or '');
+            if (k == 'Weapons') and (c ~= nil) and (hx ~= '') and (EMPTY[string.lower(hx)] ~= true) then
+                c.col = COL_HOXNE; -- /hoxne on: shown on the wpn cell, so the HUD doesn't widen
+                c.tip = c.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
+            end
+            if (c ~= nil) and not c.empty and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- MBTier: in mb cell; WsSet, Hoxne: colours; all on the detail line
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};

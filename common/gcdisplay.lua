@@ -206,7 +206,9 @@ local function bar_body()
 		local c = Cycles[k];
 		imgui.SameLine();
 		imgui.PushStyleColor(ImGuiCol_Text, COL_VAL);
-		imgui.Text(k .. ':' .. tostring(c.Array[c.Index]));
+		local v = c.Array[c.Index];
+		if (k == 'MeleeSet') and (v == 'Default') then v = 'Base' end -- the melee mode Default reads Base
+		imgui.Text(k .. ':' .. tostring(v));
 		imgui.PopStyleColor();
 	end
 	track_drag();

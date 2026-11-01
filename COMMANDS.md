@@ -4,9 +4,9 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
 (all), `/ms sendto <name> /wm 3` (one), or your own Multisend shortcuts. Windower: `//send @all gs c wm default`.
 
 - On/off commands (`/dt`, `/th`, `/sir`, `/kite`, `/automb`, `/autofood`…) take `on`/`off`; no word flips.
-- Cycle and weapon commands (`/wm`, `/mainset`…, `/mset`, `/nukeset`, `/tankset`, `/weapon`, `/elecycle`, `/pupmode`):
+- Cycle and weapon commands (`/wm`, `/mainset`…, `/mmode`, `/nukeset`, `/tankset`, `/weapon`, `/elecycle`, `/pupmode`):
   no word cycles; a word picks, any case: exact name, else the one value it starts, else the one whose initials it is,
-  else the one containing it, or a number (`/wm max` = Maxentius, `/nukeset oa` = OccultAcumen, `/mset sb` =
+  else the one containing it, or a number (`/wm max` = Maxentius, `/nukeset oa` = OccultAcumen, `/mmode sb` =
   SubtleBlow, `/tankset meva`, `/wm 3`). Two matches: it lists them. `/setcycle <name> <value>` sets any cycle.
 - Windower: `profile.Packer` goes to `//gs org` (Organizer addon).
 - Zoning turns off `/autofood`, `/autosoda`, `/hoxne`. While zoning (zone-line reply until 3s after arriving) nothing
@@ -130,8 +130,8 @@ checked; the game's own message says when it refuses.
 
 | Command | Does |
 |---|---|
-| `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb`): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). `Weapon_<Mode>Acc` comes on with Acc, so Acc weapons aren't `/wm` modes (swaps at any TP, like `/wm`). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
-| `/wsset [mid\|high]` | Weapon skill buff level: `high` wears `<WS set>_HighBuff` over each WS set the handler wore (`Ws_HighBuff`, `Savage_HighBuff`, `Savage_Acc_HighBuff`). `mid` (load default) = nothing extra. HUD: that box's `mset` cell turns purple |
+| `/mmode [value]` (`/meleeset`) | Base → SubtleBlow → Acc, no word = next (`/mmode sb`). Base wears your `_Default` sets: `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). `Weapon_<Mode>Acc` comes on with Acc, so Acc weapons aren't `/wm` modes (swaps at any TP, like `/wm`). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
+| `/wsset [mid\|high]` | Weapon skill buff level: `high` wears `<WS set>_HighBuff` over each WS set the handler wore (`Ws_HighBuff`, `Savage_HighBuff`, `Savage_Acc_HighBuff`). `mid` (load default) = nothing extra. HUD: that box's `mmode` cell turns purple |
 | `/kite` / `/th` | Movement gear / `TH` until tagged |
 | `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). No word shows thresholds (doesn't flip). Regen/Refresh out of combat, not over `/dt`; Dt/Pet_Dt any time |
 | `/received <spell>` | Wear that `*_Received` set |
@@ -175,7 +175,7 @@ One row per box (each writes `hud/<name>.txt` 4x/s); opens on load for `HUDOwner
 lacks it, `-` none. Bright = changed, dim = default, orange = off but loads on. Toggle columns (and `def`, `mb`) at
 load default on every box hide unless in `HUDPinned`; cycle columns hide only when None/Off on every box. Ashita: click a cell runs it on that box, click a name shows hidden columns, Ctrl+click `mb`
 cycles its tier. Windower: the same clicks and tooltips; drag a box by any spot off a cell; boxes share state over IPC.
-Glyphs: `wpn` Weapons, `mset` MeleeSet, `m` `s` `r` `a` slots, `nk` NukeSet, `el` Element, `tk` TankSet, `hx` Hoxne,
+Glyphs: `wpn` Weapons (teal: `/hoxne` on), `mmode` MeleeSet (purple: `/wsset high`), `m` `s` `r` `a` slots, `nk` NukeSet, `el` Element, `tk` TankSet, `hx` Hoxne,
 `pp` PupMode, `w` Weapon, `th` TH, `kt` Kite, `fd` AutoFood, `sd` AutoSoda, `hp` String, `sl` SongLock, `pr` PROC,
 `dh` Death, `tier` MBTier, `mb` AutoMB (`Off`, or `Auto` + tier; `+F` = `/burst`). Tune: `HUDAbbr`, `HUDLabels`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
 
@@ -186,7 +186,7 @@ Order: README How sets stack.
 | Set | Worn |
 |---|---|
 | `<set>_Self` / `_Others` / `_Burst` | Spell child sets: after your midcast, each set it wore gets its `_Self` (spell on you), `_Others` (on anyone but a monster) and `_Burst` (a burst, see Magic burst) when you have one: `Enhancing_Self`, `Cure_Others`, `Nuke_Burst`. `<prefix>_Default` also takes `<prefix>_Self` |
-| `Weapon_<Mode>` / `_1h` | Weapon mode. `Weapon_<Mode>Acc` (or `_Acc`, `_Acc_1h`): used instead while `/mset Acc`; any `/mset` value works the same |
+| `Weapon_<Mode>` / `_1h` | Weapon mode. `Weapon_<Mode>Acc` (or `_Acc`, `_Acc_1h`): used instead while `/mmode Acc`; any `/mmode` value works the same |
 | `Dt`, `mdt`, `Aminon`, `SIR` | With their toggles |
 | `Incapacitated` | Slept, petrified, stunned, terrorized: `Aminon` if `/aminon` (no Aminon set: `mdt`), else `mdt` if `/mdt`, else `Dt` (even with `/dt` off), minus Main/Sub/Range/Ammo; then this set; then `*_Received`. Over all job sets incl. `Dt`, and over `mdt`/`Aminon`, `TH`, `Buffs`, XIRoll. Under `Sleeping`, `Doomed`, `Reraise`, util sets. Not charmed (the client can't change gear) |
 | `Sleeping` | Asleep, over `Incapacitated` (else `gcinclude.sets.Sleeping`). Main/Sub/Range in it pass the TP hold, not any lock (`/lock`, `/aminon` Main/Sub, `/hoxne` Range): e.g. a Prime stage 1-2 weapon drains 1 HP/MP every 3s, which wakes you (BG-Wiki; not Diabolos' Nightmare). Weapon comes back when awake |
@@ -204,7 +204,7 @@ Order: README How sets stack.
 
 ### Hoxne layering
 
-Hoxne sets go over your job sets (incl. `Impetus`), under every engine layer, and take `/mset` variants
+Hoxne sets go over your job sets (incl. `Impetus`), under every engine layer, and take `/mmode` variants
 (`Hoxne_Tp_SubtleBlow`). MNK Victory Smite, Impetus up: `Ws_Default` → `Victory_Default` → `Victory_Imp` → `Hoxne_Ws`
 → `['Hoxne_Victory Smite']` → `['Hoxne_Victory Smite_Impetus']` → `Buffs_Ws` → Moonshade.
 Moonshade goes in Ear2 on WS under `MoonshadeTP` (1750), except `MoonshadeSkip`. A Sub that can't go with the final

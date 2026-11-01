@@ -70,7 +70,7 @@ local sets = {
         Legs = 'bhikku hose +3',
         Feet = 'anch. gaiters +4',
     },
-    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear2 = 'Mache Earring +1',
@@ -161,7 +161,7 @@ local sets = {
         Feet = 'anch. gaiters +4',
     },
     kickws_Acc = {},
-    kickws_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over kickws_Default (Dragon Kick, Tornado Kick)
+    kickws_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over kickws_Default (Dragon Kick, Tornado Kick)
     },
 
 
