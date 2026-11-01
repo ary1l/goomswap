@@ -134,6 +134,20 @@ a number: `/wm max` (Maxentius), `/nukeset oa` (OccultAcumen), `/mset sb` (Subtl
 Keys: Ctrl+grave `/wm`, Shift+grave `/wm default`, Ctrl+Shift+grave `/def`, Alt+grave `/hoxne`, Win+grave `/automb`.
 `/gckey <key> <cmd>` rebinds.
 
+## HUD (multibox)
+
+Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower: over IPC); one box shows them all.
+
+- **Who gets the grid:** in `common/gcinclude.lua` settings, `HUDOwners = T{'YourMain'};` (per job: `gcinclude.settings.HUDOwners`
+  in `OnLoad`). Those characters open it on load with every box; on any other box `/gchud` shows only that box's line.
+  Empty list: any box's `/gchud` shows every box.
+- **Use:** click a cell = run it on that box; click a name = its hidden modes; Ctrl+click `mb` = tier. The owner also
+  prints the other boxes' GCinclude/GCauto lines as `[Name]` (`HUDMessages = false` to stop).
+- **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
+- **Columns:** a mode shows while any box has it on something other than None/Off, a toggle while any box changed it
+  from its load default. Always show some: `HUDPinned = T{'th', 'kite'}`. `HUDAbbr` shortens values, `HUDLabels`
+  renames headers. A box on `/wsset high` shows its `ml` cell pink.
+
 ## How sets stack
 
 Later wins, slot by slot; a set changes only the slots it lists.

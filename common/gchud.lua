@@ -154,6 +154,7 @@ local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off somet
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
 local COL_VAL_DEF = { 0.75, 0.68, 0.35, 0.85 };-- cycle, default
 local COL_EMPTY = { 0.45, 0.45, 0.50, 0.60 };  -- cycle at None/Off
+local COL_HIGHBUFF = { 1.00, 0.45, 0.80, 1.0 }; -- melee set cell while /wsset high (no column of its own)
 local COL_NAME = { 0.75, 0.85, 1.00, 1.0 };
 local COL_JOB = { 0.60, 0.65, 0.75, 1.0 };
 local COL_KEY = { 0.55, 0.58, 0.65, 1.0 };
@@ -278,6 +279,21 @@ local function read_all()
         end
     end
     table.sort(out, function (a, b) return a.Name < b.Name end);
+    -- With HUDOwners set, a box not in it shows only its own line.
+    local owners, player = inc.settings.HUDOwners, me();
+    if (type(owners) == 'table') and (#owners > 0) and (player ~= nil) then
+        local owner = false;
+        for _, n in ipairs(owners) do
+            if (string.lower(n) == string.lower(player.Name)) then owner = true end
+        end
+        if not owner then
+            local mine = {};
+            for _, r in ipairs(out) do
+                if (string.lower(r.Name) == string.lower(player.Name)) then mine[#mine + 1] = r end
+            end
+            out = mine;
+        end
+    end
     rows = out;
 end
 
@@ -558,7 +574,6 @@ end
 
 -- Cells, visible columns and widths depend only on the rows (re-read every 0.5s), the style, the text
 -- scale and the window origin, so they are built when one of those changes, not every frame.
-local QUIET = { WsSet = true }; -- cycle columns shown only while a box has changed them (/wsset high)
 local function build_grid(x0)
     local ccols = columns('CycleOrder', gchud.CycleOrder);
     local tcols = columns('ToggleOrder', gchud.ToggleOrder);
@@ -569,7 +584,11 @@ local function build_grid(x0)
         for _, k in ipairs(ccols) do
             local c = cycle_cell(row, k);
             cells[i].c[k] = c;
-            if (c ~= nil) and not c.empty and (k ~= 'MBTier') and not (QUIET[k] and c.def) then shown[k] = true end -- MBTier: in mb cell + detail line
+            if (k == 'MeleeSet') and (c ~= nil) and (strip_default(row.Cycles.WsSet or '') == 'High') then
+                c.col = COL_HIGHBUFF; -- /wsset high: shown on the melee set cell, so the HUD doesn't widen
+                c.tip = c.tip .. '  |  WS buff: High (/wsset)';
+            end
+            if (c ~= nil) and not c.empty and (k ~= 'MBTier') and (k ~= 'WsSet') then shown[k] = true end -- MBTier: in mb cell; WsSet: ml colour; both on the detail line
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};

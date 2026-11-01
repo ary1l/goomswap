@@ -166,7 +166,7 @@
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
 		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
-		HUDOwners = T{'Shaymin'}; -- character names that open the alt HUD on load
+		HUDOwners = T{'Shaymin'}; -- your main(s): open the HUD with every box on load; on other boxes /gchud shows only their own line; T{} = every box sees all
 		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GCinclude/GCauto lines, as [Name]
 		HUDX = 300; -- alt HUD position; drag it in game, saved per character
 		HUDY = 40;
