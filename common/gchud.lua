@@ -80,7 +80,7 @@ local EMPTY = { none = true, off = true, unknown = true };
 
 -- Short value: first word (whole if <= 4 letters, else 3), initial of each later word, '+N' kept.
 -- 'Death Penalty' / 'DeathPenalty' -> DeaP, 'Anarchy +2' -> Ana+2, 'RostamB' -> RosB, 'Gleti's Knife' -> GleK.
--- Override any with settings.HUDAbbr = { ['CarnwenhanAcc'] = 'CarnA' } (case-insensitive).
+-- Override any with settings.HUDAbbr = { ['Carnwenhan'] = 'Carn' } (case-insensitive).
 local abbrCache = {};
 local function user_abbr(value)
     local user = inc.settings.HUDAbbr;

@@ -29,9 +29,10 @@ Commands are plain `/name` (Windower `//name` or `//gs c name`). Other boxes thr
   override the mode for their slot. COR/RNG modes are named for the gun, so `/mainset` changes the melee weapon.
 - `/th` on, THF: Main/Sub/Range in `TH` override mode and cycles the whole time, tagged or not. Other jobs: they come
   off at the tag with the rest of `TH` (a swap resets TP). Sub only if you can dual wield.
-- **TP hold:** at 1000+ TP Main/Sub/Range don't change (except songs, rolls, cures, enfeebling, enhancing,
+- **Idle weapons:** not engaged, weapons your idle sets name (`Idle`, `Idle_Regen`/`Idle_Refresh`, `Town`, `Dt`…) win over
+  the weapon mode; you get the mode's on engage. Main+Sub and Range+Ammo go as pairs. `IdleWeapons = false`: mode always.
+- **TP hold:** at `WeaponTPGuard`+ TP (default 1000; examples: 0 on BLM BRD COR GEO RDM SCH SMN WHM, 100 on PLD) Main/Sub/Range don't change (except songs, rolls, cures, enfeebling, enhancing,
   geomancy). Weapon commands (`/wm`, `/mainset`…, `/setcycle`) always swap, at any TP. `WeaponTPGuard = 0` disables the hold. Asleep, slots your `Sleeping` set names are let go.
-  With a weapon mode on, only its weapons are held: another weapon worn at 1000+ TP (a song set's dagger when Wild Card gave TP) is swapped back to the mode's, and that TP is lost.
 - `Weapon_<Mode>_1h` when you can't dual wield: NIN Lv10+, DNC Lv20+, THF Lv83+ main or sub at the effective level
   (FFXIclopedia; SJ Restriction / Sheol Gaol sub Lv0 doesn't count). Losing DW puts `_1h` on at once; regaining waits
   for the TP hold. `gcinclude.AlwaysDualWield = true` forces DW (BLU, THF). If the game refuses a Sub weapon for
@@ -129,7 +130,7 @@ checked; the game's own message says when it refuses.
 
 | Command | Does |
 |---|---|
-| `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb`): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
+| `/mset [value]` (`/meleeset`) | Default → SubtleBlow → Acc (`/mset sb`): `Tp_SubtleBlow` / `Tp_Acc` over `Tp_Default`, `<WS set>_SubtleBlow` / `_Acc` over its `_Default`. SubtleBlow sets are optional per set (missing = `_Default` stays). `Weapon_<Mode>Acc` comes on with Acc, so Acc weapons aren't `/wm` modes (swaps at any TP, like `/wm`). DT isn't a mode: `/dt` goes over any of them. Own list per job: `gcinclude.MeleeModes = {...}` in OnLoad |
 | `/kite` / `/th` | Movement gear / `TH` until tagged |
 | `/autogear [on\|off]` / `/autogear regen\|refresh\|dt\|petdt N` | Auto sets by HP/MP % (60/60/50/50; 0 = never). No word shows thresholds (doesn't flip). Regen/Refresh out of combat, not over `/dt`; Dt/Pet_Dt any time |
 | `/received <spell>` | Wear that `*_Received` set |
@@ -183,7 +184,7 @@ Order: README How sets stack.
 
 | Set | Worn |
 |---|---|
-| `Weapon_<Mode>` / `_1h` | Weapon mode |
+| `Weapon_<Mode>` / `_1h` | Weapon mode. `Weapon_<Mode>Acc` (or `_Acc`, `_Acc_1h`): used instead while `/mset Acc`; any `/mset` value works the same |
 | `Dt`, `mdt`, `Aminon`, `SIR` | With their toggles |
 | `Incapacitated` | Slept, petrified, stunned, terrorized: `Aminon` if `/aminon` (no Aminon set: `mdt`), else `mdt` if `/mdt`, else `Dt` (even with `/dt` off), minus Main/Sub/Range/Ammo; then this set; then `*_Received`. Over all job sets incl. `Dt`, and over `mdt`/`Aminon`, `TH`, `Buffs`, XIRoll. Under `Sleeping`, `Doomed`, `Reraise`, util sets. Not charmed (the client can't change gear) |
 | `Sleeping` | Asleep, over `Incapacitated` (else `gcinclude.sets.Sleeping`). Main/Sub/Range in it pass the TP hold, not any lock (`/lock`, `/aminon` Main/Sub, `/hoxne` Range): e.g. a Prime stage 1-2 weapon drains 1 HP/MP every 3s, which wakes you (BG-Wiki; not Diabolos' Nightmare). Weapon comes back when awake |

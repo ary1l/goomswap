@@ -78,7 +78,8 @@
 		mea_Ring = 'Dim. Ring (Mea)';
 		dem_Ring = 'Dim. Ring (Dem)';
 		holla_Ring = 'Dim. Ring (Holla)';
-		WeaponTPGuard = 1000; -- at or above this TP (engaged or not), main/sub/range are held against automatic swaps (action sets, idle/engaged sets); weapon commands (/wm, /mainset...) still swap; with a /wm mode only its weapons are held; 0 to disable
+		WeaponTPGuard = 1000; -- at or above this TP (engaged or not), the main/sub/range on are held against automatic swaps (action sets, idle/engaged sets); weapon commands (/wm, /mainset...) still swap; 0 = action sets always get their weapons (mages, BRD, GEO, COR); per job in the job file
+		IdleWeapons = true; -- not engaged: weapons your idle sets name (Idle, Idle_Regen/Refresh, Town, Dt...) beat the weapon mode; false = the weapon mode always
 		HoldExemptSkills = T{'Singing', 'Geomancy', 'Healing Magic', 'Enfeebling Magic', 'Enhancing Magic'}; -- spells of these skills always get their weapon swaps
 		HoldExemptAbilities = T{'Corsair Roll'}; -- ability types that always get their weapon swaps
 		SmartSwap = true; -- keep main/sub/range on the spells below instead of losing TP to a weapon swap, /smartswap to toggle
@@ -173,7 +174,7 @@
 		HUDStyle = 'compact'; -- HUD look: 'compact' (tight) or 'large' (bigger text, more spacing, full names); /gchud large|compact, saved per character
 		HUDScaleLarge = 1.1; -- HUD text size in the large style
 		HUDPinned = T{'Def', 'MB', 'Kite', 'AutoFood', 'AutoSoda'}; -- HUD columns always shown (Def = DT/MDT/Aminon via /def, MB = /mbmode); others only once a box changes them
-		HUDAbbr = {}; -- HUD short value overrides, e.g. { ['CarnwenhanAcc'] = 'CarnA' }; auto-shortened otherwise
+		HUDAbbr = {}; -- HUD short value overrides, e.g. { ['Carnwenhan'] = 'Carn' }; auto-shortened otherwise
 		HUDLabels = {}; -- HUD column glyph overrides, e.g. { Main = 'mn', AutoSoda = 'so' }
 		Validate = true; -- cancel spells/abilities/WS that would fail: KO, sleep/stun/petrify/terror/charm, mute, silence, recast, MP, stratagems, Waltz TP, amnesia
 		ValidateMP = true; -- the MP part; gear "MP cost -%" isn't counted, so turn off if it stops casts that would go off
@@ -442,7 +443,9 @@ end
 			toggle = 'MDT Set';
 			status = gcdisplay.GetToggle('MDTset');
 		elseif (args[1] == 'meleeset') or (args[1] == 'mset') then
+			local before = gcinclude.WeaponLayerKey();
 			gcinclude.PickCycle('MeleeSet', args[2]);
+			if (gcinclude.WeaponLayerKey() ~= before) then gcinclude.ApplyWeapons(true) end -- a Weapon_<mode>Acc: you asked, swaps at any TP
 			toggle = 'Melee Set';
 			status = gcdisplay.GetCycle('MeleeSet');
 		elseif (gcinclude.WeaponCommands[args[1]] ~= nil) then
@@ -781,6 +784,15 @@ end
 		if (#hits == 0) then
 			for _, v in ipairs(list) do
 				if (string.find(string.lower(v), want, 1, true) ~= nil) then hits:append(v) end
+			end
+		end
+		if (#hits > 1) then -- 'carn' with Carnwenhan and CarnwenhanTP: the one every other hit extends
+			for _, h in ipairs(hits) do
+				local lh, all = string.lower(h), true;
+				for _, o in ipairs(hits) do
+					if (string.sub(string.lower(o), 1, #lh) ~= lh) then all = false; break end
+				end
+				if all then return gcdisplay.SetCycle(cname, h) end
 			end
 		end
 		if (#hits == 1) then
@@ -1214,71 +1226,13 @@ end
 		return free;
 	end
 
-	-- With a weapon mode (/wm, /mainset...): its slots that hold another weapon, e.g. a song set's dagger when
-	-- Wild Card III/IV gave 1000/3000 TP mid-song (FFXIclopedia). Holding those would keep the wrong weapon, so
-	-- they are let go and the mode's weapon goes back on; that TP is lost. Returns slot -> { worn item, mode's item }.
-	-- An empty read doesn't count: the slot reads empty for a moment while gear changes.
-	function gcinclude.OffModeSlots()
-		local layer = gcinclude.BuildWeaponLayer();
-		if (layer == nil) then return nil end
-		local off = nil;
-		for _, slot in ipairs(gcinclude.HoldSlots) do
-			local want = layer[gcinclude.WeaponSlotNames[slot]];
-			if (type(want) == 'table') then want = want.Name end
-			if (type(want) == 'string') then
-				local id = gcinclude.EquippedId(slot);
-				local r = (id ~= nil) and AshitaCore:GetResourceManager():GetItemById(id) or nil;
-				local have = ((r ~= nil) and (r.Name ~= nil)) and r.Name[1] or nil;
-				if (have ~= nil) and (string.lower(have) ~= string.lower(want)) then
-					off = off or {};
-					off[slot] = { have, want };
-				end
-			end
-		end
-		return off;
-	end
-
 	gcinclude.SleepFreed = {}; -- slots the last UpdateHold let go for the Sleeping set
-	gcinclude.OffModeSaid = false;
-	gcinclude.OffSince = {}; -- slot -> when the other weapon was first seen there
-	-- Another weapon only counts after 1.5s with no action going: action sets and swaps change weapons briefly.
-	function gcinclude.SteadyOffModeSlots()
-		local raw = gcinclude.OffModeSlots();
-		local now, off = os.clock(), nil;
-		for _, slot in ipairs(gcinclude.HoldSlots) do
-			if (raw ~= nil) and (raw[slot] ~= nil) then
-				local t = gcinclude.OffSince[slot] or now;
-				gcinclude.OffSince[slot] = t;
-				if ((now - t) >= 1.5) and (gState.PlayerAction == nil) then
-					off = off or {};
-					off[slot] = raw[slot];
-				end
-			else
-				gcinclude.OffSince[slot] = nil;
-			end
-		end
-		return off;
-	end
-
 	function gcinclude.UpdateHold()
 		gcinclude.SleepFreed = {};
 		if gcinclude.HoldActive() then
 			local free = gcinclude.SleepFreeSlots();
-			local off = gcinclude.SteadyOffModeSlots();
-			if (off ~= nil) and not gcinclude.OffModeSaid then
-				gcinclude.OffModeSaid = true;
-				local o = off[1] or off[2] or off[3];
-				gcinclude.Say('TP hold: ' .. o[1] .. ' is on, not your ' .. o[2] .. '; ' .. o[2] .. ' goes back on (that TP is lost)');
-			elseif (off == nil) then
-				gcinclude.OffModeSaid = false;
-			end
 			for _, slot in ipairs(gcinclude.HoldSlots) do
-				if (off ~= nil) and (off[slot] ~= nil) then
-					if (gcinclude.HeldSlots[slot] ~= nil) then
-						if (gcinclude.LockedSlots[slot] == nil) then gState.Disabled[slot] = false end
-						gcinclude.HeldSlots[slot] = nil;
-					end
-				elseif (free ~= nil) and free[slot] then
+				if (free ~= nil) and free[slot] then
 					gcinclude.SleepFreed[slot] = true;
 					if (gcinclude.HeldSlots[slot] ~= nil) then
 						if (gcinclude.LockedSlots[slot] == nil) then gState.Disabled[slot] = false end
@@ -1289,10 +1243,8 @@ end
 					gcinclude.HeldSlots[slot] = true;
 				end
 			end
-		else
-			gcinclude.OffModeSaid = false;
-			gcinclude.OffSince = {};
-			if (next(gcinclude.HeldSlots) ~= nil) then gcinclude.UnlockWeapons() end
+		elseif (next(gcinclude.HeldSlots) ~= nil) then
+			gcinclude.UnlockWeapons();
 		end
 	end
 
@@ -2142,17 +2094,26 @@ end
 		return (f == true);
 	end
 
+	-- Weapon_<name>, Weapon_<name>_1h first when you can't dual wield.
+	function gcinclude.WeaponSetFor(name)
+		if not gcinclude.CanDualWield() then
+			local s = gcinclude.FindSet('Weapon_' .. name .. '_1h');
+			if (s ~= nil) then return s end
+		end
+		return gcinclude.FindSet('Weapon_' .. name);
+	end
+
 	function gcinclude.BuildWeaponLayer()
 		local equip = {};
 		local mode = gcdisplay.GetCycle('Weapons');
 		if gcinclude.IsWeaponValue(mode) then
+			-- /mset variant first: Weapon_Carnwenhan_Acc or Weapon_CarnwenhanAcc while /mset Acc, when you have one
 			local set = nil;
-			if not gcinclude.CanDualWield() then
-				set = gcinclude.FindSet('Weapon_' .. mode .. '_1h');
+			local ms = gcdisplay.GetCycle('MeleeSet');
+			if (type(ms) == 'string') and (ms ~= 'Default') then
+				set = gcinclude.WeaponSetFor(mode .. '_' .. ms) or gcinclude.WeaponSetFor(mode .. ms);
 			end
-			if (set == nil) then
-				set = gcinclude.FindSet('Weapon_' .. mode);
-			end
+			if (set == nil) then set = gcinclude.WeaponSetFor(mode) end
 			if (set == nil) then
 				if (gcinclude.MissingWarned[mode] == nil) then
 					gcinclude.MissingWarned[mode] = true;
@@ -2186,9 +2147,22 @@ end
 		return (next(equip) ~= nil) and equip or nil;
 	end
 
+	-- The weapon layer as one string, to tell whether a command changed it.
+	function gcinclude.WeaponLayerKey()
+		local set = gcinclude.BuildWeaponLayer() or {};
+		local out = {};
+		for _, cname in ipairs(gcinclude.WeaponSlotNames) do out[#out + 1] = tostring(gcinclude.WeaponLabel(set[cname])) end
+		return table.concat(out, '|');
+	end
+
 	function gcinclude.ApplyWeapons(force)
 		local set = gcinclude.BuildWeaponLayer();
 		if (set == nil) then return end
+		local p = gData.GetPlayer();
+		if (gcinclude.IdleWeaponSlots ~= nil) and (p ~= nil) and (p.Status ~= 'Engaged') then -- idle weapons stay; the mode's come on when you engage
+			for n, _ in pairs(gcinclude.IdleWeaponSlots) do set[gcinclude.WeaponSlotNames[n]] = nil end
+			if (next(set) == nil) then return end
+		end
 		if (force == true) then
 			gcinclude.UnlockWeapons(); -- force lifts the TP hold only; /lock stays absolute
 			gcinclude.NextHoldCheck = os.clock() + 0.5; -- let the swap land before the hold re-checks
@@ -2430,6 +2404,7 @@ end
 		if (gEquip == nil) or (gEquip.GcRawToBuffer ~= nil) then return end
 		gEquip.GcRawToBuffer, gEquip.GcRawClear, gEquip.GcRawProcess = gEquip.EquipItemToBuffer, gEquip.ClearBuffer, gEquip.ProcessBuffer;
 		local shadow = {};
+		gcinclude.ShadowItem = function(slot) return shadow[slot] end
 		gEquip.ClearBuffer = function(...)
 			shadow = {};
 			return gEquip.GcRawClear(...);
@@ -2842,9 +2817,35 @@ end
 		end
 	end
 
+	-- What this handler has put in a slot so far (LAC's buffer; Windower's core keeps its own).
+	function gcinclude.BufferedItem(slot)
+		if (gEquip ~= nil) and (gEquip.Buffered ~= nil) then return gEquip.Buffered(slot) end
+		if (gcinclude.ShadowItem ~= nil) then return gcinclude.ShadowItem(slot) end
+		return nil;
+	end
+
+	-- Not engaged (settings.IdleWeapons): weapons your idle sets named in this handler (Idle, Idle_Regen/Refresh,
+	-- Town, Dt...) beat the weapon mode; slots they leave alone still get the mode's. Main and Sub go as a pair, so
+	-- do Range and Ammo (Ammo alone: only Ammo). The TP hold still keeps the weapons on at WeaponTPGuard+ TP.
+	gcinclude.IdleWeaponSlots = nil; -- slots left to the idle sets in the last handler (ApplyWeapons)
+	function gcinclude.IdleWeaponDrop(set, player)
+		if (set == nil) or (gcinclude.settings.IdleWeapons == false) or (player == nil) or (player.Status == 'Engaged') then return nil end
+		local function named(n) return gcinclude.BufferedItem(n) ~= nil end
+		local drop = nil;
+		local function add(...) drop = drop or {}; for _, n in ipairs({ ... }) do drop[n] = true end end
+		if named(1) or named(2) then add(1, 2) end
+		if named(3) then add(3, 4) elseif named(4) then add(4) end
+		return drop;
+	end
+
 	function gcinclude.CheckWeapons(player)
 		local set = gcinclude.BuildWeaponLayer();
-		if (set ~= nil) then gFunc.EquipSet(set) end
+		local drop = gcinclude.IdleWeaponDrop(set, player);
+		gcinclude.IdleWeaponSlots = drop;
+		if (drop ~= nil) then
+			for n, _ in pairs(drop) do set[gcinclude.WeaponSlotNames[n]] = nil end
+		end
+		if (set ~= nil) and (next(set) ~= nil) then gFunc.EquipSet(set) end
 		gcinclude.CheckMDT();
 		gcinclude.CheckHoxne();
 		gcinclude.CheckTH();
