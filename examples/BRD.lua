@@ -582,7 +582,7 @@ local sets = {
     Savage_Acc = {},
 
 	Ruthless_Default = { -- Ruthless Stroke (Mpu Gandring): guide Mid buff set with your gear. Moonshade: the engine's (Ear2 under 1750 TP);
-	                     -- Epaminondas's Ring -> Karieyh Ring +1 (WSD), Alabaster Mantle -> Intarabus's Cape (WSD)
+	                     -- Epaminondas's Ring -> Ephramad's Ring, Alabaster Mantle -> Intarabus's Cape (WSD)
         Range = { Name = 'Linos', Augment = { [1] = 'Weapon skill damage +2%', [2] = 'Attack+13', [3] = 'STR+8' } },
 		Head = 'nyame helm',
         Neck = 'Bard\'s Charm +2',
@@ -590,7 +590,7 @@ local sets = {
 		Ear2 = 'Ishvara Earring',
 		Body = 'Bihu Just. +4',
 		Hands = 'nyame Gauntlets',
-        Ring1 = 'Karieyh Ring +1',
+        Ring1 = 'Ephramad\'s Ring',
         Ring2 = 'Ilabrat Ring',
         Back = { Name = 'Intarabus\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'Sailfi Belt +1',
