@@ -405,16 +405,30 @@ local function load_pos()
     savedX, savedY = inc.settings.HUDX, inc.settings.HUDY;
 end
 
+-- HUDX/HUDY = top left of this box's own line. A drag moves it by the window's movement (same size frames),
+-- so it works whichever way the HUD grows; saved on release.
+local lastWX, lastWY, lastWH = nil, nil, nil;
+local function win_size()
+    if (imgui.GetWindowSize == nil) then return nil, nil end
+    return imgui.GetWindowSize();
+end
+local function pair(a, b)
+    if (type(a) == 'table') then return tonumber(a[1] or a.x), tonumber(a[2] or a.y) end
+    return tonumber(a), tonumber(b);
+end
 local function track_drag()
-    local x, y = imgui.GetWindowPos();
-    if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
-    x, y = tonumber(x), tonumber(y);
-    if (x == nil) or (y == nil) or imgui.IsMouseDown(0) then return end
-    x, y = math.floor(x + 0.5), math.floor(y + 0.5);
-    if (x ~= savedX) or (y ~= savedY) then
-        inc.settings.HUDX, inc.settings.HUDY = x, y;
+    local x, y = pair(imgui.GetWindowPos());
+    local _, h = pair(win_size());
+    if (x == nil) or (y == nil) then return end
+    if imgui.IsMouseDown(0) then
+        if (lastWX ~= nil) and (h == lastWH) and ((x ~= lastWX) or (y ~= lastWY)) then
+            inc.settings.HUDX = math.floor((inc.settings.HUDX or 300) + x - lastWX + 0.5);
+            inc.settings.HUDY = math.floor((inc.settings.HUDY or 40) + y - lastWY + 0.5);
+        end
+    elseif (inc.settings.HUDX ~= savedX) or (inc.settings.HUDY ~= savedY) then
         save_pos();
     end
+    lastWX, lastWY, lastWH = x, y, h;
 end
 
 local function send(name, command)
@@ -573,6 +587,8 @@ end
 -- Keys present on any box: canonical order first, then the rest as they appear.
 local view = {}; -- the rows the grid is built from (all of them)
 local collapsedView, hoverUntil = false, 0; -- collapsed: only this box's line is drawn, in the full grid's columns
+local growUp, homeH, collapsedFrames = false, nil, 0; -- grows up: own line stays at the bottom; homeH = its height
+local revSrc, revView = nil, {};
 local function columns(orderKey, canonical)
     local out, seen, present = {}, {}, {};
     for _, row in ipairs(view) do
@@ -787,12 +803,33 @@ local function inner()
     body(scale);
 end
 
+-- HUDGrow 'up' / 'down', or 'auto': up when this box's line sits in the bottom half of the screen.
+local function grows_up()
+    local g = string.lower(tostring(inc.settings.HUDGrow or 'auto'));
+    if (g == 'up') then return true elseif (g == 'down') then return false end
+    local ok, sh = pcall(function() return imgui.GetMainViewport().Size.y end);
+    if (not ok) or (tonumber(sh) == nil) then
+        ok, sh = pcall(function() return imgui.GetIO().DisplaySize.y end);
+    end
+    if (not ok) or (tonumber(sh) == nil) or (sh <= 0) then return false end
+    return ((inc.settings.HUDY or 40) + (homeH or 0) / 2) > (sh / 2);
+end
+
 local function render()
     if not visible then return end
+    local held = imgui.IsMouseDown(0);
+    if not held then -- not mid-drag
+        local up = grows_up();
+        if growUp and not up then placed = false end -- own line back on top, where it is now (HUDY)
+        growUp = up;
+    end
     if (not placed) then
         -- Always: after /gchud pos ImGui would otherwise keep the old position
         imgui.SetNextWindowPos({ inc.settings.HUDX or 300, inc.settings.HUDY or 40 }, ImGuiCond_Always);
         placed = true;
+    elseif growUp and (homeH ~= nil) and not held then
+        -- pin the bottom of the own line; the rest of the grid goes above it
+        imgui.SetNextWindowPos({ inc.settings.HUDX or 300, (inc.settings.HUDY or 40) + homeH }, ImGuiCond_Always, { 0, 1 });
     end
     local flags = bit.bor(ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoFocusOnAppearing,
         ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
@@ -812,7 +849,22 @@ local function render()
         local now = os.clock();
         if (imgui.IsWindowHovered ~= nil) and imgui.IsWindowHovered() then hoverUntil = now + 0.6 end
         collapsedView = (inc.settings.HUDHover ~= false) and (now >= hoverUntil) and (#rows > 1);
-        view = rows;
+        -- the own line's height, once the window has had a few frames to fit it
+        collapsedFrames = collapsedView and (collapsedFrames + 1) or 0;
+        if (collapsedFrames >= 3) then
+            local _, h = pair(win_size());
+            if (h ~= nil) and (h > 0) then homeH = h end
+        end
+        if growUp then
+            -- mirrored: own line (first) at the bottom, the next box just above it
+            if (revSrc ~= rows) then
+                revSrc, revView = rows, {};
+                for i = #rows, 1, -1 do revView[#revView + 1] = rows[i] end
+            end
+            view = revView;
+        else
+            view = rows;
+        end
         -- any error between Begin and End must not skip PopFont/End/Pop*, or ImGui asserts every frame after
         ok, err = pcall(inner);
         if fontPushed then imgui.PopFont(); fontPushed = false; end
