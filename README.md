@@ -343,10 +343,19 @@ job file says so (WHM `Cure_Dt`).
 `['Hoxne_Victory Smite']` → `['Hoxne_Victory Smite_Impetus']` → `Buffs_Ws` → Moonshade. Hoxne sets take `/mmode`
 variants (`Hoxne_Tp_SubtleBlow`).
 
-**Moonshade, grips:** Moonshade goes in `MoonshadeSlot` (Ear2; Ear1 when the WS set has a Sortie earring there) on WS under
-`MoonshadeTP` (1750), except `MoonshadeSkip`;
-leave it out of WS sets. A Sub that can't go with the final Main (two-hander needs a grip, grip needs a two-hander) is
-dropped.
+**Moonshade:** leave it out of WS sets; the engine adds it on every WS below `MoonshadeTP` (1750), except
+`MoonshadeSkip`. Which ear depends on what your WS set puts in `MoonshadeSlot` (Ear2):
+
+| WS set's Ear2 | Moonshade goes in | Result |
+|---|---|---|
+| Sortie earring, or any item whose text says `Right ear:` | Ear1 | Ear2 keeps its bonus; the set's Ear1 earring is the one replaced |
+| Any other earring, or none | Ear2 | That earring is replaced; Ear1 keeps the set's earring |
+
+Only the WS set counts: if it has no Ear2, a Sortie earring still on from your TP or idle set is replaced. At or above `MoonshadeTP` no Moonshade;
+an ear the WS set left on Moonshade gets the set's last other earring back. `MoonshadeTP = 0`: the engine never touches
+it.
+
+**Grips:** a Sub that can't go with the final Main (two-hander needs a grip, grip needs a two-hander) is dropped.
 
 **Received sets** (`ReceivedSets`): `Cure_Received` (Cure/Cura/Curaga), `Cursna_Received`, `Phalanx_Received`,
 `Protect_Shell_Received`, `Regen_Received`, `Refresh_Received`, `Waltz_Received` (your boxes only). Start on anyone's

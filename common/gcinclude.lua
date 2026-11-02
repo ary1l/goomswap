@@ -69,7 +69,7 @@
 		DTGearHPP = 50; -- Dt below this HPP, any status (engaged, idle, in or out of combat), 0 = never
 		PetDTGearHPP = 50; -- Pet_Dt below this pet HPP, 0 = never
 		MoonshadeTP = 1750; -- every WS, every job: Moonshade Earring below this TP, never at or above it; 0 = engine leaves Moonshade alone
-		MoonshadeSlot = 'Ear2'; -- the slot the engine puts it in
+		MoonshadeSlot = 'Ear2'; -- the slot the engine puts it in; the other ear when the WS set has a Sortie (right-ear-only) earring there
 		MoonshadeSkip = T{}; -- WS names the engine never gives Moonshade, e.g. T{'Myrkr'}
 		DisplayBar = false; -- one-line status bar (job, atk/def, toggles, cycles), /gcbar to toggle
 		DisplayBarX = 300;
