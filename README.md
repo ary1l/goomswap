@@ -185,7 +185,7 @@ one; Windower `//send @all gs c wm default`. Toggles take `on`/`off`, no word fl
 | `/gchud [on\|off\|large\|compact\|pos X Y\|debug]` | The multibox HUD (see HUD below) |
 | `/gcbar [on\|off\|pos X Y]` | One-line status bar |
 | `/gcmodes [all]` | This box's modes and toggles in chat; `all`: every box |
-| `/checksets` | Empty sets, bad item names, items in the wrong ear/ring (game text 'Right ear:': Ear2 = right, Ear1 = left) |
+| `/checksets` | Empty sets, bad item names, items in the wrong ear/ring: Sortie earrings and any item whose text says 'Right ear:' go in Ear2 (right), 'Left ear:' in Ear1 |
 | `/gcgear [JOB]` | Every item you own that the job can wear (all bags), with level, augments and stats, into `gear_<JOB>.txt` in your character folder (Ashita) |
 | `/gctrace` | What each action wore (and its obi/Orpheus pick) |
 | `/gcstyle [N]` | Lockstyle set now |
@@ -343,7 +343,8 @@ job file says so (WHM `Cure_Dt`).
 `['Hoxne_Victory Smite']` → `['Hoxne_Victory Smite_Impetus']` → `Buffs_Ws` → Moonshade. Hoxne sets take `/mmode`
 variants (`Hoxne_Tp_SubtleBlow`).
 
-**Moonshade, grips:** Moonshade goes in `MoonshadeSlot` (Ear2) on WS under `MoonshadeTP` (1750), except `MoonshadeSkip`;
+**Moonshade, grips:** Moonshade goes in `MoonshadeSlot` (Ear2; Ear1 when the WS set has a Sortie earring there) on WS under
+`MoonshadeTP` (1750), except `MoonshadeSkip`;
 leave it out of WS sets. A Sub that can't go with the final Main (two-hander needs a grip, grip needs a two-hander) is
 dropped.
 

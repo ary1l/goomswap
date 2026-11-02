@@ -3270,10 +3270,16 @@ end
 	gcinclude.PairSlots = T{ ear1 = 'ear2', ear2 = 'ear1', ring1 = 'ring2', ring2 = 'ring1' };
 	-- Ear1/Ring1 are the left ear/ring, Ear2/Ring2 the right. Some items' bonus works in one only: their game text says
 	-- 'Right ear:' (Chev. Earring +1: Right ear: DEF:+22 Shield skill +11 "Cure" potency +11%). The slot that text names.
+	-- Sortie job earrings (and +1/+2) are right ear (Ear2) only, whatever their text says.
+	gcinclude.SortieEarrings = T{'chev.', 'hashi.', 'lethargy', 'ebers', 'wicce', 'arbatel', 'azimuth', 'fili', 'chas.', 'bhikku',
+		'heath.', 'peltast', 'skulk.', 'kasuga', 'hattori', 'nukumi', 'karagoz', 'maculele', 'macu.', 'erilaz', 'boii', 'amini', 'beck.'};
 	local sideCache = {};
 	function gcinclude.ItemSide(name)
+		if (type(name) ~= 'string') then return nil end
 		local key = string.lower(name);
 		if (sideCache[key] == nil) then
+			local stem = string.match(key, '^(%S+) earring')
+			if (stem ~= nil) and gcinclude.SortieEarrings:contains(stem) then sideCache[key] = 'ear2'; return 'ear2' end
 			local r = AshitaCore:GetResourceManager():GetItemByName(name, 0);
 			local d = ((r ~= nil) and (type(r.Description) == 'table')) and string.lower(tostring(r.Description[1] or '')) or '';
 			sideCache[key] = (string.find(d, 'right ear:', 1, true) and 'ear2') or (string.find(d, 'left ear:', 1, true) and 'ear1')
@@ -4130,6 +4136,10 @@ end
 		local skip = (type(cfg.MoonshadeSkip) == 'table') and cfg.MoonshadeSkip:contains(ws.Name);
 		local want = (player.TP < limit) and (not skip);
 		local slot = string.lower(cfg.MoonshadeSlot or 'Ear2');
+		if want and (trail[slot] ~= nil) and (#trail[slot] > 0) then -- the WS set has a one-ear item there (Sortie earring in Ear2): Moonshade takes the other ear
+			local last = trail[slot][#trail[slot]];
+			if (gcinclude.ItemSide((type(last) == 'table') and last.Name or last) == slot) then slot = (slot == 'ear1') and 'ear2' or 'ear1' end
+		end
 		for _, ear in ipairs(T{'ear1', 'ear2'}) do
 			local list = trail[ear];
 			if want and (ear == slot) then

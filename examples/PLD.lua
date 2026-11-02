@@ -154,8 +154,8 @@ local sets = {
         Ammo = 'vanir battery',
         Head = { Name = 'nyame helm', Priority = 91 },
         Neck = 'moonlight necklace',
-        Ear1 = 'chev. earring +1',
-        Ear2 = { Name = 'Eabani Earring', Priority = 45 },
+        Ear2 = 'chev. earring +1',
+        Ear1 = { Name = 'Eabani Earring', Priority = 45 },
         Body = { Name = 'nyame mail', Priority = 136 },
         Hands = { Name = 'nyame gauntlets', Priority = 91 },
 		Ring1 = { Name = 'vexer ring +1', Priority = 55 },
@@ -225,8 +225,8 @@ local sets = {
         Ammo = 'Staunch Tathlum +1', --10SIR
         Head = { Name = 'Souv. Schaller +1', Priority = 175 }, --15rec/20SIR
         Neck = 'moonlight necklace',--15SIR
-        Ear1 = 'chev. earring +1', --11
-        Ear2 = 'mendi. earring', --5
+        Ear2 = 'chev. earring +1', --11
+        Ear1 = 'mendi. earring', --5
         Body = { Name = 'chev. cuirass +3', Priority = 151 },--20SIR
         Hands = { Name = 'Macabre Gaunt. +1', Priority = 29 }, --11
         Ring1 = 'murky ring',--3SIR
@@ -290,8 +290,8 @@ local sets = {
     Absorb_TP = { -- /sir never goes over this (settings.SIRSkip); /aminon's weapons stay
         Head = { Name = 'Chev. Armet +3', Priority = 145 },
         Neck = { Name = 'Null Loop', Priority = 50 },
-		Ear1 = 'chev. earring +1',
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+		Ear2 = 'chev. earring +1',
+		Ear1 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'Chev. Cuirass +3', Priority = 151 },
         Hands = { Name = 'Chev. Gauntlets +3', Priority = 64 },
         Ring1 = 'Stikini Ring +1',
