@@ -186,6 +186,7 @@ one; Windower `//send @all gs c wm default`. Toggles take `on`/`off`, no word fl
 | `/gcbar [on\|off\|pos X Y]` | One-line status bar |
 | `/gcmodes [all]` | This box's modes and toggles in chat; `all`: every box |
 | `/checksets` | Empty sets, bad item names |
+| `/gcgear [JOB]` | Every item you own that the job can wear (all bags), with level, augments and stats, into `gear_<JOB>.txt` in your character folder (Ashita) |
 | `/gctrace` | What each action wore (and its obi/Orpheus pick) |
 | `/gcstyle [N]` | Lockstyle set now |
 | `/gcmessages` | Chat confirmations on/off |
