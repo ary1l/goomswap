@@ -185,7 +185,7 @@ one; Windower `//send @all gs c wm default`. Toggles take `on`/`off`, no word fl
 | `/gchud [on\|off\|large\|compact\|pos X Y\|debug]` | The multibox HUD (see HUD below) |
 | `/gcbar [on\|off\|pos X Y]` | One-line status bar |
 | `/gcmodes [all]` | This box's modes and toggles in chat; `all`: every box |
-| `/checksets` | Empty sets, bad item names |
+| `/checksets` | Empty sets, bad item names, items in the wrong ear/ring (game text 'Right ear:': Ear2 = right, Ear1 = left) |
 | `/gcgear [JOB]` | Every item you own that the job can wear (all bags), with level, augments and stats, into `gear_<JOB>.txt` in your character folder (Ashita) |
 | `/gctrace` | What each action wore (and its obi/Orpheus pick) |
 | `/gcstyle [N]` | Lockstyle set now |

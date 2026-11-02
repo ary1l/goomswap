@@ -3268,6 +3268,19 @@ end
 	end
 
 	gcinclude.PairSlots = T{ ear1 = 'ear2', ear2 = 'ear1', ring1 = 'ring2', ring2 = 'ring1' };
+	-- Ear1/Ring1 are the left ear/ring, Ear2/Ring2 the right. Some items' bonus works in one only: their game text says
+	-- 'Right ear:' (Chev. Earring +1: Right ear: DEF:+22 Shield skill +11 "Cure" potency +11%). The slot that text names.
+	local sideCache = {};
+	function gcinclude.ItemSide(name)
+		local key = string.lower(name);
+		if (sideCache[key] == nil) then
+			local r = AshitaCore:GetResourceManager():GetItemByName(name, 0);
+			local d = ((r ~= nil) and (type(r.Description) == 'table')) and string.lower(tostring(r.Description[1] or '')) or '';
+			sideCache[key] = (string.find(d, 'right ear:', 1, true) and 'ear2') or (string.find(d, 'left ear:', 1, true) and 'ear1')
+				or (string.find(d, 'right ring:', 1, true) and 'ring2') or (string.find(d, 'left ring:', 1, true) and 'ring1') or false;
+		end
+		return sideCache[key] or nil;
+	end
 
 	function gcinclude.CheckSets()
 		if (gProfile == nil) or (type(gProfile.Sets) ~= 'table') then return end
@@ -3276,18 +3289,23 @@ end
 		local families = {};
 		local pairSlots = {};
 		local moon = T{};
+		local wrongSide = T{};
 		for name, set in pairs(gProfile.Sets) do
 			if (type(set) == 'table') then
 				if (next(set) == nil) then empty:append(name) end
-				local worn = {};
+				local worn, orig = {}, {};
 				for slot, item in pairs(set) do
 					local iname = (type(item) == 'table') and item.Name or item;
 					local key = string.lower(tostring(slot));
-					if (type(iname) == 'string') and gcinclude.PairSlots[key] then worn[key] = string.lower(iname) end
+					if (type(iname) == 'string') and gcinclude.PairSlots[key] then worn[key], orig[key] = string.lower(iname), iname end
 					if (type(iname) == 'string') and (string.lower(iname) == 'moonshade earring') and not moon:contains(name) then moon:append(name) end
 				end
 				for key, iname in pairs(worn) do
-					if (worn[gcinclude.PairSlots[key]] ~= iname) then
+					local side = gcinclude.ItemSide(orig[key]);
+					if (side ~= nil) and (side ~= key) and (worn[side] ~= iname) then
+						wrongSide:append(name .. '.' .. key .. ': ' .. orig[key] .. ' (its bonus is ' .. ((side == 'ear2' or side == 'ring2') and 'right' or 'left') .. ' only: ' .. side .. ')');
+					end
+					if (side == nil) and (worn[gcinclude.PairSlots[key]] ~= iname) then
 						pairSlots[iname] = pairSlots[iname] or {};
 						pairSlots[iname][key] = true;
 					end
@@ -3319,7 +3337,9 @@ end
 		for base, seen in pairs(families) do
 			if (seen['Default'] == nil) and (gcinclude.FindSet(base) == nil) then gaps:append(base .. '_Default is missing (SubtleBlow/Acc exist)') end
 		end
-		gcinclude.Say('checksets: ' .. tostring(#empty) .. ' empty, ' .. tostring(#unknown) .. ' unknown items, ' .. tostring(#gaps) .. ' gaps, ' .. tostring(#drift) .. ' slot drifts');
+		gcinclude.Say('checksets: ' .. tostring(#empty) .. ' empty, ' .. tostring(#unknown) .. ' unknown items, ' .. tostring(#gaps) .. ' gaps, ' .. tostring(#drift) .. ' slot drifts, ' .. tostring(#wrongSide) .. ' wrong ear/ring');
+		table.sort(wrongSide);
+		for _, v in ipairs(wrongSide) do gcinclude.Err('wrong side ' .. v) end
 		for _, v in ipairs(gaps) do gcinclude.Err(v) end
 		for _, v in ipairs(unknown) do gcinclude.Err('unknown item ' .. v) end
 		if (#moon > 0) and ((gcinclude.settings.MoonshadeTP or 0) > 0) then
