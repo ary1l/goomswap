@@ -210,7 +210,7 @@
 
 	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
 	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
-	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps'};
+	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps','gcgear'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
 		ontic = 'ontic extremity',
@@ -483,6 +483,8 @@ end
 			gcinclude.ReceivedCommand(args);
 		elseif (args[1] == 'gcmodes') then
 			gcinclude.ShowModes(string.lower(tostring(args[2] or '')) == 'all');
+		elseif (args[1] == 'gcgear') then
+			gcinclude.GearDump(args[2]);
 		elseif (args[1] == 'gce') then
 			gcinclude.EnchantCommand(args);
 		elseif (args[1] == 'gchelp') then
@@ -770,6 +772,85 @@ end
 		parts[#parts + 1] = 'on: ' .. ((#on > 0) and table.concat(on, ', ') or '-');
 		return table.concat(parts, ' | ');
 	end
+	-- /gcgear [JOB]: every item in every bag that JOB (default: main job) can wear, by slot, best level first, with
+	-- its level, item level, bag, augments (LAC's gData.GetAugment) and description, into gear_<JOB>.txt in this
+	-- character's folder. For building a job file from what a character owns.
+	gcinclude.JobAbbr = { 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG',
+		'SMN', 'BLU', 'COR', 'PUP', 'DNC', 'SCH', 'GEO', 'RUN' };
+	gcinclude.BagNames = { [0] = 'Inventory', 'Safe', 'Storage', 'Temporary', 'Locker', 'Satchel', 'Sack', 'Case',
+		'Wardrobe', 'Safe 2', 'Wardrobe 2', 'Wardrobe 3', 'Wardrobe 4', 'Wardrobe 5', 'Wardrobe 6', 'Wardrobe 7', 'Wardrobe 8' };
+	function gcinclude.GearDump(jobArg)
+		if (windower ~= nil) then
+			gcinclude.Err('/gcgear is Ashita only. Windower: //gs export (worn gear) or the findAll addon.');
+			return;
+		end
+		local mm = AshitaCore:GetMemoryManager();
+		local player = mm:GetPlayer();
+		local job, level = player:GetMainJob(), player:GetMainJobLevel();
+		if (jobArg ~= nil) then
+			job = nil;
+			for i, a in ipairs(gcinclude.JobAbbr) do
+				if (a == string.upper(jobArg)) then job = i end
+			end
+			if (job == nil) then gcinclude.Err('/gcgear: no job ' .. tostring(jobArg)); return end
+			level = player:GetJobLevel(job);
+		end
+		local inv, res = mm:GetInventory(), AshitaCore:GetResourceManager();
+		local rows = {};
+		for c = 0, 16 do
+			for i = 1, (gData.GetContainerMax(c) or 0) do
+				local it = inv:GetContainerItem(c, i);
+				local r = (it ~= nil) and (it.Id ~= 0) and (it.Id ~= 65535) and res:GetItemById(it.Id) or nil;
+				if (r ~= nil) and (r.Slots ~= 0) and (bit.band(r.Jobs, bit.lshift(1, job)) ~= 0) then
+					local slots = {};
+					for _, sn in ipairs({ 'Main', 'Sub', 'Range', 'Ammo', 'Head', 'Neck', 'Ear1', 'Body', 'Hands', 'Ring1', 'Back',
+						'Waist', 'Legs', 'Feet' }) do
+						if (bit.band(r.Slots, gcinclude.SlotBits[sn]) ~= 0) then slots[#slots + 1] = (string.gsub(sn, '1$', '')) end
+					end
+					local augs = {};
+					local ok, aug = pcall(gData.GetAugment, it);
+					if ok and (type(aug) == 'table') then
+						if (aug.Path ~= nil) then augs[#augs + 1] = 'Path ' .. tostring(aug.Path) end
+						if (aug.Rank ~= nil) then augs[#augs + 1] = 'Rank ' .. tostring(aug.Rank) end
+						if (type(aug.Augs) == 'table') then
+							for k, v in pairs(aug.Augs) do
+								if (type(v) == 'table') then
+									augs[#augs + 1] = tostring(v.String or (tostring(k) .. ' ' .. tostring(v.Value)));
+								else
+									augs[#augs + 1] = tostring(k) .. ' ' .. tostring(v);
+								end
+							end
+						end
+					end
+					local desc = string.gsub(tostring(r.Description[1] or ''), '[\r\n]+', ' ');
+					rows[#rows + 1] = { slot = slots[1] or '?', slots = table.concat(slots, '/'), name = r.Name[1],
+						lv = r.Level, il = r.ItemLevel or 0, bag = gcinclude.BagNames[c] or tostring(c),
+						augs = table.concat(augs, ', '), desc = desc, wearable = (r.Level <= level) };
+				end
+			end
+		end
+		local order = { Main = 1, Sub = 2, Range = 3, Ammo = 4, Head = 5, Neck = 6, Ear = 7, Body = 8, Hands = 9, Ring = 10,
+			Back = 11, Waist = 12, Legs = 13, Feet = 14 };
+		table.sort(rows, function(a, b)
+			if (a.slot ~= b.slot) then return (order[a.slot] or 99) < (order[b.slot] or 99) end
+			if (a.il ~= b.il) then return a.il > b.il end
+			if (a.lv ~= b.lv) then return a.lv > b.lv end
+			return a.name < b.name;
+		end);
+		local dir = string.format('%sconfig\\addons\\luashitacast\\%s_%u\\', AshitaCore:GetInstallPath(), gState.PlayerName, gState.PlayerId);
+		local path = dir .. 'gear_' .. gcinclude.JobAbbr[job] .. '.txt';
+		local f = io.open(path, 'w');
+		if (f == nil) then gcinclude.Err('/gcgear: cannot write ' .. path); return end
+		f:write(string.format('%s %s%d: %d items. Slot | Name | Lv | iLv | Bag | Augments | Description\n',
+			gState.PlayerName, gcinclude.JobAbbr[job], level, #rows));
+		for _, r in ipairs(rows) do
+			f:write(string.format('%s%s | %s | %d | %d | %s | %s | %s\n', r.wearable and '' or '(above level) ',
+				r.slots, r.name, r.lv, r.il, r.bag, r.augs, r.desc));
+		end
+		f:close();
+		gcinclude.Say(string.format('%d %s items written to %s', #rows, gcinclude.JobAbbr[job], path));
+	end
+
 	function gcinclude.ShowModes(all)
 		if all and (gchud ~= nil) and (gchud.AllRows ~= nil) then
 			local list = gchud.AllRows();
