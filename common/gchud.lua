@@ -501,6 +501,24 @@ local function toggle_cell(row, key)
     };
 end
 
+-- The text a cycle value shows: '-' for None/Off, Base for the melee mode Default, short (compact) or full (large).
+local function cell_text(key, value)
+    value = tostring(value);
+    if (key == 'MeleeSet') and (value == 'Default') then value = 'Base' end
+    if (EMPTY[string.lower(value)] == true) then return '-' end
+    return (style().name == nil) and (user_abbr(value) or value) or abbr(value);
+end
+
+-- Widest text this box's own cycle can show (every value in its list), so its column never widens later.
+local function own_widest(key)
+    if (disp == nil) or (type(disp.GetCycleValues) ~= 'function') then return 0 end
+    local ok, list = pcall(disp.GetCycleValues, key);
+    if (not ok) or (type(list) ~= 'table') then return 0 end
+    local w = 0;
+    for _, v in ipairs(list) do w = math.max(w, textw(cell_text(key, v))) end
+    return w;
+end
+
 local function cycle_cell(row, key)
     local raw = row.Cycles[key];
     if (raw == nil) then return nil end
@@ -509,7 +527,7 @@ local function cycle_cell(row, key)
     local empty = (EMPTY[string.lower(value)] == true);
     local cmd = gchud.CycleCommands[key];
     return {
-        text = empty and '-' or ((style().name == nil) and (user_abbr(tostring(value)) or tostring(value)) or abbr(value)), -- large: full value
+        text = cell_text(key, value), -- large: full value
         col = empty and COL_EMPTY or (def and COL_VAL_DEF or COL_VAL),
         cmd = cmd,
         empty = empty,
@@ -673,6 +691,7 @@ local function build_grid(x0)
         local lw = textw(l);
         local w = lw;
         if (FIXED_TEXT[key] ~= nil) then w = math.max(w, textw(FIXED_TEXT[key])) end
+        if (kind == 'c') then w = math.max(w, own_widest(key)) end -- this box's own values: room for the longest from the start
         for i = 1, #view do
             local c = cells[i][kind][key];
             if (c ~= nil) then c.w = textw(c.text); w = math.max(w, c.w) end -- reused when the row is drawn
