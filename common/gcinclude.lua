@@ -2510,6 +2510,13 @@ end
 	end
 
 	function gcinclude.ApplyWeapons(force)
+		if (gcdisplay.GetToggle('Aminon') == true) and (#gcinclude.AminonOwned > 0) then
+			-- /aminon holds the weapons: let go, then CheckAminonLock puts the (new) mode's on and locks them again
+			gcinclude.UnlockSlots(gcinclude.AminonOwned, 'aminon');
+			gcinclude.AminonOwned = T{};
+			gcinclude.CheckAminonLock();
+			return;
+		end
 		local set = gcinclude.BuildWeaponLayer();
 		if (set == nil) then return end
 		local p = gData.GetPlayer();
@@ -3111,9 +3118,11 @@ end
 		end
 	end
 
-	-- /aminon locks Main/Sub while on, plus Range/Ammo only when the set names them (BRD instruments keep
-	-- swapping): puts on the set's items for those slots first (else keeps what you wear), then locks them so
-	-- action sets can't swap them. Other slots still swap for actions.
+	-- /aminon locks Main/Sub while on, plus Range/Ammo only when the weapon mode or the set names them (BRD
+	-- instruments keep swapping). Against Aminon you don't engage (TP comes from Regain), so the weapon mode (and
+	-- slot picks, _1h without Dual Wield) goes on even though you're idle; with no mode/pick for a slot, the
+	-- Aminon set's item, else what you wear. Then they're locked so action sets can't swap them; /wm while on
+	-- re-locks the new weapons (ApplyWeapons). Other slots still swap for actions.
 	-- Slots already /locked or Hoxne-locked are left alone; off releases only Aminon's own lock (/unlock never does).
 	gcinclude.AminonSlots = T{'Main', 'Sub', 'Range', 'Ammo'};
 	gcinclude.AminonAlways = T{1, 2}; -- Main, Sub
@@ -3130,6 +3139,7 @@ end
 			gcinclude.Say('/sir off: Aminon is on');
 		end
 		local set = gcinclude.FindSet('Aminon') or gcinclude.FindSet('mdt') or {};
+		local layer = gcinclude.BuildWeaponLayer() or {};
 		local wear, take = {}, T{};
 		for _, name in ipairs(gcinclude.AminonSlots) do
 			local slot = slotOf(name);
@@ -3137,8 +3147,9 @@ end
 			for k, _ in pairs(set) do
 				if (slotOf(k) == slot) then key = k end -- set keys in any case
 			end
-			if (gcinclude.LockedSlots[slot] == nil) and ((key ~= nil) or gcinclude.AminonAlways:contains(slot)) then
-				if (key ~= nil) then wear[key] = set[key] end
+			local mode = layer[name]; -- the weapon mode's / slot pick's item for this slot
+			if (gcinclude.LockedSlots[slot] == nil) and ((mode ~= nil) or (key ~= nil) or gcinclude.AminonAlways:contains(slot)) then
+				if (mode ~= nil) then wear[name] = mode elseif (key ~= nil) then wear[key] = set[key] end
 				take:append(slot);
 				if not gcinclude.AminonOwned:contains(slot) then gcinclude.AminonOwned:append(slot) end
 			end

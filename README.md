@@ -221,8 +221,10 @@ Keys: Ctrl+grave `/wm`, Shift+grave `/wm default`, Ctrl+Shift+grave `/def`, Alt+
 
 ## Defense and locks
 
-- `/aminon`: `Aminon` set (else `mdt`); locks Main/Sub (the set's, else what's worn) and Range/Ammo if the set names
-  them, until off. Turns `/sir` off; `/sir` is refused while it's on.
+- `/aminon`: `Aminon` set (else `mdt`), and the weapons locked until off. You don't engage Aminon (TP comes from
+  Regain), so the weapon mode's Main/Sub (slot picks, `_1h` without Dual Wield) go on even while idle; a slot the
+  mode leaves empty gets the `Aminon` set's item, else what's worn. Range/Ammo only if the mode or the set names them.
+  `/wm` while on swaps and re-locks. Turns `/sir` off; `/sir` is refused while it's on.
 - `/lock` holds until `/unlock`, even against force-equips (handy for `//gs export`). Locks have owners (you, Aminon,
   Hoxne, `/proc`, holds, `/gce`): turning one off frees only its slots; `/unlock` frees only yours and names the rest.
 - `/naked` `/weaponsonly` `/abysseaproc`: one at a time. NIN `/proc` also locks Ammo.
