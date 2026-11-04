@@ -3411,7 +3411,7 @@ end
 
 		gcinclude.CheckIncapacitated();
 		if (sleep >= 1) then gFunc.EquipSet(gcinclude.FindSet('Sleeping') or gcinclude.sets.Sleeping) end
-		if (doom >= 1) then	gFunc.EquipSet(gcinclude.sets.Doomed) end
+		if (doom >= 1) then	gFunc.EquipSet(gcinclude.FindSet('Doomed') or gcinclude.sets.Doomed) end -- a job's own Doomed set wins
 		if (weakened >= 1) then gFunc.EquipSet(gcinclude.sets.Reraise) end
 	end
 

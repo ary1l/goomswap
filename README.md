@@ -67,6 +67,39 @@ local sets = {
 };
 ```
 
+### Coming from Selindrile's GearSwap (Windower)
+
+One command per character turns your Selindrile gear files into GoomSwap job files. Your Selindrile files are only
+read, never changed.
+
+1. Install GoomSwap as above (`default.lua`, `goomswap/`, `common/`), plus `goomswap_migrate.lua` next to
+   `default.lua`, and the repo's `examples/` folder as `data/goomswap/examples/` (the job templates).
+2. Log in on the character and run `//gs load goomswap_migrate`. For every `data/<Name>/<Name>_<Job>_Gear.lua` it
+   writes `data/goomswap/<Name>/<JOB>.lua` (`<JOB>.migrated.lua` if you already have one) and a one-line
+   `data/<Name>/<JOB>.lua` that makes GearSwap load GoomSwap instead of Selindrile's `data/<JOB>.lua`.
+3. `//gs reload`, then `//gs c checksets`.
+
+Back to Selindrile for a job: delete `data/<Name>/<JOB>.lua`.
+
+It runs each gear file the way Selindrile does (`User-Globals`, `<Name>-Globals`, `<Name>-Items`, `Sel-Mappings`
+first), then puts each set into the job's template under the template's own name:
+
+| Selindrile | GoomSwap |
+|---|---|
+| `sets.idle`, `.Refresh`, `sets.resting`, `sets.Kiting`, `sets.TreasureHunter` | `Idle`, `Idle_Refresh`, `Resting`, `Movement`, `TH` |
+| `sets.engaged`, `.Acc` (any `OffenseMode`) | `Tp_Default`, `Tp_Acc`; `OffenseMode` becomes the `/mmode` list |
+| `sets.defense.PDT`, `.MDT` (else `.MEVA`) | `Dt`, `mdt` |
+| `sets.precast.FC`, `FC.Cure`, `FC['Enhancing Magic']` | `Precast`, `Cure_Precast`, `Enhancing_Precast` |
+| `sets.precast.WS`, `WS['Savage Blade']`, `.Acc` | `Ws_Default`, the template's set for that WS (or `['Savage Blade']`), `_Acc` |
+| `sets.precast.JA['Sentinel']`, `sets.midcast.Cure`, `sets.midcast['Enhancing Magic']` | the template's set, else by name |
+| `sets.weapons.<Name>` + `state.Weapons` | `Weapon_<Name>` + `/wm` modes |
+| `sets.buff.Doom`, `.Sleep`, `sets.Cure_Received`... | `Doomed`, `Sleeping`, `Cure_Received`... |
+
+Sets with no GoomSwap place (hybrid `.DT` variants, `Resistant`, Moonshade/latent sets...) are kept at the end
+as `['Sel_<path>']`: rename one to use it. Keybinds and Selindrile's automation (AutoDefense, AutoWS...) aren't
+carried over; the file's top comment lists what was left out. Slots built from Selindrile's elemental obi/cape globals are left out:
+GoomSwap adds the obi itself.
+
 ## First steps
 
 1. Fill `Idle`, `Tp_Default`, `Ws_Default`. The rest can wait.
@@ -80,7 +113,7 @@ with no set uses its family's (`['Cure']` for Cure IV). Worth copying: `WHM.lua`
 
 The top of `common/gcinclude.lua` has two blocks you edit; everything below is the engine.
 
-- **`gcinclude.sets`**: sets shared by every job: `Doomed`, `Holy_Water`, `Sleeping` (a job's own `Sleeping` wins),
+- **`gcinclude.sets`**: sets shared by every job: `Doomed`, `Holy_Water`, `Sleeping` (a job's own `Doomed`/`Sleeping` wins),
   `Reraise` (worn while Weakened), `Crafting` (`/craftset`), `Zeni` (`/zeniset`), `Fishing` (`/fishset`).
 - **`gcinclude.settings`**: one option per line, each commented.
 
