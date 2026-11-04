@@ -112,14 +112,35 @@ struct = {
 -- Ashita's function:once(delay, ...): run once after delay seconds. Windower's functions library has no
 -- 'once'; adding it does not change anything that library already defines. 'functions' is GearSwap's and
 -- outlives //gs reload, so the installed once() calls the current load's Fresh, not the first load's.
-rawset(functions, '__GoomSwapFresh', A.Fresh);
-if (rawget(functions, 'once') == nil) or (rawget(functions, '__GoomSwapOnce') == true) then
-    rawset(functions, '__GoomSwapOnce', true);
-    functions.once = function(fn, delay, ...)
-        local args, n = { ... }, select('#', ...);
-        return coroutine.schedule(function() rawget(functions, '__GoomSwapFresh')(); fn(unpack(args, 1, n)) end, tonumber(delay) or 0);
+-- Another GearSwap file loaded earlier in the session (Selindrile's libs, before goomswap_migrate) can leave the
+-- function metatable on a different table than this env's `functions`: install into that one too.
+local function install_once(lib)
+    if (type(lib) ~= 'table') then return end
+    rawset(lib, '__GoomSwapFresh', A.Fresh); -- this load's Fresh, also for a once() installed by an earlier load
+    if (rawget(lib, 'once') == nil) or (rawget(lib, '__GoomSwapOnce') == true) then
+        rawset(lib, '__GoomSwapOnce', true);
+        rawset(lib, 'once', function(fn, delay, ...)
+            local args, n = { ... }, select('#', ...);
+            return coroutine.schedule(function() rawget(lib, '__GoomSwapFresh')(); fn(unpack(args, 1, n)) end, tonumber(delay) or 0);
+        end);
     end
 end
+install_once(functions);
+-- The function metatable's __index (Windower functions.lua `index`) reads the `functions` table it was loaded
+-- with: if that isn't ours (functions.lua was run again by an earlier file), add once() there as well.
+pcall(function()
+    local fmeta = debug.getmetatable(function() end);
+    local idx = (type(fmeta) == 'table') and fmeta.__index or nil;
+    if (type(idx) == 'table') then
+        if (idx ~= functions) then install_once(idx) end
+    elseif (type(idx) == 'function') then
+        for i = 1, 30 do
+            local n, v = debug.getupvalue(idx, i);
+            if (n == nil) then break end
+            if (n == 'functions') and (type(v) == 'table') and (v ~= functions) then install_once(v) end
+        end
+    end
+end);
 
 ---------------------------------------------------------------------------------------------------
 -- Resources
