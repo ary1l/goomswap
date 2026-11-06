@@ -140,7 +140,7 @@ return { settings = { Messages = true, HUDOwners = T{'YourMain'}, LockstyleSet =
 | `WScheck` `WSdistance` | `true`, `5` | the WS range check; `/wsdistance` in game |
 | `MoonshadeTP` | `1750` | when Moonshade Earring goes on; `0` = never touched |
 | `Validate` `ValidateMP` | `true` | `false` to stop GoomSwap cancelling actions that would fail |
-| `DisplayBar` | `false` | `true`: one-line status bar (job, Atk/Def, modes, toggles); `/gcbar` |
+| `DisplayBar` | `false` | `true`: the one-line status bar on load (see Status bar); `/gcbar` |
 
 
 ## First steps
@@ -259,7 +259,7 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 | Command | Does |
 |---|---|
 | `/gchud [on\|off\|large\|compact\|pos X Y\|debug]` | The multibox HUD (see HUD below) |
-| `/gcbar [on\|off\|pos X Y]` | One-line status bar: job, Atk/Def, then each mode that's set (`wpn` `melee` `nuke` `idle`...; dim = still its default; none/off ones left out) and the job's toggles (green = on). `idle` reads `MP` `HP` `TP`. The `wpn` entry (weapon mode, else the main pick) carries the rest: `+` = a slot pick changed (`/mw` `/sw`...), then the `/mmode` as a short tag (`Acc`, `SB`; nothing at Base), teal = `/hoxne` on; the HUD and `/gcmodes` name them in full. It fits what it shows. Drag to move |
+| `/gcbar [on\|off\|pos X Y]` | One-line status bar for this box (see Status bar) |
 | `/gcmodes [all]` | This box's modes and toggles in chat; `all`: every box |
 | `/checksets` | Empty sets, bad item names, items in the wrong ear/ring: Sortie earrings and any item whose text says 'Right ear:' go in Ear2 (right), 'Left ear:' in Ear1 |
 | `/gcgear [JOB]` | Every item you own that the job can wear (all bags), with level, augments and stats, into `gear_<JOB>.txt` in your character folder (Ashita) |
@@ -386,24 +386,88 @@ Nothing is queued: press it again when ready.
 
 ## HUD (multibox)
 
-Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower: over IPC); one box shows them all.
+One window showing every box running GoomSwap: a row per box, a column per mode. Each box writes its modes 4 times a
+second (Ashita: files in `luashitacast/hud/`; Windower: over IPC), and the box with the HUD open reads them all.
 
-- **Who gets the grid:** in `common/gcinclude.lua` settings, `HUDOwners = T{'YourMain'};` (per character: `settings` in
-  `char.lua`). Those characters open it on load with every box; on any other box `/gchud` shows only that box's line.
-  Empty list: any box's `/gchud` shows every box.
-- **Use:** click a cell = run it on that box; click a name = its hidden modes. The owner also
-  prints the other boxes' GoomSwap lines as `[Name]` (`HUDMessages = false` to stop).
-- **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
-- **Layout:** top left; `HUDOwners` first, then party order. The owner sees the headers and its own line until the
-  mouse is over the HUD, then every box (`HUDHover = false`: always all). In the bottom half of the screen it opens
-  upward: your line stays put, the other boxes stack above it (`HUDGrow = 'up'`, `'down'`, `'auto'`). Every column a
-  box's job has always shows, all mode columns the same width, so the width never changes.
-  Name colour: blue SIR, gold TH, green kite, red PROC. Harp, song lock, death: a chat line when they change.
-  A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal. Bright = changed, dim = default.
-- **Columns:** `wpn` weapon mode, then the slot picks `main` `sub` `rng` `ammo` (`-` none), `melee`, `ra` (COR RNG
-  PLD `/rangedset`: `-` or `Acc`), `idle` (`/idleset`: `-`, compact `MP` `HP` `TP` = Refresh Regen Regain), `nuke`,
-  `elem`, `tank`, `pup`, `w` BLM/SCH weapon, `def` (`-` none). `*` after the `nuke` value = `/burst` on. Tune: `HUDAbbr`, `HUDLabels`,
-  `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
+```
+       wpn   melee ra   idle nuke def          (compact style)
+  Dree Ana   Base  Acc  -    -    -
+● Goom Max   Base  -    -    Pow  -            ● blue: SIR on
+  Jira Nae   Acc   -    MP   -    DT           DT in orange
+● Shay Cal   Base  -    -    -    -            gold name: your own box; ● gold: TH on
+  Slow Idr   Base  -    TP   Occ  -
+```
+
+**Turning it on**
+- `/gchud` toggles it; `/gchud large` or `/gchud compact` switches the style (saved per character); `/gchud pos X Y`
+  moves it; drag it with the mouse (saved per character); `/gchud debug` lists the boxes it found and where it reads them.
+- Who sees every box: `HUDOwners = T{'YourMain'};` in `common/gcinclude.lua` settings, or per character in
+  `settings` in `char.lua`. Those characters open the HUD on load with every box. On any other box, `/gchud` shows
+  only that box's own row. Empty list (the default): any box's `/gchud` shows every box.
+
+**Reading it**
+- **Rows:** `HUDOwners` first, then party order. Names are 4 letters in the compact style, full in the large one.
+- **Dot before a name:** blue = `/sir` on, gold = `/th` on, green = `/kite` on, red = `/proc` on (the first that's
+  on; hover the name for all of them). **Gold name** = your own box.
+- **Columns** (each box's job decides which it has; a column shows when any box has it):
+
+  | Column | Shows | Values |
+  |---|---|---|
+  | `wpn` | weapon mode (`/wm`) | the mode's name; teal while `/hoxne` is on |
+  | `main` `sub` `rng` `ammo` | slot picks (`/mw` `/sw` `/rw` `/ammoset`) | the item; `-` none |
+  | `melee` | `/mmode` | `Base`, `SubtleBlow`, `Acc`...; purple while `/wsset high` |
+  | `ra` | `/rangedset` (COR RNG PLD) | `-` or `Acc` |
+  | `idle` | `/idleset` | `-`, or `MP` `HP` `TP` (compact) / `Refresh` `Regen` `Regain` (large) |
+  | `nuke` | `/nukeset` | `Power` `Macc` `OccultAcumen` (compact `Pow` `Macc` `Occ`); a `*` after it = `/burst` on |
+  | `elem` `w` | BLM/SCH element (`/elecycle`) and weapon (`/weapon`) | |
+  | `tank` `pup` | `/tankset` (PLD RUN), `/pupmode` (PUP) | |
+  | `def` | `/def` | `-` none, `DT` (orange), `MDT` (blue), `Amin` (purple); `+` = more than one |
+
+- **Value colours:** bright gold = you changed it since the job loaded; soft gold = still the job's load default;
+  faint `-` = none/off. The compact style shortens long names (`Anarchy` → `Ana`, `SubtleBlow` → `Sub`); the large style
+  shows them in full; `HUDAbbr` sets your own.
+- **Width:** every column a box's job has always shows, and all mode columns share one width, so the HUD keeps its
+  width when modes change.
+- **Look (Ashita):** headers on a soft blue fade, a thin shadow under the text, no edge, opacity `HUDAlpha`.
+
+**Using it**
+- Click a cell: runs that mode's command on that box (clicking `wpn` on Goom's row is Goom's `/wm`).
+- Click a name: shows that box's other modes and its job on a line under it; click again to hide.
+- Mouse away (owner): only the headers and your own row; mouse over: every box (`HUDHover = false`: always every box).
+  In the bottom half of the screen it opens upward, your row staying put (`HUDGrow = 'up'`, `'down'`, `'auto'`).
+- The owner also prints the other boxes' GoomSwap chat lines as `[Name]` (`HUDMessages = false` to stop).
+
+**Settings:** `HUDOwners`, `HUDHover`, `HUDGrow`, `HUDMessages`, `HUDX` `HUDY` (position), `HUDStyle`, `HUDScale`
+(compact text size), `HUDScaleLarge`, `HUDAlpha` (background opacity), `HUDAbbr` (`{ ['Carnwenhan'] = 'Carn' }`),
+`HUDLabels` (column headers, `{ Main = 'mn' }`).
+
+**Windower:** the HUD is one text box, so it has the same rows, columns and colours but no dots, fade or shadow: the
+name itself takes the dot's colour (gold for your own when nothing is on).
+
+## Status bar (/gcbar)
+
+One line for this box only, for playing without the HUD.
+
+```
+( COR99/DNC56 1149/1298 | wpn Anarchy+ Acc  wsset Mid  idle TP | ● DT  ● TH )
+```
+
+- `/gcbar` toggles it (or `DisplayBar = true` in settings), `/gcbar pos X Y` moves it, drag it with the mouse; position
+  and on/off are saved per character.
+- A rounded capsule in three parts, split by thin lines:
+  1. **Job:** main and sub job with levels, then attack/defense.
+  2. **Modes:** each mode that's set, in this order: `wpn`, `wsset`, `nuke`, `elem`, `tank`, `pup`, `weapon`, `idle`,
+     `ranged`. Modes at none/off (and `idle`/`ranged` at Default) are left out. Bright gold = changed, soft gold = default.
+     - `wpn` is the weapon mode (on a job without weapon modes, e.g. PLD, the main pick) and carries three more
+       things: a `+` when you changed a slot pick (`/mw` `/sw` `/rw` `/ammoset`), then the `/mmode` as a short tag
+       (`Acc`, `SB` = SubtleBlow; nothing at Base), and the name turns teal while `/hoxne` is on.
+     - `idle` reads `MP` `HP` `TP` (Refresh, Regen, Regain).
+  3. **Toggles that are on**, each a dot in its colour and its name: `DT` orange, `MDT` blue, `Aminon` purple, `SIR`
+     blue, `TH` gold, `Kite` green, `Burst` pink, `PROC` red, `Harp` teal, `Song lock` purple, `Death` red. Nothing
+     on: this part is left out.
+- It fits what it shows, so it grows and shrinks as modes change. Opacity follows `HUDAlpha`.
+- Windower: one text box, so a `|` between the parts and the toggle names in their colours, without the capsule
+  shape, lines or dots.
 
 ## How sets stack
 
