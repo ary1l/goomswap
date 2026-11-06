@@ -140,20 +140,13 @@ local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
 local COL_KEY = { 0.62, 0.68, 0.80, 1.0 };
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };
 local COL_VAL_DEF = { 0.72, 0.68, 0.50, 1.0 };
-local COL_EMPTY = { 0.50, 0.50, 0.55, 1.0 };
 local COL_ON = { 0.35, 0.95, 0.45, 1.0 };
 local COL_OFF = { 0.45, 0.45, 0.50, 1.0 };
 
--- Modes in /gcmodes order (gcinclude.ModeNames), then toggles by their short names, each in a slot as wide as its
--- widest value, so the bar never changes width when a mode does.
+-- Modes in /gcmodes order (gcinclude.ModeNames), only those set to something ('-' ones are left out), then every
+-- toggle the job has by its short name.
 local BAR_TOGGLES = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'Burst', 'PROC', 'String', 'SongLock', 'Death' };
 local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 'nuke'}, {'IdleSet', 'idle'} };
-
-local function textw(t)
-	local w = imgui.CalcTextSize(t);
-	if (type(w) == 'table') then w = w[1] or w.x end
-	return tonumber(w) or 0;
-end
 
 local function value_text(k, v)
 	v = tostring(v);
@@ -163,15 +156,6 @@ local function value_text(k, v)
 	return v;
 end
 
-local widest = {}; -- [cycle name] = { arr = its value list, w = widest value }
-local function widest_of(k, c)
-	local e = widest[k];
-	if (e ~= nil) and (e.arr == c.Array) and (e.unit == textw('M')) then return e.w end
-	local w = 0;
-	for _, v in ipairs(c.Array) do w = math.max(w, textw(value_text(k, v))) end
-	widest[k] = { arr = c.Array, w = w, unit = textw('M') };
-	return w;
-end
 -- Per-character bar state (x, y, on) in config\addons\luashitacast\gcbar\<name>.txt,
 -- kept out of the hud folder so gchud never reads it.
 local function bar_path()
@@ -218,43 +202,33 @@ local function track_drag()
 end
 
 local function bar_body()
-	local x0 = imgui.GetCursorPosX();
-	local gap = textw('  ');
-	local x = x0;
 	local first = true;
-	local function put(text, col, w)
-		if first then first = false else imgui.SameLine(x) end
+	local ITEM = 12; -- px between items; a label and its value are one space apart
+	local function put(text, col, gap)
+		if first then first = false else imgui.SameLine(0, gap or ITEM) end
 		imgui.PushStyleColor(ImGuiCol_Text, col);
 		imgui.Text(text);
 		imgui.PopStyleColor();
-		x = x + (w or textw(text));
 	end
-	local function sep() x = x + gap; put('|', COL_KEY); x = x + gap end
-	put(headText, COL_HEAD, textw('WWW99/WWW99'));
-	x = x + gap;
-	put(statText, COL_KEY, textw('Atk 9999  Def 9999'));
-	sep();
+	put(headText, COL_HEAD);
+	put(statText, COL_KEY);
+	put('|', COL_KEY);
 	local names = ((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES;
-	local any = false;
 	for _, m in ipairs(names) do
 		local k, label = m[1], m[2];
 		local c = Cycles[k];
-		if (c ~= nil) then
-			if any then x = x + gap end
-			any = true;
-			put(label, COL_KEY);
-			x = x + textw(' ');
-			local v = value_text(k, c.Array[c.Index]);
-			local col = (v == '-') and COL_EMPTY or (gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL);
-			put(v, col, widest_of(k, c));
+		local v = (c ~= nil) and value_text(k, c.Array[c.Index]) or '-';
+		if (v ~= '-') then
+			put(label .. ' ', COL_KEY);
+			put(v, gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL, 0);
 		end
 	end
 	local tnames = (inc ~= nil) and inc.ToggleNames or {};
-	local shown = false;
+	local sep = false;
 	for _, k in ipairs(BAR_TOGGLES) do
 		if (Toggles[k] ~= nil) then
-			if not shown then sep(); shown = true else x = x + textw(' ') end
-			put(tnames[k] or k, (Toggles[k] == true) and COL_ON or COL_OFF);
+			if not sep then put('|', COL_KEY); sep = true end
+			put(tnames[k] or k, (Toggles[k] == true) and COL_ON or COL_OFF, 8);
 		end
 	end
 	track_drag();
@@ -270,7 +244,7 @@ local function render_bar()
 		ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
 	if (imgui.SetNextWindowBgAlpha ~= nil) then imgui.SetNextWindowBgAlpha(cfg.HUDAlpha or 0.70) end -- as the HUD
 	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 6, 3 });
-	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 6, 1 });
+	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 5, 1 });
 	local ok, err = true, nil;
 	if imgui.Begin('GC##gcdisplay_bar', true, flags) then
 		-- an error here must not skip End/PopStyleVar, or ImGui asserts every frame after (as in gchud)
@@ -305,7 +279,6 @@ end
 function gcdisplay.Initialize(settings, include)
 	cfg = settings;
 	inc = include;
-	widest = {};
 	barPlaced = false;
 	pcall(bar_load);
 	gcdisplay.Update();
