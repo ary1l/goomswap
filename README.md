@@ -1,30 +1,25 @@
 # GoomSwap
 
-Gear-swap engine for FFXI multiboxing. You write sets in a job file; GoomSwap wears them and adds automatic
-layers (weapons, defense, TH, obi, and more) on top. **Ashita v4** (LuAshitacast) and **Windower 4** (GearSwap,
-through `windower/`), same job files.
+FFXI gear-swap engine for multiboxing. You write sets in a job file; GoomSwap wears them and layers weapons, defense,
+TH, obi and more on top. **Ashita v4** (LuAshitacast) and **Windower 4** (GearSwap, via `windower/`), same job files.
 
-## What it does on its own
-
-- **Weapons:** `/wm` modes (`_1h` sets when you can't dual wield, `/mmode Acc` variants), idle/town weapons out of
-  combat. No automatic swap throws away TP (`WeaponTPGuard`, per job) or Aftermath; songs, rolls, cures still swap.
-- **Defense:** `/dt` `/mdt` `/aminon`; regen/refresh/DT idle by HP/MP; sleep, stun, doom, weakness sets.
-- **Casting:** TH until tagged, SIR, obi/Orpheus/elemental ring and back, Moonshade, Burst gear on nukes that land in a live skillchain (RDM BLM SCH GEO).
-- **Items:** packer (keeps a list of items and food in inventory on every job change), enchanted items and warp/dim rings, Hoxne Ampulla.
-- **Multibox:** one HUD for every box (click a cell to drive it, the boxes' messages show there); Einherjar entry,
-  lamp copies and hand-out (`/ejenter`, Ashita).
-- **Checks:** refused actions say why; `/checksets` finds empty sets and misspellings; `/gctrace` shows what each action wore.
+- **Weapons:** `/wm` modes, `_1h` sets without dual wield, idle/town weapons out of combat; no auto swap costs TP
+  (`WeaponTPGuard`) or Aftermath.
+- **Defense:** `/def` (DT, MDT, Aminon), idle Regen/Refresh/DT by HP/MP, sleep/stun/doom/weakness sets.
+- **Casting:** TH until tagged, SIR, obi/Orpheus/ring/back, Moonshade, Burst gear on nukes in a live skillchain.
+- **Items:** packer (items and food on every job change), enchanted items, warp/dim rings, Hoxne Ampulla.
+- **Multibox:** one HUD for every box (click to drive it), status bar, Einherjar entry (`/ejenter`, Ashita).
+- **Checks:** failing actions cancelled with the reason; `/checksets`; `/gctrace`.
 
 ## Install
 
 **Ashita v4**
-1. Copy `common/` and `examples/` into `Ashita/config/addons/luashitacast/`.
-2. Copy `examples/<JOB>.lua` into your character folder `luashitacast/<Name>_<id>/`, put your gear in. Optional:
-   `examples/char.lua` there too, for that character's food, packer list and settings on every job.
-3. `/addon load luashitacast`, then `/lac load`.
-4. Recommended: Thorny's [Sequencer](https://github.com/ThornyFFXI/Sequencer) and [PacketFlow](https://github.com/ThornyFFXI/PacketFlow) plugins
-   (`/load sequencer`, `/load packetflow`, or in your startup script). Without Sequencer, LuAshitacast blocks the
-   game's own resends, so an action is lost when lag hits; PacketFlow sends packets more often.
+1. `common/` and `examples/` into `Ashita/config/addons/luashitacast/`.
+2. `examples/<JOB>.lua` into `luashitacast/<Name>_<id>/`, your gear in it. Optional: `examples/char.lua` there
+   (that character's food, packer list, settings).
+3. `/addon load luashitacast`, `/lac load`.
+4. Recommended: Thorny's [Sequencer](https://github.com/ThornyFFXI/Sequencer) (else lag loses actions) and
+   [PacketFlow](https://github.com/ThornyFFXI/PacketFlow) plugins.
 
 **Windower 4**
 
@@ -37,616 +32,340 @@ Windower/addons/GearSwap/data/
     └── <Name>/<JOB>.lua               <- examples/<JOB>.lua, your gear in it
 ```
 
-`//lua load gearswap`, change job: chat shows `[GoomSwap] Loaded data/goomswap/<Name>/<JOB>.lua`. A red
-`[GoomSwap]`/`[LuAshitacast]` line names a missing file or folder. No `[GoomSwap]` line at all = GearSwap found another file first (`data/<Name>/<JOB>.lua`, `data/<Name>_<JOB>.lua`, `data/<Name>.lua`,
-`data/<JOB>.lua` all beat `default.lua`). A job file straight in `goomswap/` serves every character. Already use
-`default.lua` for other jobs? Copy ours to `data/<Name>_<JOB>.lua` for each GoomSwap job instead.
+`//lua load gearswap`, change job: chat says `[GoomSwap] Loaded data/goomswap/<Name>/<JOB>.lua`. Red line = missing
+file, do what it says. No `[GoomSwap]` line = GearSwap found another file first (`data/<Name>/<JOB>.lua`,
+`data/<Name>_<JOB>.lua`, `data/<Name>.lua`, `data/<JOB>.lua` all beat `default.lua`). A job file in `goomswap/`
+itself serves every character.
 
 | | Ashita | Windower |
 |---|---|---|
-| Command | `/wm` | `//wm` or `//gs c wm` |
+| Command | `/wm` | `//wm`, `//gs c wm` |
 | All boxes | `/mss /wm` (Multisend) | `//send @all gs c wm` |
-| Reload after edits | `/lac reload` | `//gs reload` |
-| HUD | `/gchud`, click cells | `//gchud`, click cells |
-| Augmented gear | `{ Name = 'X', Augment = {...} }` (LAC strings) | Same file works: the carried copy best matching the list is worn (names differ a bit between the two, so not exact). Or GearSwap's own `{ name="X", augments={...} }`, pasted from `//gs export`, matched exactly |
-| Two of the same item (2 Stikini Ring +1) | Nothing to do: LuAshitacast keeps track of each copy | Give each copy its own bag (below) |
+| Reload | `/lac reload` | `//gs reload` |
+| Augments | `{ Name = 'X', Augment = {...} }` | same line works (closest copy); or `{ name="X", augments={...} }` from `//gs export`, exact |
+| 2 of one item | nothing to do | give each copy its bag (below) |
 
-**Two of the same item, Windower.** Two Stikini Ring +1 (or two identical earrings, or the same weapon in Main and Sub)
-by name alone can make GearSwap take the copy you're already wearing in the other slot, so the two trade places on a
-swap. Keep the copies in different bags and name each one's bag:
+**Windower, two of one item** (2 Stikini Ring +1, twin earrings, same weapon Main+Sub): by name alone GearSwap can
+grab the copy worn in the other slot and the two swap places. Pin each:
 
 ```lua
-Ring1 = { Name = 'Stikini Ring +1', Bag = 'Wardrobe' },  -- the first wardrobe ('wardrobe1' works too)
+Ring1 = { Name = 'Stikini Ring +1', Bag = 'Wardrobe' },   -- 'wardrobe1' works too
 Ring2 = { Name = 'Stikini Ring +1', Bag = 'Wardrobe2' },
 ```
 
-Bags on Windower: `Inventory`, `Wardrobe`, `Wardrobe2` … `Wardrobe8` (any case, with or without the space;
-`wardrobe1` = `Wardrobe`). Spelled exactly `Wardrobe` … `Wardrobe4`, the same line works on Ashita, which honours it
-but doesn't need it; LuAshitacast ignores any other spelling there (no harm, the item still goes on). Selindrile files
-that wrote `bag="wardrobe1"` now pin the first wardrobe (GearSwap alone only knows `wardrobe` for it).
+Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … `Wardrobe4` the line works on Ashita too.
 
-Windower augment strings: wear the gear, `//gs export` (file in `GearSwap/data/export/`) or `//gs export copy`
-(clipboard), paste each line into a set and capitalize the slot (`back=` → `Back =`). Rare items export without
-augments (only one copy exists). In a job file (COR):
+**Windower augments:** wear the gear, `//gs export` (or `//gs export copy`), paste into the set, capitalize the slot
+(`back=` → `Back =`).
 
-```lua
-local sets = {
-    Weapon_Rostam = {
-        Main = { name="Rostam", augments={'Path: A',} },
-    },
-    Tp_Default = {
-        Back = { name="Camulus's Mantle", augments={
-            'AGI+20', 'Rng.Acc.+20 Rng.Atk.+20', 'Rng.Acc.+10', '"Store TP"+10', 'Mag. Evasion+15',
-        } },
-    },
-};
-```
+### From Selindrile (Windower)
 
-### Coming from Selindrile's GearSwap (Windower)
-
-One command per character turns your Selindrile gear files into GoomSwap job files. Your Selindrile files are only
-read, never changed.
-
-1. Install GoomSwap as above (`default.lua`, `goomswap/`, `common/`), plus `goomswap_migrate.lua` next to
-   `default.lua`, and the repo's `examples/` folder as `data/goomswap/examples/` (the job templates).
-2. Log in on the character and run `//gs load goomswap_migrate`. For every `data/<Name>/<Name>_<Job>_Gear.lua` it
-   writes `data/goomswap/<Name>/<JOB>.lua` (`<JOB>.migrated.lua` if you already have one) and a one-line
-   `data/<Name>/<JOB>.lua` that makes GearSwap load GoomSwap instead of Selindrile's `data/<JOB>.lua`.
-3. `//gs reload`, then `//gs c checksets`.
-
-Back to Selindrile for a job: delete `data/<Name>/<JOB>.lua`.
-
-It runs each gear file the way Selindrile does (`User-Globals`, `<Name>-Globals`, `<Name>-Items`, `Sel-Mappings`
-first), then puts each set into the job's template under the template's own name:
+1. Install as above, plus `goomswap_migrate.lua` next to `default.lua` and `examples/` as `data/goomswap/examples/`.
+2. On the character: `//gs load goomswap_migrate`. Each `data/<Name>/<Name>_<Job>_Gear.lua` becomes
+   `data/goomswap/<Name>/<JOB>.lua` (`.migrated.lua` if one exists) plus a one-line `data/<Name>/<JOB>.lua` that loads
+   GoomSwap. Selindrile files are only read.
+3. `//gs reload`, `//gs c checksets`. Back to Selindrile: delete `data/<Name>/<JOB>.lua`.
 
 | Selindrile | GoomSwap |
 |---|---|
-| `sets.idle`, `.Refresh`, `.Regen`, `.Regain`, `sets.resting`, `sets.Kiting`, `sets.TreasureHunter` | `Idle`, `Idle_Refresh`, `Idle_Regen`, `Idle_Regain` (`/idleset`), `Resting`, `Movement`, `TH` |
-| `sets.midcast.RA`, `.Acc` | `Midshot`, `Midshot_Acc` (`/rangedset`) |
-| `sets.midcast['Elemental Magic'].OccultAcumen` | `OccultAcumen` (`/nukeset oa`) |
-| `sets.engaged`, `.Acc` (any `OffenseMode`) | `Tp_Default`, `Tp_Acc`; `OffenseMode` becomes the `/mmode` list |
-| `sets.defense.PDT`, `.MDT` (else `.MEVA`) | `Dt`, `mdt` |
-| `sets.precast.FC`, `FC.Cure`, `FC['Enhancing Magic']` | `Precast`, `Cure_Precast`, `Enhancing_Precast` |
-| `sets.precast.WS`, `WS['Savage Blade']`, `.Acc` | `Ws_Default`, the template's set for that WS (or `['Savage Blade']`), `_Acc` |
-| `sets.precast.JA['Sentinel']`, `sets.midcast.Cure`, `sets.midcast['Enhancing Magic']` | the template's set, else by name |
-| `sets.weapons.<Name>` + `state.Weapons` | `Weapon_<Name>` + `/wm` modes |
-| `sets.buff.Doom`, `.Sleep`, `sets.Cure_Received`... | `Doomed`, `Sleeping`, `Cure_Received`... |
+| `idle` `.Refresh` `.Regen` `.Regain`, `resting`, `Kiting`, `TreasureHunter` | `Idle` `Idle_Refresh` `Idle_Regen` `Idle_Regain`, `Resting`, `Movement`, `TH` |
+| `engaged` `.<OffenseMode>` | `Tp_Default` `Tp_<mode>`; OffenseMode = `/mmode` list |
+| `defense.PDT` `.MDT` (else `.MEVA`) | `Dt` `mdt` |
+| `precast.FC`, `FC.Cure`, `FC['Enhancing Magic']` | `Precast` `Cure_Precast` `Enhancing_Precast` |
+| `precast.WS` `['Savage Blade']` `.Acc` | `Ws_Default`, the template's WS set (else by name), `_Acc` |
+| `precast.JA[...]`, `midcast.Cure`, `midcast['Enhancing Magic']` | the template's set, else by name |
+| `midcast.RA` `.Acc`; `midcast['Elemental Magic'].OccultAcumen` | `Midshot` `Midshot_Acc`; `OccultAcumen` |
+| `weapons.<Name>` + `state.Weapons` | `Weapon_<Name>` + `/wm` modes |
+| `buff.Doom` `.Sleep`, `Cure_Received`... | `Doomed` `Sleeping` `Cure_Received`... |
 
-Sets with no GoomSwap place (hybrid `.DT` variants, `Resistant`, Moonshade/latent sets...) are kept at the end
-as `['Sel_<path>']`: rename one to use it. Not carried over (the file's top comment lists them): Selindrile's
-automation (AutoDefense, AutoWS...) and slots built from the elemental obi/cape globals (GoomSwap adds the obi itself).
-
-**Keys.** Your `send_command('bind ...')` lines (`<Name>-Globals.lua`, then the gear file; a later `unbind` drops one)
-become that job's `Keybinds`, added in `OnLoad` on top of GoomSwap's keys (Keys, below):
-
-| Selindrile bind runs | Becomes |
-|---|---|
-| `input /ja "Provoke" <t>` (any chat command) | the same command |
-| `gs c cycle Weapons` / `weapons Default` / `weapons <name>` | `wm` / `wm default` / `wm <name>` |
-| `cycle OffenseMode` `IdleMode` `WeaponskillMode` `treasuremode`, `toggle Kiting` `Capacity` | `mmode` `idleset` `wsset` `th`, `kite` `capacity` |
-| `cycle HybridMode` (PLD RUN), `RangedMode` (COR RNG PLD) | `tankset`, `rangedset` |
-| `cycle CastingMode` (BLM RDM SCH GEO WHM DRK; else `sir` when it has SIRD), `MagicBurstMode`, `ElementalMode` (BLM SCH) | `nukeset`, `burst`, `elecycle` |
-| `gs reload` | `/lac reload` (Windower: `gs reload`) |
-| Defense keys (`set DefenseMode ...`, `cycle PhysicalDefenseMode`...) | not added: `/def` (F10) and `/def off` (Alt+F12) cover them |
-| Same key and command as a GoomSwap key (F7 `Weapons`, F9 `OffenseMode`...) | not added: already there |
-| Selindrile automation (`AutoWSMode`, `SkillchainMode`, `RecoverMode`...), console commands (`gs org`, `fillmode`) | left out, listed in the file's top comment |
-
-On Selindrile's example characters, about half the keys of each job come over (a quarter added, a quarter already
-GoomSwap's); the rest drive Selindrile automation GoomSwap doesn't have.
-
-**Settings to look at** after migrating. Best per character, in `data/goomswap/<Name>/char.lua` (copy
-`examples/char.lua`): a newer `common/` doesn't erase it. Every job: `common/gcinclude.lua` settings. One job: its
-`OnLoad`, before `gcinclude.Initialize()`.
-
-```lua
-return { settings = { Messages = true, HUDOwners = T{'YourMain'}, LockstyleSet = 1 } };  -- char.lua
-```
-
-| Setting | Default | Change it to |
-|---|---|---|
-| `Messages` | `false` | `true`: a chat line on every mode/toggle change (`Idle set Regain`, `DT on`); `/gcmessages` flips it in game |
-| `HUDOwners` | `T{}` | `T{'YourMain'}`: that box opens the HUD with every box; the others show their own line |
-| `Keybinds` | Selindrile's F-key layout | your own list (Keys); `T{}` = no keys |
-| `LockstyleSet` | `nil` | your lockstyle set number, put on 4s after load and job change |
-| `RegenGearHPP` `RefreshGearMPP` `DTGearHPP` | `60` `60` `50` | when `Idle_Regen` / `Idle_Refresh` / `Dt` go on by themselves; `0` = never |
-| `WeaponTPGuard` | `1000` | TP at which Main/Sub/Range stay on; `0` = always swap (examples set it per job) |
-| `IdleWeapons` | `true` | `false`: your weapon mode stays on out of combat instead of the idle sets' weapons |
-| `Food` | Grape Daifuku +1 | the food `/packer` keeps a stack of (per job: `gcinclude.Food`) |
-| `WScheck` `WSdistance` | `true`, `5` | the WS range check; `/wsdistance` in game |
-| `MoonshadeTP` | `1750` | when Moonshade Earring goes on; `0` = never touched |
-| `Validate` `ValidateMP` | `true` | `false` to stop GoomSwap cancelling actions that would fail |
-| `DisplayBar` | `false` | `true`: the one-line status bar on load (see Status bar); `/gcbar` |
-
+No place (`.DT` hybrids, `Resistant`, latent sets...): kept as `['Sel_<path>']`. Binds become that job's `Keybinds`:
+chat commands as is, modes mapped (`Weapons`→`wm`, `OffenseMode`→`mmode`, `IdleMode`→`idleset`, `HybridMode`→`tankset`,
+`RangedMode`→`rangedset`, `CastingMode`→`nukeset` or `sir`, `gs reload`→`/lac reload`). Defense keys and
+Selindrile automation (`AutoWSMode`, `SkillchainMode`...) are left out; the file's top comment lists what was.
 
 ## First steps
 
-1. Fill `Idle`, `Tp_Default`, `Ws_Default`. The rest can wait.
-2. `/checksets`: empty sets, misspelled items. `/gctrace`: which sets each action wore.
+1. Fill `Idle`, `Tp_Default`, `Ws_Default`.
+2. `/checksets` (empty sets, misspellings), `/gctrace` (what each action wore).
 3. Leave `gSettings.FastCast` at 0.
 
 Template jobs (BLM BST DNC DRG DRK NIN PUP RUN SAM SMN WAR) name sets after the action (`['Savage Blade']`); a spell
-with no set uses its family's (`['Cure']` for Cure IV). Worth copying: `WHM.lua` cures (MP% / Light weather weapons, `Cure_Dt`), `MNK.lua` Hoxne sets, `PLD.lua` `/subset`.
+without one uses its family's (`['Cure']` for Cure IV). Worth copying: `WHM.lua` cures, `MNK.lua` Hoxne, `PLD.lua` `/subset`.
 
-## Settings (`common/gcinclude.lua`)
+## Settings
 
-The top of `common/gcinclude.lua` has two blocks you edit; everything below is the engine.
+Edit two blocks at the top of `common/gcinclude.lua` (the rest is engine). A newer `common/` overwrites them: keep
+yours in `char.lua` (per character, survives updates) or the job file.
 
-- **`gcinclude.sets`**: sets shared by every job: `Doomed`, `Holy_Water`, `Sleeping` (a job's own `Doomed`/`Sleeping` wins),
-  `Reraise` (worn while Weakened), `Crafting` (`/craftset`), `Zeni` (`/zeniset`), `Fishing` (`/fishset`).
-- **`gcinclude.settings`**: one option per line, each commented.
+- **`gcinclude.sets`**, every job: `Doomed`, `Holy_Water`, `Sleeping` (a job's own wins), `Reraise` (Weakened),
+  `Crafting` `Zeni` `Fishing` (`/craftset` `/zeniset` `/fishset`).
+- **`gcinclude.settings`**, one commented option per line.
 
-| Where | How | Example |
-|---|---|---|
-| Every job | Edit the value in `common/gcinclude.lua` | `RefreshGearMPP = 50;` |
-| One job | Job file `OnLoad`, before `gcinclude.Initialize()` | `gcinclude.settings.RefreshGearMPP = 50;` |
-| One job, list | Top of the job file; adds to the setting's list | `gcinclude.SIRSkip = T{'Phalanx'};` |
-| One job, value | Job file; replaces the setting in brackets | `gcinclude.Food` (`Food`), `gcinclude.LockstyleSet`, `gcinclude.ElementGear` (whole table), `gcinclude.CureObi` (`ElementGear.Cures`) |
-
-Copying a newer `common/` over yours erases your edits: note them, or set them per job instead.
-
-| Area | Settings |
+| Where | Example |
 |---|---|
-| Weapons / TP | `WeaponTPGuard`, `AftermathHold`, `IdleWeapons`, `HoldExemptSkills`, `HoldExemptAbilities`, `SmartSwap`, `SmartSwapTP`, `NoWeaponSpells`, `KeepWeaponsFor` |
-| Casting | `SIRSkip`, `THSkip`, `ElementGear` (obi, Orpheus, ring, back, `Cures`), `ElementSkills`, `OrpheusPoints` |
-| Auto idle sets | `AutoGear`, `RegenGearHPP`, `RefreshGearMPP`, `DTGearHPP`, `PetDTGearHPP` |
-| Weapon skills | `WScheck`, `WSdistance`, `MoonshadeTP`, `MoonshadeSlot`, `MoonshadeSkip`, `ElementalWS` |
-| Magic burst | `MBWindow`, `MBSkills` |
-| Items | `PackerItems`, `Food`, `EnchantDelays`, `EnchantWindow` |
-| Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
-| Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
-| Action checks | `Validate`, `ValidateMP`, `WaltzTPCut` |
-| HUD / bar | `HUDOwners`, `HUDHover`, `HUDGrow`, `HUDMessages`, `HUDX`, `HUDY`, `HUDStyle`, `HUDScale`, `HUDScaleLarge`, `HUDAlpha`, `HUDAbbr`, `HUDLabels`, `DisplayBar`, `DisplayBarX`, `DisplayBarY` |
-| Other | `Keybinds`, `Messages`, `Trace`, `LockstyleSet`, `CombatWindow`, `XIRollSet`, `CapacityCapes`, `JubileeSlot`, `AmmoWarn`, `NinjaToolWarn`, `SleepCancelStoneskin`, `ElementReport`, `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
+| Every job | `RefreshGearMPP = 50;` in `common/gcinclude.lua` |
+| One character | `char.lua`: `return { settings = { Messages = true, HUDOwners = T{'YourMain'} } };` |
+| One job | `OnLoad`, before `gcinclude.Initialize()`: `gcinclude.settings.RefreshGearMPP = 50;` |
+| One job, add to a list | top of the job file: `gcinclude.SIRSkip = T{'Phalanx'};` |
+| One job, replace | `gcinclude.Food`, `gcinclude.LockstyleSet`, `gcinclude.ElementGear`, `gcinclude.CureObi` |
 
-Weapon modes, default weapons, job helpers: see Job file.
+Most changed:
+
+| Setting | Default | Does |
+|---|---|---|
+| `Messages` | `false` | chat line on every mode change (`/gcmessages`) |
+| `HUDOwners` | `T{}` | boxes that open the HUD with every box |
+| `Keybinds` | F-key layout | your keys (Keys); `T{}` none |
+| `LockstyleSet` | `nil` | lockstyle set put on after load/job change |
+| `RegenGearHPP` `RefreshGearMPP` `DTGearHPP` | 60 60 50 | auto `Idle_Regen` / `Idle_Refresh` / `Dt` below this %; 0 never |
+| `WeaponTPGuard` | 1000 | TP at which Main/Sub/Range stay on; 0 never hold |
+| `IdleWeapons` | `true` | idle sets' weapons beat the mode out of combat |
+| `Food` | Grape Daifuku +1 | food `/packer` keeps a stack of |
+| `MoonshadeTP` | 1750 | Moonshade below this TP; 0 never |
+| `Validate` `ValidateMP` | `true` | cancel actions that would fail |
+| `DisplayBar` | `false` | status bar on load |
+
+All: weapons `AftermathHold` `HoldExemptSkills` `HoldExemptAbilities` `SmartSwap` `SmartSwapTP` `NoWeaponSpells`
+`KeepWeaponsFor`; casting `SIRSkip` `THSkip` `ElementGear` `ElementSkills` `OrpheusPoints` `MBWindow` `MBSkills`;
+idle `AutoGear` `PetDTGearHPP`; WS `WScheck` `WSdistance` `MoonshadeSlot` `MoonshadeSkip` `ElementalWS`; items
+`PackerItems` `EnchantDelays` `EnchantWindow`; Hoxne `HoxneItem` `HoxneLockSlots` `HoxneAutoUse`; received
+`ReceivedSets` `ReceivedWindow` `MyBoxes`; checks `WaltzTPCut`; HUD/bar `HUD*` `DisplayBarX` `DisplayBarY`; other
+`Trace` `CombatWindow` `XIRollSet` `CapacityCapes` `JubileeSlot` `AmmoWarn` `NinjaToolWarn` `SleepCancelStoneskin`
+`ElementReport` `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring`.
 
 ## Commands
 
-Ashita `/name`; Windower `//name` or `//gs c name`. Other boxes (Multisend): `/mss /wm default` all, `/ms sendto <name> /wm 3`
-one; Windower `//send @all gs c wm default`. Toggles take `on`/`off`, no word flips.
-Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' commands; with one loaded, use `//subset` or
-`//gs c sw` / `//gs c th`.
+Ashita `/name`, Windower `//name` or `//gs c name`. Toggles take `on`/`off`, no word flips. Values, any case: no word =
+next; else name, start, initials, contains, or number (`/wm max`, `/mmode sb`, `/wm 3`). Windower: with Stopwatch or
+THTracker loaded use `//subset` / `//gs c th`.
 
-**Weapons**
 | Command | Does |
 |---|---|
-| `/wm [name\|N\|none\|default]` (`/weaponset`) | Weapon mode: next, by name/number, `default` (`DefaultWeapons`), a `WeaponRoles` name (`/wm melee`); `none` = hands off. `/wm <mode> force` re-applies it |
-| `/mw` `/sw` `/rw` `/ammoset` `[name\|none]` | One slot's pick (`/mainset` `/subset` `/rangeset` long names), e.g. PLD `/sw duban`. `none`, `default` or the mode's own item (`/sw thibron`) = back to the mode's. Swaps at any TP |
-| `/dw [on\|off\|auto]` | Dual Wield: shows why; `off` = `_1h` sets always, `on` = DW always |
-| `/smartswap` | Light spells (Dia, Blink…) keep your weapons at `SmartSwapTP`+ |
-| `/setcycle <cycle> <value>` | Set any mode by its name |
-
-**Melee and weapon skills**
-| Command | Does |
-|---|---|
-| `/mmode [sb\|acc\|base]` (`/melee`, `/meleeset`) | Melee mode: Base (`_Default` sets) → `_SubtleBlow` → `_Acc` TP and WS sets |
-| `/wsset [mid\|high]` | `high`: each WS set also wears its `_HighBuff` |
-| `/rangedset [acc\|default]` | COR RNG PLD: `Midshot_Acc` over `Midshot` |
-| `/th` | `TH` set until the mob is tagged (THF main: always) |
-| `/wsdistance [yalms]` | WS range check on/off or its distance |
-
-**Defense**
-| Command | Does |
-|---|---|
-| `/def [dt\|mdt\|aminon\|off]` | DT → MDT → Aminon → off; `/dt` `/mdt` `/aminon` toggle one |
-| `/sir` | `SIR` set over spell midcasts (not `SIRSkip`) |
-| `/kite` | Movement gear |
-| `/idleset [refresh\|regen\|regain\|default]` | `Idle_<mode>` over `Idle` while idle (not engaged or resting) |
-| `/autogear [regen\|refresh\|dt\|petdt N]` | Auto Regen/Refresh/DT idle sets by HP/MP %; no word shows the thresholds |
-| `/lock [slots\|all]` `/unlock [slot]` | Freeze slots (none named: Main, Sub, Ammo); `/unlock` says what else holds one |
-| `/naked` `/weaponsonly` `/abysseaproc` | Keep all 16 / armor / head-hands-legs-feet bare |
-| `/rrset` `/craftset` `/zeniset` `/fishset` | Reraise / crafting / Zeni / fishing set over everything until toggled off |
-| `/received <spell>` | Wear that `*_Received` set |
-
-**Magic**
-| Command | Does |
-|---|---|
-| `/nukeset [power\|macc\|oa]` | Nuke sets; `oa` = `OccultAcumen` set over the nuke (RDM GEO BLM SCH; DRK: `power` `oa`) |
-| `/burst` | Burst set on every nuke, not only live skillchains |
-| `/mbinfo` | Last skillchain seen |
-| `/gcaspir` `/gcdrain` | Best castable tier on `<t>` |
-| `/nuke <1-6>` `/helix` `/weather` `/elecycle` `/weapon` | BLM/SCH: element's nuke, helix, storm, element, Club ↔ Staff |
-| `/death` | BLM Death mode |
-
-**Items, travel and content**
-| Command | Does |
-|---|---|
-| `/packer` | Fetch what inventory lacks of your packer list (Bellhop); also on every job change |
-| `/hoxne [off\|use]` | Keep Hoxne Ampulla in Ammo and use it |
-| `/gce <item>` / `/gce cancel` | Equip an enchanted item (Volte Harness, Reraise Earring…), wait its delay, use it, free the slot |
-| `/warpring` `/mea` `/holla` `/dem` | Warp / Dimensional ring, the same way |
-| `/ontic` `/shard` | Use Ontic Extremity / V. Con. Shard (more: `gcinclude.ExitItems`) |
-| `/gctemps` | Every carried Escha drink |
-| `/capacity` `/jubilee` `/dynamisrp` | Hold capacity cape / Jubilee Ring / Dynamis job neck |
-| `/ejenter [chamber]` `/ejlamps` `/ejexit` | Einherjar (Ashita): reserve, lamps to the party, enter, leave |
-
-**Jobs**
-| Command | Does |
-|---|---|
-| `/tankset` | PLD RUN: None → Main → MEVA |
-| `/proc` | SAM NIN: proc set |
-| `/pupmode` | PUP: Tank → Melee → Ranger → Mage |
-| `/forcestring` `/songlock` | BRD: force harp / enemy songs keep main-sub |
-| `/cormsg` `/xiroll` | COR: roll messages / roll tracking |
-| `/siphon` | SMN: Elemental Siphon with the day's spirit |
-
-**Display and help**
-| Command | Does |
-|---|---|
-| `/gchud [on\|off\|large\|compact\|pos X Y\|debug]` | The multibox HUD (see HUD below) |
-| `/gcbar [on\|off\|pos X Y]` | One-line status bar for this box (see Status bar) |
-| `/gcmodes [all]` | This box's modes and toggles in chat; `all`: every box |
-| `/checksets` | Empty sets, bad item names, items in the wrong ear/ring: Sortie earrings and any item whose text says 'Right ear:' go in Ear2 (right), 'Left ear:' in Ear1 |
-| `/gcgear [JOB]` | Every item you own that the job can wear (all bags), with level, augments and stats, into `gear_<JOB>.txt` in your character folder (Ashita) |
-| `/gctrace` | What each action wore (and its obi/Orpheus pick) |
-| `/gcstyle [N]` | Lockstyle set now |
-| `/gcmessages` | Chat confirmations on/off |
-| `/gchelp` / `/gckey <key> <cmd>` | Command list in game / bind a key (Keys) |
-
-Picking a value, any case: no word = next; else exact name, the one it starts, its initials, the one containing it, or
-a number: `/wm max` (Maxentius), `/nukeset oa` (OccultAcumen), `/mmode sb` (SubtleBlow), `/wm 3`. Two matches: it lists them.
-
-Zoning turns off `/hoxne`. While zoning (until 3s after arriving) nothing is sent by itself.
+| `/wm [name\|N\|none\|default]` | Weapon mode; `/wm <mode> force` re-applies |
+| `/mw` `/sw` `/rw` `/ammoset [name\|none]` | One slot's pick over the mode (`/mainset` `/subset` `/rangeset`); any TP |
+| `/dw [on\|off\|auto]` | Dual Wield: why; `off` = `_1h` always |
+| `/smartswap` | Light spells (Dia, Blink…) keep weapons at `SmartSwapTP`+ |
+| `/setcycle <cycle> <value>` | Any mode by name |
+| `/mmode [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets |
+| `/wsset [mid\|high]` | `high`: WS sets add their `_HighBuff` |
+| `/rangedset [acc]` | COR RNG PLD: `Midshot_Acc` |
+| `/th` | `TH` until tagged (THF main: always) |
+| `/wsdistance [yalms]` | WS range check |
+| `/def [dt\|mdt\|aminon\|off]` | DT → MDT → Aminon → off; `/dt` `/mdt` `/aminon` one |
+| `/sir` `/kite` | SIR over midcasts (not `SIRSkip`) / Movement |
+| `/idleset [refresh\|regen\|regain]` | `Idle_<mode>` over `Idle` while idle |
+| `/autogear [regen\|refresh\|dt\|petdt N]` | Auto idle set thresholds |
+| `/lock [slots\|all]` `/unlock [slot]` | Freeze slots; `/unlock` names other holders |
+| `/naked` `/weaponsonly` `/abysseaproc` | Keep all / armor / head-hands-legs-feet bare |
+| `/rrset` `/craftset` `/zeniset` `/fishset` | That set over everything until off |
+| `/received <spell>` | Wear its `*_Received` set |
+| `/nukeset [power\|macc\|oa]` | Nuke sets; `oa` = `OccultAcumen` (RDM GEO BLM SCH DRK) |
+| `/burst` | `Burst` on every nuke |
+| `/mbinfo` | Last skillchain |
+| `/gcaspir` `/gcdrain` | Best tier on `<t>` |
+| `/nuke <1-6>` `/helix` `/weather` `/elecycle` `/weapon` `/death` | BLM/SCH helpers |
+| `/packer` | Fetch missing packer items (Bellhop) |
+| `/hoxne [off\|use]` | Hoxne Ampulla in Ammo, used |
+| `/gce <item>` `/gce cancel` | Equip enchanted item, wait, use, free the slot |
+| `/warpring` `/mea` `/holla` `/dem` `/ontic` `/shard` `/gctemps` | Warp/dim rings, exit items, Escha drinks |
+| `/capacity` `/jubilee` `/dynamisrp` | Hold cape / Jubilee Ring / Dynamis neck |
+| `/ejenter [chamber]` `/ejlamps` `/ejexit` | Einherjar (Ashita) |
+| `/tankset` `/proc` `/pupmode` | PLD RUN tank set / SAM NIN proc / PUP mode |
+| `/forcestring` `/songlock` `/cormsg` `/xiroll` `/siphon` | BRD / COR / SMN |
+| `/gchud` `/gcbar` | HUD / status bar (below) |
+| `/gcmodes [all]` | Modes in chat |
+| `/checksets` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2) |
+| `/gcgear [JOB]` | Everything you own the job can wear → `gear_<JOB>.txt` (Ashita) |
+| `/gctrace` `/gcstyle [N]` `/gcmessages` `/gchelp` | Trace / lockstyle / chat lines / help |
+| `/gckey <key> <cmd>` | Bind a key |
 
 ## Keys
 
-Selindrile's F-key layout, bound on load, removed on unload and job change:
+Bound on load, removed on unload/job change.
 
 | Key | Runs | Key | Runs |
 |---|---|---|---|
 | F7 | `/wm` | Shift+F7 | `/wm default` |
-| F9 | `/mmode` | Ctrl+F9 | `/tankset` (PLD RUN) |
-| Shift+F9 | `/rangedset` (COR RNG PLD) | Alt+F9 | `/wsset` |
-| F10 | `/def` (DT → MDT → Aminon → off) | Alt+F10 | `/kite` |
+| F9 | `/mmode` | Ctrl+F9 | `/tankset` |
+| Shift+F9 | `/rangedset` | Alt+F9 | `/wsset` |
+| F10 | `/def` | Alt+F10 | `/kite` |
 | Win+F10 | `/hoxne` | Shift+F11 | `/nukeset` |
 | Alt+F11 | `/burst` | Shift+F12 | `/idleset` |
-| Alt+F12 | `/def off` | Ctrl+Win+Alt+F12 | reload (`/lac reload`, Windower `gs reload`) |
+| Alt+F12 | `/def off` | Ctrl+Win+Alt+F12 | reload |
 
-Plain F11/F12 stay free (Ashita's default script puts `/ambient` and `/fps` there).
+Your own: a GoomSwap command (`wm 2`) or any chat command (`/ma "Cure IV" <stpc>`). Modifiers `^` Ctrl, `!` Alt,
+`+` Shift, `@` Win, `#` Apps.
 
-**Your own keys.** A key runs a GoomSwap command (`wm 2`, no slash) or any chat command (starts with `/`: spells,
-abilities, `/lac reload`). Modifiers: `^` Ctrl, `!` Alt, `+` Shift, `@` Win, `#` Apps, combined (`^@!`). Key names as
-in Ashita (`F1`, `` ` ``, `insert`); on Windower they're converted (`+` → `~`). A key you bind replaces whatever was
-on it; GoomSwap removes its keys on unload.
-
-- **Now, until unload or job change:** `/gckey ^F1 wm 2`, `/gckey ^F2 /ma "Cure IV" <stpc>` (Windower `//gckey ...`).
-- **Every job on one character:** `settings` in that character's `char.lua`. This replaces the default list, so copy
-  the defaults you want to keep.
-- **One job:** in its `OnLoad`, before `gcinclude.Initialize()`; adds to the list.
-- **Every character:** the `Keybinds` line in `common/gcinclude.lua` settings. `T{}` = no keys.
-
-```lua
--- char.lua: this character, every job (replaces the list)
-return { settings = { Keybinds = {
-    {'F7', 'wm'}, {'F9', 'mmode'}, {'F10', 'def'},  -- defaults kept
-    {'^F1', '/ma "Cure IV" <stpc>'},               -- chat command
-    {'!1', '/ja "Provoke" <t>'},
-} } };
-
--- job file OnLoad, before gcinclude.Initialize(): this job, added to the list
-table.insert(gcinclude.settings.Keybinds, {'^F2', '/ja "Sentinel" <me>'});
-```
+- Now: `/gckey ^F1 /ma "Cure IV" <stpc>`.
+- One character: `char.lua` `settings = { Keybinds = { {'F7','wm'}, {'^F1','/ja "Provoke" <t>'} } }` (replaces the list).
+- One job: `table.insert(gcinclude.settings.Keybinds, {'^F2', '/ja "Sentinel" <me>'});` in `OnLoad`.
 
 ## Weapons
 
-- The weapon mode is what you return to; action sets that name weapons still swap them. Slot picks (`/mw` `/sw` `/rw`
-  `/ammoset`) beat the mode for their slot. COR/RNG modes are named for the gun, so `/mw` changes the melee weapon.
-- **Idle weapons:** out of combat, weapons your idle sets name (`Idle`, `Idle_Regen`, `Town`, `Dt`…) win; the mode's go
-  on at engage. Main+Sub and Range+Ammo move as pairs. `IdleWeapons = false`: mode always.
-- **TP hold:** at `WeaponTPGuard`+ TP (default 1000; examples: 0 on BLM BRD COR GEO RDM SCH SMN WHM, 100 on PLD)
-  Main/Sub/Range stay, except for songs, rolls, cures, enfeebling, enhancing, geomancy. Weapon commands swap at any TP;
-  `0` = no hold. Aftermath up holds them too, at any TP, against idle/engaged sets (`AftermathHold = false` to stop).
-  Asleep, the `Sleeping` set's weapons pass.
-- **`/th`:** THF main keeps `TH` Main/Sub/Range on the whole time, over mode and picks. Other jobs: they come off with
-  the rest of `TH` at the tag (a weapon swap resets TP).
-- **Dual wield:** `Weapon_<Mode>_1h` when you can't: NIN 10+, DNC 20+, THF 83+, main or sub at the effective level
-  (FFXIclopedia; Sheol Gaol sub Lv0 doesn't count). Losing DW puts `_1h` on at once; regaining waits for the TP hold.
-  `gcinclude.AlwaysDualWield = true` forces DW (BLU, THF). Game refuses a Sub for lack of DW: that item stays off Sub
-  15s (`gcinclude.SubRefuseHold`), then one retry.
-- Augmented weapon in a cycle: `gcinclude.WeaponItemMap = { ['Rostam B'] = { Name = 'Rostam', AugPath = 'B' } };` and
-  `'Rostam B'` in `MainModes`.
+- The mode is what you return to; action sets naming weapons still swap them. Slot picks beat the mode for their slot.
+- Out of combat, idle sets' weapons win (`IdleWeapons`); Main+Sub and Range+Ammo move as pairs.
+- At `WeaponTPGuard`+ TP (examples: 0 on mages, 100 PLD) Main/Sub/Range stay, except songs, rolls, cures,
+  enfeebling, enhancing, geomancy. Aftermath holds them too (`AftermathHold`). Weapon commands always swap.
+- `Weapon_<Mode>_1h` without DW (NIN 10+, DNC 20+, THF 83+, main or sub). `gcinclude.AlwaysDualWield = true` forces it.
+  A Sub refused for lack of DW stays off 15s.
+- THF `/th`: `TH` weapons stay on; other jobs drop them at the tag.
+- Augmented cycle entry: `gcinclude.WeaponItemMap = { ['Rostam B'] = { Name = 'Rostam', AugPath = 'B' } };`.
 
-## Defense and locks
+## Defense, locks, Hoxne
 
-- `/aminon`: `Aminon` set (else `mdt`), and the weapons locked until off. You don't engage Aminon (TP comes from
-  Regain), so the weapon mode's Main/Sub (slot picks, `_1h` without Dual Wield) go on even while idle; a slot the
-  mode leaves empty gets the `Aminon` set's item, else what's worn. Range/Ammo only if the mode or the set names them.
-  `/wm` while on swaps and re-locks. Turns `/sir` off; `/sir` is refused while it's on.
-- `/lock` holds until `/unlock`, even against force-equips (handy for `//gs export`). Locks have owners (you, Aminon,
-  Hoxne, `/proc`, holds, `/gce`): turning one off frees only its slots; `/unlock` frees only yours and names the rest.
-- `/naked` `/weaponsonly` `/abysseaproc`: one at a time. NIN `/proc` also locks Ammo.
-- **`/hoxne`** (off ↔ Locked; `use` = Locked and use now): Hoxne Ampulla kept in Ammo, Ammo and Range locked (anything
-  there knocks it off and ends Enchantment). Used when in Ammo and Enchantment has been gone 3s (BG-Wiki: Double
-  Attack +100%, 30 min, 60s recast, 5s use delay, lost on unequip or zone). `HoxneAutoUse = false` stops auto use.
+- `/aminon`: `Aminon` set (else `mdt`), weapon mode's Main/Sub on and locked even idle (Regain TP); turns `/sir` off.
+- `/lock` beats everything until `/unlock`. Each lock has an owner; `/unlock` frees yours and names the rest.
+- `/hoxne`: Ampulla kept in Ammo (Ammo, Range locked), used 3s after Enchantment ends (`HoxneAutoUse = false` stops).
+  Zoning turns it off.
 
-## Magic burst (RDM BLM SCH GEO)
+## Magic burst
 
-1. Fill `Burst`. It goes on by itself when a nuke lands in a live skillchain of its element, inside the burst window
-   (`MBWindow`, 10s; another WS on the mob ends it). GoomSwap never casts for you: you press the nuke.
-2. `/burst` (Alt+F11): `Burst` on every nuke, chain or not. The HUD's `nuke` cell shows a `*` while it's on.
-3. `MBSkills` (`Elemental Magic`): the spell skills that get `Burst`; add `'Dark Magic'` etc. `/mbinfo`: last chain seen.
+`Burst` goes on when a nuke lands in a live skillchain of its element within `MBWindow` (10s). You cast; GoomSwap
+dresses. `/burst` = every nuke. `MBSkills` = skills that get it.
 
 ## Items
 
-- **Packer** (Ashita, Thorny's Bellhop plugin: `/bh get`, any bag it reaches): lists add up, later wins, `false` drops an
-  item: `PackerItems` setting → `Packer` in `char.lua` → `gcinclude.Packer = { ['Trump Card'] = 99, ['Holy Water'] =
-  false }` in a job file. `'stack'` = full stack. Food: a stack of each in `Food`, first one set of `gcinclude.Food`
-  (job file) → `Food` in `char.lua` → `Food` setting (`T{}` = none). Still short a few
-  seconds later: named in chat. Windower: `profile.Packer` feeds `//gs org` (Organizer addon).
-- **`/gce`:** waits the item's `CastDelay` (override `EnchantDelays`, fallback `EnchantWindow`) once it's really on;
-  `/item` retried every 2s, 5 tries; gives up after 10s not on. Refused if `/lock` or another feature holds the slot.
-- **Rings** (`/warpring` `/mea` `/holla` `/dem`): `/gce` on Ring2, past `/lock`; let go after the use so your Ring2
-  returns. Ring names: `warp_Ring` etc.
-- **Einherjar** (Ashita, Hazhalm Testing Grounds): reserver within 5' of the Entry Gate runs `/ejenter ort` (1-9 or
-  name start). It trades the Smoldering Lamp, picks the chamber, copies a Glowing Lamp per party member within 6' and
-  trades one to each. GoomSwap boxes accept by themselves (party members only, Glowing Lamps only). When all have one,
-  the reserver enters and sends `/mso /ejenter`. `/ejexit` drops the lamp = leave. Windower: use Valkyrie.
-- Warnings, never cancel: ammo ≤ `AmmoWarn` (20), Utsusemi tools ≤ `NinjaToolWarn` (10).
-- Asleep under Stoneskin: sends `/cancel Stoneskin` (needs a cancel addon; `SleepCancelStoneskin = false` stops it).
+- **Packer** (Ashita, Bellhop): `PackerItems` → `char.lua` `Packer` → `gcinclude.Packer = { ['Trump Card'] = 99 }`;
+  `'stack'` = full, `false` drops. Plus a stack of each `Food`. Windower: `profile.Packer` → `//gs org`.
+- **`/gce`:** waits the item's delay (`EnchantDelays`, `EnchantWindow`), retries 5x, frees the slot after. Rings use Ring2.
+- **Einherjar** (Ashita): reserver at the Entry Gate `/ejenter ort` trades lamps to the party; boxes accept and enter.
+  `/ejexit` leaves. Windower: Valkyrie.
+- Warns at `AmmoWarn` ammo, `NinjaToolWarn` tools. Asleep under Stoneskin: `/cancel Stoneskin`.
 
 ## Action checks
 
-Spells, abilities and WS that would fail are cancelled before gear moves, reason in chat (`Validate = false` off).
-Nothing is queued: press it again when ready.
+Cancelled before gear moves, reason in chat (`Validate = false` off): KO, sleep/stun/petrify/terror/charm, Mute,
+Silence, Amnesia (JA/WS), recast (`m:ss`), already casting, MP short (arts-adjusted; `ValidateMP`), stratagems,
+Waltz TP. Nothing is queued.
 
-- KO, sleep, stun, petrify, terror, charm, Mute, Silence; Amnesia for JA/WS. No item use for Silence: leave Echo
-  Drops/Remedy to another addon.
-- Recast: shows `m:ss` left (Ready/Sic/Quick Draw use charges, not checked).
-- Already casting: new spell/JA/WS/`/item`/`/ra` cancelled so your cast keeps its gear. A spell the server refuses stops
-  counting at once.
-- MP short, arts-adjusted (own school -10%, other +20%); skipped under Manafont, Manawell, Parsimony, Penury, Addenda,
-  Tabula Rasa. Gear MP cost isn't counted: `ValidateMP = false`.
-- Stratagems at 0; Waltz short on TP (`WaltzTPCut` = your gear's reduction).
-- Forced delay (BG-Wiki: 3s after a spell, 2s after WS/JA) isn't checked; the game's message says so.
+## HUD
 
-## HUD (multibox)
-
-One window showing every box running GoomSwap: a row per box, a column per mode. Each box writes its modes 4 times a
-second (Ashita: files in `luashitacast/hud/`; Windower: over IPC), and the box with the HUD open reads them all.
+Every box's modes in one window; the box with it open reads the others 4x/s (Ashita `luashitacast/hud/`, Windower IPC).
 
 ![The HUD, compact style](docs/hud.png)
 
-Compact style, five boxes. Bryn has `/sir` on (blue dot); Cora is your own box (gold name) with `/th` on (gold dot);
-Dain is on `/mmode acc`, `/idleset refresh` (`MP`) and `/def` DT (orange); Elle has `/nukeset oa` with `/burst` on
-(`Occ*`). Bright gold = changed since load, soft gold = load default, faint `-` = none.
+Bryn: `/sir` (blue dot). Cora: you (gold name), `/th` (gold dot). Dain: `/mmode acc`, `/idleset refresh` (`MP`),
+DT. Elle: `/nukeset oa` + `/burst` (`Occ*`).
 
-**Turning it on**
-- `/gchud` toggles it; `/gchud large` or `/gchud compact` switches the style (saved per character); `/gchud pos X Y`
-  moves it; drag it with the mouse (saved per character); `/gchud debug` lists the boxes it found and where it reads them.
-- Who sees every box: `HUDOwners = T{'YourMain'};` in `common/gcinclude.lua` settings, or per character in
-  `settings` in `char.lua`. Those characters open the HUD on load with every box. On any other box, `/gchud` shows
-  only that box's own row. Empty list (the default): any box's `/gchud` shows every box.
+- **Open:** `/gchud`; `/gchud large|compact`; `/gchud pos X Y` or drag; `/gchud debug`. `HUDOwners` boxes open it
+  with every box; other boxes see their own row (empty list: everyone sees all).
+- **Dot:** blue SIR, gold TH, green Kite, red PROC. **Gold name:** you.
+- **Colours:** bright gold changed, soft gold default, faint `-` none. `def` DT orange, MDT blue, Amin purple. `melee`
+  purple = `/wsset high`; `wpn` teal = `/hoxne`; `*` after `nuke` = `/burst`.
 
-**Reading it**
-- **Rows:** `HUDOwners` first, then party order. Names are 4 letters in the compact style, full in the large one.
-- **Dot before a name:** blue = `/sir` on, gold = `/th` on, green = `/kite` on, red = `/proc` on (the first that's
-  on; hover the name for all of them). **Gold name** = your own box.
-- **Columns** (each box's job decides which it has; a column shows when any box has it):
+| Column | Shows |
+|---|---|
+| `wpn` / `main` `sub` `rng` `ammo` | `/wm` / slot picks |
+| `melee` `ra` `idle` | `/mmode` / `/rangedset` / `/idleset` (`MP` `HP` `TP`) |
+| `nuke` `elem` `w` | `/nukeset` / BLM SCH element and weapon |
+| `tank` `pup` `def` | `/tankset` / `/pupmode` / `/def` |
 
-  | Column | Shows | Values |
-  |---|---|---|
-  | `wpn` | weapon mode (`/wm`) | the mode's name; teal while `/hoxne` is on |
-  | `main` `sub` `rng` `ammo` | slot picks (`/mw` `/sw` `/rw` `/ammoset`) | the item; `-` none |
-  | `melee` | `/mmode` | `Base`, `SubtleBlow`, `Acc`...; purple while `/wsset high` |
-  | `ra` | `/rangedset` (COR RNG PLD) | `-` or `Acc` |
-  | `idle` | `/idleset` | `-`, or `MP` `HP` `TP` (compact) / `Refresh` `Regen` `Regain` (large) |
-  | `nuke` | `/nukeset` | `Power` `Macc` `OccultAcumen` (compact `Pow` `Macc` `Occ`); a `*` after it = `/burst` on |
-  | `elem` `w` | BLM/SCH element (`/elecycle`) and weapon (`/weapon`) | |
-  | `tank` `pup` | `/tankset` (PLD RUN), `/pupmode` (PUP) | |
-  | `def` | `/def` | `-` none, `DT` (orange), `MDT` (blue), `Amin` (purple); `+` = more than one |
+- Click a cell: runs it on that box. Click a name: its other modes.
+- Mouse away: your row only; over: all (`HUDHover`). Opens upward in the screen's bottom half (`HUDGrow`).
+- Fixed width: every column a job has always shows. Compact shortens names (`HUDAbbr` to set your own).
+- The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).
+- Settings: `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDX` `HUDY` `HUDStyle` `HUDScale` `HUDScaleLarge`
+  `HUDAlpha` `HUDAbbr` `HUDLabels`.
+- Windower: same, no dots/fade/shadow; the name takes the dot's colour.
 
-- **Value colours:** bright gold = you changed it since the job loaded; soft gold = still the job's load default;
-  faint `-` = none/off. The compact style shortens long names (`Anarchy` → `Ana`, `SubtleBlow` → `Sub`); the large style
-  shows them in full; `HUDAbbr` sets your own.
-- **Width:** every column a box's job has always shows, and all mode columns share one width, so the HUD keeps its
-  width when modes change.
-- **Look (Ashita):** headers on a soft blue fade, a thin shadow under the text, no edge, opacity `HUDAlpha`.
+## Status bar
 
-**Using it**
-- Click a cell: runs that mode's command on that box (clicking `wpn` on Bryn's row is Bryn's `/wm`).
-- Click a name: shows that box's other modes and its job on a line under it; click again to hide.
-- Mouse away (owner): only the headers and your own row; mouse over: every box (`HUDHover = false`: always every box).
-  In the bottom half of the screen it opens upward, your row staying put (`HUDGrow = 'up'`, `'down'`, `'auto'`).
-- The owner also prints the other boxes' GoomSwap chat lines as `[Name]` (`HUDMessages = false` to stop).
-
-**Settings:** `HUDOwners`, `HUDHover`, `HUDGrow`, `HUDMessages`, `HUDX` `HUDY` (position), `HUDStyle`, `HUDScale`
-(compact text size), `HUDScaleLarge`, `HUDAlpha` (background opacity), `HUDAbbr` (`{ ['Carnwenhan'] = 'Carn' }`),
-`HUDLabels` (column headers, `{ Main = 'mn' }`).
-
-**Windower:** the HUD is one text box, so it has the same rows, columns and colours but no dots, fade or shadow: the
-name itself takes the dot's colour (gold for your own when nothing is on).
-
-## Status bar (/gcbar)
-
-One line for this box only, for playing without the HUD.
+This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `DisplayBar = true` on load.
 
 ![The status bar](docs/gcbar.png)
 
-COR99/DNC56 with 1149 attack and 1298 defense; weapon mode Anarchy with a slot pick changed (`+`) on `/mmode acc`
-(`Acc`); WS buff level Mid (default, soft gold); `/idleset regain` (`TP`); `/dt` and `/th` on.
-
-- `/gcbar` toggles it (or `DisplayBar = true` in settings), `/gcbar pos X Y` moves it, drag it with the mouse; position
-  and on/off are saved per character.
-- A rounded capsule in three parts, split by thin lines:
-  1. **Job:** main and sub job with levels, then attack/defense.
-  2. **Modes:** each mode that's set, in this order: `wpn`, `wsset`, `nuke`, `elem`, `tank`, `pup`, `weapon`, `idle`,
-     `ranged`. Modes at none/off (and `idle`/`ranged` at Default) are left out. Bright gold = changed, soft gold = default.
-     - `wpn` is the weapon mode (on a job without weapon modes, e.g. PLD, the main pick) and carries three more
-       things: a `+` when you changed a slot pick (`/mw` `/sw` `/rw` `/ammoset`), then the `/mmode` as a short tag
-       (`Acc`, `SB` = SubtleBlow; nothing at Base), and the name turns teal while `/hoxne` is on.
-     - `idle` reads `MP` `HP` `TP` (Refresh, Regen, Regain).
-  3. **Toggles that are on**, each a dot in its colour and its name: `DT` orange, `MDT` blue, `Aminon` purple, `SIR`
-     blue, `TH` gold, `Kite` green, `Burst` pink, `PROC` red, `Harp` teal, `Song lock` purple, `Death` red. Nothing
-     on: this part is left out.
-- It fits what it shows, so it grows and shrinks as modes change. Opacity follows `HUDAlpha`.
-- Windower: one text box, so a `|` between the parts and the toggle names in their colours, without the capsule
-  shape, lines or dots.
+- **Job** and attack/defense | **modes that are set** | **toggles that are on** as dots.
+- `wpn`: `+` = slot pick changed; tag = `/mmode` (`Acc`, `SB`); teal = `/hoxne`. `idle`: `MP` `HP` `TP`.
+- Dots: DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green, Burst pink, PROC red, Harp teal.
+- Grows with what it shows. Windower: `|` and coloured names, no capsule or dots.
 
 ## How sets stack
 
-Later wins, slot by slot; a set changes only the slots it lists.
+Later wins, slot by slot.
 
-**Idle / engaged**, lowest to highest:
-1. Your job file: `Idle` → `Idle_<mode>` (`/idleset`, idle only) / `Tp_Default` → `Tp_<mset>` → buff sets (`Impetus`) → `Dt` (`/dt`) → `Movement` (`/kite`).
-2. Hoxne sets → auto `Idle_Regen` / `Idle_Refresh` / `Dt` (low HP/MP) → `Town`.
-3. Weapon mode (not engaged: only the weapon slots your idle sets leave empty; `IdleWeapons = false` = all) → `mdt` (`/mdt`) or `Aminon` (`/aminon`) → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll.
-4. **`Incapacitated`** (slept, petrified, stunned, terrorized): `Aminon` if `/aminon` is on, else `mdt` if `/mdt`,
-   else `Dt` (even with `/dt` off), without Main/Sub/Range/Ammo; then the `Incapacitated` set, then `*_Received`. **Over DT, MDT, Aminon,
-   TH, Buffs and everything in 1-3.**
-5. `Sleeping` (asleep) → `Doomed` → `Reraise` (Weakness) → craft / zeni / fish / rr sets.
+**Idle/engaged:**
+1. Job file: `Idle` → `Idle_<mode>` / `Tp_Default` → `Tp_<mmode>` → buff sets → `Dt` (`/dt`) → `Movement` (`/kite`).
+2. Hoxne sets → auto `Idle_Regen` `Idle_Refresh` `Dt` → `Town`.
+3. Weapon mode → `mdt`/`Aminon` → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll.
+4. `Incapacitated` (slept, petrified, stunned, terror): Aminon, else `mdt`, else `Dt` (no weapons), then its own set. Over 1-3.
+5. `Sleeping` → `Doomed` → `Reraise` → craft/zeni/fish/rr.
 
-**Spells (midcast):** your job file → `TH` (not `THSkip`) → its `_Self` / `_Others` / `_Burst` sets → `Absorb` (TH back on top) → `Buffs_Midcast` →
-`LightBonus` → obi/Orpheus/back/ring (a `TH` waist stays) → `SIR` (`/sir`, not `SIRSkip`). WHM cures:
-`Cure` → `Self_Cure` → `Cure_LowMP` or `Cure_LowMP_Storm` (MP ≤ 50%) → `Cure_Dt` (`/dt`) → Hachirin-no-Obi → `SIR`.
+**Midcast:** job file → `TH` → `_Self` `_Others` `_Burst` → `Absorb` → `Buffs_Midcast` → `LightBonus` →
+obi/Orpheus/back/ring → `SIR`. WHM cures: `Cure` → `Self_Cure` → `Cure_LowMP` → `Cure_Dt` → obi → `SIR`.
 
-**Weapon skills:** your job file → its `_HighBuff` sets (`/wsset high`) → Hoxne sets → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
+**WS:** job file → `_HighBuff` → Hoxne → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
 
-Defense toggles change idle/engaged gear only (`/aminon` also locks weapons); a spell wears DT gear only where the
-job file says so (WHM `Cure_Dt`).
-
-**Engine sets** (fill the ones you want; order above):
-
-| Set | Worn |
+| Engine set | Worn |
 |---|---|
-| `<set>_Self` / `_Others` / `_Burst` | After a midcast set: spell on you / on anyone but a mob / a burst (`Cure_Others`, `Nuke_Burst`) |
-| `Weapon_<Mode>`, `_1h`, `<Mode>Acc` | Weapon mode; `_1h` without DW; `Acc` variant while `/mmode Acc` (any `/mmode` value works) |
-| `Dt` `mdt` `Aminon` `SIR` `TH` `Movement` | With their toggles. `TH`: until tagged (swing, shot, WS, JA, a spell that lands); not on you/allies |
-| `Idle_Refresh` `Idle_Regen` `Idle_Regain` | `/idleset` mode while idle; Refresh/Regen also by low MP/HP (`/autogear`) |
-| `Midshot_Acc` | COR RNG PLD `/rangedset acc`, over `Midshot` |
-| `Incapacitated` | Slept, petrified, stunned, terrorized (not charmed: the client can't change gear) |
-| `Sleeping` | Asleep (else `gcinclude.sets.Sleeping`); its weapons pass the TP hold, not locks |
-| `Absorb` / `Absorb_TP` | Every Absorb- spell / Absorb-TP; `TH` goes back on top |
-| `LightBonus` | Healing Magic midcast |
-| `Buffs` `Buffs_Ws` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while that buff is up: at rest / WS / midcast. A buff counts once its "gains the effect" message lands, before the buff list shows it |
-| `Hoxne_Tp` `Hoxne_Idle` `Hoxne_Dt` `Hoxne_Ws` `Hoxne_<ws>` | `/hoxne` Locked + Enchantment up; not while `/kite` |
-| `Hoxne_<set>_<buff>` | While the buff is up (`Hoxne_Tp_Impetus`); `&` = all up. Fewest buffs first, then A-Z |
-| `gcinclude.sets.Holy_Water` | When you use a Holy Water (the examples' `HandleItem`) |
-| `XIRoll` | Idle with a roll at 11 |
-| `*_Received` | A spell cast on you, until it lands (max `ReceivedWindow` 8s) |
+| `<set>_Self` `_Others` `_Burst` | spell on you / on others / a burst |
+| `Weapon_<Mode>` `_1h` `<Mode>Acc` | weapon mode; no DW; `/mmode acc` |
+| `Dt` `mdt` `Aminon` `SIR` `TH` `Movement` | their toggles; `TH` until tagged |
+| `Idle_Refresh` `Idle_Regen` `Idle_Regain` | `/idleset`; low MP/HP |
+| `Midshot_Acc` | `/rangedset acc` |
+| `Incapacitated` `Sleeping` | disabled / asleep (weapons pass the TP hold) |
+| `Absorb` `Absorb_TP` `LightBonus` | Absorb spells / Healing Magic |
+| `Buffs` `Buffs_Ws` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while the buff is up |
+| `Hoxne_Tp` `_Idle` `_Dt` `_Ws` `Hoxne_<set>_<buff>` | `/hoxne` + Enchantment |
+| `XIRoll` | idle with a roll at 11 |
+| `*_Received` | a spell coming at you (`ReceivedSets`, 8s max) |
 
-**Hoxne layering**, MNK Victory Smite with Impetus: `Ws_Default` → `Victory_Default` → `Victory_Imp` → `Hoxne_Ws` →
-`['Hoxne_Victory Smite']` → `['Hoxne_Victory Smite_Impetus']` → `Buffs_Ws` → Moonshade. Hoxne sets take `/mmode`
-variants (`Hoxne_Tp_SubtleBlow`).
+- **Moonshade:** leave it out of WS sets; added below `MoonshadeTP` (not `MoonshadeSkip`). WS set's Ear2 a Sortie or
+  "Right ear:" item → Moonshade in Ear1, else Ear2.
+- **Grips:** a Sub that can't go with the Main is dropped.
+- **Element gear** (`ElementSkills`, ninjutsu, Quick Draw, cures, `ElementalWS`):
+  `ElementGear = T{ Obis = T{ Dark = 'Anrin Obi' }, AnyObi = 'Hachirin-no-Obi', Distance = "Orpheus's Sash", Keep = T{'Oneiros Rope'} }`.
+  Obi: day +10, weather +10/+25, opposite subtracts; Orpheus by distance (`OrpheusPoints`); higher wins. Helixes no obi;
+  cures obi only (`gcinclude.CureObi`).
 
-**Moonshade:** leave it out of WS sets; the engine adds it on every WS below `MoonshadeTP` (1750), except
-`MoonshadeSkip`. Which ear depends on what your WS set puts in `MoonshadeSlot` (Ear2):
-
-| WS set's Ear2 | Moonshade goes in | Result |
-|---|---|---|
-| Sortie earring, or any item whose text says `Right ear:` | Ear1 | Ear2 keeps its bonus; the set's Ear1 earring is the one replaced |
-| Any other earring, or none | Ear2 | That earring is replaced; Ear1 keeps the set's earring |
-
-Only the WS set counts: if it has no Ear2, a Sortie earring still on from your TP or idle set is replaced. At or above `MoonshadeTP` no Moonshade;
-an ear the WS set left on Moonshade gets the set's last other earring back. `MoonshadeTP = 0`: the engine never touches
-it.
-
-**Grips:** a Sub that can't go with the final Main (two-hander needs a grip, grip needs a two-hander) is dropped.
-
-**Received sets** (`ReceivedSets`): `Cure_Received` (Cure/Cura/Curaga), `Cursna_Received`, `Phalanx_Received`,
-`Protect_Shell_Received`, `Regen_Received`, `Refresh_Received`, `Waltz_Received` (your boxes only). Start on anyone's
-"starts casting" on you, area spells within 10', or your own boxes' notice (`MyBoxes`); off when it lands or is
-interrupted. Never over your own action.
-
-**Element gear** (spells in `ElementSkills`, elemental ninjutsu, Quick Draw, cures, WS in `ElementalWS`):
-
-```lua
-ElementGear = T{ Obis = T{ Dark = 'Anrin Obi' }, AnyObi = 'Hachirin-no-Obi', Distance = "Orpheus's Sash",
-    DistanceMax = nil, Back = nil, Ring = nil, RingSlot = 'Ring2', -- optional, e.g. 'Twilight Cape', 'Zodiac Ring'
-    Cures = false, BackOnCures = false, Keep = T{'Oneiros Rope'} };
-```
-
-- Obi score: day +10, weather +10 (double +25), opposing element subtracts; never at ≤ 0. Orpheus: `OrpheusPoints`
-  (+15 at ≤ 1.93', +1 at ≥ 13', linear between). Higher wins. `Keep` items are never displaced; a `TH` waist stays.
-- Helixes: no obi. Cures: obi only (`BackOnCures` adds the back), per job `gcinclude.CureObi = true`. Blue Magic:
-  damage spells only.
-- Twilight Cape: a day or weather bonus that applies. Zodiac Ring: `ElementSkills` spells only, day matches, never
-  Lightsday/Darksday.
-
-## Exclusions: SIRSkip and THSkip
-
-Two lists of spells the engine leaves alone, so the set your job file put on for them is what you cast in:
-
-| List | Stops | Default |
-|---|---|---|
-| `SIRSkip` | `/sir` putting the `SIR` set over that spell's midcast | `'Absorb-TP', 'Stun'` |
-| `THSkip` | `/th` putting the `TH` set over it at an untagged mob (and it won't count as the tag) | `'Absorb-TP', 'Stun'` |
-
-Only that one layer is skipped: Aminon's weapon lock, obi/Orpheus and `Buffs_Midcast` still apply as usual.
-
-**Add a spell, one job:** top of the job file, under the `gcinclude = gFunc.LoadFile(...)` line. Adds to the
-default list:
-
-```lua
-gcinclude.SIRSkip = T{'Phalanx', 'Reprisal'};   -- PLD: Phalanx keeps its potency gear, Reprisal its own 105 SIR set
-gcinclude.THSkip  = T{'Absorb-STR', 'Absorb-ACC'}; -- example: these keep their own macc set at a new mob
-```
-
-**Add or remove, every job:** edit the line in `common/gcinclude.lua` settings:
-
-```lua
-SIRSkip = T{'Absorb-TP', 'Stun'};
-THSkip  = T{'Absorb-TP', 'Stun'};
-```
-
-**Remove a default, one job:** in that job's `OnLoad`, before `gcinclude.Initialize()`, replace the list:
-`gcinclude.settings.SIRSkip = T{'Absorb-TP'};` (now `/sir` covers Stun on this job).
-
-- Exact spell name, any case: `'Cure IV'`; `'Cure'` matches only Cure I. List every tier you want.
-- A spell that needs SIR *and* its own stats: put the SIR pieces in its own set and add it to `SIRSkip` (PLD
-  `Reprisal`). Spells not on the list get `SIR` over them (PLD `Cure`, `Protect`).
-- Check what's active: `/gchelp` prints both lists for the current job. `/lac reload` after editing.
+**SIRSkip / THSkip** (default `'Absorb-TP', 'Stun'`): spells `/sir` / `/th` leave alone. Exact names. Add per job at
+the top: `gcinclude.SIRSkip = T{'Phalanx'};`; replace in `OnLoad`: `gcinclude.settings.SIRSkip = T{...};`. `/gchelp`
+lists them.
 
 ## Job file
 
 ```lua
-gcinclude.SIRSkip = T{'Phalanx'};   -- top of file: adds to settings lists (THSkip too)
-gcinclude.CureObi = true;           -- top of file: cure obi for this job
+gcinclude.SIRSkip = T{'Phalanx'};   -- top: adds to the list
+gcinclude.CureObi = true;           -- top: cure obi
 profile.OnLoad = function()
     gcinclude.WeaponModes = {'None', 'Savage', 'Leaden'};
     gcinclude.DefaultWeapons = 'Savage';          -- or { Main = 'Burtgang', Sub = 'Aegis' }
     gcinclude.WeaponRoles = { melee = 'Savage', ranged = 'Leaden' };
-    gcinclude.MainModes = {'None', 'Burtgang', 'Caliburnus'};
-    gcinclude.SubModes  = {'None', 'Aegis', 'Duban'};
-    gcinclude.RangeModes = {'None', 'Annihilator'};
+    gcinclude.MainModes = {'None', 'Burtgang'};  gcinclude.SubModes = {'None', 'Aegis', 'Duban'};
     gcinclude.AlwaysDualWield = true;
-    gcinclude.Food = {'Grape Daifuku +1'};        -- /packer keeps a stack
-    gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Instant Reraise'] = 2 };
-    gcinclude.BuffSetOrder = T{'Saboteur', 'Aftermath'};
-    gcinclude.MeleeModes = {'Default', 'Acc'};    -- own /mmode list (NukeModes for /nukeset)
-    gcinclude.settings.RefreshGearMPP = 50;       -- any setting, this job only
+    gcinclude.Food = {'Grape Daifuku +1'};
+    gcinclude.Packer = { ['Echo Drops'] = 'stack' };
+    gcinclude.MeleeModes = {'Default', 'Acc'};    -- own /mmode list (NukeModes: /nukeset)
+    gcinclude.settings.RefreshGearMPP = 50;
     gcinclude.Initialize();
 end
 ```
 
 | Helper | Does |
 |---|---|
-| `gcinclude.EquipIdle()` | `Idle`, then `Idle_<IdleSet>` while idle. Job files from before `/idleset`: replace `gFunc.EquipSet(sets.Idle)` in `HandleDefault` with it |
-| `gcinclude.RangedAcc()` | True on `/rangedset acc` (wear `Midshot_Acc` in `HandleMidshot`) |
-| `gcinclude.EquipMode('Ws')` | `Ws_Default`, then `Ws_<MeleeSet>` unless Default |
-| `gcinclude.ByName(name)` | Set `name` (any case), then `name_<MeleeSet>`. False if none |
-| `gcinclude.Family(name)` | `'Utsusemi: Ni'` → `'Utsusemi'`, `'Drain III'` → `'Drain'` |
-| `gcinclude.CheckTH(force)` | `TH` without weapons at an untagged mob (`force` skips target checks); never `THSkip` |
-| `gcinclude.CheckWsBailout()` | False if the WS would fail |
-| `gcinclude.BuffCount('Name' or id)` | Buff count (cached ids) |
+| `gcinclude.EquipIdle()` | `Idle` + `Idle_<mode>` (use in `HandleDefault`) |
+| `gcinclude.RangedAcc()` | true on `/rangedset acc` |
+| `gcinclude.EquipMode('Ws')` | `Ws_Default` + `Ws_<mmode>` |
+| `gcinclude.ByName(name)` | set `name`, then `name_<mmode>`; false if none |
+| `gcinclude.Family(name)` | `'Drain III'` → `'Drain'` |
+| `gcinclude.CheckTH(force)` | `TH` at an untagged mob |
+| `gcinclude.CheckWsBailout()` | false if the WS would fail |
+| `gcinclude.BuffCount(x)` | buff count |
 
 ## Tips
 
-- `gSettings.FastCast` stays 0: idle gear returns on the game's finish packet, and burst timing is learned from real
-  casts. A higher value makes LAC's backup timer put idle gear on mid-cast.
-- Slot keywords (LuAshitacast): `'remove'` empties the slot; `'displaced'` marks it empty without a packet (cloak covers
-  Head, instrument empties Ammo); `'ignore'` leaves it alone.
-- HP pieces: `Priority = <HP>` so max HP doesn't dip mid-swap.
-- Dynamis RP: wear only what you rank, `/lock neck main sub range`, `/unlock` after.
+- `gSettings.FastCast` 0: idle gear returns on the finish packet.
+- Slot words: `'remove'` empty, `'displaced'` empty without a packet, `'ignore'` leave alone.
+- `Priority = <HP>` keeps max HP up mid-swap.
 
 ## Something wrong
 
 | Problem | Check |
 |---|---|
-| Edit does nothing | `/lac reload` (`//gs reload`) |
-| Windower: nothing loads | Red `[GoomSwap]`/`[LuAshitacast]` line: do what it says. No `[GoomSwap]` line at all: see Install |
-| Windower: `attempt to index global 'gFunc'` or `GearSwap loaded this job file directly` | Job file is in `data/<Name>/` (GearSwap's own spot): move it to `data/goomswap/<Name>/<JOB>.lua`, delete `data/<Name>/` |
-| A slot won't change | `/unlock` (it names other holders: `/aminon off`, `/hoxne off`…); weapons are held at `WeaponTPGuard`+ TP and while Aftermath is up (`/wm <mode>` swaps; `/wm <current mode> force` re-applies); `TH`-set weapon while `/th` is on (THF) |
-| Weapon in TP set never shows | Engaged, the weapon mode wins: `/wm none`, and `/mainset none` / `/subset none` for slot picks (PLD has only those). Out of combat your idle sets' weapons win (`IdleWeapons = false` to stop) |
-| Wrong or no gear | `/checksets`, item spelling, `/gctrace` |
-| Action cancelled | Chat says why (Action checks) |
+| Edit does nothing | `/lac reload` / `//gs reload` |
+| Windower loads nothing | red line says what; no `[GoomSwap]` line: see Install |
+| `attempt to index global 'gFunc'` | job file in `data/<Name>/`: move to `data/goomswap/<Name>/` |
+| Slot won't change | `/unlock` (names holders); TP/Aftermath hold (`/wm <mode> force`) |
+| TP-set weapon never shows | engaged the mode wins: `/wm none`, `/mainset none` |
+| Wrong gear | `/checksets`, spelling, `/gctrace` |
+| Action cancelled | chat says why |
 | HUD gone | `/gchud on`, `/gchud pos 500 120` |
