@@ -83,8 +83,9 @@ local function migrate()
                     if exists(out) then out = ROOT .. name .. '/' .. job .. '.migrated.lua' end
                     if write(out, text) then
                         done = done + 1;
-                        say(207, string.format('%s: %d sets placed, %d kept as Sel_* -> %s', job, rep.mapped, #rep.unmapped,
-                            string.sub(out, #DATA + 1)));
+                        local k = rep.keys or { added = {}, dropped = {} };
+                        say(207, string.format('%s: %d sets placed, %d kept as Sel_*, %d keys added, %d keys left out -> %s', job,
+                            rep.mapped, #rep.unmapped, #k.added, #k.dropped, string.sub(out, #DATA + 1)));
                         local stub = DATA .. name .. '/' .. job .. '.lua';
                         if (not exists(stub)) and string.match(out, '/' .. job .. '%.lua$') then
                             write(stub, '-- GoomSwap entry for ' .. job .. ' (written by goomswap_migrate). GearSwap loads this before\n'

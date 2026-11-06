@@ -98,9 +98,49 @@ first), then puts each set into the job's template under the template's own name
 
 Sets with no GoomSwap place (hybrid `.DT` variants, `Resistant`, Moonshade/latent sets...) are kept at the end
 as `['Sel_<path>']`: rename one to use it. Not carried over (the file's top comment lists them): Selindrile's
-automation (AutoDefense, AutoWS...), your own `send_command('bind ...')` lines (the default keys already follow
-Selindrile's F-key layout; add yours as in Keys), and slots built from the elemental obi/cape globals (GoomSwap adds
-the obi itself).
+automation (AutoDefense, AutoWS...) and slots built from the elemental obi/cape globals (GoomSwap adds the obi itself).
+
+**Keys.** Your `send_command('bind ...')` lines (`<Name>-Globals.lua`, then the gear file; a later `unbind` drops one)
+become that job's `Keybinds`, added in `OnLoad` on top of GoomSwap's keys (Keys, below):
+
+| Selindrile bind runs | Becomes |
+|---|---|
+| `input /ja "Provoke" <t>` (any chat command) | the same command |
+| `gs c cycle Weapons` / `weapons Default` / `weapons <name>` | `wm` / `wm default` / `wm <name>` |
+| `cycle OffenseMode` `IdleMode` `WeaponskillMode` `treasuremode`, `toggle Kiting` `Capacity` | `mmode` `idleset` `wsset` `th`, `kite` `capacity` |
+| `cycle HybridMode` (PLD RUN), `RangedMode` (COR RNG PLD) | `tankset`, `rangedset` |
+| `cycle CastingMode` (BLM RDM SCH GEO WHM; else `sir` when it has SIRD), `MagicBurstMode`, `ElementalMode` (BLM SCH) | `nukeset`, `burst`, `elecycle` |
+| `gs reload` | `/lac reload` (Windower: `gs reload`) |
+| Defense keys (`set DefenseMode ...`, `cycle PhysicalDefenseMode`...) | not added: `/def` (F10) and `/def off` (Alt+F12) cover them |
+| Same key and command as a GoomSwap key (F7 `Weapons`, F9 `OffenseMode`...) | not added: already there |
+| Selindrile automation (`AutoWSMode`, `SkillchainMode`, `RecoverMode`...), console commands (`gs org`, `fillmode`) | left out, listed in the file's top comment |
+
+On Selindrile's example characters, about half the keys of each job come over (a quarter added, a quarter already
+GoomSwap's); the rest drive Selindrile automation GoomSwap doesn't have.
+
+**Settings to look at** after migrating. Best per character, in `data/goomswap/<Name>/char.lua` (copy
+`examples/char.lua`): a newer `common/` doesn't erase it. Every job: `common/gcinclude.lua` settings. One job: its
+`OnLoad`, before `gcinclude.Initialize()`.
+
+```lua
+return { settings = { Messages = true, HUDOwners = T{'YourMain'}, LockstyleSet = 1 } };  -- char.lua
+```
+
+| Setting | Default | Change it to |
+|---|---|---|
+| `Messages` | `false` | `true`: a chat line on every mode/toggle change (`Idle set Regain`, `DT on`); `/gcmessages` flips it in game |
+| `HUDOwners` | `T{}` | `T{'YourMain'}`: that box opens the HUD with every box; the others show their own line |
+| `Keybinds` | Selindrile's F-key layout | your own list (Keys); `T{}` = no keys |
+| `LockstyleSet` | `nil` | your lockstyle set number, put on 4s after load and job change |
+| `RegenGearHPP` `RefreshGearMPP` `DTGearHPP` | `60` `60` `50` | when `Idle_Regen` / `Idle_Refresh` / `Dt` go on by themselves; `0` = never |
+| `WeaponTPGuard` | `1000` | TP at which Main/Sub/Range stay on; `0` = always swap (examples set it per job) |
+| `IdleWeapons` | `true` | `false`: your weapon mode stays on out of combat instead of the idle sets' weapons |
+| `AutoFood` `AutoFoodItems` | `false`, Grape Daifuku | `true` and your food (`/autofood` in game) |
+| `WScheck` `WSdistance` | `true`, `5` | the WS range check; `/wsdistance` in game |
+| `MoonshadeTP` | `1750` | when Moonshade Earring goes on; `0` = never touched |
+| `Validate` `ValidateMP` | `true` | `false` to stop GoomSwap cancelling actions that would fail |
+| `DisplayBar` | `false` | `true`: one-line status bar; `/gcbar` |
+
 
 ## First steps
 

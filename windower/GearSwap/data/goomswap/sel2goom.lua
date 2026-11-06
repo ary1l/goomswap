@@ -103,13 +103,15 @@ local function set_combine(...)
     return o;
 end
 
-local function new_env(name, job, sub)
+local function new_env(name, job, sub, sent)
     local player = { name = name, main_job = job, sub_job = sub or 'WAR', main_job_level = 99, sub_job_level = 49,
         main_job_full = job, sub_job_full = sub or 'WAR', status = 'Idle', hpp = 100, mpp = 100, tp = 0,
         equipment = {}, buffs = {}, target = {}, merits = autoviv(), job_points = autoviv() };
     local win = stub();
     rawset(win, 'ffxi', setmetatable({ get_player = function() return player end }, stubmt));
     rawset(win, 'addon_path', '');
+    local function send_command(cmd) if (type(cmd) == 'string') and (sent ~= nil) then sent[#sent + 1] = cmd end end
+    rawset(win, 'send_command', send_command);
     local base = {
         pairs = pairs, ipairs = ipairs, next = next, type = type, tostring = tostring, tonumber = tonumber,
         select = select, unpack = unpack or table.unpack, pcall = pcall, error = error, assert = assert,
@@ -123,6 +125,7 @@ local function new_env(name, job, sub)
         player = player, buffactive = {}, world = { area = '', day = '', weather_element = 'None', time = 0 },
         windower = win, gear = autoviv(), data = autoviv(),
         item_available = function() return true end, -- the file asked for it: assume it's owned
+        send_command = send_command, -- kept: the binds become Keybinds
     };
     return setmetatable(base, { __index = function(_, k) return stub() end });
 end
@@ -434,9 +437,101 @@ end
 ---------------------------------------------------------------------------------------------------
 -- opts: io_ { read(path)->text|nil, loadstring, setfenv }, name, job, sub, gear_file, pre_files (list, loaded first,
 -- missing ones skipped), mappings_file, template_text, source_label
+-- Selindrile binds -> GoomSwap Keybinds. GoomSwap's own keys (keep in step with Keybinds in common/gcinclude.lua):
+local GOOM_KEYS = { f7 = 'wm', ['+f7'] = 'wm default', f9 = 'mmode', ['^f9'] = 'tankset', ['+f9'] = 'rangedset',
+    ['!f9'] = 'wsset', f10 = 'def', ['!f10'] = 'kite', ['@f10'] = 'hoxne', ['+f11'] = 'nukeset', ['!f11'] = 'automb',
+    ['+f12'] = 'idleset', ['!f12'] = 'def off', ['!@^f12'] = '/lac reload' };
+-- 'gs c <words>' -> GoomSwap command; a table = per job (others: no GoomSwap match there).
+local SEL_CMD = {
+    ['cycle weapons'] = 'wm', ['weapons default'] = 'wm default', ['cycle offensemode'] = 'mmode',
+    ['cycle weaponskillmode'] = 'wsset', ['toggle kiting'] = 'kite', ['cycle idlemode'] = 'idleset',
+    ['toggle capacity'] = 'capacity', ['cycle treasuremode'] = 'th',
+    ['cycle hybridmode'] = { PLD = 'tankset', RUN = 'tankset' },
+    ['cycle rangedmode'] = { COR = 'rangedset', RNG = 'rangedset', PLD = 'rangedset' },
+    ['cycle castingmode'] = { BLM = 'nukeset', RDM = 'nukeset', SCH = 'nukeset', GEO = 'nukeset', WHM = 'nukeset' },
+    ['cycle magicburstmode'] = { BLM = 'burst', RDM = 'burst', SCH = 'burst', GEO = 'burst' },
+    ['cycle elementalmode'] = { BLM = 'elecycle', SCH = 'elecycle' },
+};
+-- Selindrile's defense keys: GoomSwap has one /def cycle (F10) and /def off (Alt+F12) instead.
+local SEL_DEFENSE = { ['set defensemode'] = true, ['reset defensemode'] = true, ['cycle physicaldefensemode'] = true,
+    ['cycle magicaldefensemode'] = true, ['cycle resistdefensemode'] = true };
+-- '~^f9' -> '^+f9' (GoomSwap writes Shift as +; the Windower side turns it back into ~), modifiers sorted to compare.
+local function goom_key(k)
+    local mods, name = string.match(k, '^([%^!@#~%+%%%$]*)(.+)$');
+    if (name == nil) then return k, k end
+    mods = string.gsub(mods, '~', '+');
+    local m = {};
+    for c in string.gmatch(mods, '.') do m[#m + 1] = c end
+    table.sort(m);
+    local norm = table.concat(m) .. string.lower(name);
+    return mods .. name, norm;
+end
+-- One bind's command: kind 'key' (GoomSwap command or chat command), 'covered', or 'drop' (with why).
+local function bind_command(rest, job, sird)
+    local got, why = {}, nil;
+    for part in string.gmatch(rest, '[^;]+') do
+        part = string.match(part, '^%s*(.-)%s*$');
+        local lp = string.lower(part);
+        if (part == '') or string.match(lp, '^gs c update') then
+            -- Selindrile's own refresh: GoomSwap re-checks gear by itself
+        elseif string.match(lp, '^input%s+/') then
+            got[#got + 1] = string.match(part, '^%S+%s+(.*)$');
+        elseif (lp == 'gs reload') then
+            got[#got + 1] = '/lac reload';
+        elseif string.match(lp, '^gs c ') then
+            local words = {};
+            for w in string.gmatch(string.sub(lp, 6), '%S+') do words[#words + 1] = w end
+            local two = (words[1] or '') .. ' ' .. (words[2] or '');
+            local m = SEL_CMD[two];
+            if (type(m) == 'table') then m = m[job] end
+            if (m == nil) and (two == 'cycle castingmode') and sird then m = 'sir' end -- CastingMode Normal/SIRD -> /sir
+            if (m == nil) and (words[1] == 'weapons') and (words[2] ~= nil) then -- a weapon set by name -> /wm <name>
+                m = 'wm ' .. string.match(part, '^%S+%s+%S+%s+%S+%s+(.*)$');
+            end
+            if SEL_DEFENSE[two] then return 'covered' end
+            if (m == nil) then return 'drop', 'no GoomSwap match' end
+            got[#got + 1] = m;
+        else
+            return 'drop', 'console command';
+        end
+    end
+    if (#got == 0) then return 'drop', 'nothing to run' end
+    if (#got > 1) then return 'drop', 'several commands' end
+    return 'key', got[1];
+end
+-- The captured send_command calls -> { added = {{key, cmd}...}, covered = n, dropped = {'key: cmd (why)'...} }.
+local function convert_binds(sent, job, sird)
+    local order, byKey = {}, {};
+    for _, line in ipairs(sent) do -- in order: Globals first, then the gear file (later binds and unbinds win)
+        local key, rest = string.match(line, '^%s*bind%s+(%S+)%s+(.-)%s*$');
+        local ukey = string.match(string.lower(line), '^%s*unbind%s+(%S+)');
+        if (key ~= nil) then
+            local gk, norm = goom_key(key);
+            if (byKey[norm] == nil) then order[#order + 1] = norm end
+            byKey[norm] = { key = gk, raw = key, rest = rest };
+        elseif (ukey ~= nil) then
+            local _, norm = goom_key(ukey);
+            byKey[norm] = nil;
+        end
+    end
+    local res = { added = {}, covered = 0, same = 0, dropped = {} };
+    for _, norm in ipairs(order) do
+        local b = byKey[norm];
+        if (b ~= nil) then
+            local kind, v = bind_command(b.rest, job, sird);
+            if (kind == 'covered') then res.covered = res.covered + 1
+            elseif (kind == 'drop') then res.dropped[#res.dropped + 1] = b.raw .. ': ' .. b.rest .. ' (' .. v .. ')'
+            elseif (GOOM_KEYS[norm] == v) then res.same = res.same + 1
+            else res.added[#res.added + 1] = { b.key, v } end
+        end
+    end
+    return res;
+end
+
 function S2G.Convert(opts)
     local io_ = opts.io_;
-    local env = new_env(opts.name, opts.job, opts.sub);
+    local sent = {};
+    local env = new_env(opts.name, opts.job, opts.sub, sent);
     local report = { loaded = {}, failed = {}, unmapped = {}, unresolved = {}, mapped = 0, notes = {} };
     if (opts.mappings_file ~= nil) then
         local ok = run_file(io_, opts.mappings_file, env);
@@ -632,6 +727,18 @@ function S2G.Convert(opts)
     if (#melee > 1) then
         sub_line('(\n%s*)gcinclude%.Initialize%(%);', '%1gcinclude.MeleeModes = ' .. lua_list(melee) .. '; -- /mmode, from your OffenseMode%1gcinclude.Initialize();');
     end
+    local sird = false;
+    for _, m in ipairs(opts_of('CastingMode')) do if (m == 'SIRD') then sird = true end end
+    local keys = convert_binds(sent, opts.job, sird);
+    report.keys = keys;
+    if (#keys.added > 0) then
+        local kl = { '%1for _, b in ipairs({ -- your Selindrile keys (goomswap_migrate), added to GoomSwap\'s; README Keys' };
+        for _, b in ipairs(keys.added) do
+            kl[#kl + 1] = '%1    { ' .. string.gsub(q(b[1]), '%%', '%%%%') .. ', ' .. string.gsub(q(b[2]), '%%', '%%%%') .. ' },';
+        end
+        kl[#kl + 1] = '%1}) do table.insert(gcinclude.settings.Keybinds, b) end';
+        sub_line('(\n%s*)gcinclude%.Initialize%(%);', table.concat(kl) .. '%1gcinclude.Initialize();');
+    end
 
     -- Generic (by-name) templates: a Selindrile spell_maps group (StatusRemoval, BarElement...) becomes one set
     -- per spell, sharing that group's gear, where GoomSwap's spell family name differs from the group's.
@@ -693,8 +800,12 @@ function S2G.Convert(opts)
         '-- Migrated from Selindrile: ' .. (opts.source_label or opts.gear_file),
         '-- Template: GoomSwap examples/' .. opts.job .. '.lua (its handlers; your gear). Weapon modes (/wm): ' .. table.concat(wm, ', ') .. '.',
         '-- ' .. report.mapped .. ' sets placed; ' .. #report.unmapped .. ' kept as Sel_* (no GoomSwap place yet). Template sets you had nothing for are {}.',
-        '-- Not carried over: keybinds, Selindrile automation (AutoDefense, AutoRune, AutoTank, AutoWS...), Day/Night idles.',
+        '-- Keys: ' .. #keys.added .. ' of your binds added in OnLoad; ' .. (keys.same + keys.covered) .. ' already on GoomSwap\'s keys (its F-key layout, /def); '
+            .. #keys.dropped .. ' left out' .. ((#keys.dropped > 0) and ':' or '.'),
     };
+    for i = 1, math.min(#keys.dropped, 40) do h[#h + 1] = '--   ' .. keys.dropped[i] end
+    if (#keys.dropped > 40) then h[#h + 1] = '--   ... and ' .. (#keys.dropped - 40) .. ' more' end
+    h[#h + 1] = '-- Not carried over: Selindrile automation (AutoDefense, AutoRune, AutoTank, AutoWS...), Day/Night idles.';
     for _, nt in ipairs(report.notes) do h[#h + 1] = '-- ' .. nt end
     if (#report.unresolved > 0) then
         h[#h + 1] = '-- Slots left out (a value the migration could not read, e.g. a global from your own code):';
