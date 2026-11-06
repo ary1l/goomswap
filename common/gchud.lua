@@ -696,7 +696,7 @@ local function build_grid(x0)
     -- (until the style or text size changes), so a value changing doesn't resize the HUD.
     local unit = style_name() .. textw('M');
     if (unit ~= widthUnit) then widthUnit, widthMax = unit, {} end
-    local function add(key, kind, center)
+    local function measure(key, kind, center)
         local l = label(key);
         local lw = textw(l);
         local w = lw;
@@ -708,16 +708,25 @@ local function build_grid(x0)
         end
         w = math.max(w, widthMax[kind .. key] or 0);
         widthMax[kind .. key] = w;
-        local flag = (kind == 't'); -- one-letter flags sit side by side
-        w = w + (flag and 0 or PADX * 2);
-        cols[#cols + 1] = { key = key, kind = kind, x = x, w = w, center = center, label = l, labelW = lw, tip = FULL[key] or key };
-        x = x + w + (flag and 0 or gap);
+        cols[#cols + 1] = { key = key, kind = kind, w = w, center = center, label = l, labelW = lw, tip = FULL[key] or key };
     end
-    for _, k in ipairs(vis) do add(k, 'c', false) end
-    x = x + gap; -- group gap
-    for _, k in ipairs(gvis) do add(k, 'g', false) end
-    x = x + gap; -- before the flags
-    for _, k in ipairs(tvis) do add(k, 't', true) end
+    for _, k in ipairs(vis) do measure(k, 'c', false) end
+    local ngrid = #cols;
+    for _, k in ipairs(gvis) do measure(k, 'g', false) end
+    for _, k in ipairs(tvis) do measure(k, 't', true) end
+    -- Every mode column (cycles, def, mb) as wide as the widest of them, so they line up evenly.
+    local uniform = 0;
+    for _, col in ipairs(cols) do
+        if (col.kind ~= 't') then uniform = math.max(uniform, col.w) end
+    end
+    for i, col in ipairs(cols) do
+        local flag = (col.kind == 't'); -- one-letter flags sit side by side
+        if (not flag) then col.w = uniform + PADX * 2 end
+        if (i == ngrid + 1) then x = x + gap end -- group gap
+        if flag and (i > 1) and (cols[i - 1].kind ~= 't') then x = x + gap end -- before the flags
+        col.x = x;
+        x = x + col.w + (flag and 0 or gap);
+    end
     local nameIds = {};
     for i, row in ipairs(view) do nameIds[i] = short_name(row.Name) .. '##' .. row.Name .. 'row' end
     return { view = view, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds,
