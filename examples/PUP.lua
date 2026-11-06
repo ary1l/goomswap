@@ -41,6 +41,8 @@ local sets = {
         Waist = 'Fucho-no-Obi',
         Legs = 'Assid. Pants +1',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Resting = {
         Head = 'Foire Taj +1',
     },
@@ -379,7 +381,7 @@ profile.HandleDefault = function()
         return;
     end
     local player = gData.GetPlayer();
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
     local pet = gData.GetPet();
     if (player.Status ~= 'Engaged') and (pet ~= nil) then
         gFunc.EquipSet(sets.Idle_Pet);

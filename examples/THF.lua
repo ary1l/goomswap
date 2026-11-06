@@ -33,6 +33,8 @@ local sets = {
         --Feet = 'Meg. Jam. +2',
     },
     Idle_Refresh = {},
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Town = {
         Head = 'Gleti\'s Mask',
         Neck = 'Asn. Gorget +2',
@@ -356,7 +358,7 @@ profile.HandleCommand = function(args)
 end
 
 profile.HandleDefault = function()
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
     local sa = gcinclude.BuffCount('Sneak Attack');
     local ta = gcinclude.BuffCount('Trick Attack');
 

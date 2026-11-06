@@ -651,12 +651,17 @@ local function build_grid(x0)
                 c.col = COL_HIGHBUFF; -- /wsset high: shown on the mmode cell, so the HUD doesn't widen
                 c.tip = c.tip .. '  |  WS buff: High (/wsset)';
             end
+            if (k == 'MeleeSet') and (c ~= nil) then -- /idleset, /rangedset: in the mmode cell's tip, no columns
+                local idle, ranged = strip_default(row.Cycles.IdleSet or ''), strip_default(row.Cycles.RangedSet or '');
+                if (idle ~= '') and (idle ~= 'Default') then c.tip = c.tip .. '  |  Idle: ' .. idle .. ' (/idleset)' end
+                if (ranged ~= '') and (ranged ~= 'Default') then c.tip = c.tip .. '  |  Ranged: ' .. ranged .. ' (/rangedset)' end
+            end
             local hx = strip_default(row.Cycles.Hoxne or '');
             if (k == 'Weapons') and (c ~= nil) and (hx ~= '') and (EMPTY[string.lower(hx)] ~= true) then
                 c.col = COL_HOXNE; -- /hoxne on: shown on the wpn cell, so the HUD doesn't widen
                 c.tip = c.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
             end
-            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
+            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') and (k ~= 'IdleSet') and (k ~= 'RangedSet') then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};

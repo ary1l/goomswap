@@ -37,6 +37,8 @@ local sets = {
         Ring2 = 'Chirich Ring +1',
     },
     Idle_Refresh = {},
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Resting = {},
     Town = {
         Main = 'Kikoku',
@@ -392,7 +394,7 @@ end
 
 profile.HandleDefault = function()
     local player = gData.GetPlayer();
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
         if (gcinclude.BuffCount('Yonin') > 0) then gFunc.EquipSet(sets.Yonin)

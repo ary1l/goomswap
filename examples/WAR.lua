@@ -39,6 +39,8 @@ local sets = {
     Idle_Refresh = {
         Ring1 = 'Stikini Ring +1',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Resting = {},
     Town = {
         Main = 'Naegling',
@@ -297,7 +299,7 @@ end
 
 profile.HandleDefault = function()
     local player = gData.GetPlayer();
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
     elseif (player.Status == 'Resting') then

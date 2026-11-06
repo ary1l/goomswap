@@ -43,6 +43,8 @@ local sets = {
         Waist = 'Fucho-no-Obi',
         Legs = 'Assid. Pants +1',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Idle_Staff = {
         Main = 'Marin Staff +1',
         Sub = 'Enki Strap',
@@ -392,7 +394,7 @@ end
 
 profile.HandleDefault = function()
     local player = gData.GetPlayer();
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
     elseif (player.Status == 'Resting') then

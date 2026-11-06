@@ -86,7 +86,8 @@ first), then puts each set into the job's template under the template's own name
 
 | Selindrile | GoomSwap |
 |---|---|
-| `sets.idle`, `.Refresh`, `sets.resting`, `sets.Kiting`, `sets.TreasureHunter` | `Idle`, `Idle_Refresh`, `Resting`, `Movement`, `TH` |
+| `sets.idle`, `.Refresh`, `.Regen`, `.Regain`, `sets.resting`, `sets.Kiting`, `sets.TreasureHunter` | `Idle`, `Idle_Refresh`, `Idle_Regen`, `Idle_Regain` (`/idleset`), `Resting`, `Movement`, `TH` |
+| `sets.midcast.RA`, `.Acc` | `Midshot`, `Midshot_Acc` (`/rangedset`) |
 | `sets.engaged`, `.Acc` (any `OffenseMode`) | `Tp_Default`, `Tp_Acc`; `OffenseMode` becomes the `/mmode` list |
 | `sets.defense.PDT`, `.MDT` (else `.MEVA`) | `Dt`, `mdt` |
 | `sets.precast.FC`, `FC.Cure`, `FC['Enhancing Magic']` | `Precast`, `Cure_Precast`, `Enhancing_Precast` |
@@ -96,9 +97,10 @@ first), then puts each set into the job's template under the template's own name
 | `sets.buff.Doom`, `.Sleep`, `sets.Cure_Received`... | `Doomed`, `Sleeping`, `Cure_Received`... |
 
 Sets with no GoomSwap place (hybrid `.DT` variants, `Resistant`, Moonshade/latent sets...) are kept at the end
-as `['Sel_<path>']`: rename one to use it. Selindrile's automation (AutoDefense, AutoWS...) isn't carried over.
-Default keys follow Selindrile's F-key layout (Keys, below); your own binds aren't carried over; the file's top comment lists what was left out. Slots built from Selindrile's elemental obi/cape globals are left out:
-GoomSwap adds the obi itself.
+as `['Sel_<path>']`: rename one to use it. Not carried over (the file's top comment lists them): Selindrile's
+automation (AutoDefense, AutoWS...), your own `send_command('bind ...')` lines (the default keys already follow
+Selindrile's F-key layout; add yours as in Keys), and slots built from the elemental obi/cape globals (GoomSwap adds
+the obi itself).
 
 ## First steps
 
@@ -163,6 +165,7 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 |---|---|
 | `/mmode [sb\|acc\|base]` (`/melee`, `/meleeset`) | Melee mode: Base (`_Default` sets) → `_SubtleBlow` → `_Acc` TP and WS sets |
 | `/wsset [mid\|high]` | `high`: each WS set also wears its `_HighBuff` |
+| `/rangedset [acc\|default]` | COR RNG PLD: `Midshot_Acc` over `Midshot` |
 | `/th` | `TH` set until the mob is tagged (THF main: always) |
 | `/wsdistance [yalms]` | WS range check on/off or its distance |
 
@@ -172,6 +175,7 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 | `/def [dt\|mdt\|aminon\|off]` | DT → MDT → Aminon → off; `/dt` `/mdt` `/aminon` toggle one |
 | `/sir` | `SIR` set over spell midcasts (not `SIRSkip`) |
 | `/kite` | Movement gear |
+| `/idleset [refresh\|regen\|regain\|default]` | `Idle_<mode>` over `Idle` while idle (not engaged or resting) |
 | `/autogear [regen\|refresh\|dt\|petdt N]` | Auto Regen/Refresh/DT idle sets by HP/MP %; no word shows the thresholds |
 | `/lock [slots\|all]` `/unlock [slot]` | Freeze slots (none named: Main, Sub, Ammo); `/unlock` says what else holds one |
 | `/naked` `/weaponsonly` `/abysseaproc` | Keep all 16 / armor / head-hands-legs-feet bare |
@@ -225,16 +229,51 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 | `/gctrace` | What each action wore (and its obi/Orpheus pick) |
 | `/gcstyle [N]` | Lockstyle set now |
 | `/gcmessages` | Chat confirmations on/off |
-| `/gchelp` / `/gckey <key> <cmd>` | Command list in game / bind a key |
+| `/gchelp` / `/gckey <key> <cmd>` | Command list in game / bind a key (Keys) |
 
 Picking a value, any case: no word = next; else exact name, the one it starts, its initials, the one containing it, or
 a number: `/wm max` (Maxentius), `/nukeset oa` (OccultAcumen), `/mmode sb` (SubtleBlow), `/wm 3`. Two matches: it lists them.
 
 Zoning turns off `/autofood`, `/autosoda`, `/hoxne`. While zoning (until 3s after arriving) nothing is sent by itself.
 
-Keys (Selindrile's layout): F7 `/wm`, Shift+F7 `/wm default`, F9 `/mmode`, Ctrl+F9 `/tankset`, Alt+F9 `/wsset`,
-F10 `/def`, Alt+F10 `/kite`, Win+F10 `/hoxne`, Shift+F11 `/nukeset`, Alt+F11 `/automb`, Alt+F12 `/def off`,
-Ctrl+Win+Alt+F12 reload. `/gckey <key> <cmd>` rebinds.
+## Keys
+
+Selindrile's F-key layout, bound on load, removed on unload and job change:
+
+| Key | Runs | Key | Runs |
+|---|---|---|---|
+| F7 | `/wm` | Shift+F7 | `/wm default` |
+| F9 | `/mmode` | Ctrl+F9 | `/tankset` (PLD RUN) |
+| Shift+F9 | `/rangedset` (COR RNG PLD) | Alt+F9 | `/wsset` |
+| F10 | `/def` (DT → MDT → Aminon → off) | Alt+F10 | `/kite` |
+| Win+F10 | `/hoxne` | Shift+F11 | `/nukeset` |
+| Alt+F11 | `/automb` | Shift+F12 | `/idleset` |
+| Alt+F12 | `/def off` | Ctrl+Win+Alt+F12 | reload (`/lac reload`, Windower `gs reload`) |
+
+Plain F11/F12 stay free (Ashita's default script puts `/ambient` and `/fps` there).
+
+**Your own keys.** A key runs a GoomSwap command (`wm 2`, no slash) or any chat command (starts with `/`: spells,
+abilities, `/lac reload`). Modifiers: `^` Ctrl, `!` Alt, `+` Shift, `@` Win, `#` Apps, combined (`^@!`). Key names as
+in Ashita (`F1`, `` ` ``, `insert`); on Windower they're converted (`+` → `~`). A key you bind replaces whatever was
+on it; GoomSwap removes its keys on unload.
+
+- **Now, until unload or job change:** `/gckey ^F1 wm 2`, `/gckey ^F2 /ma "Cure IV" <stpc>` (Windower `//gckey ...`).
+- **Every job on one character:** `settings` in that character's `char.lua`. This replaces the default list, so copy
+  the defaults you want to keep.
+- **One job:** in its `OnLoad`, before `gcinclude.Initialize()`; adds to the list.
+- **Every character:** the `Keybinds` line in `common/gcinclude.lua` settings. `T{}` = no keys.
+
+```lua
+-- char.lua: this character, every job (replaces the list)
+return { settings = { Keybinds = {
+    {'F7', 'wm'}, {'F9', 'mmode'}, {'F10', 'def'},  -- defaults kept
+    {'^F1', '/ma "Cure IV" <stpc>'},               -- chat command
+    {'!1', '/ja "Provoke" <t>'},
+} } };
+
+-- job file OnLoad, before gcinclude.Initialize(): this job, added to the list
+table.insert(gcinclude.settings.Keybinds, {'^F2', '/ja "Sentinel" <me>'});
+```
 
 ## Weapons
 
@@ -332,7 +371,8 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
   upward: your line stays put, the other boxes stack above it (`HUDGrow = 'up'`, `'down'`, `'auto'`). Every column a
   box's job has always shows, so the width never changes.
   Name colour: blue SIR, gold TH, green kite, red PROC. Food, soda, harp, song lock, death: a chat line when they change.
-  A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal. Bright = changed, dim = default.
+  A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal; `/idleset` and `/rangedset`
+  show in the `melee` cell's tooltip. Bright = changed, dim = default.
 - **Columns:** `wpn` weapon mode, then the slot picks `main` `sub` `rng` `ammo` (`-` none), `melee`, `nuke`, `elem`,
   `tank`, `pup`, `w` BLM/SCH weapon, `def` (`-` none), `mb` (`-` off, else tier). Tune: `HUDAbbr`, `HUDLabels`,
   `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
@@ -342,7 +382,7 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
 Later wins, slot by slot; a set changes only the slots it lists.
 
 **Idle / engaged**, lowest to highest:
-1. Your job file: `Idle` / `Tp_Default` → `Tp_<mset>` → buff sets (`Impetus`) → `Dt` (`/dt`) → `Movement` (`/kite`).
+1. Your job file: `Idle` → `Idle_<mode>` (`/idleset`, idle only) / `Tp_Default` → `Tp_<mset>` → buff sets (`Impetus`) → `Dt` (`/dt`) → `Movement` (`/kite`).
 2. Hoxne sets → auto `Idle_Regen` / `Idle_Refresh` / `Dt` (low HP/MP) → `Town`.
 3. Weapon mode (not engaged: only the weapon slots your idle sets leave empty; `IdleWeapons = false` = all) → `mdt` (`/mdt`) or `Aminon` (`/aminon`) → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll.
 4. **`Incapacitated`** (slept, petrified, stunned, terrorized): `Aminon` if `/aminon` is on, else `mdt` if `/mdt`,
@@ -366,6 +406,8 @@ job file says so (WHM `Cure_Dt`).
 | `<set>_Self` / `_Others` / `_Burst` | After a midcast set: spell on you / on anyone but a mob / a burst (`Cure_Others`, `Nuke_Burst`) |
 | `Weapon_<Mode>`, `_1h`, `<Mode>Acc` | Weapon mode; `_1h` without DW; `Acc` variant while `/mmode Acc` (any `/mmode` value works) |
 | `Dt` `mdt` `Aminon` `SIR` `TH` `Movement` | With their toggles. `TH`: until tagged (swing, shot, WS, JA, a spell that lands); not on you/allies |
+| `Idle_Refresh` `Idle_Regen` `Idle_Regain` | `/idleset` mode while idle; Refresh/Regen also by low MP/HP (`/autogear`) |
+| `Midshot_Acc` | COR RNG PLD `/rangedset acc`, over `Midshot` |
 | `Incapacitated` | Slept, petrified, stunned, terrorized (not charmed: the client can't change gear) |
 | `Sleeping` | Asleep (else `gcinclude.sets.Sleeping`); its weapons pass the TP hold, not locks |
 | `Absorb` / `Absorb_TP` | Every Absorb- spell / Absorb-TP; `TH` goes back on top |
@@ -474,6 +516,8 @@ end
 
 | Helper | Does |
 |---|---|
+| `gcinclude.EquipIdle()` | `Idle`, then `Idle_<IdleSet>` while idle. Job files from before `/idleset`: replace `gFunc.EquipSet(sets.Idle)` in `HandleDefault` with it |
+| `gcinclude.RangedAcc()` | True on `/rangedset acc` (wear `Midshot_Acc` in `HandleMidshot`) |
 | `gcinclude.EquipMode('Ws')` | `Ws_Default`, then `Ws_<MeleeSet>` unless Default |
 | `gcinclude.ByName(name)` | Set `name` (any case), then `name_<MeleeSet>`. False if none |
 | `gcinclude.Family(name)` | `'Utsusemi: Ni'` → `'Utsusemi'`, `'Drain III'` → `'Drain'` |
@@ -489,15 +533,6 @@ end
   Head, instrument empties Ammo); `'ignore'` leaves it alone.
 - HP pieces: `Priority = <HP>` so max HP doesn't dip mid-swap.
 - Dynamis RP: wear only what you rank, `/lock neck main sub range`, `/unlock` after.
-- Keybinds (setting `Keybinds`, or per job before `Initialize()`; `T{}` = none). `!` Alt, `^` Ctrl, `+` Shift, `@` Win,
-  `#` Apps, combined (`^+`). They replace your binds on those keys; unload and job change remove them (`/gckey` ones too).
-  A command starting with `/` is bound as it is (`/lac reload`; Windower: `gs reload`).
-
-  ```lua
-  Keybinds = T{ {'F7','wm'}, {'+F7','wm default'}, {'F9','mmode'}, {'^F9','tankset'}, {'!F9','wsset'},
-      {'F10','def'}, {'!F10','kite'}, {'@F10','hoxne'}, {'+F11','nukeset'}, {'!F11','automb'}, {'!F12','def off'},
-      {'^@!F12','/lac reload'} };
-  ```
 
 ## Something wrong
 

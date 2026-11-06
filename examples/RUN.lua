@@ -47,6 +47,8 @@ local sets = {
         Ring1 = 'Stikini Ring +1',
         Waist = 'Fucho-no-Obi',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Resting = {},
     Town = {
         Main = 'Epeolatry',
@@ -447,7 +449,7 @@ end
 
 profile.HandleDefault = function()
     local player = gData.GetPlayer();
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
         local tank = gcdisplay.GetCycle('TankSet');

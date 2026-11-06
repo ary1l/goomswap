@@ -48,6 +48,8 @@ local sets = {
         Legs = 'volte brais',
 		Feet = 'merlinic crackows',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Town = {
         Main = 'Bunzi\'s Rod',
         Sub = 'ammurapi shield',
@@ -452,7 +454,7 @@ end
 profile.HandleDefault = function()
     local player = gData.GetPlayer();
     local sub = gcinclude.BuffCount('Sublimation: Activated');
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');

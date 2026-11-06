@@ -48,6 +48,8 @@ local sets = {
         Legs = 'Assid. Pants +1',
         Feet = 'Volte Gaiters',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Resting = {},
     Town = {
         Main = 'Gridarvor',
@@ -467,7 +469,7 @@ profile.HandleDefault = function()
         return;
     end
     local player = gData.GetPlayer();
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
     local pet = gData.GetPet();
     if (player.Status ~= 'Engaged') and (pet ~= nil) then
         gFunc.EquipSet(sets.Idle_Pet);

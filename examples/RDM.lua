@@ -39,6 +39,8 @@ local sets = {
 		Hands = 'merlinic dastanas',
 		Feet = 'merlinic crackows',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
 
     Town = {
         Main = 'Excalibur',
@@ -619,7 +621,7 @@ profile.HandleCommand = function(args)
 end
 
 profile.HandleDefault = function()
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
 	local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then

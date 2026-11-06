@@ -32,6 +32,8 @@ local sets = {
         Ring2 = 'Stikini Ring +1',
         Waist = 'Fucho-no-Obi',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Town = {
         Main = 'Naegling',
         Sub = 'Leafkin Shield',
@@ -366,7 +368,7 @@ profile.HandleCommand = function(args)
 end
 
 profile.HandleDefault = function()
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
 	local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
@@ -447,7 +449,7 @@ profile.HandleMidshot = function()
         gFunc.EquipSet(sets.DoubleShot);
     end
 
-    if (gcdisplay.GetCycle('MeleeSet') == 'Acc') then
+    if gcinclude.RangedAcc() then -- /rangedset acc
         gFunc.EquipSet(sets.Midshot_Acc);
     end
 
