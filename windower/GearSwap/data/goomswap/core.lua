@@ -892,10 +892,10 @@ local function split_args(s) -- quoted words stay whole, like Ashita's string:ar
     return out;
 end
 
--- Ashita bind modifiers ^ ctrl, ! alt, + shift, @ win, # apps; Windower uses ~ for shift. Key names lowercase,
--- as Windower binds are written (bind ^f9 ...).
+-- Ashita bind modifiers ^ ctrl, ! alt, + shift, @ win, # apps ($ / % chat open / closed, as Windower's); Windower
+-- uses ~ for shift. Key names lowercase, as Windower binds are written (bind ^f9 ...).
 local function bind_key(key)
-    local mods, rest = string.match(key, '^([%^!%+@#]*)(.*)$');
+    local mods, rest = string.match(key, '^([%^!%+@#%%%$]*)(.*)$');
     return (string.gsub(mods or '', '%+', '~')) .. string.lower(rest or key);
 end
 
