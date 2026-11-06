@@ -164,8 +164,14 @@ local COL_ON_DEF = { 0.30, 0.70, 0.38, 0.85 }; -- on, default
 local COL_OFF = { 0.50, 0.50, 0.56, 0.85 };    -- off, default
 local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off something that loads on)
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
-local COL_VAL_DEF = { 0.82, 0.74, 0.42, 1.0 }; -- cycle, default
-local COL_EMPTY = { 0.55, 0.55, 0.60, 0.80 };  -- cycle at None/Off
+local COL_VAL_DEF = { 0.73, 0.67, 0.50, 1.0 }; -- cycle, default (softer than changed)
+local COL_EMPTY = { 0.36, 0.36, 0.41, 0.85 };  -- cycle at None/Off: faint
+-- def cell by state; a row's left bar in its SIR/TH/Kite/PROC colour; own row tinted gold; gold rule under the headers
+local COL_DEF = { DT = { 1.00, 0.59, 0.27, 1.0 }, MDT = { 0.43, 0.71, 1.00, 1.0 }, Amin = { 0.75, 0.59, 1.00, 1.0 } };
+local COL_OWN = { 0.95, 0.85, 0.35, 0.07 };
+local COL_RULE = { 0.95, 0.85, 0.35, 0.35 };
+local COL_EDGE = { 1.0, 1.0, 1.0, 0.12 };
+local COL_HEAD = { 0.59, 0.63, 0.71, 1.0 };
 local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- mmode cell while /wsset high (no column of its own): purple
 local COL_HOXNE = { 0.35, 0.85, 0.85, 1.0 };    -- wpn cell while /hoxne is on (no column of its own): teal
 local COL_NAME = { 0.93, 0.93, 0.96, 1.0 };     -- white: SIR/TH/Kite/PROC colours stand out
@@ -569,7 +575,7 @@ local function group_cell(row, key)
         local text = (#on == 0) and '-' or (on[1] .. ((#on > 1) and '+' or ''));
         return {
             text = text,
-            col = (#on > 0) and (alldef and COL_ON_DEF or COL_ON) or (alldef and COL_EMPTY or COL_OFF_CHG),
+            col = (#on > 0) and (COL_DEF[on[1]] or COL_ON) or (alldef and COL_EMPTY or COL_OFF_CHG),
             cmd = 'def',
             def = alldef,
             tip = row.Name .. '  Defense: ' .. ((#on == 0) and 'none' or table.concat(on, ', '))
@@ -734,9 +740,16 @@ local function body(scale)
         if first then imgui.SetCursorPosX(cx) else imgui.SameLine(cx) end
     end
 
+    -- Drawn shapes (Ashita's window draw list; the Windower text box has none, so it keeps colours only).
+    local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil;
+    local wx, wy = pair(imgui.GetWindowPos());
+    local ww = pair(win_size());
+    local function u32(c) return imgui.GetColorU32(c) end
+    if (dl ~= nil) and ((wx == nil) or (ww == nil) or (imgui.GetColorU32 == nil)) then dl = nil end
+
     -- header (also over the owner's one-line view)
     do
-    imgui.PushStyleColor(ImGuiCol_Text, COL_KEY);
+    imgui.PushStyleColor(ImGuiCol_Text, COL_HEAD);
     for i, col in ipairs(cols) do
         at(col, col.labelW, i == 1);
         if not col.center then imgui.SetCursorPosX(imgui.GetCursorPosX() + PADX) end
@@ -744,7 +757,12 @@ local function body(scale)
         tip(col.tip);
     end
     imgui.PopStyleColor();
+    if (dl ~= nil) then
+        local _, hy = pair(imgui.GetItemRectMax());
+        if (hy ~= nil) then dl:AddLine({ wx + 1, hy + 1 }, { wx + ww - 1, hy + 1 }, u32(COL_RULE), 1) end
     end
+    end
+    local sp = (style().spacing or { 0, 1 })[2] or 1;
 
     -- rows
     local mine = me();
@@ -758,6 +776,18 @@ local function body(scale)
                 if (#states == 0) then ncol = st[3] end
                 states[#states + 1] = st[2];
             end
+        end
+        if (dl ~= nil) then -- behind the row: own row tint, then the state bar
+            local _, ry = pair(imgui.GetCursorScreenPos());
+            local lh = imgui.GetTextLineHeight();
+            if (ry ~= nil) and (lh ~= nil) then
+                local top, bot = ry - sp / 2, ry + lh + sp / 2;
+                if (mine ~= nil) and (string.lower(row.Name) == string.lower(mine.Name)) then
+                    dl:AddRectFilled({ wx + 1, top }, { wx + ww - 1, bot }, u32(COL_OWN), 0);
+                end
+                if (#states > 0) then dl:AddRectFilled({ wx + 1, top }, { wx + 4, bot }, u32(ncol), 0) end
+            end
+            ncol = COL_NAME; -- the bar shows the state, the name stays white
         end
         imgui.PushStyleColor(ImGuiCol_Text, ncol);
         local clicked = imgui.SmallButton(g.nameIds[i]);
@@ -864,11 +894,13 @@ local function render()
     imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, st.window);
     imgui.PushStyleVar(ImGuiStyleVar_FramePadding, st.frame);
     imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, st.spacing);
+    imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
+    imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
     imgui.PushStyleColor(ImGuiCol_Button, COL_CLEAR);
     imgui.PushStyleColor(ImGuiCol_ButtonHovered, COL_HOVER);
     imgui.PushStyleColor(ImGuiCol_ButtonActive, COL_HOVER);
-    imgui.PushStyleColor(ImGuiCol_WindowBg, { 0.0, 0.0, 0.0, inc.settings.HUDAlpha or 0.45 });
-    imgui.PushStyleColor(ImGuiCol_Border, COL_CLEAR);
+    imgui.PushStyleColor(ImGuiCol_WindowBg, { 0.04, 0.045, 0.06, inc.settings.HUDAlpha or 0.45 });
+    imgui.PushStyleColor(ImGuiCol_Border, COL_EDGE);
     local ok, err = true, nil;
     if imgui.Begin('GC##gchud', true, flags) then
         -- Owner: one line (this box) until the mouse is over the HUD, then every box (HUDHover = false: always all).
@@ -897,7 +929,7 @@ local function render()
     end
     imgui.End();
     imgui.PopStyleColor(5);
-    imgui.PopStyleVar(3);
+    imgui.PopStyleVar(5);
     if (ok ~= true) then error(err, 0) end
 end
 

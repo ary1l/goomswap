@@ -69,7 +69,7 @@ function gcdisplay.Update()
     Main = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", MID) or 'NON';
     Sub = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", SID) or 'NON';
     headText = string.format('%s%d/%s%d', Main, MainLV, Sub, SubLV);
-    statText = string.format('Atk %d  Def %d', Attk, Def);
+    statText = string.format('%d/%d', Attk, Def); -- attack/defense
 end
 
 function gcdisplay.CreateToggle(name, default)
@@ -134,17 +134,22 @@ function gcdisplay.IsDefault(kind, name)
 	return (c ~= nil) and (DefCycles[name] == c.Index);
 end
 
--- Bar colours: as the HUD's (labels blue-grey, a changed value gold, one still at its load default dim gold,
--- a toggle that's on green, off grey).
+-- Bar colours: as the HUD's (labels blue-grey, a changed value gold, one still at its load default soft gold).
+-- Each item sits on a soft pill; a toggle that's on gets a pill tinted in its own colour (DT orange, MDT blue,
+-- Aminon purple, SIR blue, TH gold, Kite green...).
 local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
 local COL_KEY = { 0.62, 0.68, 0.80, 1.0 };
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };
-local COL_VAL_DEF = { 0.72, 0.68, 0.50, 1.0 };
-local COL_ON = { 0.35, 0.95, 0.45, 1.0 };
-local COL_OFF = { 0.45, 0.45, 0.50, 1.0 };
+local COL_VAL_DEF = { 0.73, 0.67, 0.50, 1.0 };
+local COL_CHIP = { 1.0, 1.0, 1.0, 0.07 };
+local COL_BAR_BG = { 0.04, 0.045, 0.06 };
+local TOGGLE_COL = { DTset = { 1.00, 0.59, 0.27, 1.0 }, MDTset = { 0.43, 0.71, 1.00, 1.0 }, Aminon = { 0.75, 0.59, 1.00, 1.0 },
+	SIR = { 0.35, 0.55, 1.00, 1.0 }, TH = { 1.00, 0.80, 0.20, 1.0 }, Kite = { 0.35, 0.95, 0.45, 1.0 },
+	Burst = { 1.00, 0.45, 0.75, 1.0 }, PROC = { 1.00, 0.35, 0.35, 1.0 }, String = { 0.35, 0.85, 0.85, 1.0 },
+	SongLock = { 0.72, 0.52, 1.00, 1.0 }, Death = { 0.85, 0.30, 0.30, 1.0 } };
 
--- Modes in /gcmodes order (gcinclude.ModeNames), only those set to something ('-' ones are left out), then every
--- toggle the job has by its short name. The bar fits what it shows.
+-- Modes in /gcmodes order (gcinclude.ModeNames), only those set to something ('-' ones are left out), then the
+-- toggles that are on. The bar fits what it shows.
 local BAR_TOGGLES = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'Burst', 'PROC', 'String', 'SongLock', 'Death' };
 local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 'nuke'}, {'IdleSet', 'idle'} };
 
@@ -166,6 +171,16 @@ local function melee_tag(v)
 	if (#v <= 4) then return v end
 	local caps = string.gsub(v, '%l', ''); -- FullAcc -> FA
 	return (#caps >= 2) and caps or string.sub(v, 1, 3);
+end
+
+local function textw(t)
+	local w = imgui.CalcTextSize(t);
+	if (type(w) == 'table') then w = w[1] or w.x end
+	return tonumber(w) or 0;
+end
+local function xy(a, b)
+	if (type(a) == 'table') then return tonumber(a[1] or a.x), tonumber(a[2] or a.y) end
+	return tonumber(a), tonumber(b);
 end
 
 local function value_text(k, v)
@@ -223,17 +238,29 @@ local function track_drag()
 end
 
 local function bar_body()
+	-- Pills are drawn shapes (Ashita's window draw list); the Windower text box has none, so it shows the text only.
+	local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil;
+	local lh = (imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or nil;
+	if (dl ~= nil) and ((lh == nil) or (imgui.GetColorU32 == nil) or (imgui.GetCursorScreenPos == nil)) then dl = nil end
+	local PADC, GAP = 6, 4; -- px: inside a pill, between pills
 	local first = true;
-	local ITEM = 12; -- px between items; a label and its value are one space apart
-	local function put(text, col, gap)
-		if first then first = false else imgui.SameLine(0, gap or ITEM) end
-		imgui.PushStyleColor(ImGuiCol_Text, col);
-		imgui.Text(text);
-		imgui.PopStyleColor();
+	local function chip(parts, tint)
+		if first then first = false else imgui.SameLine(0, PADC + GAP) end
+		if (dl ~= nil) then
+			local w = PADC * 2;
+			for _, p in ipairs(parts) do w = w + textw(p[1]) end
+			local x, y = xy(imgui.GetCursorScreenPos());
+			if (x ~= nil) then dl:AddRectFilled({ x, y - 1 }, { x + w, y + lh + 1 }, imgui.GetColorU32(tint or COL_CHIP), 6) end
+		end
+		imgui.SetCursorPosX(imgui.GetCursorPosX() + PADC);
+		for i, p in ipairs(parts) do
+			if (i > 1) then imgui.SameLine(0, 0) end
+			imgui.PushStyleColor(ImGuiCol_Text, p[2]);
+			imgui.Text(p[1]);
+			imgui.PopStyleColor();
+		end
 	end
-	put(headText, COL_HEAD);
-	put(statText, COL_KEY);
-	put('|', COL_KEY);
+	chip({ { headText, COL_HEAD }, { ' ' .. statText, COL_KEY } });
 	local names = ((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES;
 	local picked = false;
 	for k in pairs(SLOT_PICKS) do
@@ -248,9 +275,10 @@ local function bar_body()
 		local tag = (mc ~= nil) and melee_tag(mc.Array[mc.Index]) or '';
 		local hoxne = (hx ~= nil) and (hx.Array[hx.Index] ~= 'Off');
 		if (v ~= '-') or picked or (tag ~= '') or hoxne then
-			put('wpn ', COL_KEY);
-			put(v .. (picked and '+' or ''), hoxne and COL_HOXNE or (gcdisplay.IsDefault('cycle', wk) and COL_VAL_DEF or COL_VAL), 0);
-			if (tag ~= '') then put(' ' .. tag, COL_MELEE, 0) end
+			local parts = { { 'wpn ', COL_KEY },
+				{ v .. (picked and '+' or ''), hoxne and COL_HOXNE or (gcdisplay.IsDefault('cycle', wk) and COL_VAL_DEF or COL_VAL) } };
+			if (tag ~= '') then parts[#parts + 1] = { ' ' .. tag, COL_MELEE } end
+			chip(parts);
 		end
 	end
 	for _, m in ipairs(names) do
@@ -258,16 +286,14 @@ local function bar_body()
 		local c = Cycles[k];
 		local v = ((c ~= nil) and (k ~= wk) and not folded(k)) and value_text(k, c.Array[c.Index]) or '-';
 		if (v ~= '-') then
-			put(label .. ' ', COL_KEY);
-			put(v, gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL, 0);
+			chip({ { label .. ' ', COL_KEY }, { v, gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL } });
 		end
 	end
 	local tnames = (inc ~= nil) and inc.ToggleNames or {};
-	local sep = false;
 	for _, k in ipairs(BAR_TOGGLES) do
-		if (Toggles[k] ~= nil) then
-			if not sep then put('|', COL_KEY); sep = true end
-			put(tnames[k] or k, (Toggles[k] == true) and COL_ON or COL_OFF, 8);
+		if (Toggles[k] == true) then
+			local col = TOGGLE_COL[k] or { 0.35, 0.95, 0.45, 1.0 };
+			chip({ { tnames[k] or k, col } }, { col[1], col[2], col[3], 0.16 });
 		end
 	end
 	track_drag();
@@ -281,16 +307,19 @@ local function render_bar()
 	end
 	local flags = bit.bor(ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoFocusOnAppearing,
 		ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
-	if (imgui.SetNextWindowBgAlpha ~= nil) then imgui.SetNextWindowBgAlpha(cfg.HUDAlpha or 0.70) end -- as the HUD
-	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 6, 3 });
+	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 4, 3 });
 	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 5, 1 });
+	imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 9);
+	imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+	imgui.PushStyleColor(ImGuiCol_WindowBg, { COL_BAR_BG[1], COL_BAR_BG[2], COL_BAR_BG[3], cfg.HUDAlpha or 0.70 }); -- as the HUD
 	local ok, err = true, nil;
 	if imgui.Begin('GC##gcdisplay_bar', true, flags) then
 		-- an error here must not skip End/PopStyleVar, or ImGui asserts every frame after (as in gchud)
 		ok, err = pcall(bar_body);
 	end
 	imgui.End();
-	imgui.PopStyleVar(2);
+	imgui.PopStyleColor();
+	imgui.PopStyleVar(4);
 	if (ok ~= true) then error(err, 0) end
 end
 

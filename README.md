@@ -259,7 +259,7 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 | Command | Does |
 |---|---|
 | `/gchud [on\|off\|large\|compact\|pos X Y\|debug]` | The multibox HUD (see HUD below) |
-| `/gcbar [on\|off\|pos X Y]` | One-line status bar: job, Atk/Def, then each mode that's set (`wpn` `melee` `nuke` `idle`...; dim = still its default; none/off ones left out) and the job's toggles (green = on). `idle` reads `MP` `HP` `TP`. The `wpn` entry (weapon mode, else the main pick) carries the rest: `+` = a slot pick changed (`/mw` `/sw`...), then the `/mmode` as a short tag (`Acc`, `SB`; nothing at Base), teal = `/hoxne` on; the HUD and `/gcmodes` name them in full. It fits what it shows. Drag to move |
+| `/gcbar [on\|off\|pos X Y]` | One-line status bar, each item on a soft pill: job and attack/defense, each mode that's set (`wpn` `wsset` `nuke` `idle`...; soft gold = still its default), then the toggles that are on, each pill in its colour (DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green). `idle` reads `MP` `HP` `TP`. The `wpn` pill (weapon mode, else the main pick) carries the rest: `+` = a slot pick changed (`/mw` `/sw`...), the `/mmode` as a short tag (`Acc`, `SB`; nothing at Base), teal = `/hoxne` on. Fits what it shows; drag to move. Windower: text only, no pills |
 | `/gcmodes [all]` | This box's modes and toggles in chat; `all`: every box |
 | `/checksets` | Empty sets, bad item names, items in the wrong ear/ring: Sortie earrings and any item whose text says 'Right ear:' go in Ear2 (right), 'Left ear:' in Ear1 |
 | `/gcgear [JOB]` | Every item you own that the job can wear (all bags), with level, augments and stats, into `gear_<JOB>.txt` in your character folder (Ashita) |
@@ -398,7 +398,9 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
   mouse is over the HUD, then every box (`HUDHover = false`: always all). In the bottom half of the screen it opens
   upward: your line stays put, the other boxes stack above it (`HUDGrow = 'up'`, `'down'`, `'auto'`). Every column a
   box's job has always shows, all mode columns the same width, so the width never changes.
-  Name colour: blue SIR, gold TH, green kite, red PROC. Harp, song lock, death: a chat line when they change.
+  A bar at a row's left edge: blue SIR, gold TH, green kite, red PROC (Windower: the name in that colour). Your own
+  box's row has a faint gold tint; the `def` cell is orange for DT, blue for MDT, purple for Aminon. Harp, song lock,
+  death: a chat line when they change.
   A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal. Bright = changed, dim = default.
 - **Columns:** `wpn` weapon mode, then the slot picks `main` `sub` `rng` `ammo` (`-` none), `melee`, `ra` (COR RNG
   PLD `/rangedset`: `-` or `Acc`), `idle` (`/idleset`: `-`, compact `MP` `HP` `TP` = Refresh Regen Regain), `nuke`,
