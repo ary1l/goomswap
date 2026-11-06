@@ -96,8 +96,8 @@ first), then puts each set into the job's template under the template's own name
 | `sets.buff.Doom`, `.Sleep`, `sets.Cure_Received`... | `Doomed`, `Sleeping`, `Cure_Received`... |
 
 Sets with no GoomSwap place (hybrid `.DT` variants, `Resistant`, Moonshade/latent sets...) are kept at the end
-as `['Sel_<path>']`: rename one to use it. Keybinds and Selindrile's automation (AutoDefense, AutoWS...) aren't
-carried over; the file's top comment lists what was left out. Slots built from Selindrile's elemental obi/cape globals are left out:
+as `['Sel_<path>']`: rename one to use it. Selindrile's automation (AutoDefense, AutoWS...) isn't carried over.
+Default keys follow Selindrile's F-key layout (Keys, below); your own binds aren't carried over; the file's top comment lists what was left out. Slots built from Selindrile's elemental obi/cape globals are left out:
 GoomSwap adds the obi itself.
 
 ## First steps
@@ -146,6 +146,8 @@ Weapon modes, default weapons, job helpers: see Job file.
 
 Ashita `/name`; Windower `//name` or `//gs c name`. Other boxes (Multisend): `/mss /wm default` all, `/ms sendto <name> /wm 3`
 one; Windower `//send @all gs c wm default`. Toggles take `on`/`off`, no word flips.
+Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' commands; with one loaded, use `//subset` or
+`//gs c sw` / `//gs c th`.
 
 **Weapons**
 | Command | Does |
@@ -198,7 +200,7 @@ one; Windower `//send @all gs c wm default`. Toggles take `on`/`off`, no word fl
 | `/gce <item>` / `/gce cancel` | Equip an enchanted item (Volte Harness, Reraise Earring…), wait its delay, use it, free the slot |
 | `/warpring` `/mea` `/holla` `/dem` | Warp / Dimensional ring, the same way |
 | `/ontic` `/shard` | Use Ontic Extremity / V. Con. Shard (more: `gcinclude.ExitItems`) |
-| `/temps` | Every carried Escha drink |
+| `/gctemps` | Every carried Escha drink |
 | `/capacity` `/jubilee` `/dynamisrp` | Hold capacity cape / Jubilee Ring / Dynamis job neck |
 | `/ejenter [chamber]` `/ejlamps` `/ejexit` | Einherjar (Ashita): reserve, lamps to the party, enter, leave |
 
@@ -230,8 +232,9 @@ a number: `/wm max` (Maxentius), `/nukeset oa` (OccultAcumen), `/mmode sb` (Subt
 
 Zoning turns off `/autofood`, `/autosoda`, `/hoxne`. While zoning (until 3s after arriving) nothing is sent by itself.
 
-Keys: Ctrl+grave `/wm`, Shift+grave `/wm default`, Ctrl+Shift+grave `/def`, Alt+grave `/hoxne`, Win+grave `/automb`.
-`/gckey <key> <cmd>` rebinds.
+Keys (Selindrile's layout): F7 `/wm`, Shift+F7 `/wm default`, F9 `/mmode`, Ctrl+F9 `/tankset`, Alt+F9 `/wsset`,
+F10 `/def`, Alt+F10 `/kite`, Win+F10 `/hoxne`, Shift+F11 `/nukeset`, Alt+F11 `/automb`, Alt+F12 `/def off`,
+Ctrl+Win+Alt+F12 reload. `/gckey <key> <cmd>` rebinds.
 
 ## Weapons
 
@@ -269,7 +272,7 @@ Keys: Ctrl+grave `/wm`, Shift+grave `/wm default`, Ctrl+Shift+grave `/def`, Alt+
 
 1. Fill `Burst`. It goes on by itself when a nuke lands in a live skillchain of its element; `/burst` = every nuke.
 2. Tier: `MBTier = 'III'` (`'I'`–`'V'`) in settings, `gcinclude.MBTier` per job, or `/mbtier 5` (until reload or job change).
-3. `/automb on` (Win+grave); `AutoNuke = true` starts it on.
+3. `/automb on` (Alt+F11); `AutoNuke = true` starts it on.
 4. Optional: `MBCasts` (bursts per chain, 1), `MBRotate` (spread over the chain's elements), `MBMinMP` (hold below it),
    `MBFallback` (next tier down when the tier can't go), `MBSkills` (skills that wear `Burst`).
 
@@ -488,9 +491,12 @@ end
 - Dynamis RP: wear only what you rank, `/lock neck main sub range`, `/unlock` after.
 - Keybinds (setting `Keybinds`, or per job before `Initialize()`; `T{}` = none). `!` Alt, `^` Ctrl, `+` Shift, `@` Win,
   `#` Apps, combined (`^+`). They replace your binds on those keys; unload and job change remove them (`/gckey` ones too).
+  A command starting with `/` is bound as it is (`/lac reload`; Windower: `gs reload`).
 
   ```lua
-  Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} };
+  Keybinds = T{ {'F7','wm'}, {'+F7','wm default'}, {'F9','mmode'}, {'^F9','tankset'}, {'!F9','wsset'},
+      {'F10','def'}, {'!F10','kite'}, {'@F10','hoxne'}, {'+F11','nukeset'}, {'!F11','automb'}, {'!F12','def off'},
+      {'^@!F12','/lac reload'} };
   ```
 
 ## Something wrong
