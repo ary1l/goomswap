@@ -150,10 +150,24 @@ local BAR_TOGGLES = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'Burst',
 local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 'nuke'}, {'IdleSet', 'idle'} };
 
 local IDLE_SHORT = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' }; -- /idleset, kept small
--- Slot picks (/mw /sw /rw /ammoset): with a weapon mode on the job they show as a + after its value ('wpn Anarchy+'),
--- so their long names don't widen the bar; the HUD and /gcmodes name them. A job without weapon modes shows them.
+-- With a weapon mode on the job, the wpn entry also carries: a + when a slot pick (/mw /sw /rw /ammoset) is changed,
+-- the melee mode as a short tag (none at Base: 'wpn Anarchy+ Acc'), and teal while /hoxne is on (as the HUD's wpn
+-- cell). The HUD and /gcmodes name them in full. A job without weapon modes shows them as their own entries.
 local SLOT_PICKS = { Main = true, Sub = true, Range = true, Ammo = true };
-local function folded(k) return SLOT_PICKS[k] and (Cycles.Weapons ~= nil) end
+local FOLD = { Main = true, Sub = true, Range = true, Ammo = true, MeleeSet = true, Hoxne = true };
+-- The wpn entry's own value: the weapon mode, else (a job with slot picks only, e.g. PLD) the main pick.
+local function wpn_key() return ((Cycles.Weapons ~= nil) and 'Weapons') or ((Cycles.Main ~= nil) and 'Main') or nil end
+local function folded(k) local w = wpn_key(); return FOLD[k] and (w ~= nil) and (k ~= w) end
+local COL_MELEE = { 0.55, 0.80, 1.00, 1.0 }; -- the melee tag
+local COL_HOXNE = { 0.35, 0.85, 0.85, 1.0 }; -- as the HUD's wpn cell while /hoxne is on
+local MELEE_SHORT = { Default = '', SubtleBlow = 'SB' };
+local function melee_tag(v)
+	v = tostring(v or 'Default');
+	if (MELEE_SHORT[v] ~= nil) then return MELEE_SHORT[v] end
+	if (#v <= 4) then return v end
+	local caps = string.gsub(v, '%l', ''); -- FullAcc -> FA
+	return (#caps >= 2) and caps or string.sub(v, 1, 3);
+end
 local function textw(t)
 	local w = imgui.CalcTextSize(t);
 	if (type(w) == 'table') then w = w[1] or w.x end
@@ -218,18 +232,29 @@ end
 local widest = {};
 local function bar_width(ITEM)
 	local w = textw(headText) + ITEM + textw('Atk 9999  Def 9999') + ITEM + textw('|');
+	local function widest_values(k)
+		local c = Cycles[k];
+		local e = widest[k];
+		if (e == nil) or (e.arr ~= c.Array) or (e.unit ~= textw('M')) then
+			local vw = 0;
+			for _, v in ipairs(c.Array) do vw = math.max(vw, textw(value_text(k, v))) end
+			e = { arr = c.Array, unit = textw('M'), w = vw };
+			widest[k] = e;
+		end
+		return e.w;
+	end
+	local wk = wpn_key();
+	if (wk ~= nil) then -- wpn entry: its value, the pick's +, the melee tag
+		local mw = 0;
+		local mc = Cycles.MeleeSet;
+		for _, v in ipairs((mc ~= nil) and mc.Array or {}) do mw = math.max(mw, textw(melee_tag(v))) end
+		w = w + ITEM + textw('wpn ') + widest_values(wk) + textw('+') + ((mw > 0) and (textw(' ') + mw) or 0);
+	end
 	for _, m in ipairs(((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES) do
-		local c = Cycles[m[1]];
-		if (c ~= nil) and not folded(m[1]) then
-			local e = widest[m[1]];
-			if (e == nil) or (e.arr ~= c.Array) or (e.unit ~= textw('M')) then
-				local vw = 0;
-				for _, v in ipairs(c.Array) do vw = math.max(vw, textw(value_text(m[1], v))) end
-				if (m[1] == 'Weapons') then vw = vw + textw('+') end -- a slot pick's mark
-				e = { arr = c.Array, unit = textw('M'), w = vw };
-				widest[m[1]] = e;
-			end
-			if (e.w > textw('-')) then w = w + ITEM + textw(m[2] .. ' ') + e.w end
+		local k = m[1];
+		if (Cycles[k] ~= nil) and (k ~= wk) and not folded(k) then
+			local vw = widest_values(k);
+			if (vw > textw('-')) then w = w + ITEM + textw(m[2] .. ' ') + vw end
 		end
 	end
 	local tnames = (inc ~= nil) and inc.ToggleNames or {};
@@ -260,13 +285,25 @@ local function bar_body()
 	local picked = false;
 	for k in pairs(SLOT_PICKS) do
 		local c = Cycles[k];
-		if folded(k) and (c ~= nil) and (value_text(k, c.Array[c.Index]) ~= '-') then picked = true end
+		-- set, and not the job's own default pick (PLD's Aegis): a + means you changed one
+		if folded(k) and (c ~= nil) and (value_text(k, c.Array[c.Index]) ~= '-') and not gcdisplay.IsDefault('cycle', k) then picked = true end
+	end
+	local wk = wpn_key();
+	if (wk ~= nil) then
+		local c, mc, hx = Cycles[wk], Cycles.MeleeSet, Cycles.Hoxne;
+		local v = value_text(wk, c.Array[c.Index]);
+		local tag = (mc ~= nil) and melee_tag(mc.Array[mc.Index]) or '';
+		local hoxne = (hx ~= nil) and (hx.Array[hx.Index] ~= 'Off');
+		if (v ~= '-') or picked or (tag ~= '') or hoxne then
+			put('wpn ', COL_KEY);
+			put(v .. (picked and '+' or ''), hoxne and COL_HOXNE or (gcdisplay.IsDefault('cycle', wk) and COL_VAL_DEF or COL_VAL), 0);
+			if (tag ~= '') then put(' ' .. tag, COL_MELEE, 0) end
+		end
 	end
 	for _, m in ipairs(names) do
 		local k, label = m[1], m[2];
 		local c = Cycles[k];
-		local v = ((c ~= nil) and not folded(k)) and value_text(k, c.Array[c.Index]) or '-';
-		if (k == 'Weapons') and picked then v = (v == '-') and '+' or (v .. '+') end
+		local v = ((c ~= nil) and (k ~= wk) and not folded(k)) and value_text(k, c.Array[c.Index]) or '-';
 		if (v ~= '-') then
 			put(label .. ' ', COL_KEY);
 			put(v, gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL, 0);
