@@ -3,48 +3,12 @@ local gcauto = {};
 local inc = nil;
 local disp = nil;
 local nextTick = 0;
-local busyUntil = 0;
-local nukeSent = false; -- busyUntil is an auto nuke's fallback hold; its finish/interrupt packet ends it
--- Forced delay after my own actions, counted from the finish packet. BG-Wiki (Forced Delay, Casting
--- Time Gauge): 3s after a spell finishes, 2s after a WS (nothing usable); a job ability is 2s in two
--- phases: 1s of total inactivity, then 1s where other job abilities work but auto-attack doesn't, and a
--- job ability in phase 2 restarts phase 1. Steps/Flourishes (14) and Effusions (15) are job abilities.
--- FFXIclopedia (Chainspell): "approximate 2.5 - 3 second". Too soon gets "Unable to cast spells at this
--- time." No source gives an interrupted cast's delay, so it gets the spell's 3s. Items: no source, so
--- no delay is added. lockUntil holds back the automatic actions (food, items, auto nukes) for the full lock.
-local lockUntil = 0;
-local LOCK = { [3] = 2.0, [4] = 3.0, [6] = 2.0, [14] = 2.0, [15] = 2.0 };
-local SPELL_LOCK = 3.0;
-local warned = {};
-local seen = {};
-
 local rolls = {};
 local rollAbilities = nil;
 local rollEleven = false;
 local ROLL_STALE = 660;
 local ROLL_RECAST = 193;
 
-local function say(msg)
-    print(chat.header('GoomSwap'):append(chat.message(msg)));
-    if (inc ~= nil) and (inc.Relay ~= nil) then inc.Relay(msg, false) end
-end
-
-local function warn_once(key, msg)
-    if warned[key] then return end
-    warned[key] = true;
-    print(chat.header('GoomSwap'):append(chat.error(msg)));
-end
-
-local function has_buff(name)
-    return inc.BuffCount(name) > 0;
-end
-
-local function disabled()
-    for _, b in ipairs(inc.HardCC) do
-        if has_buff(b) then return true end
-    end
-    return false;
-end
 
 local CONTAINERS = { 0, 3 }; -- inventory, temporary items
 
@@ -67,116 +31,6 @@ end
 
 gcauto.ItemCount = item_count;
 
-local function queue(cmd, hold, mode)
-    AshitaCore:GetChatManager():QueueCommand(mode or -1, cmd);
-    busyUntil = os.clock() + hold;
-    nukeSent = false;
-end
-
-local function food_list()
-    local food = inc.AutoFood or inc.CharFood; -- the job file's, else char.lua's
-    if (food == nil) then food = inc.settings.AutoFoodItems end
-    if (type(food) == 'string') then return { food } end
-    if (type(food) == 'table') and (#food > 0) then return food end
-    return nil;
-end
-
-local function check_food(player)
-    if (disp.GetToggle('AutoFood') ~= true) then return false end
-    if (player.IsMoving == true) then return false end
-    local list = food_list();
-    if (list == nil) then return false end
-    if has_buff('Food') then return false end
-    local area = gData.GetEnvironment().Area;
-    if (area == nil) or inc.Towns:contains(area) then return false end
-    local food = nil;
-    for _, name in ipairs(list) do
-        if (item_count(name) > 0) then food = name; break; end
-    end
-    if (food == nil) then
-        warn_once('food', 'AutoFood: none of ' .. table.concat(list, ', ') .. ' in inventory.');
-        return false;
-    end
-    queue('/item "' .. food .. '" <me>', 3);
-    return true;
-end
-
--- Auto-Soda, ported from sync's per-box pass: armed toggle, Regain (buff 170) missing,
--- 20s lock between tries, disarm after ConsumableMaxTries failed tries, tries reset when Regain is back.
--- Frontier Soda is item type 7 (medicine, like Echo Drops), not food, so it never replaces food.
-local soda = { lock = 0, tries = 0 };
-
-local function check_soda(player, now)
-    if has_buff('Regain') then
-        soda.tries = 0;
-        return false;
-    end
-    if (disp.GetToggle('AutoSoda') ~= true) then return false end
-    if (player.IsMoving == true) or (player.HP == 0) then return false end
-    local area = gData.GetEnvironment().Area;
-    if (area == nil) or inc.Towns:contains(area) then return false end
-    if (now < soda.lock) then return false end
-    local item = inc.settings.SodaItem or 'Frontier Soda';
-    if (item_count(item) == 0) then
-        warn_once('soda', 'AutoSoda: no ' .. item .. ' in inventory.');
-        return false;
-    end
-    local cap = inc.settings.ConsumableMaxTries or 2;
-    if (soda.tries >= cap) then
-        disp.CreateToggle('AutoSoda', false);
-        soda.tries = 0;
-        say('AutoSoda: ' .. item .. ' failed ' .. cap .. ' times - disarmed. Check the item, then /autosoda on.');
-        return false;
-    end
-    soda.tries = soda.tries + 1;
-    soda.lock = now + 20.0;
-    queue('/item "' .. item .. '" <me>', 3);
-    return true;
-end
-
--- Called by tick only while AutoHolyWater is on and Doom is up.
-local function check_doom(player)
-    local item = inc.settings.HolyWaterItem or 'Holy Water';
-    if (item_count(item) == 0) then
-        warn_once('doom', 'Doomed and no ' .. item .. ' in your bags.');
-        return false;
-    end
-    local set = (inc.FindSet and inc.FindSet('HolyWater')) or (inc.sets and inc.sets.Holy_Water) or nil;
-    if (set ~= nil) then inc.ForceUnlocked(set) end -- /lock stays absolute
-    say('Doomed - using ' .. item .. '.');
-    queue('/item "' .. item .. '" <me>', 4);
-    return true;
-end
-
-local function check_auto_items(player)
-    if (inc.settings.AutoRevitalizer ~= true) then return false end
-    if (player.IsMoving == true) then return false end
-    local list = inc.settings.AutoUseItems;
-    if (type(list) ~= 'table') then return false end
-    local area = gData.GetEnvironment().Area;
-    if (area == nil) then return false end
-    local here = string.lower(area);
-    for _, entry in ipairs(list) do
-        if (type(entry) == 'table') and (type(entry.Zone) == 'string') and (type(entry.Item) == 'string') then
-            if (string.find(here, string.lower(entry.Zone), 1, true) ~= nil) then
-                local key = string.lower(entry.Zone .. '|' .. entry.Item);
-                local n = item_count(entry.Item);
-                if (seen[key] == nil) then
-                    seen[key] = n;
-                elseif (n > seen[key]) then
-                    seen[key] = n - 1;
-                    say(entry.Item .. ' picked up, using it.');
-                    queue('/item "' .. entry.Item .. '" <me>', 3);
-                    return true;
-                else
-                    seen[key] = n;
-                end
-            end
-        end
-    end
-    return false;
-end
-
 -- TH tags: a mob my melee (1), ranged (2), WS (3), spell (4), ability (6), step/flourish (14) or
 -- Effusion (15) hit (XiPackets 0x0028 cmd_no). Spells, steps and Effusions count only when they land.
 -- Dropped at 0 HP (a respawn with the same id gets TH again) and on zone.
@@ -195,29 +49,6 @@ local function prune_tags()
         local idx = bit.band(id, 0x7FF);
         if (ent:GetServerId(idx) == id) and ((ent:GetHPPercent(idx) or 0) == 0) then tagged[id] = nil end
     end
-end
-
-local function tick()
-    local now = os.clock();
-    if (now < nextTick) then return end
-    nextTick = now + 0.5;
-    if (inc == nil) or (disp == nil) then return end
-    if (inc.Zoning ~= nil) and inc.Zoning() then return end -- no auto items/nukes mid-zone
-    prune_tags();
-    if (now < busyUntil) or (now < lockUntil) then return end
-    if (gState == nil) or (gState.PlayerAction ~= nil) or (gcauto.CastLeft() > 0) then return end
-    local player = gData.GetPlayer();
-    if (player == nil) then return end
-    if (player.Status ~= 'Idle') and (player.Status ~= 'Engaged') then return end
-    if (inc.settings.AutoHolyWater == true) and (inc.BuffCount('Doom') > 0) then
-        check_doom(player);
-        return;
-    end
-    if disabled() or has_buff('Invisible') then return end
-    if (gcauto.NukeTick ~= nil) and gcauto.NukeTick(player, now) then return end
-    if check_auto_items(player) then return end
-    if check_food(player) then return end
-    check_soda(player, now);
 end
 
 -- Reads the bit-packed 0x0028 action packet once, layout per atom0s' XiPackets notes.
@@ -461,7 +292,6 @@ local MBELEM = {
     Radiance = { 'Fire', 'Wind', 'Thunder', 'Light' }, Umbra = { 'Ice', 'Earth', 'Water', 'Dark' },
 };
 local mbres = {};   -- [mob server id] = { props, ts, dur, step }
-local mbst = {};    -- [mob server id] = { fired, k_ts, k_step }
 
 local function mb_packet(P)
     if (scdata == nil) then return end
@@ -489,7 +319,6 @@ local function mb_packet(P)
         elseif (cat == 3) and (not chained) and (mbres[target] ~= nil) then
             -- BG: any further weapon skill on the target ends the magic burst window.
             mbres[target] = nil;
-            mbst[target] = nil;
         end
     end
 end
@@ -497,7 +326,7 @@ end
 local function live_res(targetId, now)
     local r = mbres[targetId];
     if (r == nil) then return nil end
-    if (now > r.ts + r.dur) then mbres[targetId] = nil; mbst[targetId] = nil; return nil end
+    if (now > r.ts + r.dur) then mbres[targetId] = nil; return nil end
     return r;
 end
 
@@ -522,167 +351,6 @@ function gcauto.BurstInfo()
     end
     if (best == nil) then return 'no skillchain seen' end
     return string.format('%s on %d, step %d, %.1fs ago, window %.1fs', best.props[1], bestId, best.step, now - best.ts, best.dur);
-end
-
-function gcauto.ResetNuke()
-    mbst = {};
-end
-
--- Current target index, sync's get_target_index (sub-target aware).
-local function target_index(tm)
-    if (tm == nil) then return 0 end
-    local ok, idx = pcall(function() return tm:GetTargetIndex(tm:GetIsSubTargetActive()) end);
-    return (ok and idx and idx > 0) and idx or 0;
-end
-
--- sync's arming: mobs you or a party member are engaged on, plus your current target if it is a
--- monster (monster_flags). Returns [server id] = entity index.
-local function armed_mobs()
-    local mm = AshitaCore:GetMemoryManager();
-    local ent, party = mm:GetEntity(), mm:GetParty();
-    local sids = {};
-    local mt = target_index(mm:GetTarget());
-    if (mt > 0) then
-        if monster_flags(ent:GetSpawnFlags(mt)) then
-            local sid = ent:GetServerId(mt) or 0;
-            if (sid ~= 0) then sids[sid] = mt end
-        end
-    end
-    for i = 0, 5 do
-        if (party:GetMemberIsActive(i) == 1) then
-            local bi = party:GetMemberTargetIndex(i) or 0;
-            if (bi > 0) and (ent:GetStatus(bi) == 1) then
-                local bt = ent:GetTargetedIndex(bi) or 0;
-                if (bt > 0) then
-                    local sid = ent:GetServerId(bt) or 0;
-                    if (sid ~= 0) then sids[sid] = bt end
-                end
-            end
-        end
-    end
-    return sids;
-end
-
--- A spell that can go out now: castable (gcinclude.CanCast), off recast, enough MP.
-local function usable(name)
-    local ok, res = inc.CanCast(name);
-    if (not ok) or (res == nil) then return nil end
-    local mm = AshitaCore:GetMemoryManager();
-    if (mm:GetRecast():GetSpellTimer(res.Index) ~= 0) then return nil end
-    if (mm:GetParty():GetMemberMP(0) < res.ManaCost) then return nil end
-    return res;
-end
-
--- Chain element -> single-target tiered nuke.
-local NUKE = { Fire = 'Fire', Ice = 'Blizzard', Wind = 'Aero', Earth = 'Stone', Thunder = 'Thunder', Water = 'Water' };
--- Light/Dark have no tiered nuke; the helix is the fallback (SCH only; II needs 1200 JP, CanCast checks).
--- Tried after the tiered nukes, so Light/Darkness chains still prefer Fire/Aero/Thunder or Blizzard/Stone/Water,
--- and Transfixion/Compression (Light or Dark only) get a helix instead of nothing.
-local HELIX = { Light = { 'Luminohelix II', 'Luminohelix' }, Dark = { 'Noctohelix II', 'Noctohelix' } };
-local ROMAN = { '', ' II', ' III', ' IV', ' V' };
-
--- Spell for the next burst on chain r. Tier = /mbtier (I to V). Tries that tier on
--- each of the chain's elements (in chain order; MBRotate starts one element further per burst),
--- then the next tier down on each (settings.MBFallback), so Water V beats Blizzard IV.
--- SCH needs Addendum: Black or Enlightenment for tiers IV/V (BG-Wiki/FFXIclopedia); CanCast only
--- checks level/JP, so that is checked here.
-local function pick_spell(r, st)
-    local cand, seen = {}, {};
-    for _, pr in ipairs(r.props) do
-        for _, el in ipairs(MBELEM[pr] or {}) do
-            if ((NUKE[el] ~= nil) or (HELIX[el] ~= nil)) and not seen[el] then
-                seen[el] = true;
-                cand[#cand + 1] = el;
-            end
-        end
-    end
-    if (#cand == 0) then return nil end
-    local start = (inc.settings.MBRotate == true) and (st.fired % #cand) or 0;
-    local top = inc.MBTierNum[disp.GetCycle('MBTier')] or 3;
-    local p = gData.GetPlayer();
-    local schLocked = (p ~= nil) and (p.MainJob == 'SCH') and not (has_buff('Addendum: Black') or has_buff('Enlightenment'));
-    for t = top, 1, -1 do
-        if not (schLocked and (t >= 4)) then
-            for k = 0, #cand - 1 do
-                local el = cand[((start + k) % #cand) + 1];
-                if (NUKE[el] ~= nil) then
-                    local name = NUKE[el] .. ROMAN[t];
-                    local res = usable(name);
-                    if (res ~= nil) then return name, el, res end
-                end
-            end
-        end
-        if (inc.settings.MBFallback == false) then break end
-    end
-    for _, el in ipairs(cand) do
-        for _, name in ipairs(HELIX[el] or {}) do
-            local res = usable(name);
-            if (res ~= nil) then return name, el, res end
-        end
-    end
-    return nil;
-end
-
--- /autonuke, sync's geo_mod.mb.tick for one box. For each live chain on an armed mob: burst n
--- casts the nth spell of the element's list. If the chained mob is not your target and you are
--- not engaged, it targets it first (sync's set_target_safe: ITarget:SetTarget(index, false)).
--- The cast names the mob by server id, so it goes to the chained mob even while you are engaged
--- on another. Sent as menu input (mode 0), as Thorny's Shorthand sends '/ma "<spell>" <server id>'.
--- Your target's chain goes first. Engaged on another mob, a chained mob past SPELL_RANGE is skipped.
--- FFXIclopedia (Distance): 21.8' is the "maximum distance for most targeted spells cast by a player.
--- This varies with the size of the target." Entity GetDistance is squared (LAC data.lua GetEntity).
-local SPELL_RANGE = 21.8;
-function gcauto.NukeTick(player, now)
-    if (disp.GetToggle('AutoNuke') ~= true) or (next(mbres) == nil) then return false end
-    if has_buff('Silence') or has_buff('Mute') then return false end
-    if (player.IsMoving == true) then return false end
-    local mm = AshitaCore:GetMemoryManager();
-    local ent = mm:GetEntity();
-    local sids = armed_mobs();
-    for sid, r in pairs(mbres) do
-        local idx = sids[sid];
-        if (idx == nil) or (now > r.ts + r.dur) or ((ent:GetHPPercent(idx) or 0) <= 0) then
-            mbres[sid] = nil; mbst[sid] = nil;
-        end
-    end
-    local minmp = inc.settings.MBMinMP or 0;
-    local tm = mm:GetTarget();
-    local mine = target_index(tm);
-    local order = {};
-    for sid in pairs(mbres) do
-        if (sids[sid] == mine) then table.insert(order, 1, sid) else order[#order + 1] = sid end
-    end
-    for _, sid in ipairs(order) do
-        local r, idx = mbres[sid], sids[sid];
-        local st = mbst[sid];
-        if (st == nil) then st = { fired = 0 }; mbst[sid] = st end
-        if (st.k_ts ~= r.ts) or (st.k_step ~= r.step) then
-            st.k_ts, st.k_step, st.fired = r.ts, r.step, 0;
-        end
-        if (now < r.ts + r.dur) and (st.fired < (inc.settings.MBCasts or 1)) then
-            local spell, _, res = pick_spell(r, st);
-            -- Only cast if it can land inside the window (learned cast time, see gcauto.CastTime).
-            local castTime = gcauto.CastTime(res);
-            local fits = (res ~= nil) and ((now + castTime + 0.5) <= (r.ts + r.dur));
-            if (spell ~= nil) and fits and ((minmp <= 0) or (mm:GetParty():GetMemberMP(0) >= minmp)) then
-                local far = false;
-                if (idx ~= mine) then
-                    if (player.Status ~= 'Engaged') then
-                        if (tm ~= nil) then pcall(function() tm:SetTarget(idx, false) end) end
-                    else
-                        far = (math.sqrt(ent:GetDistance(idx) or 0) > SPELL_RANGE);
-                    end
-                end
-                if not far then
-                    st.fired = st.fired + 1;
-                    queue(string.format('/ma "%s" %d', spell, sid), math.max(castTime, 5.0), 0); -- fallback if no finish packet
-                    nukeSent = true;
-                    return true;
-                end
-            end
-        end
-    end
-    return false;
 end
 
 function gcauto.InCombat()
@@ -821,63 +489,6 @@ function gcauto.Bind(gcinclude, gcdisplay)
     disp = gcdisplay;
 end
 
-function gcauto.CreateToggles()
-    if (inc == nil) or (disp == nil) then return end
-    if (food_list() ~= nil) then
-        disp.CreateToggle('AutoFood', inc.settings.AutoFood == true);
-    end
-    disp.CreateToggle('AutoSoda', inc.settings.AutoSoda == true);
-    soda = { lock = 0, tries = 0 };
-    warned = {};
-    seen = {};
-end
-
--- on/off/toggle a boolean setting.
-local function flip(key, arg)
-    if (arg == 'on') or (arg == 'off') then
-        inc.settings[key] = (arg == 'on');
-    else
-        inc.settings[key] = not (inc.settings[key] == true);
-    end
-    return inc.settings[key];
-end
-
-local function onoff(name, arg)
-    if (arg == 'on') then
-        disp.CreateToggle(name, true);
-    elseif (arg == 'off') then
-        disp.CreateToggle(name, false);
-    else
-        disp.AdvanceToggle(name);
-    end
-    return disp.GetToggle(name);
-end
-
-function gcauto.HandleCommand(args)
-    local cmd = args[1];
-    local arg = (args[2] ~= nil) and string.lower(args[2]) or nil;
-    if (cmd == 'autofood') then
-        local list = food_list();
-        if (list == nil) then return true end
-        local on = onoff('AutoFood', arg);
-        say('AutoFood ' .. (on and 'on' or 'off') .. ' | ' .. table.concat(list, ' > '));
-        return true;
-    elseif (cmd == 'autosoda') then
-        local on = onoff('AutoSoda', arg);
-        soda = { lock = 0, tries = 0 };
-        say('AutoSoda ' .. (on and 'on' or 'off') .. ' | ' .. (inc.settings.SodaItem or 'Frontier Soda'));
-        return true;
-    elseif (cmd == 'holywater') then
-        say('Auto Holy Water ' .. (flip('AutoHolyWater', arg) and 'on' or 'off'));
-        return true;
-    elseif (cmd == 'revit') then
-        seen = {};
-        say('Auto Revitalizer ' .. (flip('AutoRevitalizer', arg) and 'on' or 'off'));
-        return true;
-    end
-    return false;
-end
-
 -- My item use started / was interrupted (cmd_no 9, result value = item id, 0 if interrupted) or finished
 -- (cmd_no 5, cmd_arg = item id), XiPackets 0x0028: tells gcinclude's enchanted-item use.
 local function item_packet(P)
@@ -886,22 +497,6 @@ local function item_packet(P)
     local id = P.param;
     if (P.cat == 9) then id = ((P.ntgt > 0) and (P.nres[1] > 0)) and P.rval[P.first[1]] or 0 end
     inc.OnItemAction(P.cat, id);
-end
-
--- My action finished (or my cast was interrupted, cmd_no 8 with an 'sp' arg, XiPackets 0x0028):
--- start the forced delay, and end an auto nuke's fallback hold.
-local function lock_packet(P)
-    local me = P.me;
-    if (me == nil) or (P.actor ~= me) then return end
-    local lock = LOCK[P.cat];
-    if (P.cat == 8) and (bit.band(P.param, 0xFFFF) == 28787) then lock = SPELL_LOCK end
-    if (lock == nil) then return end
-    local now = os.clock();
-    lockUntil = math.max(lockUntil, now + lock); -- a JA can't shorten a spell's 3s
-    if nukeSent and ((P.cat == 4) or (P.cat == 8)) then
-        busyUntil = 0;
-        nukeSent = false;
-    end
 end
 
 -- My spell refused before it started (0x0029 caster 0x04, MessageNum 0x18, XiPackets; texts from Windower
@@ -923,25 +518,28 @@ local function refused_packet(data)
     inc.OnSpellRefused();
 end
 
+-- Twice a second: drop TH tags on dead mobs and burst windows that have closed.
+local function tick()
+    local now = os.clock();
+    if (now < nextTick) then return end
+    nextTick = now + 0.5;
+    prune_tags();
+    for id, r in pairs(mbres) do
+        if (now > r.ts + r.dur) then mbres[id] = nil end
+    end
+end
+
 function gcauto.Start()
     ashita.events.register('d3d_present', 'gcauto_tick', tick);
     ashita.events.register('packet_in', 'gcauto_packet', function (e)
         if (e.id == 0x0028) then
             local ok, P = pcall(parse_action, e.data);
-            if ok then pcall(roll_packet, P); pcall(lock_packet, P); pcall(combat_packet, P); pcall(cast_packet, P); pcall(mb_packet, P); pcall(item_packet, P); pcall(incoming_cast, P); pcall(incoming_end, P); pcall(predict_packet, P) end
+            if ok then pcall(roll_packet, P); pcall(combat_packet, P); pcall(cast_packet, P); pcall(mb_packet, P); pcall(item_packet, P); pcall(incoming_cast, P); pcall(incoming_end, P); pcall(predict_packet, P) end
         end
         if (e.id == 0x0029) then pcall(refused_packet, e.data) end
         if (e.id == 0x000B) and (inc ~= nil) and (inc.OnZoneOut ~= nil) then pcall(function() inc.OnZoneOut(struct.unpack('L', e.data, 0x04 + 1)) end) end -- LogoutState
         if (e.id == 0x000A) and (inc ~= nil) and (inc.OnZone ~= nil) then pcall(inc.OnZone) end
-        if (e.id == 0x000A) then predicted = {}; gcauto.RollReset(); gcauto.ClearTags(); lockUntil = 0; lastCombat = -1e9; monsterCache = {}; soda = { lock = 0, tries = 0 }; mbres = {}; mbst = {} end
-        if (e.id == 0x000A) and (disp ~= nil) then -- AutoFood and AutoSoda go off on zoning
-            for _, name in ipairs({ 'AutoFood', 'AutoSoda' }) do
-                if (disp.GetToggle(name) == true) then
-                    disp.SetToggle(name, false);
-                    say(name .. ' off (zoned)');
-                end
-            end
-        end
+        if (e.id == 0x000A) then predicted = {}; gcauto.RollReset(); gcauto.ClearTags(); lastCombat = -1e9; monsterCache = {}; mbres = {} end
     end);
 end
 

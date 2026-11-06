@@ -439,7 +439,7 @@ end
 -- missing ones skipped), mappings_file, template_text, source_label
 -- Selindrile binds -> GoomSwap Keybinds. GoomSwap's own keys (keep in step with Keybinds in common/gcinclude.lua):
 local GOOM_KEYS = { f7 = 'wm', ['+f7'] = 'wm default', f9 = 'mmode', ['^f9'] = 'tankset', ['+f9'] = 'rangedset',
-    ['!f9'] = 'wsset', f10 = 'def', ['!f10'] = 'kite', ['@f10'] = 'hoxne', ['+f11'] = 'nukeset', ['!f11'] = 'automb',
+    ['!f9'] = 'wsset', f10 = 'def', ['!f10'] = 'kite', ['@f10'] = 'hoxne', ['+f11'] = 'nukeset', ['!f11'] = 'burst',
     ['+f12'] = 'idleset', ['!f12'] = 'def off', ['!@^f12'] = '/lac reload' };
 -- 'gs c <words>' -> GoomSwap command; a table = per job (others: no GoomSwap match there).
 local SEL_CMD = {

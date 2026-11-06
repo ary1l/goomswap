@@ -9,8 +9,8 @@ through `windower/`), same job files.
 - **Weapons:** `/wm` modes (`_1h` sets when you can't dual wield, `/mmode Acc` variants), idle/town weapons out of
   combat. No automatic swap throws away TP (`WeaponTPGuard`, per job) or Aftermath; songs, rolls, cures still swap.
 - **Defense:** `/dt` `/mdt` `/aminon`; regen/refresh/DT idle by HP/MP; sleep, stun, doom, weakness sets.
-- **Casting:** TH until tagged, SIR, obi/Orpheus/elemental ring and back, Moonshade, auto magic burst (RDM BLM SCH GEO).
-- **Items:** food (per job), packer (keeps a list of items in inventory on every job change), soda, holy water, enchanted items and warp/dim rings, Hoxne Ampulla.
+- **Casting:** TH until tagged, SIR, obi/Orpheus/elemental ring and back, Moonshade, Burst gear on nukes that land in a live skillchain (RDM BLM SCH GEO).
+- **Items:** packer (keeps a list of items and food in inventory on every job change), enchanted items and warp/dim rings, Hoxne Ampulla.
 - **Multibox:** one HUD for every box (click a cell to drive it, the boxes' messages show there); Einherjar entry,
   lamp copies and hand-out (`/ejenter`, Ashita).
 - **Checks:** refused actions say why; `/checksets` finds empty sets and misspellings; `/gctrace` shows what each action wore.
@@ -135,7 +135,7 @@ return { settings = { Messages = true, HUDOwners = T{'YourMain'}, LockstyleSet =
 | `RegenGearHPP` `RefreshGearMPP` `DTGearHPP` | `60` `60` `50` | when `Idle_Regen` / `Idle_Refresh` / `Dt` go on by themselves; `0` = never |
 | `WeaponTPGuard` | `1000` | TP at which Main/Sub/Range stay on; `0` = always swap (examples set it per job) |
 | `IdleWeapons` | `true` | `false`: your weapon mode stays on out of combat instead of the idle sets' weapons |
-| `AutoFood` `AutoFoodItems` | `false`, Grape Daifuku | `true` and your food (`/autofood` in game) |
+| `Food` | Grape Daifuku +1 | the food `/packer` keeps a stack of (per job: `gcinclude.Food`) |
 | `WScheck` `WSdistance` | `true`, `5` | the WS range check; `/wsdistance` in game |
 | `MoonshadeTP` | `1750` | when Moonshade Earring goes on; `0` = never touched |
 | `Validate` `ValidateMP` | `true` | `false` to stop GoomSwap cancelling actions that would fail |
@@ -164,7 +164,7 @@ The top of `common/gcinclude.lua` has two blocks you edit; everything below is t
 | Every job | Edit the value in `common/gcinclude.lua` | `RefreshGearMPP = 50;` |
 | One job | Job file `OnLoad`, before `gcinclude.Initialize()` | `gcinclude.settings.RefreshGearMPP = 50;` |
 | One job, list | Top of the job file; adds to the setting's list | `gcinclude.SIRSkip = T{'Phalanx'};` |
-| One job, value | Job file; replaces the setting in brackets | `gcinclude.MBTier` (`MBTier`), `gcinclude.AutoFood` (food list, `AutoFoodItems`; on/off stays `AutoFood`), `gcinclude.LockstyleSet`, `gcinclude.ElementGear` (whole table), `gcinclude.CureObi` (`ElementGear.Cures`) |
+| One job, value | Job file; replaces the setting in brackets | `gcinclude.Food` (`Food`), `gcinclude.LockstyleSet`, `gcinclude.ElementGear` (whole table), `gcinclude.CureObi` (`ElementGear.Cures`) |
 
 Copying a newer `common/` over yours erases your edits: note them, or set them per job instead.
 
@@ -174,8 +174,8 @@ Copying a newer `common/` over yours erases your edits: note them, or set them p
 | Casting | `SIRSkip`, `THSkip`, `ElementGear` (obi, Orpheus, ring, back, `Cures`), `ElementSkills`, `OrpheusPoints` |
 | Auto idle sets | `AutoGear`, `RegenGearHPP`, `RefreshGearMPP`, `DTGearHPP`, `PetDTGearHPP` |
 | Weapon skills | `WScheck`, `WSdistance`, `MoonshadeTP`, `MoonshadeSlot`, `MoonshadeSkip`, `ElementalWS` |
-| Magic burst | `AutoNuke`, `MBTier`, `MBCasts`, `MBRotate`, `MBMinMP`, `MBWindow`, `MBFallback`, `MBSkills` |
-| Items | `AutoFood`, `AutoFoodItems`, `PackerItems`, `PackerFood`, `AutoSoda`, `SodaItem`, `AutoHolyWater`, `HolyWaterItem`, `AutoRevitalizer`, `AutoUseItems`, `EnchantDelays`, `EnchantWindow`, `ConsumableMaxTries` |
+| Magic burst | `MBWindow`, `MBSkills` |
+| Items | `PackerItems`, `Food`, `EnchantDelays`, `EnchantWindow` |
 | Hoxne | `HoxneItem`, `HoxneLockSlots`, `HoxneAutoUse` |
 | Received gear | `ReceivedSets`, `ReceivedWindow`, `MyBoxes` |
 | Action checks | `Validate`, `ValidateMP`, `WaltzTPCut` |
@@ -226,8 +226,6 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 | Command | Does |
 |---|---|
 | `/nukeset [power\|macc\|oa]` | Nuke sets (RDM GEO: `oa` = OccultAcumen) |
-| `/automb` (`/autonuke`, `/mbmode`) | Cast into live skillchains by itself (RDM BLM SCH GEO) |
-| `/mbtier [1-5]` | Its tier I to V; no word: next |
 | `/burst` | Burst set on every nuke, not only live skillchains |
 | `/mbinfo` | Last skillchain seen |
 | `/gcaspir` `/gcdrain` | Best castable tier on `<t>` |
@@ -237,9 +235,7 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 **Items, travel and content**
 | Command | Does |
 |---|---|
-| `/autofood` `/autosoda` | Eat food / drink soda when the buff is missing (food: `char.lua` or `gcinclude.AutoFood`) |
 | `/packer` | Fetch what inventory lacks of your packer list (Bellhop); also on every job change |
-| `/holywater` `/revit` | Holy Water on Doom / per-zone item use (`AutoUseItems`) |
 | `/hoxne [off\|use]` | Keep Hoxne Ampulla in Ammo and use it |
 | `/gce <item>` / `/gce cancel` | Equip an enchanted item (Volte Harness, Reraise Earring…), wait its delay, use it, free the slot |
 | `/warpring` `/mea` `/holla` `/dem` | Warp / Dimensional ring, the same way |
@@ -274,7 +270,7 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 Picking a value, any case: no word = next; else exact name, the one it starts, its initials, the one containing it, or
 a number: `/wm max` (Maxentius), `/nukeset oa` (OccultAcumen), `/mmode sb` (SubtleBlow), `/wm 3`. Two matches: it lists them.
 
-Zoning turns off `/autofood`, `/autosoda`, `/hoxne`. While zoning (until 3s after arriving) nothing is sent by itself.
+Zoning turns off `/hoxne`. While zoning (until 3s after arriving) nothing is sent by itself.
 
 ## Keys
 
@@ -287,7 +283,7 @@ Selindrile's F-key layout, bound on load, removed on unload and job change:
 | Shift+F9 | `/rangedset` (COR RNG PLD) | Alt+F9 | `/wsset` |
 | F10 | `/def` (DT → MDT → Aminon → off) | Alt+F10 | `/kite` |
 | Win+F10 | `/hoxne` | Shift+F11 | `/nukeset` |
-| Alt+F11 | `/automb` | Shift+F12 | `/idleset` |
+| Alt+F11 | `/burst` | Shift+F12 | `/idleset` |
 | Alt+F12 | `/def off` | Ctrl+Win+Alt+F12 | reload (`/lac reload`, Windower `gs reload`) |
 
 Plain F11/F12 stay free (Ashita's default script puts `/ambient` and `/fps` there).
@@ -349,27 +345,18 @@ table.insert(gcinclude.settings.Keybinds, {'^F2', '/ja "Sentinel" <me>'});
 
 ## Magic burst (RDM BLM SCH GEO)
 
-1. Fill `Burst`. It goes on by itself when a nuke lands in a live skillchain of its element; `/burst` = every nuke.
-2. Tier: `MBTier = 'III'` (`'I'`–`'V'`) in settings, `gcinclude.MBTier` per job, or `/mbtier 5` (until reload or job change).
-3. `/automb on` (Alt+F11); `AutoNuke = true` starts it on.
-4. Optional: `MBCasts` (bursts per chain, 1), `MBRotate` (spread over the chain's elements), `MBMinMP` (hold below it),
-   `MBFallback` (next tier down when the tier can't go), `MBSkills` (skills that wear `Burst`).
-
-`/automb` takes a chain on your target, else on a mob you or your party fight, within 21.8'. It casts by id, so it works
-engaged on another mob (Windower: at the mob without targeting it). It casts the chain element's nuke only if it lands
-inside `MBWindow` (10s; cast time learned from your casts), you aren't moving, and your last action's delay is over (3s
-spell, 2s WS/JA). Tier can't go (not learned, level/JP gift, recast, MP, SCH IV/V without Addendum: Black or
-Enlightenment): next tier down. Light/Dark-only chains: SCH helix, others skip.
+1. Fill `Burst`. It goes on by itself when a nuke lands in a live skillchain of its element, inside the burst window
+   (`MBWindow`, 10s; another WS on the mob ends it). GoomSwap never casts for you: you press the nuke.
+2. `/burst` (Alt+F11): `Burst` on every nuke, chain or not. The HUD's `nuke` cell shows a `*` while it's on.
+3. `MBSkills` (`Elemental Magic`): the spell skills that get `Burst`; add `'Dark Magic'` etc. `/mbinfo`: last chain seen.
 
 ## Items
 
-- **Food** (`/autofood`; outside town, not moving), first one set: `gcinclude.AutoFood` in the job file → `AutoFood`
-  in `char.lua` (every job) → `AutoFoodItems` setting.
 - **Packer** (Ashita, Thorny's Bellhop plugin: `/bh get`, any bag it reaches): lists add up, later wins, `false` drops an
   item: `PackerItems` setting → `Packer` in `char.lua` → `gcinclude.Packer = { ['Trump Card'] = 99, ['Holy Water'] =
-  false }` in a job file. `'stack'` = full stack. `PackerFood` adds a stack of the job's first food. Still short a few
+  false }` in a job file. `'stack'` = full stack. Food: a stack of each in `Food`, first one set of `gcinclude.Food`
+  (job file) → `Food` in `char.lua` → `Food` setting (`T{}` = none). Still short a few
   seconds later: named in chat. Windower: `profile.Packer` feeds `//gs org` (Organizer addon).
-- **`/autosoda`:** `SodaItem` when Regain is missing; 20s between tries, off after `ConsumableMaxTries`.
 - **`/gce`:** waits the item's `CastDelay` (override `EnchantDelays`, fallback `EnchantWindow`) once it's really on;
   `/item` retried every 2s, 5 tries; gives up after 10s not on. Refused if `/lock` or another feature holds the slot.
 - **Rings** (`/warpring` `/mea` `/holla` `/dem`): `/gce` on Ring2, past `/lock`; let go after the use so your Ring2
@@ -403,18 +390,18 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
 - **Who gets the grid:** in `common/gcinclude.lua` settings, `HUDOwners = T{'YourMain'};` (per character: `settings` in
   `char.lua`). Those characters open it on load with every box; on any other box `/gchud` shows only that box's line.
   Empty list: any box's `/gchud` shows every box.
-- **Use:** click a cell = run it on that box; click a name = its hidden modes; Ctrl+click `mb` = tier. The owner also
+- **Use:** click a cell = run it on that box; click a name = its hidden modes. The owner also
   prints the other boxes' GoomSwap lines as `[Name]` (`HUDMessages = false` to stop).
 - **Commands:** `/gchud` (on/off), `/gchud large|compact`, `/gchud pos X Y`, `/gchud debug`. Drag to move; saved per character.
 - **Layout:** top left; `HUDOwners` first, then party order. The owner sees the headers and its own line until the
   mouse is over the HUD, then every box (`HUDHover = false`: always all). In the bottom half of the screen it opens
   upward: your line stays put, the other boxes stack above it (`HUDGrow = 'up'`, `'down'`, `'auto'`). Every column a
   box's job has always shows, all mode columns the same width, so the width never changes.
-  Name colour: blue SIR, gold TH, green kite, red PROC. Food, soda, harp, song lock, death: a chat line when they change.
+  Name colour: blue SIR, gold TH, green kite, red PROC. Harp, song lock, death: a chat line when they change.
   A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal. Bright = changed, dim = default.
 - **Columns:** `wpn` weapon mode, then the slot picks `main` `sub` `rng` `ammo` (`-` none), `melee`, `ra` (COR RNG
   PLD `/rangedset`: `-` or `Acc`), `idle` (`/idleset`: `-`, compact `MP` `HP` `TP` = Refresh Regen Regain), `nuke`,
-  `elem`, `tank`, `pup`, `w` BLM/SCH weapon, `def` (`-` none), `mb` (`-` off, else tier). Tune: `HUDAbbr`, `HUDLabels`,
+  `elem`, `tank`, `pup`, `w` BLM/SCH weapon, `def` (`-` none). `*` after the `nuke` value = `/burst` on. Tune: `HUDAbbr`, `HUDLabels`,
   `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
 
 ## How sets stack
@@ -455,7 +442,7 @@ job file says so (WHM `Cure_Dt`).
 | `Buffs` `Buffs_Ws` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while that buff is up: at rest / WS / midcast. A buff counts once its "gains the effect" message lands, before the buff list shows it |
 | `Hoxne_Tp` `Hoxne_Idle` `Hoxne_Dt` `Hoxne_Ws` `Hoxne_<ws>` | `/hoxne` Locked + Enchantment up; not while `/kite` |
 | `Hoxne_<set>_<buff>` | While the buff is up (`Hoxne_Tp_Impetus`); `&` = all up. Fewest buffs first, then A-Z |
-| `HolyWater` | Right before a Holy Water (else `gcinclude.sets.Holy_Water`) |
+| `gcinclude.sets.Holy_Water` | When you use a Holy Water (the examples' `HandleItem`) |
 | `XIRoll` | Idle with a roll at 11 |
 | `*_Received` | A spell cast on you, until it lands (max `ReceivedWindow` 8s) |
 
@@ -544,11 +531,10 @@ profile.OnLoad = function()
     gcinclude.SubModes  = {'None', 'Aegis', 'Duban'};
     gcinclude.RangeModes = {'None', 'Annihilator'};
     gcinclude.AlwaysDualWield = true;
-    gcinclude.AutoFood = 'Grape Daifuku +1';
+    gcinclude.Food = {'Grape Daifuku +1'};        -- /packer keeps a stack
     gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Instant Reraise'] = 2 };
     gcinclude.BuffSetOrder = T{'Saboteur', 'Aftermath'};
     gcinclude.MeleeModes = {'Default', 'Acc'};    -- own /mmode list (NukeModes for /nukeset)
-    gcinclude.MBTier = 'V';
     gcinclude.settings.RefreshGearMPP = 50;       -- any setting, this job only
     gcinclude.Initialize();
 end
