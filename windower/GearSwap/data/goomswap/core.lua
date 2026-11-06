@@ -32,7 +32,7 @@ for i, n in ipairs(C.SlotNames) do C.SlotsLC[string.lower(n)] = i end
 C.GS = { 'main', 'sub', 'range', 'ammo', 'head', 'body', 'hands', 'legs', 'feet', 'neck', 'waist',
     'ear1', 'ear2', 'ring1', 'ring2', 'back' };
 C.Containers = { inventory = 0, safe = 1, storage = 2, temporary = 3, locker = 4, satchel = 5, sack = 6, case = 7,
-    wardrobe = 8, safe2 = 9, wardrobe2 = 10, wardrobe3 = 11, wardrobe4 = 12, wardrobe5 = 13, wardrobe6 = 14,
+    wardrobe = 8, wardrobe1 = 8, safe2 = 9, wardrobe2 = 10, wardrobe3 = 11, wardrobe4 = 12, wardrobe5 = 13, wardrobe6 = 14,
     wardrobe7 = 15, wardrobe8 = 16 };
 -- LAC resolves these with table[value + 1].
 C.SpellElements = { 'Fire', 'Ice', 'Wind', 'Earth', 'Thunder', 'Water', 'Light', 'Dark', [16] = 'Non-Elemental' };
@@ -96,7 +96,9 @@ local function make_item(item) -- LAC equip.lua MakeItemTable
             -- GearSwap's own item format ({ name=, augments=, priority=, bag= }, as //gs export writes it):
             -- its augment strings are Windower's, so GearSwap matches them as they are.
             elseif (k == 'augments') or (k == 'augment') then t.GSAug = (type(v) == 'table') and v or { v }
-            elseif ((k == 'Bag') or (k == 'bag')) then t.Bag = (type(v) == 'string') and C.Containers[string.lower(v)] or v
+            -- 'Wardrobe 2' / 'wardrobe2' / 'Wardrobe2' alike; 'wardrobe1' is the first wardrobe (GearSwap itself only knows
+            -- 'wardrobe' for it, so a bag="wardrobe1" written for GearSwap pinned nothing there)
+            elseif ((k == 'Bag') or (k == 'bag')) then t.Bag = (type(v) == 'string') and C.Containers[(string.gsub(string.lower(v), ' ', ''))] or v
             elseif ((k == 'Priority') or (k == 'priority')) and (type(v) == 'number') then t.Priority = v
             elseif (k == 'AugPath') then t.AugPath = v
             elseif (k == 'AugRank') then t.AugRank = v

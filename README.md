@@ -49,6 +49,21 @@ Windower/addons/GearSwap/data/
 | Reload after edits | `/lac reload` | `//gs reload` |
 | HUD | `/gchud`, click cells | `//gchud`, click cells |
 | Augmented gear | `{ Name = 'X', Augment = {...} }` (LAC strings) | Same file works: the carried copy best matching the list is worn (names differ a bit between the two, so not exact). Or GearSwap's own `{ name="X", augments={...} }`, pasted from `//gs export`, matched exactly |
+| Two of the same item (2 Stikini Ring +1) | Nothing to do: LuAshitacast keeps track of each copy | Give each copy its own bag (below) |
+
+**Two of the same item, Windower.** Two Stikini Ring +1 (or two identical earrings, or the same weapon in Main and Sub)
+by name alone can make GearSwap take the copy you're already wearing in the other slot, so the two trade places on a
+swap. Keep the copies in different bags and name each one's bag:
+
+```lua
+Ring1 = { Name = 'Stikini Ring +1', Bag = 'Wardrobe' },  -- the first wardrobe ('wardrobe1' works too)
+Ring2 = { Name = 'Stikini Ring +1', Bag = 'Wardrobe2' },
+```
+
+Bags on Windower: `Inventory`, `Wardrobe`, `Wardrobe2` … `Wardrobe8` (any case, with or without the space;
+`wardrobe1` = `Wardrobe`). Spelled exactly `Wardrobe` … `Wardrobe4`, the same line works on Ashita, which honours it
+but doesn't need it; LuAshitacast ignores any other spelling there (no harm, the item still goes on). Selindrile files
+that wrote `bag="wardrobe1"` now pin the first wardrobe (GearSwap alone only knows `wardrobe` for it).
 
 Windower augment strings: wear the gear, `//gs export` (file in `GearSwap/data/export/`) or `//gs export copy`
 (clipboard), paste each line into a set and capitalize the slot (`back=` → `Back =`). Rare items export without
