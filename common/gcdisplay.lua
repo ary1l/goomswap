@@ -144,8 +144,7 @@ local COL_ON = { 0.35, 0.95, 0.45, 1.0 };
 local COL_OFF = { 0.45, 0.45, 0.50, 1.0 };
 
 -- Modes in /gcmodes order (gcinclude.ModeNames), only those set to something ('-' ones are left out), then every
--- toggle the job has by its short name. Packed left; the bar is as wide as it can ever get (every mode at its
--- longest value), so it never grows or shrinks.
+-- toggle the job has by its short name. The bar fits what it shows.
 local BAR_TOGGLES = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'Burst', 'PROC', 'String', 'SongLock', 'Death' };
 local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 'nuke'}, {'IdleSet', 'idle'} };
 
@@ -167,11 +166,6 @@ local function melee_tag(v)
 	if (#v <= 4) then return v end
 	local caps = string.gsub(v, '%l', ''); -- FullAcc -> FA
 	return (#caps >= 2) and caps or string.sub(v, 1, 3);
-end
-local function textw(t)
-	local w = imgui.CalcTextSize(t);
-	if (type(w) == 'table') then w = w[1] or w.x end
-	return tonumber(w) or 0;
 end
 
 local function value_text(k, v)
@@ -228,59 +222,18 @@ local function track_drag()
 	end
 end
 
--- Widest the bar can get: head, stats, every mode at its longest value, every toggle. Cached per cycle list.
-local widest = {};
-local function bar_width(ITEM)
-	local w = textw(headText) + ITEM + textw('Atk 9999  Def 9999') + ITEM + textw('|');
-	local function widest_values(k)
-		local c = Cycles[k];
-		local e = widest[k];
-		if (e == nil) or (e.arr ~= c.Array) or (e.unit ~= textw('M')) then
-			local vw = 0;
-			for _, v in ipairs(c.Array) do vw = math.max(vw, textw(value_text(k, v))) end
-			e = { arr = c.Array, unit = textw('M'), w = vw };
-			widest[k] = e;
-		end
-		return e.w;
-	end
-	local wk = wpn_key();
-	if (wk ~= nil) then -- wpn entry: its value, the pick's +, the melee tag
-		local mw = 0;
-		local mc = Cycles.MeleeSet;
-		for _, v in ipairs((mc ~= nil) and mc.Array or {}) do mw = math.max(mw, textw(melee_tag(v))) end
-		w = w + ITEM + textw('wpn ') + widest_values(wk) + textw('+') + ((mw > 0) and (textw(' ') + mw) or 0);
-	end
-	for _, m in ipairs(((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES) do
-		local k = m[1];
-		if (Cycles[k] ~= nil) and (k ~= wk) and not folded(k) then
-			local vw = widest_values(k);
-			if (vw > textw('-')) then w = w + ITEM + textw(m[2] .. ' ') + vw end
-		end
-	end
-	local tnames = (inc ~= nil) and inc.ToggleNames or {};
-	local first = true;
-	for _, k in ipairs(BAR_TOGGLES) do
-		if (Toggles[k] ~= nil) then
-			if first then w = w + ITEM + textw('|'); first = false end
-			w = w + 8 + textw(tnames[k] or k);
-		end
-	end
-	return w;
-end
-
 local function bar_body()
-	local x0 = imgui.GetCursorPosX();
 	local first = true;
 	local ITEM = 12; -- px between items; a label and its value are one space apart
-	local function put(text, col, gap, at) -- at: absolute x instead of a gap
-		if first then first = false elseif (at ~= nil) then imgui.SameLine(at) else imgui.SameLine(0, gap or ITEM) end
+	local function put(text, col, gap)
+		if first then first = false else imgui.SameLine(0, gap or ITEM) end
 		imgui.PushStyleColor(ImGuiCol_Text, col);
 		imgui.Text(text);
 		imgui.PopStyleColor();
 	end
 	put(headText, COL_HEAD);
 	put(statText, COL_KEY);
-	put('|', COL_KEY, nil, x0 + textw(headText) + ITEM + textw('Atk 9999  Def 9999') + ITEM); -- Atk/Def digits don't move the rest
+	put('|', COL_KEY);
 	local names = ((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES;
 	local picked = false;
 	for k in pairs(SLOT_PICKS) do
@@ -317,7 +270,6 @@ local function bar_body()
 			put(tnames[k] or k, (Toggles[k] == true) and COL_ON or COL_OFF, 8);
 		end
 	end
-	put(' ', COL_KEY, nil, x0 + bar_width(ITEM)); -- holds the bar at its widest
 	track_drag();
 end
 
@@ -366,7 +318,6 @@ end
 function gcdisplay.Initialize(settings, include)
 	cfg = settings;
 	inc = include;
-	widest = {};
 	barPlaced = false;
 	pcall(bar_load);
 	gcdisplay.Update();
