@@ -389,14 +389,11 @@ Nothing is queued: press it again when ready.
 One window showing every box running GoomSwap: a row per box, a column per mode. Each box writes its modes 4 times a
 second (Ashita: files in `luashitacast/hud/`; Windower: over IPC), and the box with the HUD open reads them all.
 
-```
-       wpn   melee ra   idle nuke def          (compact style)
-  Dree Ana   Base  Acc  -    -    -
-● Goom Max   Base  -    -    Pow  -            ● blue: SIR on
-  Jira Nae   Acc   -    MP   -    DT           DT in orange
-● Shay Cal   Base  -    -    -    -            gold name: your own box; ● gold: TH on
-  Slow Idr   Base  -    TP   Occ  -
-```
+![The HUD, compact style](docs/hud.png)
+
+Compact style, five boxes. Bryn has `/sir` on (blue dot); Cora is your own box (gold name) with `/th` on (gold dot);
+Dain is on `/mmode acc`, `/idleset refresh` (`MP`) and `/def` DT (orange); Elle has `/nukeset oa` with `/burst` on
+(`Occ*`). Bright gold = changed since load, soft gold = load default, faint `-` = none.
 
 **Turning it on**
 - `/gchud` toggles it; `/gchud large` or `/gchud compact` switches the style (saved per character); `/gchud pos X Y`
@@ -431,7 +428,7 @@ second (Ashita: files in `luashitacast/hud/`; Windower: over IPC), and the box w
 - **Look (Ashita):** headers on a soft blue fade, a thin shadow under the text, no edge, opacity `HUDAlpha`.
 
 **Using it**
-- Click a cell: runs that mode's command on that box (clicking `wpn` on Goom's row is Goom's `/wm`).
+- Click a cell: runs that mode's command on that box (clicking `wpn` on Bryn's row is Bryn's `/wm`).
 - Click a name: shows that box's other modes and its job on a line under it; click again to hide.
 - Mouse away (owner): only the headers and your own row; mouse over: every box (`HUDHover = false`: always every box).
   In the bottom half of the screen it opens upward, your row staying put (`HUDGrow = 'up'`, `'down'`, `'auto'`).
@@ -448,9 +445,10 @@ name itself takes the dot's colour (gold for your own when nothing is on).
 
 One line for this box only, for playing without the HUD.
 
-```
-( COR99/DNC56 1149/1298 | wpn Anarchy+ Acc  wsset Mid  idle TP | ● DT  ● TH )
-```
+![The status bar](docs/gcbar.png)
+
+COR99/DNC56 with 1149 attack and 1298 defense; weapon mode Anarchy with a slot pick changed (`+`) on `/mmode acc`
+(`Acc`); WS buff level Mid (default, soft gold); `/idleset regain` (`TP`); `/dt` and `/th` on.
 
 - `/gcbar` toggles it (or `DisplayBar = true` in settings), `/gcbar pos X Y` moves it, drag it with the mouse; position
   and on/off are saved per character.
