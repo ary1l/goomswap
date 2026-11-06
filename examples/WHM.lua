@@ -47,6 +47,8 @@ local sets = {
         --Legs = 'volte brais',
 		--Feet = 'volte boots',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Town = {
         Main = 'yagrush',
         Sub = 'chanter\'s shield',
@@ -404,7 +406,7 @@ end
 profile.HandleDefault = function()
     local player = gData.GetPlayer();
 
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');

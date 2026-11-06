@@ -268,7 +268,7 @@ local function mapper(ctx)
             return nil;
         end
         if (a == 'idle') and (n == 2) then
-            return ({ Refresh = 'Idle_Refresh', Regen = 'Idle_Regen', Town = 'Town', Pet = 'Idle_Pet' })[b];
+            return ({ Refresh = 'Idle_Refresh', Regen = 'Idle_Regen', Regain = 'Idle_Regain', Town = 'Town', Pet = 'Idle_Pet' })[b];
         end
         if (a == 'engaged') and (n == 2) and modes[b] then return 'Tp_' .. b end
         if (a == 'engaged') and (n == 2) and ctx.hybrid[b] and has('Tank_Main') then -- PLD/RUN: HybridMode tank sets -> /tankset

@@ -39,6 +39,8 @@ local sets = {
         Head = 'Jumalik Helm',
         Ring1 = 'Stikini Ring +1',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
     Resting = {},
     Town = {
         Main = 'Shining One',
@@ -259,7 +261,7 @@ profile.HandleDefault = function()
         return;
     end
     local player = gData.GetPlayer();
-    gFunc.EquipSet(sets.Idle);
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
     if (player.Status ~= 'Engaged') and (gData.GetPet() ~= nil) then
         gFunc.EquipSet(sets.Idle_Pet);
     end

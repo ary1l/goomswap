@@ -892,10 +892,11 @@ local function split_args(s) -- quoted words stay whole, like Ashita's string:ar
     return out;
 end
 
--- Ashita bind modifiers ^ ctrl, ! alt, + shift, @ win, # apps; Windower uses ~ for shift.
+-- Ashita bind modifiers ^ ctrl, ! alt, + shift, @ win, # apps; Windower uses ~ for shift. Key names lowercase,
+-- as Windower binds are written (bind ^f9 ...).
 local function bind_key(key)
     local mods, rest = string.match(key, '^([%^!%+@#]*)(.*)$');
-    return string.gsub(mods or '', '%+', '~') .. (rest or key);
+    return (string.gsub(mods or '', '%+', '~')) .. string.lower(rest or key);
 end
 
 local function my_name() local p = ffxi.get_player(); return p and string.lower(p.name) or '' end
@@ -906,6 +907,7 @@ local queue_command;
 local function console_form(cmd)
     local lower = string.lower(cmd);
     if (string.sub(lower, 1, 9) == '/lac fwd ') then return 'gs c ' .. string.sub(cmd, 10) end
+    if (lower == '/lac reload') then return 'gs reload' end
     if (string.sub(lower, 1, 5) == '/lac ') then
         -- 'gs c' args arrive split with their quotes stripped and GearSwap rejoins them with spaces, so
         -- '/lac equip ring2 "Dim. Ring (Mea)"' fell apart. A quoted arg's spaces go as %20 (% as %25); the

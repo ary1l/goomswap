@@ -40,6 +40,8 @@ local sets = {
 		Ring2 = 'stikini ring +1',
         Waist = 'Fucho-no-Obi',
     },
+    Idle_Regain = { -- /idleset regain: over Idle while idle
+    },
 	['Town'] = {
         Ammo = 'Staunch Tathlum +1',
         Head = 'Hashishin Kavuk +3',
@@ -507,7 +509,7 @@ profile.HandleCommand = function(args)
 end
 
 profile.HandleDefault = function()
-	gFunc.EquipSet(sets.Idle);
+	gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
 	local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then

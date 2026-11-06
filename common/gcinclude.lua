@@ -166,7 +166,11 @@
 		THSkip = T{'Absorb-TP', 'Stun'}; -- spells /th never goes over (their own set stays, tagged or not); a job's gcinclude.THSkip = T{...} adds to it
 		HoxneItem = 'Hoxne Ampulla'; -- what the Hoxne states keep in your ammo slot
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
-		Keybinds = T{ {'^`','wm'}, {'+`','wm default'}, {'^+`','def'}, {'!`','hoxne'}, {'@`','automb'} }; -- no bare grave (too easy to hit); bound on load, unbound on unload; T{} for none. Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
+		-- Selindrile's F-key layout. Bound on load, unbound on unload; T{} for none. A command starting with / is bound
+		-- as is (the reload key). Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
+		Keybinds = T{ {'F7','wm'}, {'+F7','wm default'}, {'F9','mmode'}, {'^F9','tankset'}, {'+F9','rangedset'}, {'!F9','wsset'},
+			{'F10','def'}, {'!F10','kite'}, {'@F10','hoxne'}, {'+F11','nukeset'}, {'!F11','automb'}, {'+F12','idleset'},
+			{'!F12','def off'}, {'^@!F12','/lac reload'} };
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
 		HUDOwners = T{}; -- your main(s), e.g. T{'YourMain'}: open the HUD with every box on load; on other boxes /gchud shows only their own line; T{} = every box sees all
 		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GoomSwap lines, as [Name]
@@ -210,7 +214,7 @@
 
 	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
 	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
-	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','temps','gcgear'};
+	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','gctemps','gcgear','idleset','rangedset'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
 		ontic = 'ontic extremity',
@@ -358,6 +362,11 @@ function gcinclude.SetVariables()
     gcdisplay.CreateCycle('MeleeSet', melee);
     -- /wsset: how buffed you are, for weapon skills only. High wears <WS set>_HighBuff over each WS set.
     gcdisplay.CreateCycle('WsSet', {'Mid', 'High'});
+    -- /idleset: Idle_<mode> over Idle while idle (gcinclude.EquipIdle); /rangedset: Midshot_Acc on COR RNG PLD.
+    gcdisplay.CreateCycle('IdleSet', {'Default', 'Refresh', 'Regen', 'Regain'});
+    if (mJob == 'COR') or (mJob == 'RNG') or (mJob == 'PLD') then
+        gcdisplay.CreateCycle('RangedSet', {'Default', 'Acc'});
+    end
     gcinclude.BuildWeaponCycles(mJob);
     if (type(gcinclude.DefaultWeapons) == 'string') then
         gcinclude.SetWeaponCycle('Weapons', gcinclude.DefaultWeapons, true);
@@ -459,6 +468,18 @@ end
 			gcinclude.PickCycle('WsSet', args[2]);
 			toggle = 'WS Set';
 			status = gcdisplay.GetCycle('WsSet');
+		elseif (args[1] == 'idleset') then
+			gcinclude.PickCycle('IdleSet', args[2]);
+			toggle = 'Idle set';
+			status = gcdisplay.GetCycle('IdleSet');
+		elseif (args[1] == 'rangedset') then
+			if (gcdisplay.GetCycleValues('RangedSet') == nil) then
+				gcinclude.Say('rangedset: COR RNG PLD only');
+			else
+				gcinclude.PickCycle('RangedSet', args[2]);
+				toggle = 'Ranged set';
+				status = gcdisplay.GetCycle('RangedSet');
+			end
 		elseif (gcinclude.WeaponCommands[args[1]] ~= nil) then
 			local cname = gcinclude.WeaponCommands[args[1]];
 			gcinclude.WeaponCommand(cname, args);
@@ -545,7 +566,7 @@ end
 			AshitaCore:GetChatManager():QueueCommand(-1, '/item "' .. gcinclude.ExitItems[args[1]] .. '" <me>');
 		elseif (args[1] == 'ejenter') or (args[1] == 'ejexit') or (args[1] == 'ejlamps') then
 			gcinclude.Einherjar(args[1], args[2]);
-		elseif (args[1] == 'temps') then
+		elseif (args[1] == 'gctemps') then
 			gcinclude.UseTemps();
 		elseif (args[1] == 'dw') then
 			gcinclude.DualWieldCommand(args);
@@ -750,7 +771,7 @@ end
 	-- box reporting to the HUD folder.
 	gcinclude.ModeNames = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'WsSet', 'wsset'}, {'Main', 'main'}, {'Sub', 'sub'},
 		{'Range', 'rng'}, {'Ammo', 'ammo'}, {'NukeSet', 'nuke'}, {'Element', 'elem'}, {'TankSet', 'tank'}, {'PupMode', 'pup'},
-		{'Weapon', 'weapon'}, {'MBTier', 'mb tier'}, {'Hoxne', 'hoxne'} };
+		{'Weapon', 'weapon'}, {'MBTier', 'mb tier'}, {'Hoxne', 'hoxne'}, {'IdleSet', 'idle'}, {'RangedSet', 'ranged'} };
 	gcinclude.ToggleNames = { DTset = 'DT', MDTset = 'MDT', Aminon = 'Aminon', SIR = 'SIR', TH = 'TH', Kite = 'Kite',
 		AutoFood = 'Food', AutoSoda = 'Soda', PROC = 'PROC', String = 'Harp', SongLock = 'Song lock', Death = 'Death',
 		Burst = 'Burst', AutoNuke = 'Auto MB' };
@@ -2332,6 +2353,30 @@ end
 		end
 	end
 
+	-- The idle base: Idle, then Idle_<mode> over it while idle (/idleset Refresh, Regen, Regain; not engaged or
+	-- resting). The job's own idle layers (pet, movement, /dt, /kite) go on after it.
+	function gcinclude.EquipIdle()
+		local idle = gcinclude.FindSet('Idle');
+		if (idle ~= nil) then gFunc.EquipSet(idle) end
+		local mode = gcdisplay.GetCycle('IdleSet');
+		if (mode == nil) or (mode == 'Default') then return end
+		local player = gData.GetPlayer();
+		if (player == nil) or (player.Status ~= 'Idle') then return end
+		local n = 'Idle_' .. mode;
+		local set = gcinclude.FindSet(n);
+		if (set ~= nil) then
+			gFunc.EquipSet(set);
+		elseif (modeWarned[n] == nil) then
+			modeWarned[n] = true;
+			gcinclude.Err('no ' .. n .. ' set: Idle stays (add ' .. n .. ' or /idleset default)');
+		end
+	end
+
+	-- Ranged accuracy (/rangedset Acc, COR RNG PLD): the job's HandleMidshot wears Midshot_Acc when true.
+	function gcinclude.RangedAcc()
+		return gcdisplay.GetCycle('RangedSet') == 'Acc';
+	end
+
 	-- Wears the set named after an action, then its /meleeset variant. False if there is none.
 	function gcinclude.ByName(name)
 		local set = gcinclude.FindSet(name);
@@ -2824,18 +2869,27 @@ end
 
 	gcinclude.BoundKeys = T{};
 
+	-- What a key runs: a GoomSwap command, or a chat command as is when it starts with / (e.g. /lac reload).
+	function gcinclude.KeyTarget(cmd)
+		cmd = tostring(cmd);
+		if (string.sub(cmd, 1, 1) == '/') then return cmd end
+		return '/lac fwd ' .. cmd;
+	end
+
 	function gcinclude.ApplyKeybinds()
 		local binds = gcinclude.settings.Keybinds;
 		if (type(binds) ~= 'table') then return end
-		-- bare grave used to be /wm: clear it unless a bind here still asks for it
-		local bare = false;
+		-- The old default keys (grave): cleared unless a bind here still asks for one
+		local used = {};
 		for _, bind in ipairs(binds) do
-			if (type(bind) == 'table') and (bind[1] == '`') then bare = true end
+			if (type(bind) == 'table') and (bind[1] ~= nil) then used[bind[1]] = true end
 		end
-		if not bare then AshitaCore:GetChatManager():QueueCommand(-1, '/unbind `') end
+		for _, key in ipairs({'`', '^`', '+`', '^+`', '!`', '@`'}) do
+			if not used[key] then AshitaCore:GetChatManager():QueueCommand(-1, '/unbind ' .. key) end
+		end
 		for _, bind in ipairs(binds) do
 			if (type(bind) == 'table') and (bind[1] ~= nil) and (bind[2] ~= nil) then
-				AshitaCore:GetChatManager():QueueCommand(-1, '/bind ' .. bind[1] .. ' /lac fwd ' .. bind[2]);
+				AshitaCore:GetChatManager():QueueCommand(-1, '/bind ' .. bind[1] .. ' ' .. gcinclude.KeyTarget(bind[2]));
 				if not gcinclude.BoundKeys:contains(bind[1]) then gcinclude.BoundKeys:append(bind[1]) end
 			end
 		end
@@ -2848,16 +2902,38 @@ end
 		gcinclude.BoundKeys = T{};
 	end
 
+	-- /gckey's command from its args. Quotes come off on the way in (Windower's //gs c drops them, Ashita keeps
+	-- "Cure IV" as one arg): an action's name goes back in quotes, '/ma Cure IV <stpc>' -> '/ma "Cure IV" <stpc>'.
+	local KEY_ACTIONS = T{'/ma', '/magic', '/ja', '/jobability', '/ws', '/weaponskill', '/pet', '/item', '/ms',
+		'/monsterskill', '/song', '/ninjutsu', '/nin'};
+	function gcinclude.KeyArgs(args, first)
+		local rest = {};
+		for i = first, #args do rest[#rest + 1] = tostring(args[i]) end
+		local head = string.lower(rest[1] or '');
+		if KEY_ACTIONS:contains(head) and (#rest >= 2) then
+			local last, target = #rest, nil;
+			if (#rest >= 3) and (string.match(rest[last], '^<.+>$') or tonumber(rest[last])) then
+				target = rest[last];
+				last = last - 1;
+			end
+			local name = string.gsub(table.concat(rest, ' ', 2, last), '"', '');
+			return head .. ' "' .. name .. '"' .. ((target ~= nil) and (' ' .. target) or '');
+		end
+		for i, a in ipairs(rest) do
+			if string.find(a, ' ', 1, true) then rest[i] = '"' .. a .. '"' end
+		end
+		return table.concat(rest, ' ');
+	end
+
 	function gcinclude.KeyCommand(args)
 		if (args[2] == nil) or (args[3] == nil) then
 			gcinclude.Say('usage: /gckey <key> <command>  (key uses Ashita names and ! ^ + @ # modifiers)');
 			return;
 		end
-		local rest = T{};
-		for i = 3, #args do rest:append(args[i]) end
-		AshitaCore:GetChatManager():QueueCommand(-1, '/bind ' .. args[2] .. ' /lac fwd ' .. table.concat(rest, ' '));
+		local cmd = gcinclude.KeyArgs(args, 3);
+		AshitaCore:GetChatManager():QueueCommand(-1, '/bind ' .. args[2] .. ' ' .. gcinclude.KeyTarget(cmd));
 		if not gcinclude.BoundKeys:contains(args[2]) then gcinclude.BoundKeys:append(args[2]) end
-		gcinclude.Say(args[2] .. ' -> /' .. table.concat(rest, ' '));
+		gcinclude.Say(args[2] .. ' -> ' .. ((string.sub(cmd, 1, 1) == '/') and cmd or ('/' .. cmd)));
 	end
 
 	function gcinclude.EnchantDelay(name, res)
@@ -3003,7 +3079,7 @@ end
 		end
 	end
 
-	-- /temps: the six Escha drinks (BG-Wiki Escha Temporary Items), each carried one 3s apart.
+	-- /gctemps: the six Escha drinks (BG-Wiki Escha Temporary Items), each carried one 3s apart.
 	gcinclude.EschaTemps = T{"Monarch's Drink", "Braver's Drink", "Fighter's Drink", "Champion's Drink", "Soldier's Drink", "Barbarian's Drink"};
 	function gcinclude.UseTemps()
 		local queued = 0;
@@ -3014,7 +3090,7 @@ end
 				queued = queued + 1;
 			end
 		end
-		gcinclude.Say('temps: ' .. ((queued > 0) and (queued .. ' drinks') or 'none carried'));
+		gcinclude.Say('gctemps: ' .. ((queued > 0) and (queued .. ' drinks') or 'none carried'));
 	end
 
 	-- settings.<key> plus the job file's gcinclude.<key>, as Skipped() reads them
@@ -3041,13 +3117,16 @@ end
 			'checks : /checksets, /xiroll, /mbinfo',
 			'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
 			'holds  : /naked /weaponsonly /abysseaproc [on|off] (one at a time), /capacity /jubilee /dynamisrp [on|off]',
-			'items  : /gce <item> | cancel, /temps (Escha drinks), /warpring /mea /holla /dem, /ejenter [chamber] /ejlamps /ejexit (Einherjar)',
+			'items  : /gce <item> | cancel, /gctemps (Escha drinks), /warpring /mea /holla /dem, /ejenter [chamber] /ejlamps /ejexit (Einherjar)',
 			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat',
 			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N]',
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
 			'nuke   : Burst set is automatic on live skillchains; /automb [on|off] = cast bursts by itself; /mbtier 1-5 = its tier I to V (no word: next); /burst = Burst set on every nuke',
-			'keys   : Ctrl+grave wm, Shift+grave wm default, Ctrl+Shift+grave def, Alt+grave hoxne, Win+grave automb (no bare grave); /gckey <key> <command>',
+			'keys   : F7 wm, Shift+F7 wm default, F9 mmode, Ctrl+F9 tankset, Shift+F9 rangedset, Alt+F9 wsset, F10 def, Alt+F10 kite,',
+			'         Win+F10 hoxne, Shift+F11 nukeset, Alt+F11 automb, Shift+F12 idleset, Alt+F12 def off, Ctrl+Win+Alt+F12 reload',
+			'         /gckey <key> <command or /chat command>, e.g. /gckey ^F1 /ma "Cure IV" <stpc>',
+			'idle   : /idleset [default|refresh|regen|regain] (Idle_<mode> over Idle while idle); /rangedset [default|acc] (COR RNG PLD: Midshot_Acc)',
 			'every box: /mss /<command> (Multisend), one box: /ms sendto <name> /<command>',
 		};
 		for _, line in ipairs(lines) do
