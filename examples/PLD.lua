@@ -1,7 +1,7 @@
 local profile = {};
 if (gFunc == nil) then error('GoomSwap: GearSwap loaded this job file directly. Windower: move it to data/goomswap/<Name>/<JOB>.lua and delete it from data/<Name>/ (see README Install)', 0) end
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.AutoFood = {'Grape Daifuku +1', 'Grape Daifuku'}; -- this job's food, in order (/autofood); on at load: gcinclude.settings.AutoFood = true
+-- gcinclude.Food = {'Grape Daifuku +1'}; -- this job's food: /packer keeps a stack of each (replaces the Food setting / char.lua's)
 -- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 gcinclude.settings.WeaponTPGuard = 100; -- weapons held from 100 TP, so soda TP survives JAs; 0 = always swap
 -- gcinclude.CureObi = true; -- uncomment: Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts)

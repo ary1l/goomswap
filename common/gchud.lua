@@ -30,7 +30,6 @@ gchud.CycleCommands = {
     TankSet = 'tankset',
     Hoxne = 'hoxne',
     PupMode = 'pupmode',
-    MBTier = 'mbtier',
     IdleSet = 'idleset',
     RangedSet = 'rangedset',
 };
@@ -43,24 +42,21 @@ gchud.ToggleCommands = {
     Kite = 'kite',
     SIR = 'sir',
     PROC = 'proc',
-    AutoFood = 'autofood',
-    AutoSoda = 'autosoda',
     Burst = 'burst',
-    AutoNuke = 'automb',
     String = 'forcestring',
     SongLock = 'songlock',
     Death = 'death',
 };
 
 gchud.CycleOrder = { 'Weapons', 'Main', 'Sub', 'Range', 'Ammo', 'MeleeSet', 'WsSet', 'RangedSet', 'IdleSet' }; -- slot picks right after wpn
-gchud.ToggleOrder = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'AutoFood', 'AutoSoda' };
+gchud.ToggleOrder = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite' };
 
 -- Column header glyphs. Override any with settings.HUDLabels = { Main = 'mn' }.
 local SHORT = {
     DTset = 'dt', MDTset = 'md', Aminon = 'am', -- in the def cell
-    SIR = 'si', TH = 'th', Kite = 'kt', AutoFood = 'fd', AutoSoda = 'sd', PROC = 'pr', -- toggles: no columns (name colour or chat), detail line
-    Burst = 'bs', AutoNuke = 'an', String = 'hp', SongLock = 'sl', Death = 'dh',
-    Def = 'def', MB = 'mb', MBTier = 'tier',
+    SIR = 'si', TH = 'th', Kite = 'kt', PROC = 'pr', -- toggles: no columns (name colour or chat), detail line
+    Burst = 'bs', String = 'hp', SongLock = 'sl', Death = 'dh',
+    Def = 'def',
     Weapons = 'wpn', MeleeSet = 'melee', WsSet = 'buff', Main = 'main', Sub = 'sub', Range = 'rng', Ammo = 'ammo',
     NukeSet = 'nuke', Element = 'elem', TankSet = 'tank', Hoxne = 'hx', PupMode = 'pup', Weapon = 'w',
     IdleSet = 'idle', RangedSet = 'ra',
@@ -69,12 +65,11 @@ local SHORT = {
 -- Full names, hover tooltips only.
 local FULL = {
     DTset = 'DT set', MDTset = 'MDT set', Aminon = 'Aminon', SIR = 'Spell interrupt', TH = 'Treasure Hunter',
-    Kite = 'Kite', AutoFood = 'Auto food', AutoSoda = 'Auto soda', PROC = 'Proc',
-    Burst = 'Burst (force)', AutoNuke = 'Auto MB (casts bursts)', String = 'Harp (force string)', SongLock = 'Song lock (enemy songs keep main/sub)',
+    Kite = 'Kite', PROC = 'Proc',
+    Burst = 'Burst set on every nuke (/burst): * after the nuke value', String = 'Harp (force string)', SongLock = 'Song lock (enemy songs keep main/sub)',
     Death = 'Death', Weapons = 'Weapon set', WsSet = 'WS buff level (/wsset): High wears <WS set>_HighBuff',
     Def = 'Defense (click = /def: DT > MDT > Aminon > none)',
-    MB = 'Auto MB (click = /automb on/off, Ctrl+click = /mbtier): - off, else its nuke tier I to V',
-    MBTier = 'Autonuke tier (click = /mbtier: I > II > III > IV > V)', MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',
+    MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',
     Range = 'Range', Ammo = 'Ammo', NukeSet = 'Nuke set', Element = 'Element', TankSet = 'Tank set',
     Hoxne = 'Hoxne', PupMode = 'Pup mode', Weapon = 'Weapon',
     IdleSet = 'Idle set (click = /idleset: Default > Refresh > Regen > Regain; compact: MP HP TP)',
@@ -479,7 +474,7 @@ end
 -- Grid: one header line, one line per box, columns aligned by measured text width.
 -- Cycle columns first (weapon set leads), then toggle columns. Clicking a cell drives that box.
 -- Columns show while any box's job has them, set or not, so the width doesn't change; toggles are one-letter flags.
--- DT/MDT/Aminon merge into one 'def' column (/def); SIR (a casting mode) keeps its own 'si' column, AutoNuke/Burst into 'mb' (/automb).
+-- DT/MDT/Aminon merge into one 'def' column (/def); SIR (a casting mode) keeps its own 'si' column; Burst is a * on the nuke cell.
 -- Clicking a name adds a detail line under it: job + that box's hidden cycles and toggles.
 local PADX = 1; -- cell padding; set from the style each frame in render()
 local function short_name(name)
@@ -525,7 +520,8 @@ local function own_widest(key)
     local ok, list = pcall(disp.GetCycleValues, key);
     if (not ok) or (type(list) ~= 'table') then return 0 end
     local w = 0;
-    for _, v in ipairs(list) do w = math.max(w, textw(cell_text(key, v))) end
+    local extra = (key == 'NukeSet') and '*' or ''; -- /burst's mark
+    for _, v in ipairs(list) do w = math.max(w, textw(cell_text(key, v) .. extra)) end
     return w;
 end
 
@@ -548,8 +544,8 @@ end
 
 -- Merged columns: several toggles shown as one mode, clicked through the command that cycles them.
 local DEF_PARTS = { { 'DTset', 'DT' }, { 'MDTset', 'MDT' }, { 'Aminon', 'Amin' } };
-local GROUP_PART = { DTset = true, MDTset = true, Aminon = true, AutoNuke = true, Burst = true };
-local GROUP_ORDER = { 'Def', 'MB' };
+local GROUP_PART = { DTset = true, MDTset = true, Aminon = true, Burst = true }; -- Burst: a * on the nuke cell
+local GROUP_ORDER = { 'Def' };
 
 local function part(row, key)
     local raw = row.Toggles[key];
@@ -578,26 +574,6 @@ local function group_cell(row, key)
             def = alldef,
             tip = row.Name .. '  Defense: ' .. ((#on == 0) and 'none' or table.concat(on, ', '))
                 .. (alldef and ' (default)' or '') .. '  /def',
-        };
-    end
-    if (key == 'MB') then
-        local nuke, d2 = part(row, 'AutoNuke');
-        if (nuke == nil) then return nil end
-        local burst, d3 = part(row, 'Burst');
-        local tier, d4 = strip_default(row.Cycles.MBTier);
-        if (row.Cycles.MBTier == nil) then d4 = true end
-        local roman = ({ Low = 'I', Mid = 'III', High = 'V', I = 'I', II = 'II', III = 'III', IV = 'IV', V = 'V' })[tier] or ''; -- old boxes send Low/Mid/High
-        local alldef = (d2 ~= false) and (d3 ~= false) and d4;
-        local text = nuke and ((roman ~= '') and roman or 'on') or '-'; -- off, else its tier
-        return {
-            text = text,
-            col = (not nuke and not burst) and (alldef and COL_EMPTY or COL_OFF_CHG) or (alldef and COL_VAL_DEF or COL_VAL),
-            cmd = 'automb',
-            ctrlCmd = 'mbtier',
-            def = alldef,
-            tip = row.Name .. '  Auto MB ' .. (nuke and 'on' or 'off') .. ((roman ~= '') and (', tier ' .. roman) or '')
-                .. '  |  Burst set: ' .. (burst and 'every nuke (/burst)' or 'on live skillchains')
-                .. '  |  click /automb, Ctrl+click /mbtier',
         };
     end
     return nil;
@@ -645,7 +621,7 @@ end
 
 -- Cells, visible columns and widths depend only on the rows (re-read every 0.5s), the style, the text
 -- scale and the window origin, so they are built when one of those changes, not every frame.
-local FIXED_TEXT = { MB = 'III', Def = 'Amin+' }; -- widest text those cells can show
+local FIXED_TEXT = { Def = 'Amin+' }; -- widest text those cells can show
 local widthUnit, widthMax = nil, {};
 local function build_grid(x0)
     local ccols = columns('CycleOrder', gchud.CycleOrder);
@@ -666,7 +642,11 @@ local function build_grid(x0)
                 c.col = COL_HOXNE; -- /hoxne on: shown on the wpn cell, so the HUD doesn't widen
                 c.tip = c.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
             end
-            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
+            if (k == 'NukeSet') and (c ~= nil) and (part(row, 'Burst') == true) then
+                c.text = c.text .. '*'; -- /burst on: Burst set on every nuke (the column leaves room for it)
+                c.tip = c.tip .. '  |  Burst set: every nuke (/burst)';
+            end
+            if (c ~= nil) and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- any box having it, set or not: no width change when set; WsSet/Hoxne colours
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};

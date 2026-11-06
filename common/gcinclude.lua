@@ -89,18 +89,10 @@
 		KeepWeaponsFor = T{ -- spells starting with Spells keep main/sub/range while any Worn item is in main or sub
 			{ Spells = T{'Cure', 'Cura'}, Worn = T{'Daybreak', 'Bunzi\'s Rod'} },
 		};
-		AutoFood = false; -- default state of the AutoFood toggle on load
-		AutoFoodItems = T{'Grape Daifuku +1', 'Grape Daifuku'}; -- eaten in this order, a job can override with gcinclude.AutoFood
 		PackerItems = {}; -- kept in inventory on every job: { ['Echo Drops'] = 'stack', ['Holy Water'] = 12 }; a job adds its own with gcinclude.Packer (/packer)
-		PackerFood = true; -- the packer also keeps a stack of the job's first AutoFood item
-		AutoRevitalizer = true; -- master switch for AutoUseItems below, /revit off to stop
-		AutoUseItems = T{ -- use one of these the moment it lands in your bags in a matching zone
-			{ Zone = 'Ghoyu', Item = 'Revitalizer' },
-		};
+		Food = T{'Grape Daifuku +1'}; -- /packer keeps a stack of each; char.lua Food (this character) or gcinclude.Food (this job) replaces it; T{} = none
 		EnchantWindow = 12; -- fallback wait when the item resource has no equip delay
 		EnchantDelays = T{}; -- per-item override in seconds, e.g. T{ ['Reraise Earring'] = 30 }
-		AutoHolyWater = true; -- use a Holy Water the moment you are Doomed
-		HolyWaterItem = 'Holy Water';
 		ReceivedSets = T{ -- spell or ability name (lowercase, matched as a prefix) -> set worn while it is on its way to you
 			['cure'] = 'Cure_Received',
 			['cura'] = 'Cure_Received',
@@ -130,20 +122,8 @@
 			BackOnCures = false, -- also the back on Cure/Cura/Curaga (your cure-potency back may be worth more)
 			Keep = T{'Oneiros Rope'}, -- items that are never displaced by the picks above
 		};
-		AutoSoda = false; -- /autosoda: keep Regain up with SodaItem
-		SodaItem = 'Frontier Soda';
-		ConsumableMaxTries = 2; -- AutoSoda disarms after this many tries without Regain showing up
-		AutoNuke = false; -- /automb on load: cast into live skillchains on your target or a mob your party is engaged on (RDM/BLM/SCH/GEO). Sync's logic.
-		MBCasts = 1; -- bursts per chain (sync: count)
-		MBRotate = false; -- spread bursts across the chain's elements (sync: rotate)
-		MBMinMP = 0; -- hold fire below this MP (sync: mp)
 		MBWindow = 10; -- magic burst window in seconds from the skillchain (BG: 10); another WS on the mob ends it
-		-- /autonuke casts the chain element's single-target nuke (Fire, Blizzard, Aero, Stone, Thunder,
-		-- Water) at this tier: 'I' 'II' 'III' 'IV' 'V' (old names: 'Low' = I, 'Mid' = III, 'High' = V). /mbtier changes it in game.
-		-- Light/Dark have no tiered nuke: SCH falls back to Luminohelix/Noctohelix. Per job: gcinclude.MBTier = 'V'.
-		MBTier = 'III';
-		MBFallback = true; -- tier not castable / on recast / short MP: try the next tier down (V > IV > III > II > I)
-		MBSkills = T{'Elemental Magic'}; -- skills /automb dresses; add 'Dark Magic' etc. as you like
+		MBSkills = T{'Elemental Magic'}; -- spells of these skills wear Burst when they land in a live skillchain; add 'Dark Magic' etc. as you like
 		ElementSkills = T{'Elemental Magic','Blue Magic'}; -- spell skills that get obi/Orpheus/element ring
 		-- Elemental WS and their element (BG-Wiki Category:Elemental Weapon Skill). Starburst/Sunburst
 		-- (Light or Dark), Spirits Within and Atonement (breath damage) are left out on purpose.
@@ -169,7 +149,7 @@
 		-- Selindrile's F-key layout. Bound on load, unbound on unload; T{} for none. A command starting with / is bound
 		-- as is (the reload key). Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
 		Keybinds = T{ {'F7','wm'}, {'+F7','wm default'}, {'F9','mmode'}, {'^F9','tankset'}, {'+F9','rangedset'}, {'!F9','wsset'},
-			{'F10','def'}, {'!F10','kite'}, {'@F10','hoxne'}, {'+F11','nukeset'}, {'!F11','automb'}, {'+F12','idleset'},
+			{'F10','def'}, {'!F10','kite'}, {'@F10','hoxne'}, {'+F11','nukeset'}, {'!F11','burst'}, {'+F12','idleset'},
 			{'!F12','def off'}, {'^@!F12','/lac reload'} };
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
 		HUDOwners = T{}; -- your main(s), e.g. T{'YourMain'}: open the HUD with every box on load; on other boxes /gchud shows only their own line; T{} = every box sees all
@@ -183,7 +163,7 @@
 		HUDStyle = 'compact'; -- HUD look: 'compact' (tight) or 'large' (bigger text, more spacing, full names); /gchud large|compact, saved per character
 		HUDScaleLarge = 1.1; -- HUD text size in the large style
 		HUDAbbr = {}; -- HUD short value overrides, e.g. { ['Carnwenhan'] = 'Carn' }; auto-shortened otherwise
-		HUDLabels = {}; -- HUD column glyph overrides, e.g. { Main = 'mn', AutoSoda = 'so' }
+		HUDLabels = {}; -- HUD column glyph overrides, e.g. { Main = 'mn', NukeSet = 'nk' }
 		Validate = true; -- cancel spells/abilities/WS that would fail: KO, sleep/stun/petrify/terror/charm, mute, silence, recast, MP, stratagems, Waltz TP, amnesia
 		ValidateMP = true; -- the MP part; gear "MP cost -%" isn't counted, so turn off if it stops casts that would go off
 		WaltzTPCut = 0; -- total "Waltz TP cost" reduction on your Waltz gear, in TP
@@ -212,8 +192,8 @@
 		gcinclude.Err('HUD disabled: gchud.lua failed to load.');
 	end
 
-	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','automb','autonuke','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
-	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','autofood','autosoda','revit','holywater','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','mbmode','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset','mbtier',
+	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
+	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','gctemps','gcgear','idleset','rangedset'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
@@ -277,23 +257,6 @@
 		return nextOne[2];
 	end
 
-	-- /mbtier: the /automb nuke tier, I to V. Accepts 1-5, i-v, and the old low (I) / mid (III) / high (V).
-	gcinclude.MBTiers = {'I', 'II', 'III', 'IV', 'V'};
-	gcinclude.MBTierAlias = { ['1'] = 'I', i = 'I', low = 'I', l = 'I', ['2'] = 'II', ii = 'II', ['3'] = 'III', iii = 'III',
-		mid = 'III', m = 'III', ['4'] = 'IV', iv = 'IV', ['5'] = 'V', v = 'V', high = 'V', hi = 'V', h = 'V' };
-	gcinclude.MBTierNum = { I = 1, II = 2, III = 3, IV = 4, V = 5 };
-	function gcinclude.SetMBTier(v, quiet)
-		local t = gcinclude.MBTierAlias[string.lower(tostring(v or ''))];
-		if (t == nil) then
-			if not quiet then gcinclude.Err('/mbtier 1-5 (tier I to V)') end
-			return;
-		end
-		gcdisplay.SetCycle('MBTier', t);
-	end
-	function gcinclude.MBTierText()
-		return 'tier ' .. tostring(gcdisplay.GetCycle('MBTier'));
-	end
-
 	-- Toggle commands: 'on' or 'off' sets it, no argument flips it.
 	function gcinclude.FlipToggle(name, arg)
 		local a = string.lower(tostring(arg or ''));
@@ -301,18 +264,6 @@
 		elseif (a == 'off') then gcdisplay.SetToggle(name, false)
 		else gcdisplay.AdvanceToggle(name) end
 		return gcdisplay.GetToggle(name);
-	end
-
-	-- /automb (same: /autonuke, /mbmode): this box casts into live skillchains by itself, on/off; /mbtier picks the
-	-- tier. The Burst set needs no switch: a nuke landing in a live skillchain of its element always wears it.
-	function gcinclude.AutoMBCommand(arg)
-		local job = gData.GetPlayer().MainJob;
-		if not T{'RDM','BLM','SCH','GEO'}:contains(job) then return 'not used on ' .. tostring(job) end
-		local a = string.lower(tostring(arg or ''));
-		local on = (a == 'on') or ((a ~= 'off') and (gcdisplay.GetToggle('AutoNuke') ~= true));
-		gcdisplay.SetToggle('AutoNuke', on);
-		if (gcauto ~= nil) and (gcauto.ResetNuke ~= nil) then gcauto.ResetNuke() end
-		return on and ('on, ' .. gcinclude.MBTierText()) or 'off';
 	end
 
 	function gcinclude.Message(toggle, status)
@@ -378,13 +329,9 @@ function gcinclude.SetVariables()
     gcauto.Bind(gcinclude, gcdisplay);
     gcaction.Bind(gcinclude);
     if (gchud ~= nil) then gchud.Bind(gcinclude, gcdisplay) end
-    gcauto.CreateToggles();
     if (mJob == 'RDM') or (mJob == 'BLM') or (mJob == 'SCH') or (mJob == 'GEO') then
         gcdisplay.CreateToggle('Burst', false); -- /burst: Burst set on every nuke, not only on live skillchains
-        gcdisplay.CreateToggle('AutoNuke', gcinclude.settings.AutoNuke == true); -- /automb: cast into live skillchains
         gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM/GEO: 'OccultAcumen')
-        gcdisplay.CreateCycle('MBTier', gcinclude.MBTiers); -- /mbtier: I to V
-        gcinclude.SetMBTier(gcinclude.MBTier or gcinclude.settings.MBTier or 'III', true);
         if (mJob == 'BLM') or (mJob == 'SCH') then
             gcdisplay.CreateCycle('Weapon', {[1] = 'Club', [2] = 'Staff'});
             gcdisplay.CreateCycle('Element', {[1] = 'Thunder', [2] = 'Blizzard', [3] = 'Fire', [4] = 'Stone', [5] = 'Aero', [6] = 'Water', [7] = 'Light', [8] = 'Dark'});
@@ -447,8 +394,6 @@ end
 			end
 			toggle = 'Spell Interrupt Set';
 			status = gcdisplay.GetToggle('SIR');
-		elseif (args[1] == 'mbmode') or (args[1] == 'automb') or (args[1] == 'autonuke') then
-			toggle, status = 'Auto MB', gcinclude.AutoMBCommand(args[2]);
 		elseif (args[1] == 'def') then
 			toggle, status = 'Defense', gcinclude.CycleDefense(args[2]);
 			gcinclude.CheckAminonLock();
@@ -485,8 +430,6 @@ end
 			gcinclude.WeaponCommand(cname, args);
 			toggle = cname;
 			status = gcdisplay.GetCycle(cname);
-		elseif (args[1] == 'autofood') or (args[1] == 'autosoda') or (args[1] == 'revit') or (args[1] == 'holywater') then
-			gcauto.HandleCommand(args);
 		elseif (args[1] == 'hoxne') then
 			if (args[2] ~= nil) and (string.lower(args[2]) == 'use') then
 				gcinclude.SetWeaponCycle('Hoxne', 'Locked', true);
@@ -592,14 +535,6 @@ end
 				gcinclude.FlipToggle('Burst', args[2]);
 				toggle = 'Burst set on every nuke';
 				status = gcdisplay.GetToggle('Burst');
-			elseif (args[1] == 'mbtier') then
-				if (args[2] ~= nil) then
-					gcinclude.SetMBTier(args[2]);
-				else
-					gcdisplay.AdvanceCycle('MBTier');
-				end
-				toggle = 'Auto MB tier';
-				status = gcinclude.MBTierText();
 			end
 			if (player.MainJob == 'BLM') or (player.MainJob == 'SCH') then
 				if (args[1] == 'weapon') then
@@ -771,10 +706,10 @@ end
 	-- box reporting to the HUD folder.
 	gcinclude.ModeNames = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'WsSet', 'wsset'}, {'Main', 'main'}, {'Sub', 'sub'},
 		{'Range', 'rng'}, {'Ammo', 'ammo'}, {'NukeSet', 'nuke'}, {'Element', 'elem'}, {'TankSet', 'tank'}, {'PupMode', 'pup'},
-		{'Weapon', 'weapon'}, {'MBTier', 'mb tier'}, {'Hoxne', 'hoxne'}, {'IdleSet', 'idle'}, {'RangedSet', 'ranged'} };
+		{'Weapon', 'weapon'}, {'Hoxne', 'hoxne'}, {'IdleSet', 'idle'}, {'RangedSet', 'ranged'} };
 	gcinclude.ToggleNames = { DTset = 'DT', MDTset = 'MDT', Aminon = 'Aminon', SIR = 'SIR', TH = 'TH', Kite = 'Kite',
-		AutoFood = 'Food', AutoSoda = 'Soda', PROC = 'PROC', String = 'Harp', SongLock = 'Song lock', Death = 'Death',
-		Burst = 'Burst', AutoNuke = 'Auto MB' };
+		PROC = 'PROC', String = 'Harp', SongLock = 'Song lock', Death = 'Death',
+		Burst = 'Burst' };
 	function gcinclude.ModesLine(cycles, toggles)
 		local parts = {};
 		for _, m in ipairs(gcinclude.ModeNames) do
@@ -2222,7 +2157,7 @@ end
 	end
 
 	-- Packer: keeps items in inventory. settings.PackerItems (every character), char.lua's Packer (this character) and
-	-- gcinclude.Packer (this job), each adding to and winning over the one before (false drops one), list item = count or 'stack'; PackerFood adds a stack of the job's first AutoFood item. On job load
+	-- gcinclude.Packer (this job), each adding to and winning over the one before (false drops one), list item = count or 'stack'; plus a stack of each Food (gcinclude.Food, else char.lua's, else the setting). On job load
 	-- and /packer, what inventory lacks is fetched with Thorny's Bellhop plugin (/bh get "item" n, from any bag it can
 	-- reach); a few seconds later anything still short is named. Ashita only.
 	local function invCount(id)
@@ -2245,10 +2180,10 @@ end
 		for name, n in pairs(gcinclude.settings.PackerItems or {}) do add(name, n) end
 		for name, n in pairs(gcinclude.CharPacker or {}) do add(name, n) end -- char.lua
 		for name, n in pairs(gcinclude.Packer or {}) do add(name, n) end -- the job file
-		if (gcinclude.settings.PackerFood ~= false) then
-			local food = gcinclude.AutoFood or gcinclude.CharFood or gcinclude.settings.AutoFoodItems;
-			if (type(food) == 'string') then food = { food } end
-			if (type(food) == 'table') and (type(food[1]) == 'string') and (want[string.lower(food[1])] == nil) then add(food[1], 'stack') end
+		local food = gcinclude.Food or gcinclude.CharFood or gcinclude.settings.Food;
+		if (type(food) == 'string') then food = { food } end
+		for _, f in ipairs((type(food) == 'table') and food or {}) do
+			if (type(f) == 'string') and (want[string.lower(f)] == nil) then add(f, 'stack') end
 		end
 		local list, res = {}, AshitaCore:GetResourceManager();
 		for _, k in ipairs(order) do
@@ -3112,7 +3047,6 @@ end
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
 			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /mmode or /meleeset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
-			'auto   : /autofood [on|off], /autosoda [on|off], /revit [on|off], /holywater [on|off]',
 			'hud    : /gchud [on|off|pos x y|debug]',
 			'checks : /checksets, /xiroll, /mbinfo',
 			'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
@@ -3122,9 +3056,9 @@ end
 			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N]',
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
-			'nuke   : Burst set is automatic on live skillchains; /automb [on|off] = cast bursts by itself; /mbtier 1-5 = its tier I to V (no word: next); /burst = Burst set on every nuke',
+			'nuke   : Burst set is automatic on a nuke landing in a live skillchain; /burst = Burst set on every nuke (HUD: * on the nuke cell)',
 			'keys   : F7 wm, Shift+F7 wm default, F9 mmode, Ctrl+F9 tankset, Shift+F9 rangedset, Alt+F9 wsset, F10 def, Alt+F10 kite,',
-			'         Win+F10 hoxne, Shift+F11 nukeset, Alt+F11 automb, Shift+F12 idleset, Alt+F12 def off, Ctrl+Win+Alt+F12 reload',
+			'         Win+F10 hoxne, Shift+F11 nukeset, Alt+F11 burst, Shift+F12 idleset, Alt+F12 def off, Ctrl+Win+Alt+F12 reload',
 			'         /gckey <key> <command or /chat command>, e.g. /gckey ^F1 /ma "Cure IV" <stpc>',
 			'idle   : /idleset [default|refresh|regen|regain] (Idle_<mode> over Idle while idle); /rangedset [default|acc] (COR RNG PLD: Midshot_Acc)',
 			'every box: /mss /<command> (Multisend), one box: /ms sendto <name> /<command>',
@@ -4471,8 +4405,8 @@ end
 	end
 
 	-- This character, every job: char.lua in the character's folder (Ashita <Name>_<id>/, Windower data/goomswap/<Name>/),
-	-- when there. It returns { AutoFood = {...}, Packer = {...}, settings = { HUDOwners = T{...}, ... } }; the job file runs
-	-- after it, so gcinclude.AutoFood / gcinclude.Packer / gcinclude.settings.X there change it for that job.
+	-- when there. It returns { Food = {...}, Packer = {...}, settings = { HUDOwners = T{...}, ... } }; the job file runs
+	-- after it, so gcinclude.Food / gcinclude.Packer / gcinclude.settings.X there change it for that job.
 	local function charFile()
 		if (windower ~= nil) then
 			local p = windower.ffxi.get_player();
@@ -4484,7 +4418,7 @@ end
 	end
 	local okChar, char = pcall(charFile);
 	if okChar and (type(char) == 'table') then
-		gcinclude.CharFood = char.AutoFood;
+		gcinclude.CharFood = char.Food;
 		gcinclude.CharPacker = char.Packer;
 		if (type(char.settings) == 'table') then
 			for k, v in pairs(char.settings) do gcinclude.settings[k] = v end
