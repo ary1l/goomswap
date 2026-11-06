@@ -88,6 +88,7 @@ first), then puts each set into the job's template under the template's own name
 |---|---|
 | `sets.idle`, `.Refresh`, `.Regen`, `.Regain`, `sets.resting`, `sets.Kiting`, `sets.TreasureHunter` | `Idle`, `Idle_Refresh`, `Idle_Regen`, `Idle_Regain` (`/idleset`), `Resting`, `Movement`, `TH` |
 | `sets.midcast.RA`, `.Acc` | `Midshot`, `Midshot_Acc` (`/rangedset`) |
+| `sets.midcast['Elemental Magic'].OccultAcumen` | `OccultAcumen` (`/nukeset oa`) |
 | `sets.engaged`, `.Acc` (any `OffenseMode`) | `Tp_Default`, `Tp_Acc`; `OffenseMode` becomes the `/mmode` list |
 | `sets.defense.PDT`, `.MDT` (else `.MEVA`) | `Dt`, `mdt` |
 | `sets.precast.FC`, `FC.Cure`, `FC['Enhancing Magic']` | `Precast`, `Cure_Precast`, `Enhancing_Precast` |
@@ -109,7 +110,7 @@ become that job's `Keybinds`, added in `OnLoad` on top of GoomSwap's keys (Keys,
 | `gs c cycle Weapons` / `weapons Default` / `weapons <name>` | `wm` / `wm default` / `wm <name>` |
 | `cycle OffenseMode` `IdleMode` `WeaponskillMode` `treasuremode`, `toggle Kiting` `Capacity` | `mmode` `idleset` `wsset` `th`, `kite` `capacity` |
 | `cycle HybridMode` (PLD RUN), `RangedMode` (COR RNG PLD) | `tankset`, `rangedset` |
-| `cycle CastingMode` (BLM RDM SCH GEO WHM; else `sir` when it has SIRD), `MagicBurstMode`, `ElementalMode` (BLM SCH) | `nukeset`, `burst`, `elecycle` |
+| `cycle CastingMode` (BLM RDM SCH GEO WHM DRK; else `sir` when it has SIRD), `MagicBurstMode`, `ElementalMode` (BLM SCH) | `nukeset`, `burst`, `elecycle` |
 | `gs reload` | `/lac reload` (Windower: `gs reload`) |
 | Defense keys (`set DefenseMode ...`, `cycle PhysicalDefenseMode`...) | not added: `/def` (F10) and `/def off` (Alt+F12) cover them |
 | Same key and command as a GoomSwap key (F7 `Weapons`, F9 `OffenseMode`...) | not added: already there |
@@ -139,7 +140,7 @@ return { settings = { Messages = true, HUDOwners = T{'YourMain'}, LockstyleSet =
 | `WScheck` `WSdistance` | `true`, `5` | the WS range check; `/wsdistance` in game |
 | `MoonshadeTP` | `1750` | when Moonshade Earring goes on; `0` = never touched |
 | `Validate` `ValidateMP` | `true` | `false` to stop GoomSwap cancelling actions that would fail |
-| `DisplayBar` | `false` | `true`: one-line status bar; `/gcbar` |
+| `DisplayBar` | `false` | `true`: one-line status bar (job, Atk/Def, modes, toggles); `/gcbar` |
 
 
 ## First steps
@@ -225,7 +226,7 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 **Magic**
 | Command | Does |
 |---|---|
-| `/nukeset [power\|macc\|oa]` | Nuke sets (RDM GEO: `oa` = OccultAcumen) |
+| `/nukeset [power\|macc\|oa]` | Nuke sets; `oa` = `OccultAcumen` set over the nuke (RDM GEO BLM SCH; DRK: `power` `oa`) |
 | `/burst` | Burst set on every nuke, not only live skillchains |
 | `/mbinfo` | Last skillchain seen |
 | `/gcaspir` `/gcdrain` | Best castable tier on `<t>` |
@@ -258,7 +259,7 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 | Command | Does |
 |---|---|
 | `/gchud [on\|off\|large\|compact\|pos X Y\|debug]` | The multibox HUD (see HUD below) |
-| `/gcbar [on\|off\|pos X Y]` | One-line status bar |
+| `/gcbar [on\|off\|pos X Y]` | One-line status bar: job, Atk/Def, then each mode (`wpn` `melee` `nuke` `idle`...; dim = still its default, `-` = none) and the toggles (green = on). Fixed width; drag to move |
 | `/gcmodes [all]` | This box's modes and toggles in chat; `all`: every box |
 | `/checksets` | Empty sets, bad item names, items in the wrong ear/ring: Sortie earrings and any item whose text says 'Right ear:' go in Ear2 (right), 'Left ear:' in Ear1 |
 | `/gcgear [JOB]` | Every item you own that the job can wear (all bags), with level, augments and stats, into `gear_<JOB>.txt` in your character folder (Ashita) |

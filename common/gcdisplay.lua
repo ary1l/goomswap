@@ -2,6 +2,7 @@ local gcdisplay = {};
 
 local imgui = require('imgui');
 local cfg = nil;
+local inc = nil; -- gcinclude: the bar's mode names and labels
 local barPlaced = false;
 local barSavedX, barSavedY = nil, nil;
 
@@ -15,8 +16,7 @@ local MainLV = 0;
 local SubLV = 0;
 local Main = 'FOO';
 local Sub = 'BAR';
-local headText = '';
-local toggleKeys, cycleKeys = nil, nil; -- sorted names for the bar, rebuilt when a toggle or cycle is added
+local headText, statText = '', '';
 
 function gcdisplay.AdvanceCycle(name)
 	local ctable = Cycles[name];
@@ -68,11 +68,11 @@ function gcdisplay.Update()
     SubLV = player:GetSubJobLevel();
     Main = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", MID) or 'NON';
     Sub = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", SID) or 'NON';
-    headText = string.format('%d%s/%d%s  Atk:%d  Def:%d', MainLV, Main, SubLV, Sub, Attk, Def);
+    headText = string.format('%s%d/%s%d', Main, MainLV, Sub, SubLV);
+    statText = string.format('Atk %d  Def %d', Attk, Def);
 end
 
 function gcdisplay.CreateToggle(name, default)
-	if (Toggles[name] == nil) then toggleKeys = nil end
 	Toggles[name] = default;
 end
 
@@ -102,7 +102,6 @@ function gcdisplay.CreateCycle(name, values)
 		Index = 1,
 		Array = values
 	};
-	if (Cycles[name] == nil) then cycleKeys = nil end
 	Cycles[name] = newCycle;
 end
 
@@ -120,7 +119,6 @@ function gcdisplay.ClearAll()
 	Cycles = {};
 	DefToggles = {};
 	DefCycles = {};
-	toggleKeys, cycleKeys = nil, nil;
 end
 
 -- Snapshot of every toggle and cycle right after the job loads; the HUD hides values still at it.
@@ -136,17 +134,44 @@ function gcdisplay.IsDefault(kind, name)
 	return (c ~= nil) and (DefCycles[name] == c.Index);
 end
 
-local COL_ON = { 0.35, 0.95, 0.45, 1.0 };
-local COL_OFF = { 0.95, 0.35, 0.35, 1.0 };
+-- Bar colours: as the HUD's (labels blue-grey, a changed value gold, one still at its load default dim gold,
+-- a toggle that's on green, off grey).
+local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
+local COL_KEY = { 0.62, 0.68, 0.80, 1.0 };
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };
+local COL_VAL_DEF = { 0.72, 0.68, 0.50, 1.0 };
+local COL_EMPTY = { 0.50, 0.50, 0.55, 1.0 };
+local COL_ON = { 0.35, 0.95, 0.45, 1.0 };
+local COL_OFF = { 0.45, 0.45, 0.50, 1.0 };
 
-local function sorted_keys(t)
-	local keys = {};
-	for k, _ in pairs(t) do keys[#keys + 1] = k end
-	table.sort(keys);
-	return keys;
+-- Modes in /gcmodes order (gcinclude.ModeNames), then toggles by their short names, each in a slot as wide as its
+-- widest value, so the bar never changes width when a mode does.
+local BAR_TOGGLES = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'Burst', 'PROC', 'String', 'SongLock', 'Death' };
+local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 'nuke'}, {'IdleSet', 'idle'} };
+
+local function textw(t)
+	local w = imgui.CalcTextSize(t);
+	if (type(w) == 'table') then w = w[1] or w.x end
+	return tonumber(w) or 0;
 end
 
+local function value_text(k, v)
+	v = tostring(v);
+	if (k == 'MeleeSet') and (v == 'Default') then return 'Base' end
+	if (v == 'None') or (v == 'Off') or (v == 'Default') then return '-' end
+	if (inc ~= nil) and (inc.ModeLabel ~= nil) then return tostring(inc.ModeLabel(k, v)) end
+	return v;
+end
+
+local widest = {}; -- [cycle name] = { arr = its value list, w = widest value }
+local function widest_of(k, c)
+	local e = widest[k];
+	if (e ~= nil) and (e.arr == c.Array) and (e.unit == textw('M')) then return e.w end
+	local w = 0;
+	for _, v in ipairs(c.Array) do w = math.max(w, textw(value_text(k, v))) end
+	widest[k] = { arr = c.Array, w = w, unit = textw('M') };
+	return w;
+end
 -- Per-character bar state (x, y, on) in config\addons\luashitacast\gcbar\<name>.txt,
 -- kept out of the hud folder so gchud never reads it.
 local function bar_path()
@@ -193,23 +218,44 @@ local function track_drag()
 end
 
 local function bar_body()
-	imgui.Text(headText);
-	toggleKeys = toggleKeys or sorted_keys(Toggles);
-	cycleKeys = cycleKeys or sorted_keys(Cycles);
-	for _, k in ipairs(toggleKeys) do
-		imgui.SameLine();
-		imgui.PushStyleColor(ImGuiCol_Text, (Toggles[k] == true) and COL_ON or COL_OFF);
-		imgui.Text(k);
+	local x0 = imgui.GetCursorPosX();
+	local gap = textw('  ');
+	local x = x0;
+	local first = true;
+	local function put(text, col, w)
+		if first then first = false else imgui.SameLine(x) end
+		imgui.PushStyleColor(ImGuiCol_Text, col);
+		imgui.Text(text);
 		imgui.PopStyleColor();
+		x = x + (w or textw(text));
 	end
-	for _, k in ipairs(cycleKeys) do
+	local function sep() x = x + gap; put('|', COL_KEY); x = x + gap end
+	put(headText, COL_HEAD, textw('WWW99/WWW99'));
+	x = x + gap;
+	put(statText, COL_KEY, textw('Atk 9999  Def 9999'));
+	sep();
+	local names = ((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES;
+	local any = false;
+	for _, m in ipairs(names) do
+		local k, label = m[1], m[2];
 		local c = Cycles[k];
-		imgui.SameLine();
-		imgui.PushStyleColor(ImGuiCol_Text, COL_VAL);
-		local v = c.Array[c.Index];
-		if (k == 'MeleeSet') and (v == 'Default') then v = 'Base' end -- the melee mode Default reads Base
-		imgui.Text(k .. ':' .. tostring(v));
-		imgui.PopStyleColor();
+		if (c ~= nil) then
+			if any then x = x + gap end
+			any = true;
+			put(label, COL_KEY);
+			x = x + textw(' ');
+			local v = value_text(k, c.Array[c.Index]);
+			local col = (v == '-') and COL_EMPTY or (gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL);
+			put(v, col, widest_of(k, c));
+		end
+	end
+	local tnames = (inc ~= nil) and inc.ToggleNames or {};
+	local shown = false;
+	for _, k in ipairs(BAR_TOGGLES) do
+		if (Toggles[k] ~= nil) then
+			if not shown then sep(); shown = true else x = x + textw(' ') end
+			put(tnames[k] or k, (Toggles[k] == true) and COL_ON or COL_OFF);
+		end
 	end
 	track_drag();
 end
@@ -222,7 +268,8 @@ local function render_bar()
 	end
 	local flags = bit.bor(ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoFocusOnAppearing,
 		ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
-	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 4, 2 });
+	if (imgui.SetNextWindowBgAlpha ~= nil) then imgui.SetNextWindowBgAlpha(cfg.HUDAlpha or 0.70) end -- as the HUD
+	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 6, 3 });
 	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 6, 1 });
 	local ok, err = true, nil;
 	if imgui.Begin('GC##gcdisplay_bar', true, flags) then
@@ -255,8 +302,10 @@ function gcdisplay.Unload()
 	ashita.events.unregister('d3d_present', 'gcdisplay_bar');
 end
 
-function gcdisplay.Initialize(settings)
+function gcdisplay.Initialize(settings, include)
 	cfg = settings;
+	inc = include;
+	widest = {};
 	barPlaced = false;
 	pcall(bar_load);
 	gcdisplay.Update();

@@ -182,6 +182,8 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
+    OccultAcumen = { -- /nukeset oa: Occult Acumen / Store TP pieces, over Elemental Magic (TP from nukes)
+    },
     ['Drain'] = { -- all tiers
         Neck = 'Erra Pendant',
         Ear1 = 'Crep. Earring',
@@ -283,6 +285,7 @@ profile.OnLoad = function()
     gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None'}; -- e.g. {'None', 'Example'} with a Weapon_Example set
     gcinclude.DefaultWeapons = 'None';
+    gcinclude.NukeModes = {'Power', 'OccultAcumen'}; -- /nukeset oa: OccultAcumen set on nukes (Power = your Elemental Magic set alone)
     gcinclude.Initialize();
 end
 
@@ -333,6 +336,7 @@ profile.HandleMidcast = function()
     gFunc.EquipSet(sets.Midcast);
     ByName(spell.Skill);
     if not ByName(spell.Name) then ByName(Family(spell.Name)) end
+    if (spell.Skill == 'Elemental Magic') and (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa
     gcinclude.CheckTH();
 end
 

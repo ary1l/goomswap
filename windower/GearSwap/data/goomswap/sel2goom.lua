@@ -332,6 +332,7 @@ local function mapper(ctx)
                 if generic then return b end
                 return nil;
             end
+            if (n == 3) and (c == 'OccultAcumen') and (b == 'Elemental Magic') and has('OccultAcumen') then return 'OccultAcumen' end -- /nukeset oa
             if (n == 3) and (c == 'Resistant') then
                 local base = has(b) and b or first(MID_TRY[b]);
                 if (base ~= nil) and has(base .. 'ACC') then return base .. 'ACC' end
@@ -448,7 +449,7 @@ local SEL_CMD = {
     ['toggle capacity'] = 'capacity', ['cycle treasuremode'] = 'th',
     ['cycle hybridmode'] = { PLD = 'tankset', RUN = 'tankset' },
     ['cycle rangedmode'] = { COR = 'rangedset', RNG = 'rangedset', PLD = 'rangedset' },
-    ['cycle castingmode'] = { BLM = 'nukeset', RDM = 'nukeset', SCH = 'nukeset', GEO = 'nukeset', WHM = 'nukeset' },
+    ['cycle castingmode'] = { BLM = 'nukeset', RDM = 'nukeset', SCH = 'nukeset', GEO = 'nukeset', WHM = 'nukeset', DRK = 'nukeset' },
     ['cycle magicburstmode'] = { BLM = 'burst', RDM = 'burst', SCH = 'burst', GEO = 'burst' },
     ['cycle elementalmode'] = { BLM = 'elecycle', SCH = 'elecycle' },
 };
