@@ -331,7 +331,7 @@ function gcinclude.SetVariables()
     if (gchud ~= nil) then gchud.Bind(gcinclude, gcdisplay) end
     if (mJob == 'RDM') or (mJob == 'BLM') or (mJob == 'SCH') or (mJob == 'GEO') then
         gcdisplay.CreateToggle('Burst', false); -- /burst: Burst set on every nuke, not only on live skillchains
-        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM/GEO: 'OccultAcumen')
+        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM GEO BLM SCH: 'OccultAcumen')
         if (mJob == 'BLM') or (mJob == 'SCH') then
             gcdisplay.CreateCycle('Weapon', {[1] = 'Club', [2] = 'Staff'});
             gcdisplay.CreateCycle('Element', {[1] = 'Thunder', [2] = 'Blizzard', [3] = 'Fire', [4] = 'Stone', [5] = 'Aero', [6] = 'Water', [7] = 'Light', [8] = 'Dark'});
@@ -341,7 +341,9 @@ function gcinclude.SetVariables()
         end
     end
     if (mJob == 'WHM') then
-        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM/GEO: 'OccultAcumen')
+        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM GEO BLM SCH: 'OccultAcumen')
+    elseif (mJob == 'DRK') then
+        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'OccultAcumen'}); -- /nukeset oa: OccultAcumen set on nukes
     end
     if (mJob == 'PLD') or (mJob == 'RUN') then
         gcdisplay.CreateCycle('TankSet', {[1] = 'None', [2] = 'Main', [3] = 'MEVA'});
@@ -561,7 +563,7 @@ end
 				end
 			end
 		end
-		if (player.MainJob == 'WHM') and (args[1] == 'nukeset') then
+		if ((player.MainJob == 'WHM') or (player.MainJob == 'DRK')) and (args[1] == 'nukeset') then
 			gcinclude.PickCycle('NukeSet', args[2]);
 			toggle = 'Nuking Gear Set';
 			status = gcdisplay.GetCycle('NukeSet');
@@ -4323,7 +4325,7 @@ end
 			return;
 		end
 
-		gcdisplay.Initialize(gcinclude.settings);
+		gcdisplay.Initialize(gcinclude.settings, gcinclude);
 		gcinclude.SetVariables();
 		gcinclude.SetAlias();
 		gcinclude.ApplyKeybinds();

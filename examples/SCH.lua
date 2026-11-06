@@ -293,6 +293,8 @@ local sets = {
         Legs = 'Agwu\'s Slops', -- 9 and 0
         Feet = 'Agwu\'s Pigaches', -- 6 and 0
     },
+    OccultAcumen = { -- /nukeset oa: Occult Acumen / Store TP pieces, over Nuke and Burst (TP from nukes)
+    },
     Helix = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
@@ -437,6 +439,7 @@ profile.Packer = {
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
+    gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
     gcinclude.Initialize();
 
     AshitaCore:GetChatManager():QueueCommand(1, '/macro book 8');
@@ -564,6 +567,7 @@ profile.HandleMidcast = function()
         if burst then
             gFunc.EquipSet(sets.Burst);
         end
+        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
         if (gcinclude.BuffCount('Klimaform') > 0) and (spell.Element == gData.GetEnvironment().WeatherElement) then
                 gFunc.EquipSet(sets.Klimaform);
         end

@@ -162,6 +162,8 @@ local sets = {
         Legs = 'Agwu\'s Slops', -- 9 and 0
         Feet = 'Ea Pigaches', -- 4 and 4
     },
+    OccultAcumen = { -- /nukeset oa: Occult Acumen / Store TP pieces, over Nuke and Burst (TP from nukes)
+    },
     Helix = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
@@ -381,6 +383,7 @@ profile.OnLoad = function()
     gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None'}; -- e.g. {'None', 'Example'} with a Weapon_Example set
     gcinclude.DefaultWeapons = 'None';
+    gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
     gcinclude.Initialize();
 end
 
@@ -438,6 +441,7 @@ profile.HandleMidcast = function()
         gFunc.EquipSet(sets.Nuke);
         if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.NukeACC) end
         if gcinclude.BurstWanted() then gFunc.EquipSet(sets.Burst) end
+        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
         if string.find(spell.Name, 'helix', 1, true) then -- e.g. Pyrohelix II
             gFunc.EquipSet(sets.Helix);
             if gcinclude.BurstWanted() then gFunc.EquipSet(sets.Burst) end
