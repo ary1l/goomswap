@@ -371,10 +371,10 @@ Every box running GoomSwap writes its modes 4x/s (`luashitacast/hud/`; Windower:
   upward: your line stays put, the other boxes stack above it (`HUDGrow = 'up'`, `'down'`, `'auto'`). Every column a
   box's job has always shows, so the width never changes.
   Name colour: blue SIR, gold TH, green kite, red PROC. Food, soda, harp, song lock, death: a chat line when they change.
-  A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal; `/idleset` and `/rangedset`
-  show in the `melee` cell's tooltip. Bright = changed, dim = default.
-- **Columns:** `wpn` weapon mode, then the slot picks `main` `sub` `rng` `ammo` (`-` none), `melee`, `nuke`, `elem`,
-  `tank`, `pup`, `w` BLM/SCH weapon, `def` (`-` none), `mb` (`-` off, else tier). Tune: `HUDAbbr`, `HUDLabels`,
+  A box on `/wsset high` shows its `melee` cell purple; `/hoxne` on, its `wpn` cell teal. Bright = changed, dim = default.
+- **Columns:** `wpn` weapon mode, then the slot picks `main` `sub` `rng` `ammo` (`-` none), `melee`, `ra` (COR RNG
+  PLD `/rangedset`: `-` or `Acc`), `idle` (`/idleset`: `-`, compact `MP` `HP` `TP` = Refresh Regen Regain), `nuke`,
+  `elem`, `tank`, `pup`, `w` BLM/SCH weapon, `def` (`-` none), `mb` (`-` off, else tier). Tune: `HUDAbbr`, `HUDLabels`,
   `HUDScale`, `HUDScaleLarge`, `HUDAlpha`.
 
 ## How sets stack

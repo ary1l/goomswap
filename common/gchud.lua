@@ -31,6 +31,8 @@ gchud.CycleCommands = {
     Hoxne = 'hoxne',
     PupMode = 'pupmode',
     MBTier = 'mbtier',
+    IdleSet = 'idleset',
+    RangedSet = 'rangedset',
 };
 
 gchud.ToggleCommands = {
@@ -50,7 +52,7 @@ gchud.ToggleCommands = {
     Death = 'death',
 };
 
-gchud.CycleOrder = { 'Weapons', 'Main', 'Sub', 'Range', 'Ammo', 'MeleeSet', 'WsSet' }; -- slot picks right after wpn
+gchud.CycleOrder = { 'Weapons', 'Main', 'Sub', 'Range', 'Ammo', 'MeleeSet', 'WsSet', 'RangedSet', 'IdleSet' }; -- slot picks right after wpn
 gchud.ToggleOrder = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'AutoFood', 'AutoSoda' };
 
 -- Column header glyphs. Override any with settings.HUDLabels = { Main = 'mn' }.
@@ -61,6 +63,7 @@ local SHORT = {
     Def = 'def', MB = 'mb', MBTier = 'tier',
     Weapons = 'wpn', MeleeSet = 'melee', WsSet = 'buff', Main = 'main', Sub = 'sub', Range = 'rng', Ammo = 'ammo',
     NukeSet = 'nuke', Element = 'elem', TankSet = 'tank', Hoxne = 'hx', PupMode = 'pup', Weapon = 'w',
+    IdleSet = 'idle', RangedSet = 'ra',
 };
 
 -- Full names, hover tooltips only.
@@ -74,7 +77,13 @@ local FULL = {
     MBTier = 'Autonuke tier (click = /mbtier: I > II > III > IV > V)', MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',
     Range = 'Range', Ammo = 'Ammo', NukeSet = 'Nuke set', Element = 'Element', TankSet = 'Tank set',
     Hoxne = 'Hoxne', PupMode = 'Pup mode', Weapon = 'Weapon',
+    IdleSet = 'Idle set (click = /idleset: Default > Refresh > Regen > Regain; compact: MP HP TP)',
+    RangedSet = 'Ranged accuracy (click = /rangedset: Default > Acc)',
 };
+
+-- Modes whose Default draws as '-' (nothing laid over), and their compact-style values.
+local DASH_DEFAULT = { IdleSet = true, RangedSet = true };
+local SHORT_VALUE = { IdleSet = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' } };
 
 -- Cycle values drawn as '-'. A cycle column empty on every box is hidden from the grid.
 local EMPTY = { none = true, off = true, unknown = true };
@@ -505,8 +514,9 @@ end
 local function cell_text(key, value)
     value = tostring(value);
     if (key == 'MeleeSet') and (value == 'Default') then value = 'Base' end
-    if (EMPTY[string.lower(value)] == true) then return '-' end
-    return (style().name == nil) and (user_abbr(value) or value) or abbr(value);
+    if (EMPTY[string.lower(value)] == true) or (DASH_DEFAULT[key] and (value == 'Default')) then return '-' end
+    local short = SHORT_VALUE[key] and SHORT_VALUE[key][value];
+    return (style().name == nil) and (user_abbr(value) or value) or (short or abbr(value));
 end
 
 -- Widest text this box's own cycle can show (every value in its list), so its column never widens later.
@@ -524,7 +534,7 @@ local function cycle_cell(row, key)
     if (raw == nil) then return nil end
     local value, def = strip_default(raw);
     if (key == 'MeleeSet') and (value == 'Default') then value = 'Base' end -- the melee mode Default reads Base
-    local empty = (EMPTY[string.lower(value)] == true);
+    local empty = (EMPTY[string.lower(value)] == true) or (DASH_DEFAULT[key] == true) and (value == 'Default');
     local cmd = gchud.CycleCommands[key];
     return {
         text = cell_text(key, value), -- large: full value
@@ -651,17 +661,12 @@ local function build_grid(x0)
                 c.col = COL_HIGHBUFF; -- /wsset high: shown on the mmode cell, so the HUD doesn't widen
                 c.tip = c.tip .. '  |  WS buff: High (/wsset)';
             end
-            if (k == 'MeleeSet') and (c ~= nil) then -- /idleset, /rangedset: in the mmode cell's tip, no columns
-                local idle, ranged = strip_default(row.Cycles.IdleSet or ''), strip_default(row.Cycles.RangedSet or '');
-                if (idle ~= '') and (idle ~= 'Default') then c.tip = c.tip .. '  |  Idle: ' .. idle .. ' (/idleset)' end
-                if (ranged ~= '') and (ranged ~= 'Default') then c.tip = c.tip .. '  |  Ranged: ' .. ranged .. ' (/rangedset)' end
-            end
             local hx = strip_default(row.Cycles.Hoxne or '');
             if (k == 'Weapons') and (c ~= nil) and (hx ~= '') and (EMPTY[string.lower(hx)] ~= true) then
                 c.col = COL_HOXNE; -- /hoxne on: shown on the wpn cell, so the HUD doesn't widen
                 c.tip = c.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
             end
-            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') and (k ~= 'IdleSet') and (k ~= 'RangedSet') then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
+            if (c ~= nil) and (k ~= 'MBTier') and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- any box having it, set or not: no width change when set; MBTier in mb cell, WsSet/Hoxne colours
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};
