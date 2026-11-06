@@ -166,12 +166,23 @@ local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off somet
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
 local COL_VAL_DEF = { 0.73, 0.67, 0.50, 1.0 }; -- cycle, default (softer than changed)
 local COL_EMPTY = { 0.36, 0.36, 0.41, 0.85 };  -- cycle at None/Off: faint
--- def cell by state; a row's left bar in its SIR/TH/Kite/PROC colour; own row tinted gold; gold rule under the headers
+-- def cell by state; a dot before the name in its SIR/TH/Kite/PROC colour; your own name gold; the header on a soft
+-- blue fade; a 1px shadow under the text (drawn shapes: Ashita only)
 local COL_DEF = { DT = { 1.00, 0.59, 0.27, 1.0 }, MDT = { 0.43, 0.71, 1.00, 1.0 }, Amin = { 0.75, 0.59, 1.00, 1.0 } };
-local COL_OWN = { 0.95, 0.85, 0.35, 0.07 };
-local COL_RULE = { 0.95, 0.85, 0.35, 0.35 };
-local COL_EDGE = { 1.0, 1.0, 1.0, 0.12 };
+local COL_OWN_NAME = { 0.95, 0.85, 0.35, 1.0 };
+local COL_FADE_TOP, COL_FADE_BOT = { 0.24, 0.27, 0.43, 0.55 }, { 0.24, 0.27, 0.43, 0.0 };
+local COL_SHADOW = { 0.0, 0.0, 0.0, 0.85 };
 local COL_HEAD = { 0.59, 0.63, 0.71, 1.0 };
+local DOTW = 10; -- px left of the names for the state dot
+
+-- This frame's draw list (Ashita); nil on Windower, whose text box draws no shapes.
+local DL, SHADOW = nil, nil;
+local function shadow(text, padx) -- the shadow goes in first, so the item's own text sits on it
+    if (DL == nil) then return end
+    local x, y = imgui.GetCursorScreenPos();
+    if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
+    if (tonumber(x) ~= nil) then DL:AddText({ x + (padx or 0) + 1, y + 1 }, SHADOW, tostring(text)) end
+end
 local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- mmode cell while /wsset high (no column of its own): purple
 local COL_HOXNE = { 0.35, 0.85, 0.85, 1.0 };    -- wpn cell while /hoxne is on (no column of its own): teal
 local COL_NAME = { 0.93, 0.93, 0.96, 1.0 };     -- white: SIR/TH/Kite/PROC colours stand out
@@ -586,6 +597,7 @@ local function group_cell(row, key)
 end
 
 local function draw_cell(row, key, c)
+    shadow(c.text, (c.cmd ~= nil) and ((style().frame or { 0 })[1] or 0) or 0);
     imgui.PushStyleColor(ImGuiCol_Text, c.col);
     local clicked = false;
     if (c.cmd == nil) then
@@ -726,7 +738,10 @@ local function body(scale)
         track_drag();
         return;
     end
-    local x0 = imgui.GetCursorPosX();
+    DL = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil;
+    if (DL ~= nil) and ((imgui.GetColorU32 == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetTextLineHeight == nil)) then DL = nil end
+    SHADOW = (DL ~= nil) and imgui.GetColorU32(COL_SHADOW) or nil;
+    local x0 = imgui.GetCursorPosX() + ((DL ~= nil) and DOTW or 0);
     local g = grid;
     if (g == nil) or (g.view ~= view) or (g.style ~= style_name()) or (g.scale ~= scale) or (g.x0 ~= x0) then
         g = build_grid(x0);
@@ -740,29 +755,31 @@ local function body(scale)
         if first then imgui.SetCursorPosX(cx) else imgui.SameLine(cx) end
     end
 
-    -- Drawn shapes (Ashita's window draw list; the Windower text box has none, so it keeps colours only).
-    local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil;
+    local dl = DL;
     local wx, wy = pair(imgui.GetWindowPos());
     local ww = pair(win_size());
     local function u32(c) return imgui.GetColorU32(c) end
-    if (dl ~= nil) and ((wx == nil) or (ww == nil) or (imgui.GetColorU32 == nil)) then dl = nil end
+    local lh = (dl ~= nil) and imgui.GetTextLineHeight() or nil;
 
-    -- header (also over the owner's one-line view)
+    -- header (also over the owner's one-line view), on a soft blue fade from the window's top
     do
+    if (dl ~= nil) and (wx ~= nil) and (ww ~= nil) then
+        local _, cy = pair(imgui.GetCursorScreenPos());
+        if (cy ~= nil) then
+            local top, bot = u32(COL_FADE_TOP), u32(COL_FADE_BOT);
+            dl:AddRectFilledMultiColor({ wx, wy }, { wx + ww, cy + lh + 2 }, top, top, bot, bot);
+        end
+    end
     imgui.PushStyleColor(ImGuiCol_Text, COL_HEAD);
     for i, col in ipairs(cols) do
         at(col, col.labelW, i == 1);
         if not col.center then imgui.SetCursorPosX(imgui.GetCursorPosX() + PADX) end
+        shadow(col.label);
         imgui.Text(col.label);
         tip(col.tip);
     end
     imgui.PopStyleColor();
-    if (dl ~= nil) then
-        local _, hy = pair(imgui.GetItemRectMax());
-        if (hy ~= nil) then dl:AddLine({ wx + 1, hy + 1 }, { wx + ww - 1, hy + 1 }, u32(COL_RULE), 1) end
     end
-    end
-    local sp = (style().spacing or { 0, 1 })[2] or 1;
 
     -- rows
     local mine = me();
@@ -777,18 +794,15 @@ local function body(scale)
                 states[#states + 1] = st[2];
             end
         end
-        if (dl ~= nil) then -- behind the row: own row tint, then the state bar
-            local _, ry = pair(imgui.GetCursorScreenPos());
-            local lh = imgui.GetTextLineHeight();
-            if (ry ~= nil) and (lh ~= nil) then
-                local top, bot = ry - sp / 2, ry + lh + sp / 2;
-                if (mine ~= nil) and (string.lower(row.Name) == string.lower(mine.Name)) then
-                    dl:AddRectFilled({ wx + 1, top }, { wx + ww - 1, bot }, u32(COL_OWN), 0);
-                end
-                if (#states > 0) then dl:AddRectFilled({ wx + 1, top }, { wx + 4, bot }, u32(ncol), 0) end
-            end
-            ncol = COL_NAME; -- the bar shows the state, the name stays white
+        local own = (mine ~= nil) and (string.lower(row.Name) == string.lower(mine.Name));
+        if (dl ~= nil) then -- the state as a dot left of the name; the name white, yours gold
+            local rx, ry = pair(imgui.GetCursorScreenPos());
+            if (rx ~= nil) and (#states > 0) then dl:AddCircleFilled({ rx - DOTW / 2 - 1, ry + lh / 2 }, 3.5, u32(ncol), 12) end
+            ncol = own and COL_OWN_NAME or COL_NAME;
+        elseif own and (#states == 0) then
+            ncol = COL_OWN_NAME; -- Windower: the name shows the state, else gold for yours
         end
+        shadow(short_name(row.Name), (style().frame or { 0 })[1] or 0);
         imgui.PushStyleColor(ImGuiCol_Text, ncol);
         local clicked = imgui.SmallButton(g.nameIds[i]);
         imgui.PopStyleColor();
@@ -895,12 +909,12 @@ local function render()
     imgui.PushStyleVar(ImGuiStyleVar_FramePadding, st.frame);
     imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, st.spacing);
     imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
-    imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
+    imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     imgui.PushStyleColor(ImGuiCol_Button, COL_CLEAR);
     imgui.PushStyleColor(ImGuiCol_ButtonHovered, COL_HOVER);
     imgui.PushStyleColor(ImGuiCol_ButtonActive, COL_HOVER);
     imgui.PushStyleColor(ImGuiCol_WindowBg, { 0.04, 0.045, 0.06, inc.settings.HUDAlpha or 0.45 });
-    imgui.PushStyleColor(ImGuiCol_Border, COL_EDGE);
+    imgui.PushStyleColor(ImGuiCol_Border, COL_CLEAR);
     local ok, err = true, nil;
     if imgui.Begin('GC##gchud', true, flags) then
         -- Owner: one line (this box) until the mouse is over the HUD, then every box (HUDHover = false: always all).
