@@ -259,7 +259,7 @@ Windower: `//sw` and `//th` are also the Stopwatch and THTracker addons' command
 | Command | Does |
 |---|---|
 | `/gchud [on\|off\|large\|compact\|pos X Y\|debug]` | The multibox HUD (see HUD below) |
-| `/gcbar [on\|off\|pos X Y]` | One-line status bar: job, Atk/Def, then each mode that's set (`wpn` `melee` `nuke` `idle`...; dim = still its default; none/off ones left out) and the job's toggles (green = on). Drag to move |
+| `/gcbar [on\|off\|pos X Y]` | One-line status bar: job, Atk/Def, then each mode that's set (`wpn` `melee` `nuke` `idle`...; dim = still its default; none/off ones left out) and the job's toggles (green = on). `idle` reads `MP` `HP` `TP`. Its width is fixed (the longest it can get), so it never grows or shrinks. Drag to move |
 | `/gcmodes [all]` | This box's modes and toggles in chat; `all`: every box |
 | `/checksets` | Empty sets, bad item names, items in the wrong ear/ring: Sortie earrings and any item whose text says 'Right ear:' go in Ear2 (right), 'Left ear:' in Ear1 |
 | `/gcgear [JOB]` | Every item you own that the job can wear (all bags), with level, augments and stats, into `gear_<JOB>.txt` in your character folder (Ashita) |
