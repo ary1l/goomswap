@@ -150,6 +150,10 @@ local BAR_TOGGLES = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'Burst',
 local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 'nuke'}, {'IdleSet', 'idle'} };
 
 local IDLE_SHORT = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' }; -- /idleset, kept small
+-- Slot picks (/mw /sw /rw /ammoset): with a weapon mode on the job they show as a + after its value ('wpn Anarchy+'),
+-- so their long names don't widen the bar; the HUD and /gcmodes name them. A job without weapon modes shows them.
+local SLOT_PICKS = { Main = true, Sub = true, Range = true, Ammo = true };
+local function folded(k) return SLOT_PICKS[k] and (Cycles.Weapons ~= nil) end
 local function textw(t)
 	local w = imgui.CalcTextSize(t);
 	if (type(w) == 'table') then w = w[1] or w.x end
@@ -216,11 +220,12 @@ local function bar_width(ITEM)
 	local w = textw(headText) + ITEM + textw('Atk 9999  Def 9999') + ITEM + textw('|');
 	for _, m in ipairs(((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES) do
 		local c = Cycles[m[1]];
-		if (c ~= nil) then
+		if (c ~= nil) and not folded(m[1]) then
 			local e = widest[m[1]];
 			if (e == nil) or (e.arr ~= c.Array) or (e.unit ~= textw('M')) then
 				local vw = 0;
 				for _, v in ipairs(c.Array) do vw = math.max(vw, textw(value_text(m[1], v))) end
+				if (m[1] == 'Weapons') then vw = vw + textw('+') end -- a slot pick's mark
 				e = { arr = c.Array, unit = textw('M'), w = vw };
 				widest[m[1]] = e;
 			end
@@ -252,10 +257,16 @@ local function bar_body()
 	put(statText, COL_KEY);
 	put('|', COL_KEY, nil, x0 + textw(headText) + ITEM + textw('Atk 9999  Def 9999') + ITEM); -- Atk/Def digits don't move the rest
 	local names = ((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES;
+	local picked = false;
+	for k in pairs(SLOT_PICKS) do
+		local c = Cycles[k];
+		if folded(k) and (c ~= nil) and (value_text(k, c.Array[c.Index]) ~= '-') then picked = true end
+	end
 	for _, m in ipairs(names) do
 		local k, label = m[1], m[2];
 		local c = Cycles[k];
-		local v = (c ~= nil) and value_text(k, c.Array[c.Index]) or '-';
+		local v = ((c ~= nil) and not folded(k)) and value_text(k, c.Array[c.Index]) or '-';
+		if (k == 'Weapons') and picked then v = (v == '-') and '+' or (v .. '+') end
 		if (v ~= '-') then
 			put(label .. ' ', COL_KEY);
 			put(v, gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL, 0);
