@@ -14,8 +14,7 @@ local expanded = {};
 local placed = false;
 
 
-local STALE = 15; -- s without an update: the box is dropped
-local STALE_DIM = 7; -- s: its row fades (a box writes at least every 3s)
+local STALE = 15;
 
 gchud.CycleCommands = {
     MeleeSet = 'mmode',
@@ -211,7 +210,6 @@ local DOTW, DOTSTEP = 10, 8; -- px left of the names for one state dot; px per e
 
 -- This frame's draw list (Ashita); nil on Windower, whose text box draws no shapes.
 local DL, SHADOW = nil, nil;
-local DIM, dimPushed = false, false; -- this row is stale (body); Windower: drawn grey, Ashita: faded (style Alpha)
 local function shadow(text, padx) -- the shadow goes in first, so the item's own text sits on it
     if (DL == nil) then return end
     local x, y = imgui.GetCursorScreenPos();
@@ -350,7 +348,6 @@ local function read_all(everyBox)
                     local cmap, corder = decode(parts[4]);
                     out[#out + 1] = {
                         Raw = table.concat(parts, '\t', 1, 4),
-                        Stamp = stamp,
                         Name = parts[1],
                         Job = parts[2],
                         Toggles = tmap, ToggleOrder = torder,
@@ -392,10 +389,7 @@ local function read_all(everyBox)
         local raw = {};
         for i, r in ipairs(out) do raw[i] = r.Raw end
         local key = table.concat(raw, '\n');
-        if (key == rowsKey) then -- same rows in the same order: only their timestamps move on
-            for i, r in ipairs(out) do if (rows[i] ~= nil) then rows[i].Stamp = r.Stamp end end
-            return;
-        end
+        if (key == rowsKey) then return end
         rowsKey = key;
     end
     rows = out;
@@ -656,7 +650,7 @@ end
 
 local function draw_cell(row, key, c)
     shadow(c.text, (c.cmd ~= nil) and ((style().frame or { 0 })[1] or 0) or 0);
-    imgui.PushStyleColor(ImGuiCol_Text, (DIM and (DL == nil)) and COL_EMPTY or c.col);
+    imgui.PushStyleColor(ImGuiCol_Text, c.col);
     local clicked = false;
     if (c.cmd == nil) then
         imgui.Text(c.text);
@@ -884,13 +878,6 @@ local function body(scale)
     for i, row in ipairs(view) do
       local own = (mine ~= nil) and (string.lower(row.Name) == mine);
       if not collapsedView or own then
-        local age = (row.Stamp ~= nil) and (os.time() - row.Stamp) or 0;
-        DIM = (not own) and (age >= STALE_DIM);
-        if DIM and (dl ~= nil) and (ImGuiStyleVar_Alpha ~= nil) then
-            imgui.PushStyleVar(ImGuiStyleVar_Alpha, 0.4);
-            dimPushed = true;
-            SHADOW = u32(COL_SHADOW); -- faded with the row
-        end
         local open = (expanded[row.Name] == true);
         imgui.SetCursorPosX(x0);
         local ncol, states, scols = COL_NAME, {}, {};
@@ -911,14 +898,12 @@ local function body(scale)
         elseif own and (#states == 0) then
             ncol = COL_OWN_NAME; -- Windower: the name shows the state, else gold for yours
         end
-        if DIM and (dl == nil) then ncol = COL_EMPTY end
         shadow(short_name(row.Name), (style().frame or { 0 })[1] or 0);
         imgui.PushStyleColor(ImGuiCol_Text, ncol);
         local clicked = imgui.SmallButton(g.nameIds[i]);
         imgui.PopStyleColor();
         if imgui.IsItemHovered() then
             tip(row.Name .. '  ' .. tostring(row.Job) .. ((#states > 0) and ('  |  on: ' .. table.concat(states, ', ')) or '')
-                .. (DIM and ('  |  no update for ' .. age .. 's') or '')
                 .. '  (click: ' .. (open and 'hide' or 'show') .. ' details)');
         end
         for _, col in ipairs(cols) do
@@ -945,7 +930,7 @@ local function body(scale)
                     else
                         for _, dc in ipairs(c.dots) do
                             imgui.SameLine(0, 0);
-                            imgui.PushStyleColor(ImGuiCol_Text, DIM and COL_EMPTY or dc);
+                            imgui.PushStyleColor(ImGuiCol_Text, dc);
                             imgui.Text('o');
                             imgui.PopStyleColor();
                         end
@@ -990,8 +975,6 @@ local function body(scale)
                 end
             end
         end
-        if dimPushed then imgui.PopStyleVar(1); dimPushed = false; SHADOW = u32(COL_SHADOW) end
-        DIM = false;
         if clicked then expanded[row.Name] = not open end
       end
     end
@@ -1077,8 +1060,6 @@ local function render()
         end
         -- any error between Begin and End must not skip PopFont/End/Pop*, or ImGui asserts every frame after
         ok, err = pcall(inner);
-        if dimPushed then imgui.PopStyleVar(1); dimPushed = false; end -- an error mid-row
-        DIM = false;
         if fontPushed then imgui.PopFont(); fontPushed = false; end
     end
     imgui.End();

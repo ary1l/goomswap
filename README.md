@@ -255,7 +255,6 @@ Bryn: `/sir` (blue dot), `/wsset high` (purple dot). Cora: you (gold name), `/th
 - **Open:** `/gchud`; `/gchud large|compact`; `/gchud pos X Y` or drag; `/gchud debug`. `HUDOwners` boxes open it
   with every box; other boxes see their own row (empty list: everyone sees all).
 - **Dots** left of the name, every one on (first nearest): blue SIR, gold TH, green Kite, red PROC. **Gold name:** you.
-- **Fade:** a box with no update for 7s fades; gone at 15s. Hover its name: how long.
 - **`wpn`:** weapon mode (main pick if the job has none). Line under it = `/mmode`: green Base, gold Acc, orange SB.
   `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Dots after: purple `/wsset high`, blue
   `/hoxne`. Hover: all of them. Ctrl+click: `/mmode`.
@@ -276,8 +275,7 @@ Bryn: `/sir` (blue dot), `/wsset high` (purple dot). Cora: you (gold name), `/th
 - The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).
 - Settings: `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDX` `HUDY` `HUDStyle` `HUDScale` `HUDScaleLarge`
   `HUDAlpha` `HUDAbbr` `HUDLabels`.
-- Windower: no shapes. The name takes the first dot's colour, `wpn` text the `/mmode` colour, its dots are a coloured
-  `o`, a stale box is grey.
+- Windower: no shapes. The name takes the first dot's colour, `wpn` text the `/mmode` colour, its dots a coloured `o`.
 
 ## Status bar
 
