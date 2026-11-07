@@ -22,8 +22,8 @@ local sets = {
         Ear2 = 'Etiolation Earring',
         Body = 'Nyame Mail',
         Hands = 'Volte Moufles',
-        Ring2 = 'Stikini Ring +1',
         Ring1 = 'Chirich Ring +1',
+        Ring2 = 'Stikini Ring +1',
         Back = 'Solemnity Cape',
         Waist = 'Gishdubar Sash',
         Legs = 'Nyame Flanchard',
@@ -49,8 +49,8 @@ local sets = {
         Head = 'Crepuscular Helm',
         Body = 'Fall. Cuirass +3',
         Hands = 'Nyame Gauntlets',
-        Ring2 = 'Stikini Ring +1',
         Ring1 = 'Chirich Ring +1',
+        Ring2 = 'Stikini Ring +1',
         Legs = { Name = 'Carmine Cuisses +1', AugPath='D' },
         Feet = 'Nyame Sollerets',
     },
@@ -94,8 +94,8 @@ local sets = {
         Ammo = { Name = 'Coiste Bodhar', AugPath='A' },
         Head = 'Flam. Zucchetto +2',
         Neck = 'Sanctity Necklace',--jse neck
-        Ear2 = 'Telos Earring',
         Ear1 = 'Cessance Earring',
+        Ear2 = 'Telos Earring',
         Body = 'Flamma Korazin +2',--Sakpata\ body
         Hands = 'Sakpata\'s Gauntlets',
         Ring1 = 'Petrov Ring',
@@ -110,8 +110,8 @@ local sets = {
     Tp_Acc = {
         Ammo = 'Seeth. Bomblet +1',
         Head = 'Blistering Sallet +1',
-        Ring2 = 'Cacoethic Ring +1',
         Ring1 = 'Chirich Ring +1',
+        Ring2 = 'Cacoethic Ring +1',
         Waist = 'Ioskeha Belt +1',
     },
 
@@ -123,16 +123,16 @@ local sets = {
         Hands = 'Leyline Gloves',
         Ear1 = 'Malignance Earring',
         Ear2 = 'Etiolation Earring',
-        Ring2 = 'Prolix Ring',
         Ring1 = 'Kishar Ring',
+        Ring2 = 'Prolix Ring',
         Legs = 'Enif Cosciales',
         Feet = 'Carmine Greaves +1',--7
     },
     Midcast = {},
     Preshot = {},
     Midshot = {
-        Ear2 = 'Telos Earring',
         Ear1 = 'Crep. Earring',
+        Ear2 = 'Telos Earring',
     },
     ['Healing Magic'] = {
         Ammo = 'Pemphredo Tathlum',
@@ -149,8 +149,8 @@ local sets = {
         Head = 'Befouled Crown',
         Body = 'Shab. Cuirass +1',
         Neck = 'Incanter\'s Torque',
-        Ear2 = 'Mendi. Earring',
         Ear1 = 'Andoaa Earring',
+        Ear2 = 'Mendi. Earring',
         Ring2 = { Name = 'Metamor. Ring +1', AugPath='A' },
     },
     ['Dark Magic'] = {
@@ -224,8 +224,8 @@ local sets = {
         Ammo = 'Knobkierrie',
         Head = { Name = 'Valorous Mask', Augment = { [1] = 'Attack+16', [2] = 'Weapon skill damage +10%', [3] = 'Accuracy+16', [4] = 'Pet: Mag. Acc.+1', [5] = 'Pet: STR+4' } },
         Neck = 'Fotia Gorget',
-        Ear2 = 'Telos Earring',
         Ear1 = 'Thrud Earring',
+        Ear2 = 'Telos Earring',
         Body = 'Hjarrandi Breast.', -- af+3
         Hands = 'Nyame Gauntlets',
         Ring1 = 'Beithir Ring',
@@ -240,8 +240,8 @@ local sets = {
         Ammo = 'Seeth. Bomblet +1',
         Head = { Name = 'Valorous Mask', Augment = { [1] = 'Attack+16', [2] = 'Weapon skill damage +10%', [3] = 'Accuracy+16', [4] = 'Pet: Mag. Acc.+1', [5] = 'Pet: STR+4' } },
         Neck = 'Sanctity Necklace',
-        Ear2 = 'Malignance Earring',
         Ear1 = 'Friomisi Earring',
+        Ear2 = 'Malignance Earring',
         Body = 'Fall. Cuirass +3',
         Hands = 'Carmine Fin. Ga. +1',
         Ring1 = 'Shiva Ring +1',
