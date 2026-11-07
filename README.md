@@ -180,6 +180,8 @@ THTracker loaded use `//subset` / `//gs c th`.
 | `/gctrace` `/gcstyle [N]` `/gcmessages` `/gchelp` | Trace / lockstyle / chat lines / help |
 | `/gckey <key> <cmd>` | Bind a key |
 
+Old names still work: `/meleeset` `/melee` = `/mmode`, `/weaponset` = `/wm`.
+
 ## Keys
 
 Bound on load, removed on unload/job change.
@@ -198,7 +200,7 @@ Your own: a GoomSwap command (`wm 2`) or any chat command (`/ma "Cure IV" <stpc>
 `+` Shift, `@` Win, `#` Apps.
 
 - Now: `/gckey ^F1 /ma "Cure IV" <stpc>`.
-- One character: `char.lua` `settings = { Keybinds = { {'F7','wm'}, {'^F1','/ja "Provoke" <t>'} } }` (replaces the list).
+- One character: `char.lua` `settings = { Keybinds = { {'F7','wm'}, {'^F1','/ja "Provoke" <t>'} } }` (whole list).
 - One job: `table.insert(gcinclude.settings.Keybinds, {'^F2', '/ja "Sentinel" <me>'});` in `OnLoad`.
 
 ## Weapons
@@ -228,7 +230,7 @@ dresses. `/burst` = every nuke. `MBSkills` = skills that get it.
 
 - **Packer** (Ashita, Bellhop): `PackerItems` → `char.lua` `Packer` → `gcinclude.Packer = { ['Trump Card'] = 99 }`;
   `'stack'` = full, `false` drops. Plus a stack of each `Food`. Windower: `profile.Packer` → `//gs org`.
-- **`/gce`:** waits the item's delay (`EnchantDelays`, `EnchantWindow`), retries 5x, frees the slot after. Rings use Ring2.
+- **`/gce`:** waits the item's delay (`EnchantDelays`, `EnchantWindow`), retries 5x, then frees the slot. Rings: Ring2.
 - **Einherjar** (Ashita): reserver at the Entry Gate `/ejenter ort` trades lamps to the party; boxes accept and enter.
   `/ejexit` leaves. Windower: Valkyrie.
 - Warns at `AmmoWarn` ammo, `NinjaToolWarn` tools. Asleep under Stoneskin: `/cancel Stoneskin`.
@@ -284,7 +286,7 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 - **Job**, `Atk` and `Def` | **modes that are set** | **toggles that are on** as dots.
 - Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its.
 - Dropped within 8px of the screen's top, the bar snaps flush to it.
-- `wpn` as the HUD's: `+` slot pick, colour `/mmode`, purple dot `/wsset high`, blue dot `/hoxne`. `idle`: `MP` `HP` `TP`.
+- `wpn` as the HUD's: `+` slot pick, colour `/mmode`, purple dot `/wsset high`, blue dot `/hoxne`. `idle`: MP HP TP.
 - A job without weapon modes (WHM...) shows `melee` and `wsset` by name, only once changed.
 - Dots: DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green, Burst pink, PROC red, Harp teal, Song lock
   purple, Death red.
@@ -298,7 +300,7 @@ Later wins, slot by slot.
 1. Job file: `Idle` → `Idle_<mode>` / `Tp_Default` → `Tp_<mmode>` → buff sets → `Dt` (`/dt`) → `Movement` (`/kite`).
 2. Hoxne sets → auto `Idle_Regen` `Idle_Refresh` `Dt` → `Town`.
 3. Weapon mode → `mdt`/`Aminon` → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll.
-4. `Incapacitated` (slept, petrified, stunned, terror): Aminon, else `mdt`, else `Dt` (no weapons), then its own set. Over 1-3.
+4. `Incapacitated` (slept, petrified, stunned, terror), over 1-3: Aminon, else `mdt`, else `Dt` (no weapons), its set.
 5. `Sleeping` → `Doomed` → `Reraise` → craft/zeni/fish/rr.
 
 **Midcast:** job file → `TH` → `_Self` `_Others` `_Burst` → `Absorb` → `Buffs_Midcast` → `LightBonus` →
@@ -324,7 +326,10 @@ obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` 
   "Right ear:" item → Moonshade in Ear1, else Ear2.
 - **Grips:** a Sub that can't go with the Main is dropped.
 - **Element gear** (`ElementSkills`, ninjutsu, Quick Draw, cures, `ElementalWS`):
-  `ElementGear = T{ Obis = T{ Dark = 'Anrin Obi' }, AnyObi = 'Hachirin-no-Obi', Distance = "Orpheus's Sash", Keep = T{'Oneiros Rope'} }`.
+  ```lua
+  ElementGear = T{ Obis = T{ Dark = 'Anrin Obi' }, AnyObi = 'Hachirin-no-Obi', Distance = "Orpheus's Sash",
+      Keep = T{'Oneiros Rope'} };
+  ```
   Obi: day +10, weather +10/+25, opposite subtracts; Orpheus by distance (`OrpheusPoints`); higher wins. Helixes no obi;
   cures obi only (`gcinclude.CureObi`).
 
