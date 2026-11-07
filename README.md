@@ -281,7 +281,7 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 ![The status bar](docs/gcbar.png)
 
 - **Job**, `Atk` and `Def` | **modes that are set** | **toggles that are on** as dots.
-- Each of the 22 jobs its own colour; the main job's tints a pill behind them. Dropped within 8px of the screen's
+- Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its. Dropped within 8px of the screen's
   top, the bar snaps flush to it.
 - `wpn`: `+` = slot pick changed; tag = `/mmode` (`Acc`, `SB`); teal = `/hoxne`. `idle`: `MP` `HP` `TP`.
 - Dots: DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green, Burst pink, PROC red, Harp teal.

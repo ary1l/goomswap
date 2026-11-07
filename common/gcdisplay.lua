@@ -138,7 +138,8 @@ end
 -- own colour (DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green...) then its name.
 local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
 local COL_KEY = { 0.62, 0.68, 0.80, 1.0 };
--- Every job its own colour (picked to tell all 22 apart on the dark bar); the main job's tints a pill behind the jobs (Ashita).
+-- Every job its own colour (picked to tell all 22 apart on the dark bar). Ashita outlines the job text: the main job's
+-- half in its colour, the sub job's in its.
 local JOB_COL = {
 	WAR = { 1.00, 0.45, 0.40, 1.0 }, MNK = { 0.96, 0.70, 0.04, 1.0 }, WHM = { 0.97, 0.97, 0.97, 1.0 },
 	BLM = { 0.71, 0.39, 1.00, 1.0 }, RDM = { 1.00, 0.22, 0.61, 1.0 }, THF = { 0.53, 1.00, 0.14, 1.0 },
@@ -284,16 +285,32 @@ local function bar_body()
 	end
 	if (headText ~= '') then -- set by Update
 		local mainT, subT = Main .. tostring(MainLV or ''), Sub .. tostring(SubLV or '');
-		if (dl ~= nil) and (imgui.CalcTextSize ~= nil) then -- the pill first, so the text sits on it
-			local x, y = xy(imgui.GetCursorScreenPos());
-			local w = imgui.CalcTextSize(mainT .. '/' .. subT);
-			if (type(w) == 'table') then w = w[1] or w.x end
-			local c = job_col(Main);
-			if (x ~= nil) and (tonumber(w) ~= nil) then dl:AddRectFilled({ x - 6, y }, { x + w + 6, y + lh }, imgui.GetColorU32({ c[1], c[2], c[3], 0.22 }), 8) end
-		end
+		local x, y, split = nil, nil, nil;
+		if (dl ~= nil) then x, y = xy(imgui.GetCursorScreenPos()) end
 		put(mainT, job_col(Main));
 		put('/', COL_KEY, 0);
+		if (dl ~= nil) then
+			local s1, s2 = xy(imgui.GetItemRectMin()), xy(imgui.GetItemRectMax());
+			if (s1 ~= nil) and (s2 ~= nil) then split = (s1 + s2) / 2 end -- the outline changes colour at the '/'
+		end
 		put(subT, job_col(Sub), 0);
+		if (x ~= nil) and (y ~= nil) and (split ~= nil) then
+			local x2, y2 = xy(imgui.GetItemRectMax());
+			if (x2 ~= nil) and (y2 ~= nil) then
+				local a, b = { x - 5, y + 1 }, { x2 + 5, y2 - 1 }; -- 1px in from the bar's edge
+				local function line(c) return imgui.GetColorU32({ c[1], c[2], c[3], 0.90 }) end
+				if (dl.PushClipRect ~= nil) and (dl.PopClipRect ~= nil) then -- left half the main job's colour, right half the sub's
+					dl:PushClipRect({ a[1] - 1, a[2] - 1 }, { split, b[2] + 1 }, true);
+					dl:AddRect(a, b, line(job_col(Main)), 7, 0, 1);
+					dl:PopClipRect();
+					dl:PushClipRect({ split, a[2] - 1 }, { b[1] + 1, b[2] + 1 }, true);
+					dl:AddRect(a, b, line(job_col(Sub)), 7, 0, 1);
+					dl:PopClipRect();
+				else
+					dl:AddRect(a, b, line(job_col(Main)), 7, 0, 1);
+				end
+			end
+		end
 	else
 		put(headText, COL_HEAD);
 	end
@@ -352,7 +369,7 @@ local function render_bar()
 	end
 	local flags = bit.bor(ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoFocusOnAppearing,
 		ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
-	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 10, 0 }); -- no space above or below the text
+	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 10, 1 }); -- 1px above and below the text: room for the job outline
 	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 5, 1 });
 	imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 12); -- a capsule
 	imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
