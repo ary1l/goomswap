@@ -281,8 +281,8 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 ![The status bar](docs/gcbar.png)
 
 - **Job**, `Atk` and `Def` | **modes that are set** | **toggles that are on** as dots.
-- Jobs in their role's colour (tank blue, healer white, support green, mage purple, RNG gold, melee orange), outlined
-  in the main job's.
+- Each of the 22 jobs its own colour; the main job's tints a pill behind them. Dropped within 8px of the screen's
+  top, the bar snaps flush to it.
 - `wpn`: `+` = slot pick changed; tag = `/mmode` (`Acc`, `SB`); teal = `/hoxne`. `idle`: `MP` `HP` `TP`.
 - Dots: DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green, Burst pink, PROC red, Harp teal.
 - Grows with what it shows. Windower: `|` and coloured names, no capsule or dots.
