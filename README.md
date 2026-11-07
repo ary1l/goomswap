@@ -251,10 +251,11 @@ reads them twice a second (Ashita `luashitacast/hud/`, Windower IPC).
 Bryn: `/sir`, `/wsset high`. Cora: you, `/th`. Dain: `/mset acc`, a slot pick (`+`), `/idleset refresh` (`MP`), DT.
 Elle: `/mset sb`, `/hoxne`, `/nukeset oa` + `/burst` (`Occu*`). (Picture from before the colours below.)
 
-- **Open:** `/gchud`; `/gchud large|compact`; `/gchud pos X Y` or drag; `/gchud debug`. `HUDOwners` boxes open it
+- **Open:** `/gchud`; `/gchud large|compact` (large: bigger text, full names); `/gchud pos X Y` or drag (kept on
+  screen); `/gchud debug`. `HUDOwners` boxes open it
   with every box; other boxes see their own row (empty list: everyone sees all).
-- **Dots** left of the name, every one on (first nearest): teal SIR, gold ring TH, green Kite, red PROC. **Your row:**
-  faint band.
+- **Names** in their main job's colour, as on the bar. **Your row:** faint band.
+- **Dots** left of the name, every one on (first nearest): teal SIR, gold ring TH, green Kite, red PROC.
 - **`wpn`:** weapon mode (main pick if the job has none). Colour = `/mset`: grey-white Base, cyan Acc, magenta SB.
   `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Dots after: purple `/wsset high`, bronze
   `/hoxne`. Hover: all of them. Ctrl+click: `/mset`.
@@ -270,12 +271,14 @@ Elle: `/mset sb`, `/hoxne`, `/nukeset oa` + `/burst` (`Occu*`). (Picture from be
 
 - Click a cell: runs it on that box. Click a name: its other modes.
 - Mouse away: your row only; over: all (`HUDHover`). Opens upward in the screen's bottom half (`HUDGrow`).
-- Fixed width: every column a job has always shows. Compact: names that fit show whole (wpn 6 letters, others 5),
-  else `DP` `Max` `GH` `KC` or 4 letters (`HUDAbbr` to set your own).
+- A column shows while some box has it set (`def`: DT/MDT/Aminon on); the rest are on the detail line. Columns
+  never shrink while you play. Compact: names that fit show whole (wpn 6 letters, others 5), else `DP` `Max` `GH`
+  `KC` or 4 letters (`HUDAbbr` to set your own).
 - The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).
 - Settings: `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDX` `HUDY` `HUDStyle` `HUDScale` `HUDScaleLarge`
   `HUDAlpha` `HUDAbbr` `HUDLabels`.
-- Windower: no shapes. The name takes the first dot's colour, yours is gold; `wpn` dots are a coloured `o`.
+- Windower: no shapes. The name takes the first dot's colour, yours is gold, else the job's; `wpn` dots are a
+  coloured `o`.
 
 ## Status bar
 

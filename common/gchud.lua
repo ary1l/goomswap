@@ -204,9 +204,11 @@ local COL_EMPTY = { 0.36, 0.36, 0.41, 0.85 };  -- cycle at None/Off: faint
 local COL_DEF = { DT = { 1.00, 0.54, 0.24, 1.0 }, MDT = { 0.43, 0.53, 1.00, 1.0 }, Amin = { 0.75, 0.47, 0.85, 1.0 } }; -- orange, blue, mauve
 local COL_OWN_NAME = { 0.95, 0.85, 0.35, 1.0 }; -- Windower only (no shapes); Ashita marks your row with a band
 local COL_OWN_BAND = { 1.0, 1.0, 1.0, 0.07 };
-local COL_FADE_TOP, COL_FADE_BOT = { 0.24, 0.27, 0.43, 0.55 }, { 0.24, 0.27, 0.43, 0.0 };
+local COL_FADE_TOP, COL_FADE_BOT = { 0.24, 0.27, 0.43, 0.30 }, { 0.24, 0.27, 0.43, 0.0 };
+local COL_EDGE = { 1.0, 1.0, 1.0, 0.10 }; -- window border, as the bar's
+local COL_DIV = { 1.0, 1.0, 1.0, 0.20 };  -- section lines, as the bar's
 local COL_SHADOW = { 0.0, 0.0, 0.0, 0.85 };
-local COL_HEAD = { 0.59, 0.63, 0.71, 1.0 };
+local COL_HEAD = { 0.62, 0.68, 0.80, 1.0 }; -- column labels: the bar's label colour
 local DOTW, DOTSTEP = 10, 8; -- px left of the names for one state dot; px per extra dot (body reserves one per state a box has)
 
 -- This frame's draw list (Ashita); nil on Windower, whose text box draws no shapes.
@@ -458,11 +460,12 @@ end
 
 local savedX, savedY = nil, nil;
 
--- Two looks: 'compact' (default, tight) and 'large' (bigger text, more room, full names). /gchud large|compact,
--- saved per character with the position. settings.HUDStyle is the default; HUDScale / HUDScaleLarge the text size.
+-- Two looks, one layout: 'compact' (short names and values) and 'large' (bigger text, full names). /gchud
+-- large|compact, saved per character with the position. settings.HUDStyle is the default; HUDScale / HUDScaleLarge
+-- the text size.
 local STYLES = {
-    compact = { window = { 4, 2 }, frame = { 1, 0 }, spacing = { 4, 1 }, padx = 1, gap = 1, name = 4 },
-    large = { window = { 8, 5 }, frame = { 3, 1 }, spacing = { 6, 3 }, padx = 2, gap = 2, name = nil },
+    compact = { window = { 6, 2 }, frame = { 1, 0 }, spacing = { 4, 1 }, padx = 1, gap = 1, name = 4 },
+    large = { window = { 6, 2 }, frame = { 1, 0 }, spacing = { 4, 1 }, padx = 1, gap = 1, name = nil },
 };
 local styleRaw, styleName = {}, 'compact'; -- HUDStyle as last read, and its name (called per cell per frame)
 local function style_name()
@@ -507,7 +510,7 @@ end
 
 -- HUDX/HUDY = top left of this box's own line. A drag moves it by the window's movement (same size frames),
 -- so it works whichever way the HUD grows; saved on release.
-local lastWX, lastWY, lastWH = nil, nil, nil;
+local lastWX, lastWY, lastWH, lastWW = nil, nil, nil, nil;
 local function win_size()
     if (imgui.GetWindowSize == nil) then return nil, nil end
     return imgui.GetWindowSize();
@@ -528,7 +531,7 @@ local function track_drag()
     elseif (inc.settings.HUDX ~= savedX) or (inc.settings.HUDY ~= savedY) then
         save_pos();
     end
-    lastWX, lastWY, lastWH = x, y, h;
+    lastWX, lastWY, lastWH, lastWW = x, y, h, (pair(win_size()));
 end
 
 local function send(name, command)
@@ -561,7 +564,7 @@ end
 
 -- Grid: one header line, one line per box, columns aligned by measured text width.
 -- Cycle columns first (weapon set leads), then toggle columns. Clicking a cell drives that box.
--- Columns show while any box's job has them, set or not, so the width doesn't change; toggles are one-letter flags.
+-- A column shows while some box has it set (columns never shrink while you play); toggles are one-letter flags.
 -- DT/MDT/Aminon merge into one 'def' column (/def); SIR (a casting mode) keeps its own 'si' column; Burst is a * on the nuke cell.
 -- Clicking a name adds a detail line under it: job + that box's hidden cycles and toggles.
 local PADX = 1; -- cell padding; set from the style each frame in render()
@@ -600,17 +603,6 @@ local function cell_text(key, value)
     if (EMPTY[string.lower(value)] == true) or (DASH_DEFAULT[key] and (value == 'Default')) then return '-' end
     local short = SHORT_VALUE[key] and SHORT_VALUE[key][value];
     return (style().name == nil) and (user_abbr(value) or value) or (short or abbr(value, SLOT_PICK[key]));
-end
-
--- Widest text this box's own cycle can show (every value in its list), so its column never widens later.
-local function own_widest(key)
-    if (disp == nil) or (type(disp.GetCycleValues) ~= 'function') then return 0 end
-    local ok, list = pcall(disp.GetCycleValues, key);
-    if (not ok) or (type(list) ~= 'table') then return 0 end
-    local w = 0;
-    local extra = (key == 'NukeSet') and '*' or ''; -- /burst's mark
-    for _, v in ipairs(list) do w = math.max(w, textw(cell_text(key, v) .. extra)) end
-    return w;
 end
 
 local function cycle_cell(row, key)
@@ -726,7 +718,7 @@ local function build_grid(x0)
                 c.text = c.text .. '*'; -- /burst on: Burst set on every nuke (the column leaves room for it)
                 c.tip = c.tip .. '  |  Burst set: every nuke (/burst)';
             end
-            if (c ~= nil) and not FOLDED[k] then shown[k] = true end -- any box having it, set or not: no width change when set
+            if (c ~= nil) and (not c.empty) and not FOLDED[k] then shown[k] = true end -- a column only while some box has it set
         end
         -- wpn: the weapon mode (the main pick on a job with no modes), with the folded cycles on it
         local cc = cells[i].c;
@@ -769,12 +761,12 @@ local function build_grid(x0)
     for _, k in ipairs(ccols) do
         if shown[k] and (k ~= 'Weapons') then vis[#vis + 1] = k end
     end
-    -- def, mb and every toggle a box's job has always show (toggles as one-letter flags side by side), so turning
-    -- something on or off never changes the width.
+    -- def: only while some box has DT/MDT/Aminon on. Hidden columns are on the detail line (click a name).
     local gvis, gshown = {}, {};
     for _, k in ipairs(GROUP_ORDER) do
         for i = 1, #view do
-            if (cells[i].g[k] ~= nil) then gvis[#gvis + 1] = k; gshown[k] = true; break end
+            local c = cells[i].g[k];
+            if (c ~= nil) and (c.text ~= '-') then gvis[#gvis + 1] = k; gshown[k] = true; break end
         end
     end
     local tvis, tshown = {}, {}; -- toggles: no columns (name colour, chat lines, detail line)
@@ -785,8 +777,9 @@ local function build_grid(x0)
     for _, row in ipairs(view) do nameW = math.max(nameW, textw(short_name(row.Name)) + PADX * 2) end
     local cols = {};
     local x = x0 + nameW + gap;
-    -- Widths don't jump: mb/def take their widest possible text, every column keeps the widest it has been
-    -- (until the style or text size changes), so a value changing doesn't resize the HUD.
+    local divs = { x0 + nameW + gap / 2 }; -- thin section lines, as the bar's: after the names, before def
+    -- Each column as wide as its widest text; def its widest possible, and every column keeps the widest it has been
+    -- (until the style or text size changes), so cycling a value doesn't keep resizing the HUD.
     local unit = style_name() .. textw('M');
     if (unit ~= widthUnit) then widthUnit, widthMax = unit, {} end
     local function measure(key, kind, center)
@@ -794,7 +787,6 @@ local function build_grid(x0)
         local lw = textw(l);
         local w = lw;
         if (FIXED_TEXT[key] ~= nil) then w = math.max(w, textw(FIXED_TEXT[key])) end
-        if (kind == 'c') then w = math.max(w, own_widest(key)) end -- this box's own values: room for the longest from the start
         for i = 1, #view do
             local c = cells[i][kind][key];
             if (c ~= nil) then c.w = textw(c.text); w = math.max(w, c.w) end -- reused when the row is drawn
@@ -808,15 +800,10 @@ local function build_grid(x0)
     local ngrid = #cols;
     for _, k in ipairs(gvis) do measure(k, 'g', false) end
     for _, k in ipairs(tvis) do measure(k, 't', true) end
-    -- Every mode column (cycles, def) as wide as the widest of them, so they line up evenly; wpn its own width.
-    local uniform = 0;
-    for _, col in ipairs(cols) do
-        if (col.kind ~= 't') and (col.key ~= 'Weapons') then uniform = math.max(uniform, col.w) end
-    end
     for i, col in ipairs(cols) do
         local flag = (col.kind == 't'); -- one-letter flags sit side by side
-        if (not flag) then col.w = ((col.key == 'Weapons') and col.w or uniform) + PADX * 2 end
-        if (i == ngrid + 1) then x = x + gap end -- group gap
+        if (not flag) then col.w = col.w + PADX * 2 end
+        if (i == ngrid + 1) then divs[#divs + 1] = x; x = x + gap end -- group gap, a line in it
         if flag and (i > 1) and (cols[i - 1].kind ~= 't') then x = x + gap end -- before the flags
         col.x = x;
         x = x + col.w + (flag and 0 or gap);
@@ -826,7 +813,9 @@ local function build_grid(x0)
     for i, row in ipairs(view) do
         local short = short_name(row.Name);
         nameIds[i] = short .. '##' .. row.Name .. 'row';
-        local r = { lname = string.lower(row.Name), short = short, states = {}, scols = {}, first = nil };
+        local main = string.match(tostring(row.Job or ''), '^(%a+)');
+        local jobcol = (main ~= nil) and (type(disp.JobColor) == 'function') and disp.JobColor(main) or nil;
+        local r = { lname = string.lower(row.Name), short = short, states = {}, scols = {}, first = nil, jobcol = jobcol };
         for _, st in ipairs(NAME_STATES) do
             if (part(row, st[1]) == true) then
                 r.first = r.first or st[3];
@@ -836,7 +825,7 @@ local function build_grid(x0)
         end
         info[i] = r;
     end
-    return { view = view, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds, info = info,
+    return { view = view, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds, info = info, divs = divs,
         ccols = ccols, tcols = tcols, shown = shown, gshown = gshown, tshown = tshown };
 end
 
@@ -889,6 +878,12 @@ local function body(scale)
             dl:AddRectFilledMultiColor({ wx, wy }, { wx + ww, cy + lh + 2 }, top, top, bot, bot);
         end
     end
+    if (dl ~= nil) and (wx ~= nil) and (#cols > 0) then
+        local _, wh = pair(win_size());
+        if (wh ~= nil) then
+            for _, d in ipairs(g.divs) do dl:AddLine({ wx + d, wy + 3 }, { wx + d, wy + wh - 3 }, u32(COL_DIV), 1) end
+        end
+    end
     imgui.PushStyleColor(ImGuiCol_Text, COL_HEAD);
     for i, col in ipairs(cols) do
         at(col, col.labelW, i == 1);
@@ -911,7 +906,7 @@ local function body(scale)
         local open = (expanded[row.Name] == true);
         imgui.SetCursorPosX(x0);
         local states, scols = ri.states, ri.scols;
-        local ncol = ri.first or COL_NAME;
+        local ncol = ri.first or ri.jobcol or COL_NAME; -- Windower: the first state's colour, else the job's
         if (dl ~= nil) then -- the states as dots left of the name; the name white, your row on a faint band
             local rx, ry = pair(imgui.GetCursorScreenPos());
             if own and (not collapsedView) and (#view > 1) and (wx ~= nil) and (ww ~= nil) and (ry ~= nil) then
@@ -925,7 +920,7 @@ local function body(scale)
                     if st[4] then dl:AddCircle(at, r - 0.5, u32(st[3]), 12, 1.5) else dl:AddCircleFilled(at, r, u32(st[3]), 12) end
                 end
             end
-            ncol = COL_NAME;
+            ncol = ri.jobcol or COL_NAME; -- the main job's colour, as on the bar
         elseif own and (#states == 0) then
             ncol = COL_OWN_NAME; -- Windower: the name shows the state, else gold for yours
         end
@@ -1029,6 +1024,16 @@ local function grows_up()
     return ((inc.settings.HUDY or 40) + (homeH or 0) / 2) > (sh / 2);
 end
 
+-- Screen size (Ashita: main viewport, else IO display size); nil if unknown.
+local function screen_size()
+    local ok, w, h = pcall(function() local v = imgui.GetMainViewport().Size; return v.x, v.y end);
+    if (not ok) or (tonumber(h) == nil) then
+        ok, w, h = pcall(function() local v = imgui.GetIO().DisplaySize; return v.x, v.y end);
+    end
+    if (not ok) or (tonumber(w) == nil) or (tonumber(h) == nil) or (w <= 0) or (h <= 0) then return nil end
+    return w, h;
+end
+
 local function render()
     if not visible then return end
     local held = imgui.IsMouseDown(0);
@@ -1036,6 +1041,16 @@ local function render()
         local up = grows_up();
         if growUp and not up then placed = false end -- own line back on top, where it is now (HUDY)
         growUp = up;
+        -- Keep your own line on screen (a position saved in compact can put the taller large one past the edge).
+        -- Moves HUDX/HUDY, so it is saved like a drag.
+        local sw, sh = screen_size();
+        local w, h = lastWW, homeH or lastWH;
+        if (sw ~= nil) and (w ~= nil) and (h ~= nil) then
+            local x, y = inc.settings.HUDX or 300, inc.settings.HUDY or 40;
+            local cx = math.max(0, math.min(x, sw - w));
+            local cy = math.max(0, math.min(y, sh - h));
+            if (cx ~= x) or (cy ~= y) then inc.settings.HUDX, inc.settings.HUDY = math.floor(cx), math.floor(cy); placed = false end
+        end
     end
     if (not placed) then
         -- Always: after /gchud pos ImGui would otherwise keep the old position
@@ -1052,13 +1067,13 @@ local function render()
     imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, st.window);
     imgui.PushStyleVar(ImGuiStyleVar_FramePadding, st.frame);
     imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, st.spacing);
-    imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 6);
-    imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+    imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 10); -- as the bar: rounded, a soft 1px edge
+    imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
     imgui.PushStyleColor(ImGuiCol_Button, COL_CLEAR);
     imgui.PushStyleColor(ImGuiCol_ButtonHovered, COL_HOVER);
     imgui.PushStyleColor(ImGuiCol_ButtonActive, COL_HOVER);
     imgui.PushStyleColor(ImGuiCol_WindowBg, { 0.04, 0.045, 0.06, inc.settings.HUDAlpha or 0.45 });
-    imgui.PushStyleColor(ImGuiCol_Border, COL_CLEAR);
+    imgui.PushStyleColor(ImGuiCol_Border, COL_EDGE);
     local ok, err = true, nil;
     if imgui.Begin('GC##gchud', true, flags) then
         -- Owner: one line (this box) until the mouse is over the HUD, then every box (HUDHover = false: always all).
