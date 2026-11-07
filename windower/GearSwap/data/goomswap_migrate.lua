@@ -1,9 +1,11 @@
 -- GoomSwap: move a character from Selindrile's GearSwap to GoomSwap. Goes in Windower/addons/GearSwap/data/.
 --   //gs load goomswap_migrate
 -- For every job with a Selindrile gear file (data/<Name>/<Name>_<Job>_Gear.lua) it writes a GoomSwap job file,
--- data/goomswap/<Name>/<JOB>.lua (<JOB>.migrated.lua if you already have one), from the job's GoomSwap template
+-- data/goomswap/<Name>/<JOB>.lua, from the job's GoomSwap template
 -- (data/goomswap/examples/<JOB>.lua) with your gear in it, plus a one-line data/<Name>/<JOB>.lua that makes
 -- GearSwap load GoomSwap for that job instead of Selindrile's data/<JOB>.lua. Then //gs reload.
+-- Re-run: a <JOB>.lua an earlier run wrote is replaced (old one kept as <JOB>.lua.bak); one you wrote yourself is
+-- left alone and the new file is <JOB>.migrated.lua.
 -- Your Selindrile files are only read. Back to Selindrile for a job: delete data/<Name>/<JOB>.lua.
 
 local G = gearswap or _G;
@@ -79,13 +81,21 @@ local function migrate()
                 if (text == nil) then
                     say(167, job .. ': ' .. tostring(rep));
                 else
-                    local out = ROOT .. name .. '/' .. job .. '.lua';
-                    if exists(out) then out = ROOT .. name .. '/' .. job .. '.migrated.lua' end
+                    local out, kept = ROOT .. name .. '/' .. job .. '.lua', '';
+                    if exists(out) then
+                        local old = read(out) or '';
+                        if (string.sub(old, 1, 27) == '-- Migrated from Selindrile') then -- an earlier run wrote it: replace, keep a copy
+                            write(out .. '.bak', old);
+                            kept = ' (old one kept as ' .. job .. '.lua.bak)';
+                        else -- your own file: leave it alone
+                            out = ROOT .. name .. '/' .. job .. '.migrated.lua';
+                        end
+                    end
                     if write(out, text) then
                         done = done + 1;
                         local k = rep.keys or { added = {}, dropped = {} };
                         say(207, string.format('%s: %d sets placed, %d kept as Sel_*, %d keys added, %d keys left out -> %s', job,
-                            rep.mapped, #rep.unmapped, #k.added, #k.dropped, string.sub(out, #DATA + 1)));
+                            rep.mapped, #rep.unmapped, #k.added, #k.dropped, string.sub(out, #DATA + 1)) .. kept);
                         local stub = DATA .. name .. '/' .. job .. '.lua';
                         if (not exists(stub)) and string.match(out, '/' .. job .. '%.lua$') then
                             write(stub, '-- GoomSwap entry for ' .. job .. ' (written by goomswap_migrate). GearSwap loads this before\n'

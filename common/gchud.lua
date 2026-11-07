@@ -87,7 +87,7 @@ local EMPTY = { none = true, off = true, unknown = true };
 -- 'Bunzi's Rod' -> Bun, 'Anarchy +2' -> Ana+2, 'RostamB' -> RosB. Two of this box's choices that would match get
 -- the initial of each later word too ('Death Penalty' -> DeaP). Override any with
 -- settings.HUDAbbr = { ['Carnwenhan'] = 'Carn' } (case-insensitive).
-local abbrCache, abbrLong = {}, {};
+local abbrCache, abbrLevel = {}, {}; -- level: 0 short, 1 + later words' initials, 2 + their first 3 letters, 3 full name
 local function user_abbr(value)
     local user = inc.settings.HUDAbbr;
     if (type(user) ~= 'table') then return nil end
@@ -104,6 +104,8 @@ local function abbr(value)
     if (hit ~= nil) then return hit end
     local u = user_abbr(value);
     if (u ~= nil) then abbrCache[value] = u; return u end
+    local lvl = abbrLevel[value] or 0;
+    if (lvl >= 3) then abbrCache[value] = value; return value end
     local t = string.gsub(value, "['%.]", '');
     t = string.gsub(t, '[^%w%+]', ' ');
     t = string.gsub(t, '(%l)(%u)', '%1 %2');
@@ -115,8 +117,10 @@ local function abbr(value)
             out[1] = string.upper(string.sub(w, 1, 1)) .. string.sub(w, 2);
         elseif string.match(tok, '^%+?%d+$') then
             out[#out + 1] = tok;
-        elseif (#tok == 1) or abbrLong[value] then
+        elseif (#tok == 1) or (lvl == 1) then
             out[#out + 1] = string.upper(string.sub(tok, 1, 1));
+        elseif (lvl == 2) then
+            out[#out + 1] = string.upper(string.sub(tok, 1, 1)) .. string.sub(tok, 2, 3);
         end
     end
     hit = (#out > 0) and table.concat(out) or value;
@@ -124,35 +128,36 @@ local function abbr(value)
     return hit;
 end
 
--- Once per load: two of this box's weapon choices that shorten to the same text get the long form; still the
--- same: a warning.
+-- Once per load: two of this box's weapon choices that shorten to the same text get longer forms (the later words'
+-- initials, then their first 3 letters, then the full name) until they differ, so each reads as its own.
 local abbrChecked = false;
 local function check_abbr()
     abbrChecked = true;
     if (type(inc.WeaponCycleList) ~= 'function') then return end
-    for pass = 1, 2 do
-    for _, cname in ipairs({ 'Weapons', 'Main', 'Sub', 'Range', 'Ammo' }) do
-        local list = inc.WeaponCycleList(cname);
-        if (type(list) == 'table') then
-            local seen = {};
-            for _, v in ipairs(list) do
-                local full = (type(inc.WeaponLabel) == 'function') and inc.WeaponLabel(v) or v;
-                if (type(full) == 'string') and (EMPTY[string.lower(full)] ~= true) then
-                    local a = abbr(full);
-                    if (pass == 1) then
-                        if (seen[a] ~= nil) and (seen[a] ~= full) then abbrLong[seen[a]], abbrLong[full] = true, true end
-                        seen[a] = full;
-                    elseif (seen[a] ~= nil) and (seen[a] ~= full) then
-                        print(chat.header('GCHUD'):append(chat.error(string.format(
-                            '%s: "%s" and "%s" both show as %s. Set settings.HUDAbbr.', cname, seen[a], full, a))));
-                    else
-                        seen[a] = full;
+    for pass = 1, 3 do
+        local clash, bumped = false, {};
+        for _, cname in ipairs({ 'Weapons', 'Main', 'Sub', 'Range', 'Ammo' }) do
+            local list = inc.WeaponCycleList(cname);
+            if (type(list) == 'table') then
+                local seen = {};
+                for _, v in ipairs(list) do
+                    local full = (type(inc.WeaponLabel) == 'function') and inc.WeaponLabel(v) or v;
+                    if (type(full) == 'string') and (EMPTY[string.lower(full)] ~= true) then
+                        local a = abbr(full);
+                        if (seen[a] ~= nil) and (seen[a] ~= full) then
+                            for _, x in ipairs({ seen[a], full }) do
+                                if not bumped[x] then bumped[x] = true; abbrLevel[x] = math.min((abbrLevel[x] or 0) + 1, 3) end
+                            end
+                            clash = true;
+                        else
+                            seen[a] = full;
+                        end
                     end
                 end
             end
         end
-    end
-    abbrCache = {}; -- pass 2 and drawing see the long forms
+        abbrCache = {}; -- the next pass and drawing see the longer forms
+        if not clash then break end
     end
 end
 
@@ -1010,7 +1015,7 @@ end
 function gchud.Start()
     pcall(load_pos);
     abbrChecked = false;
-    abbrCache, abbrLong = {}, {};
+    abbrCache, abbrLevel = {}, {};
     boxCache = {};
     seenSeq = {};
     placed = false;
