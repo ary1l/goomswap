@@ -48,7 +48,7 @@ gchud.ToggleCommands = {
     Death = 'death',
 };
 
-gchud.CycleOrder = { 'Weapons', 'Main', 'Sub', 'Range', 'Ammo', 'MeleeSet', 'WsSet', 'RangedSet', 'IdleSet' }; -- slot picks right after wpn
+gchud.CycleOrder = { 'Weapons', 'Main', 'Sub', 'Range', 'Ammo', 'MeleeSet', 'WsSet', 'RangedSet', 'IdleSet' }; -- Main/Sub/Range/Ammo, MeleeSet, WsSet fold into wpn (FOLDED)
 gchud.ToggleOrder = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite' };
 
 -- Column header glyphs. Override any with settings.HUDLabels = { Main = 'mn' }.
@@ -84,11 +84,11 @@ local SHORT_VALUE = { IdleSet = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' } 
 local EMPTY = { none = true, off = true, unknown = true };
 
 -- Short value (compact styles): the full value if it is no wider than FIT_TEXT (the widest def cell, so the column
--- doesn't widen); else a short form players use (DP, Max, GH, KC); else the first word, whole if it fits, else its
+-- doesn't widen; weapons: FIT_WPN, the wpn column being its own width); else a short form players use (DP, Max, GH, KC); else the first word, whole if it fits, else its
 -- first 4 letters. '+N' and one-letter words (paths) are kept: 'Anarchy +2' -> Anar+2, 'RostamB' -> RostB. Two of
 -- this box's choices that would match get longer forms (check_abbr): 'ProcStaff' / 'ProcSword' -> ProcSta / ProcSwo.
 -- Override any with settings.HUDAbbr = { ['Carnwenhan'] = 'Carn' } (case-insensitive).
-local FIT_TEXT = 'Amin+';
+local FIT_TEXT, FIT_WPN = 'Amin+', 'Amin+M'; -- 5 / 6 letters in the fixed-width font
 local SHORT_FORM = { deathpenalty = 'DP', maxentius = 'Max', godhands = 'GH', krakenclub = 'KC' }; -- leading words, letters only, lower case
 local abbrCache, abbrLevel = {}, {}; -- level: 0 short, 1 + later words' initials, 2 + their first 3 letters, 3 full name
 local function user_abbr(value)
@@ -106,16 +106,17 @@ local function textw(t)
     return tonumber(w) or 0;
 end
 local function cap(w) return string.upper(string.sub(w, 1, 1)) .. string.sub(w, 2) end
-local function abbr(value)
+local function abbr(value, wide)
     value = tostring(value or '');
     if (value == '') then return '' end
-    local hit = abbrCache[value]; -- cleared by gchud.Start, so HUDAbbr edits apply on reload
+    local ck = (wide and '\1' or '') .. value;
+    local hit = abbrCache[ck]; -- cleared by gchud.Start, so HUDAbbr edits apply on reload
     if (hit ~= nil) then return hit end
     local u = user_abbr(value);
-    if (u ~= nil) then abbrCache[value] = u; return u end
+    if (u ~= nil) then abbrCache[ck] = u; return u end
     local lvl = abbrLevel[value] or 0;
-    local budget = textw(FIT_TEXT);
-    if (lvl >= 3) or (textw(value) <= budget) then abbrCache[value] = value; return value end
+    local budget = textw(wide and FIT_WPN or FIT_TEXT);
+    if (lvl >= 3) or (textw(value) <= budget) then abbrCache[ck] = value; return value end
     local t = string.gsub(value, "'s ", ' '); -- Bunzi's Rod -> Bunzi
     t = string.gsub(t, "['%.]", '');
     t = string.gsub(t, '[^%w%+]', ' ');
@@ -123,7 +124,7 @@ local function abbr(value)
     t = string.gsub(t, '(%w)(%+)', '%1 %2');
     local tok = {};
     for w in string.gmatch(t, '%S+') do tok[#tok + 1] = w end
-    if (#tok == 0) then abbrCache[value] = value; return value end
+    if (#tok == 0) then abbrCache[ck] = value; return value end
     local out, from = {}, 2;
     local key = '';
     for i = 1, #tok do -- a known short form for the leading words
@@ -149,7 +150,7 @@ local function abbr(value)
         end
     end
     hit = table.concat(out);
-    abbrCache[value] = hit;
+    abbrCache[ck] = hit;
     return hit;
 end
 
@@ -168,7 +169,7 @@ local function check_abbr()
                 for _, v in ipairs(list) do
                     local full = (type(inc.WeaponLabel) == 'function') and inc.WeaponLabel(v) or v;
                     if (type(full) == 'string') and (EMPTY[string.lower(full)] ~= true) then
-                        local a = abbr(full);
+                        local a = abbr(full, true);
                         if (seen[a] ~= nil) and (seen[a] ~= full) then
                             for _, x in ipairs({ seen[a], full }) do
                                 if not bumped[x] then bumped[x] = true; abbrLevel[x] = math.min((abbrLevel[x] or 0) + 1, 3) end
@@ -213,8 +214,18 @@ local function shadow(text, padx) -- the shadow goes in first, so the item's own
     if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
     if (tonumber(x) ~= nil) then DL:AddText({ x + (padx or 0) + 1, y + 1 }, SHADOW, tostring(text)) end
 end
-local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- mmode cell while /wsset high (no column of its own): purple
-local COL_HOXNE = { 0.35, 0.85, 0.85, 1.0 };    -- wpn cell while /hoxne is on (no column of its own): teal
+-- wpn cell: its text in the melee mode's colour, then a dot for /wsset high (purple) and /hoxne (blue).
+local COL_MELEE = { Default = { 0.35, 0.95, 0.45, 1.0 }, Acc = { 0.95, 0.85, 0.35, 1.0 }, SubtleBlow = { 1.00, 0.67, 0.24, 1.0 } };
+local COL_MELEE_MORE = { { 0.95, 0.55, 0.75, 1.0 }, { 0.55, 0.85, 1.00, 1.0 }, { 0.85, 0.85, 0.90, 1.0 } }; -- a job file's own modes
+local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- /wsset high dot: purple
+local COL_HOXNE = { 0.40, 0.62, 1.00, 1.0 };    -- /hoxne dot: blue
+local DOTSP = 8; -- px per wpn dot
+local function melee_col(mode)
+    if (COL_MELEE[mode] ~= nil) then return COL_MELEE[mode] end
+    local n = 0;
+    for i = 1, #mode do n = n + string.byte(mode, i) end
+    return COL_MELEE_MORE[(n % #COL_MELEE_MORE) + 1];
+end
 local COL_NAME = { 0.93, 0.93, 0.96, 1.0 };     -- white: SIR/TH/Kite/PROC colours stand out
 -- The name shows SIR, TH, Kite, PROC (first one on, in this order; its tooltip lists all on). The rest of the toggles
 -- (food, soda, harp, song lock, death) have no place on the HUD: their changes come in as chat lines.
@@ -546,13 +557,19 @@ local function toggle_cell(row, key)
     };
 end
 
+-- Folded into the wpn cell, no columns of their own: the slot picks ('+' when one is changed), the melee mode (the
+-- text colour), /wsset high and /hoxne (dots). Hover the cell for all of them; click the name for the detail line.
+local SLOT_PICK = { Weapons = true, Main = true, Sub = true, Range = true, Ammo = true };
+local SLOT_PICKS = { 'Main', 'Sub', 'Range', 'Ammo' };
+local FOLDED = { Main = true, Sub = true, Range = true, Ammo = true, MeleeSet = true, WsSet = true, Hoxne = true };
+
 -- The text a cycle value shows: '-' for None/Off, Base for the melee mode Default, short (compact) or full (large).
 local function cell_text(key, value)
     value = tostring(value);
     if (key == 'MeleeSet') and (value == 'Default') then value = 'Base' end
     if (EMPTY[string.lower(value)] == true) or (DASH_DEFAULT[key] and (value == 'Default')) then return '-' end
     local short = SHORT_VALUE[key] and SHORT_VALUE[key][value];
-    return (style().name == nil) and (user_abbr(value) or value) or (short or abbr(value));
+    return (style().name == nil) and (user_abbr(value) or value) or (short or abbr(value, SLOT_PICK[key]));
 end
 
 -- Widest text this box's own cycle can show (every value in its list), so its column never widens later.
@@ -675,28 +692,52 @@ local function build_grid(x0)
         for _, k in ipairs(ccols) do
             local c = cycle_cell(row, k);
             cells[i].c[k] = c;
-            if (k == 'MeleeSet') and (c ~= nil) and (strip_default(row.Cycles.WsSet or '') == 'High') then
-                c.col = COL_HIGHBUFF; -- /wsset high: shown on the mmode cell, so the HUD doesn't widen
-                c.tip = c.tip .. '  |  WS buff: High (/wsset)';
-            end
-            local hx = strip_default(row.Cycles.Hoxne or '');
-            if (k == 'Weapons') and (c ~= nil) and (hx ~= '') and (EMPTY[string.lower(hx)] ~= true) then
-                c.col = COL_HOXNE; -- /hoxne on: shown on the wpn cell, so the HUD doesn't widen
-                c.tip = c.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
-            end
             if (k == 'NukeSet') and (c ~= nil) and (part(row, 'Burst') == true) then
                 c.text = c.text .. '*'; -- /burst on: Burst set on every nuke (the column leaves room for it)
                 c.tip = c.tip .. '  |  Burst set: every nuke (/burst)';
             end
-            if (c ~= nil) and (k ~= 'WsSet') and (k ~= 'Hoxne') then shown[k] = true end -- any box having it, set or not: no width change when set; WsSet/Hoxne colours
+            if (c ~= nil) and not FOLDED[k] then shown[k] = true end -- any box having it, set or not: no width change when set
+        end
+        -- wpn: the weapon mode (the main pick on a job with no modes), with the folded cycles on it
+        local cc = cells[i].c;
+        local src = (cc.Weapons ~= nil) and 'Weapons' or ((cc.Main ~= nil) and 'Main' or nil);
+        if (src ~= nil) then
+            local w = cc[src];
+            cc.Weapons = w;
+            shown.Weapons = true;
+            local picks = {};
+            for _, k in ipairs(SLOT_PICKS) do
+                if (k ~= src) and (row.Cycles[k] ~= nil) then
+                    local v, d = strip_default(row.Cycles[k]);
+                    if (not d) and (EMPTY[string.lower(v)] ~= true) then picks[#picks + 1] = label(k) .. ' ' .. v end
+                end
+            end
+            if (#picks > 0) then w.text = w.text .. '+'; w.tip = w.tip .. '  |  ' .. table.concat(picks, ', ') end
+            local mm = (row.Cycles.MeleeSet ~= nil) and strip_default(row.Cycles.MeleeSet) or 'Default';
+            if not w.empty then w.col = melee_col(mm) end
+            if (row.Cycles.MeleeSet ~= nil) then
+                w.tip = w.tip .. '  |  melee: ' .. ((mm == 'Default') and 'Base' or mm) .. ' (ctrl+click: /mmode)';
+                w.ctrlCmd = 'mmode';
+            end
+            w.dots = {};
+            if (strip_default(row.Cycles.WsSet or '') == 'High') then
+                w.dots[#w.dots + 1] = COL_HIGHBUFF;
+                w.tip = w.tip .. '  |  WS buff: High (/wsset)';
+            end
+            local hx = strip_default(row.Cycles.Hoxne or '');
+            if (hx ~= '') and (EMPTY[string.lower(hx)] ~= true) then
+                w.dots[#w.dots + 1] = COL_HOXNE;
+                w.tip = w.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
+            end
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};
         for _, k in ipairs(GROUP_ORDER) do cells[i].g[k] = group_cell(row, k) end
     end
     local vis = {};
+    if shown.Weapons then vis[1] = 'Weapons' end -- first, even when every box's comes from its main pick
     for _, k in ipairs(ccols) do
-        if shown[k] then vis[#vis + 1] = k end
+        if shown[k] and (k ~= 'Weapons') then vis[#vis + 1] = k end
     end
     -- def, mb and every toggle a box's job has always show (toggles as one-letter flags side by side), so turning
     -- something on or off never changes the width.
@@ -728,6 +769,7 @@ local function build_grid(x0)
             local c = cells[i][kind][key];
             if (c ~= nil) then c.w = textw(c.text); w = math.max(w, c.w) end -- reused when the row is drawn
         end
+        if (key == 'Weapons') then w = w + textw('+') + ((DL ~= nil) and (2 * DOTSP + 2) or textw('oo')) end -- room for '+' and the dots
         w = math.max(w, widthMax[kind .. key] or 0);
         widthMax[kind .. key] = w;
         cols[#cols + 1] = { key = key, kind = kind, w = w, center = center, label = l, labelW = lw, tip = FULL[key] or key };
@@ -736,14 +778,14 @@ local function build_grid(x0)
     local ngrid = #cols;
     for _, k in ipairs(gvis) do measure(k, 'g', false) end
     for _, k in ipairs(tvis) do measure(k, 't', true) end
-    -- Every mode column (cycles, def, mb) as wide as the widest of them, so they line up evenly.
+    -- Every mode column (cycles, def) as wide as the widest of them, so they line up evenly; wpn its own width.
     local uniform = 0;
     for _, col in ipairs(cols) do
-        if (col.kind ~= 't') then uniform = math.max(uniform, col.w) end
+        if (col.kind ~= 't') and (col.key ~= 'Weapons') then uniform = math.max(uniform, col.w) end
     end
     for i, col in ipairs(cols) do
         local flag = (col.kind == 't'); -- one-letter flags sit side by side
-        if (not flag) then col.w = uniform + PADX * 2 end
+        if (not flag) then col.w = ((col.key == 'Weapons') and col.w or uniform) + PADX * 2 end
         if (i == ngrid + 1) then x = x + gap end -- group gap
         if flag and (i > 1) and (cols[i - 1].kind ~= 't') then x = x + gap end -- before the flags
         col.x = x;
@@ -839,6 +881,23 @@ local function body(scale)
             if (c ~= nil) then
                 at(col, c.w + PADX * 2, false);
                 draw_cell(row, col.key, c);
+                if (c.dots ~= nil) and (#c.dots > 0) then -- wpn: /wsset high, /hoxne
+                    local x2, y2, y1, _;
+                    if (imgui.GetItemRectMax ~= nil) and (imgui.GetItemRectMin ~= nil) then
+                        x2, y2 = pair(imgui.GetItemRectMax());
+                        _, y1 = pair(imgui.GetItemRectMin());
+                    end
+                    if (dl ~= nil) and (x2 ~= nil) and (y1 ~= nil) then
+                        for j, dc in ipairs(c.dots) do dl:AddCircleFilled({ x2 + 1 + DOTSP * (j - 1) + DOTSP / 2, (y1 + y2) / 2 }, 3, u32(dc), 12) end
+                    else
+                        for _, dc in ipairs(c.dots) do
+                            imgui.SameLine(0, 0);
+                            imgui.PushStyleColor(ImGuiCol_Text, dc);
+                            imgui.Text('o');
+                            imgui.PopStyleColor();
+                        end
+                    end
+                end
             end
         end
         if open then
