@@ -144,8 +144,8 @@ local sets = {
     ['Enhancing Magic'] = {
         Ammo = 'Pemphredo Tathlum',
         Neck = 'Incanter\'s Torque',
-        Ear2 = 'Mendi. Earring',
         Ear1 = 'Andoaa Earring',
+        Ear2 = 'Mendi. Earring',
         Ring2 = { Name = 'Metamor. Ring +1', AugPath='A' },
     },
     ['Enfeebling Magic'] = {

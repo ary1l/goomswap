@@ -134,8 +134,8 @@ local sets = {
         Ear2 = 'Malignance Earring',
 		Body = 'inyanga jubbah +2',--14
         Hands = 'sworn gauntlets', --5
-        Ring2 = 'lebeche Ring',
         Ring1 = 'weather. Ring',--5
+        Ring2 = 'lebeche Ring',
         Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },--10
         Waist = 'Witful Belt',--3
         Legs = 'sworn brais',--8
@@ -151,8 +151,8 @@ local sets = {
         Ear2 = 'malignance earring',
 		Body = 'inyanga jubbah +2',
         Hands = 'sworn gauntlets', --6
-        Ring2 = 'lebeche Ring',--2
         Ring1 = 'weather. Ring',--5
+        Ring2 = 'lebeche Ring',--2
         Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
         Waist = 'Witful Belt',
         Legs = 'sworn brais',

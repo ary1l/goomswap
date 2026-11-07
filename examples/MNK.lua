@@ -79,8 +79,8 @@ local sets = {
     Tp_Acc = {
         Ear2 = 'Mache Earring +1',
         Hands = 'Tatena. Gote +1',
-        Ring2 = 'Chirich Ring +1',
         Ring1 = 'Cacoethic Ring +1',
+        Ring2 = 'Chirich Ring +1',
         Feet = 'Tatena. Sune. +1',
     },
 
