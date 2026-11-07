@@ -17,6 +17,7 @@ local SubLV = 0;
 local Main = 'FOO';
 local Sub = 'BAR';
 local headText = '';
+local headMID, headSID = nil, nil;
 
 function gcdisplay.AdvanceCycle(name)
 	local ctable = Cycles[name];
@@ -60,12 +61,12 @@ function gcdisplay.Update()
     local player = AshitaCore:GetMemoryManager():GetPlayer();
     if (player == nil) then return; end
 
-    local MID = player:GetMainJob();
-    local SID = player:GetSubJob();
+    local MID, SID = player:GetMainJob(), player:GetSubJob();
+    local mlv, slv = player:GetMainJobLevel(), player:GetSubJobLevel();
     Def = player:GetDefense();
     Attk = player:GetAttack();
-    MainLV = player:GetMainJobLevel();
-    SubLV = player:GetSubJobLevel();
+    if (MID == headMID) and (SID == headSID) and (mlv == MainLV) and (slv == SubLV) and (headText ~= '') then return end -- job text unchanged
+    headMID, headSID, MainLV, SubLV = MID, SID, mlv, slv;
     Main = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", MID) or 'NON';
     Sub = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", SID) or 'NON';
     headText = string.format('%s%d/%s%d', Main, MainLV, Sub, SubLV);

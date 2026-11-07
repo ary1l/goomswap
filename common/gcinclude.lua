@@ -3181,14 +3181,16 @@ end
 
 	-- Buffs (idle/engaged, HandleDefault), Buffs_Ws (weaponskills) and Buffs_Midcast (spells): { [buff name] = set },
 	-- each worn while that buff is up, e.g. Buffs_Ws = { ['Aftermath: Lv.3'] = {...} }. Name it as the buff list shows it.
+	local buffSetOrder = setmetatable({}, { __mode = 'k' }); -- A-Z buff names, once per set table
 	function gcinclude.CheckBuffSets(setName)
 		local buffs = gcinclude.FindSet(setName or 'Buffs');
 		if (buffs == nil) then return end
-		local order = gcinclude.BuffSetOrder;
+		local order = gcinclude.BuffSetOrder or buffSetOrder[buffs];
 		if (type(order) ~= 'table') then
-			order = T{};
-			for name, _ in pairs(buffs) do order:append(name) end
+			order = {};
+			for name, _ in pairs(buffs) do order[#order + 1] = name end
 			table.sort(order);
+			buffSetOrder[buffs] = order;
 		end
 		for _, name in ipairs(order) do
 			local set = buffs[name];
@@ -3444,21 +3446,35 @@ end
 
 	-- Ring1/Ring2 only (slots 14/15), read the way LAC's gData.GetEquipment does, without its 16-slot walk.
 	gcinclude.RingReleased = nil; -- a teleport ring done with (SafeSetIdle): no longer kept on, so normal gear replaces it
+	local lockingRing = {}; -- item id -> its name if a LockingRings ring, else false
 	function gcinclude.CheckLockingRings()
 		local released = false;
 		for slot = 14, 15 do
 			local item = gEquip.GetCurrentEquip(slot).Item;
-			local res = (item ~= nil) and AshitaCore:GetResourceManager():GetItemById(item.Id) or nil;
-			if (res ~= nil) and gcinclude.LockingRings:contains(res.Name[1]) then
-				if (string.lower(res.Name[1]) == string.lower(gcinclude.RingReleased or '')) then released = true else gFunc.Equip(slot, res.Name[1]) end
+			local name = nil;
+			if (item ~= nil) then
+				name = lockingRing[item.Id];
+				if (name == nil) then
+					local res = AshitaCore:GetResourceManager():GetItemById(item.Id);
+					name = ((res ~= nil) and gcinclude.LockingRings:contains(res.Name[1])) and res.Name[1] or false;
+					lockingRing[item.Id] = name;
+				end
+			end
+			if name then
+				if (string.lower(name) == string.lower(gcinclude.RingReleased or '')) then released = true else gFunc.Equip(slot, name) end
 			end
 		end
 		if not released then gcinclude.RingReleased = nil end -- it's off: the next manual equip is kept again
 	end
 
+	local townZone, inTown = nil, false; -- the Towns check, redone only when the zone changes
 	function gcinclude.SetTownGear()
-		local area = AshitaCore:GetResourceManager():GetString('zones.names', AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0));
-		if (area ~= nil) and gcinclude.Towns:contains(area) then local t = gcinclude.FindSet('Town'); if (t ~= nil) then gFunc.EquipSet(t) end end
+		local zone = AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0);
+		if (zone ~= townZone) then
+			local area = AshitaCore:GetResourceManager():GetString('zones.names', zone);
+			townZone, inTown = zone, (area ~= nil) and gcinclude.Towns:contains(area);
+		end
+		if inTown then local t = gcinclude.FindSet('Town'); if (t ~= nil) then gFunc.EquipSet(t) end end
 	end
 
 	function gcinclude.SetRegenRefreshGear(player)
