@@ -136,7 +136,7 @@ end
 
 -- Bar colours: as the HUD's (labels blue-grey, a changed value gold, one still at its load default grey-white).
 -- One rounded capsule in three parts, split by thin lines: job | modes | the toggles that are on, each a dot in its
--- own colour (DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green...) then its name.
+-- own colour (DT orange, MDT blue, Aminon violet, SIR teal, TH a gold ring, Kite green...) then its name.
 local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
 local COL_KEY = { 0.62, 0.68, 0.80, 1.0 };
 -- Every job its own colour (picked to tell all 22 apart on the dark bar). Ashita outlines the job text: the main job's
@@ -157,10 +157,12 @@ local COL_VAL_DEF = { 0.80, 0.80, 0.84, 1.0 }; -- grey-white, so gold always mea
 local COL_DIV = { 1.0, 1.0, 1.0, 0.20 };
 local COL_EDGE = { 1.0, 1.0, 1.0, 0.10 };
 local COL_BAR_BG = { 0.04, 0.045, 0.06 };
-local TOGGLE_COL = { DTset = { 1.00, 0.59, 0.27, 1.0 }, MDTset = { 0.43, 0.71, 1.00, 1.0 }, Aminon = { 0.75, 0.59, 1.00, 1.0 },
-	SIR = { 0.35, 0.55, 1.00, 1.0 }, TH = { 1.00, 0.80, 0.20, 1.0 }, Kite = { 0.35, 0.95, 0.45, 1.0 },
-	Burst = { 1.00, 0.45, 0.75, 1.0 }, PROC = { 1.00, 0.35, 0.35, 1.0 }, String = { 0.35, 0.85, 0.85, 1.0 },
-	SongLock = { 0.72, 0.52, 1.00, 1.0 }, Death = { 0.85, 0.30, 0.30, 1.0 } };
+-- Every meaning its own colour, as the HUD's; where hues run out the dot is a ring (TOGGLE_RING) instead of filled.
+local TOGGLE_COL = { DTset = { 1.00, 0.54, 0.24, 1.0 }, MDTset = { 0.43, 0.53, 1.00, 1.0 }, Aminon = { 0.69, 0.55, 1.00, 1.0 },
+	SIR = { 0.24, 0.82, 0.71, 1.0 }, TH = { 0.95, 0.85, 0.35, 1.0 }, Kite = { 0.35, 0.95, 0.45, 1.0 },
+	Burst = { 1.00, 0.48, 0.72, 1.0 }, PROC = { 1.00, 0.35, 0.35, 1.0 }, String = { 0.24, 0.82, 0.71, 1.0 },
+	SongLock = { 0.82, 0.44, 1.00, 1.0 }, Death = { 1.00, 0.35, 0.35, 1.0 } };
+local TOGGLE_RING = { TH = true, String = true, SongLock = true, Death = true }; -- gold TH, teal Harp, orchid Song lock, red Death
 
 -- Modes in /gcmodes order (gcinclude.ModeNames), only those set to something ('-' ones are left out), then the
 -- toggles that are on. The bar fits what it shows.
@@ -169,17 +171,18 @@ local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 
 
 local IDLE_SHORT = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' }; -- /idleset, kept small
 -- With a weapon mode on the job, the wpn entry also carries (as the HUD's wpn cell): a + when a slot pick (/mw /sw /rw
--- /ammoset) is changed, its colour for the melee mode (green Base, gold Acc, orange SB), then a purple dot for /wsset
--- high and a blue dot for /hoxne. /gcmodes names them in full. A job without weapon modes shows them as their own entries.
+-- /ammoset) is changed, its colour for the melee mode (grey-white Base, cyan Acc, magenta SB), then an orchid dot for /wsset
+-- high and a bronze dot for /hoxne. /gcmodes names them in full. A job without weapon modes shows them as their own entries.
 local SLOT_PICKS = { Main = true, Sub = true, Range = true, Ammo = true };
 local FOLD = { Main = true, Sub = true, Range = true, Ammo = true, MeleeSet = true, WsSet = true, Hoxne = true };
 -- The wpn entry's own value: the weapon mode, else (a job with slot picks only, e.g. PLD) the main pick.
 local function wpn_key() return ((Cycles.Weapons ~= nil) and 'Weapons') or ((Cycles.Main ~= nil) and 'Main') or nil end
 local function folded(k) local w = wpn_key(); return FOLD[k] and (w ~= nil) and (k ~= w) end
-local COL_MELEE = { Default = { 0.35, 0.95, 0.45, 1.0 }, Acc = { 0.95, 0.85, 0.35, 1.0 }, SubtleBlow = { 1.00, 0.67, 0.24, 1.0 } };
-local COL_MELEE_MORE = { { 0.95, 0.55, 0.75, 1.0 }, { 0.55, 0.85, 1.00, 1.0 }, { 0.85, 0.85, 0.90, 1.0 } }; -- a job file's own modes
-local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- /wsset high dot
-local COL_HOXNE = { 0.40, 0.62, 1.00, 1.0 };    -- /hoxne dot
+-- Every meaning its own colour (HUD and bar alike); where hues run out a dot is a ring instead of filled.
+local COL_MELEE = { Default = { 0.80, 0.80, 0.84, 1.0 }, Acc = { 0.25, 0.88, 1.00, 1.0 }, SubtleBlow = { 0.94, 0.35, 0.90, 1.0 } }; -- Base grey-white (a default), Acc cyan, SB magenta
+local COL_MELEE_MORE = { { 0.71, 0.94, 0.35, 1.0 }, { 1.00, 0.69, 0.48, 1.0 }, { 0.78, 0.90, 1.00, 1.0 } }; -- a job file's own modes: lime, peach, ice
+local COL_HIGHBUFF = { 0.82, 0.44, 1.00, 1.0 }; -- /wsset high dot: orchid
+local COL_HOXNE = { 0.82, 0.63, 0.39, 1.0 };    -- /hoxne dot: bronze
 local function melee_col(mode) -- the same colours as the HUD's wpn cell
 	mode = tostring(mode or 'Default');
 	if (COL_MELEE[mode] ~= nil) then return COL_MELEE[mode] end
@@ -274,12 +277,15 @@ local function bar_body()
 			put('|', COL_KEY);
 		end
 	end
-	local function dotted(text, col)
+	local function dotted(text, col, ring)
 		if first then first = false else imgui.SameLine(0, gapNext or ITEM) end
 		gapNext, tail = nil, 0;
 		if (dl ~= nil) then
 			local x, y = xy(imgui.GetCursorScreenPos());
-			if (x ~= nil) then dl:AddCircleFilled({ x + 4, y + lh / 2 }, 3.5, imgui.GetColorU32(col), 12) end
+			if (x ~= nil) then
+				if ring then dl:AddCircle({ x + 4, y + lh / 2 }, 3, imgui.GetColorU32(col), 12, 1.5)
+				else dl:AddCircleFilled({ x + 4, y + lh / 2 }, 3.5, imgui.GetColorU32(col), 12) end
+			end
 			imgui.SetCursorPosX(imgui.GetCursorPosX() + DOT);
 		end
 		imgui.PushStyleColor(ImGuiCol_Text, col);
@@ -379,7 +385,7 @@ local function bar_body()
 	end
 	if (#on > 0) then
 		divider();
-		for i, k in ipairs(on) do dotted(tnames[k] or k, TOGGLE_COL[k] or { 0.35, 0.95, 0.45, 1.0 }) end
+		for i, k in ipairs(on) do dotted(tnames[k] or k, TOGGLE_COL[k] or { 0.35, 0.95, 0.45, 1.0 }, TOGGLE_RING[k]) end
 	end
 	track_drag();
 end

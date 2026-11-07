@@ -192,17 +192,18 @@ end
 local COL_CLEAR = { 0.0, 0.0, 0.0, 0.0 };
 local COL_HOVER = { 1.0, 1.0, 1.0, 0.12 };
 -- bright = changed since load, dim = still at load default
-local COL_ON = { 0.35, 0.95, 0.45, 1.0 };      -- on, changed
-local COL_ON_DEF = { 0.30, 0.70, 0.38, 0.85 }; -- on, default
+local COL_ON = { 0.95, 0.85, 0.35, 1.0 };      -- on, changed: gold, as a changed value
+local COL_ON_DEF = { 0.80, 0.80, 0.84, 1.0 };  -- on, default: grey-white, as a default value
 local COL_OFF = { 0.50, 0.50, 0.56, 0.85 };    -- off, default
-local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off something that loads on)
+local COL_OFF_CHG = { 0.62, 0.62, 0.68, 1.0 }; -- off, changed (turned off something that loads on): dim grey, its glyph shown
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
 local COL_VAL_DEF = { 0.80, 0.80, 0.84, 1.0 }; -- cycle, default: grey-white, so gold always means changed
 local COL_EMPTY = { 0.36, 0.36, 0.41, 0.85 };  -- cycle at None/Off: faint
 -- def cell by state; a dot before the name in its SIR/TH/Kite/PROC colour; your own name gold; the header on a soft
--- blue fade; a 1px shadow under the text (drawn shapes: Ashita only)
-local COL_DEF = { DT = { 1.00, 0.59, 0.27, 1.0 }, MDT = { 0.43, 0.71, 1.00, 1.0 }, Amin = { 0.75, 0.59, 1.00, 1.0 } };
-local COL_OWN_NAME = { 0.95, 0.85, 0.35, 1.0 };
+-- blue fade; a 1px shadow under the text; a faint band behind your row (drawn shapes: Ashita only)
+local COL_DEF = { DT = { 1.00, 0.54, 0.24, 1.0 }, MDT = { 0.43, 0.53, 1.00, 1.0 }, Amin = { 0.69, 0.55, 1.00, 1.0 } }; -- orange, blue, violet
+local COL_OWN_NAME = { 0.95, 0.85, 0.35, 1.0 }; -- Windower only (no shapes); Ashita marks your row with a band
+local COL_OWN_BAND = { 1.0, 1.0, 1.0, 0.07 };
 local COL_FADE_TOP, COL_FADE_BOT = { 0.24, 0.27, 0.43, 0.55 }, { 0.24, 0.27, 0.43, 0.0 };
 local COL_SHADOW = { 0.0, 0.0, 0.0, 0.85 };
 local COL_HEAD = { 0.59, 0.63, 0.71, 1.0 };
@@ -216,11 +217,12 @@ local function shadow(text, padx) -- the shadow goes in first, so the item's own
     if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
     if (tonumber(x) ~= nil) then DL:AddText({ x + (padx or 0) + 1, y + 1 }, SHADOW, tostring(text)) end
 end
--- wpn cell: its text in the melee mode's colour, then a dot for /wsset high (purple) and /hoxne (blue).
-local COL_MELEE = { Default = { 0.35, 0.95, 0.45, 1.0 }, Acc = { 0.95, 0.85, 0.35, 1.0 }, SubtleBlow = { 1.00, 0.67, 0.24, 1.0 } };
-local COL_MELEE_MORE = { { 0.95, 0.55, 0.75, 1.0 }, { 0.55, 0.85, 1.00, 1.0 }, { 0.85, 0.85, 0.90, 1.0 } }; -- a job file's own modes
-local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- /wsset high dot: purple
-local COL_HOXNE = { 0.40, 0.62, 1.00, 1.0 };    -- /hoxne dot: blue
+-- wpn cell: its text in the melee mode's colour, then a dot for /wsset high (orchid) and /hoxne (bronze).
+-- Every meaning its own colour (HUD and bar alike); where hues run out a dot is a ring instead of filled.
+local COL_MELEE = { Default = { 0.80, 0.80, 0.84, 1.0 }, Acc = { 0.25, 0.88, 1.00, 1.0 }, SubtleBlow = { 0.94, 0.35, 0.90, 1.0 } }; -- Base grey-white (a default), Acc cyan, SB magenta
+local COL_MELEE_MORE = { { 0.71, 0.94, 0.35, 1.0 }, { 1.00, 0.69, 0.48, 1.0 }, { 0.78, 0.90, 1.00, 1.0 } }; -- a job file's own modes: lime, peach, ice
+local COL_HIGHBUFF = { 0.82, 0.44, 1.00, 1.0 }; -- /wsset high dot: orchid
+local COL_HOXNE = { 0.82, 0.63, 0.39, 1.0 };    -- /hoxne dot: bronze
 local DOTSP = 8; -- px per wpn dot
 local function melee_col(mode)
     if (COL_MELEE[mode] ~= nil) then return COL_MELEE[mode] end
@@ -231,8 +233,8 @@ end
 local COL_NAME = { 0.93, 0.93, 0.96, 1.0 };     -- white: SIR/TH/Kite/PROC colours stand out
 -- The name shows SIR, TH, Kite, PROC (first one on, in this order; its tooltip lists all on). The rest of the toggles
 -- (food, soda, harp, song lock, death) have no place on the HUD: their changes come in as chat lines.
-local NAME_STATES = { { 'SIR', 'SIR', { 0.35, 0.55, 1.00, 1.0 } }, { 'TH', 'TH', { 1.00, 0.80, 0.20, 1.0 } },
-    { 'Kite', 'Kite', { 0.35, 0.95, 0.45, 1.0 } }, { 'PROC', 'PROC', { 1.00, 0.35, 0.35, 1.0 } } }; -- blue, gold, green, red
+local NAME_STATES = { { 'SIR', 'SIR', { 0.24, 0.82, 0.71, 1.0 } }, { 'TH', 'TH', { 0.95, 0.85, 0.35, 1.0 }, true },
+    { 'Kite', 'Kite', { 0.35, 0.95, 0.45, 1.0 } }, { 'PROC', 'PROC', { 1.00, 0.35, 0.35, 1.0 } } }; -- teal, gold ring (4th: ring), green, red
 local COL_JOB = { 0.60, 0.65, 0.75, 1.0 };
 local COL_KEY = { 0.78, 0.82, 0.90, 1.0 };     -- headers
 
@@ -881,16 +883,23 @@ local function body(scale)
             if (part(row, st[1]) == true) then
                 if (#states == 0) then ncol = st[3] end
                 states[#states + 1] = st[2];
-                scols[#scols + 1] = st[3];
+                scols[#scols + 1] = st;
             end
         end
-        if (dl ~= nil) then -- the state as a dot left of the name; the name white, yours gold
+        if (dl ~= nil) then -- the states as dots left of the name; the name white, your row on a faint band
             local rx, ry = pair(imgui.GetCursorScreenPos());
+            if own and (not collapsedView) and (#view > 1) and (wx ~= nil) and (ww ~= nil) and (ry ~= nil) then
+                local fy, sy = (style().frame or { 0, 0 })[2] or 0, (style().spacing or { 0, 0 })[2] or 0;
+                dl:AddRectFilled({ wx, ry - sy / 2 }, { wx + ww, ry + lh + fy * 2 + sy / 2 }, u32(COL_OWN_BAND), 0);
+            end
             if (rx ~= nil) then -- the first state next to the name, the next ones to its left
                 local r = (#scols > 1) and 3 or 3.5;
-                for j, sc in ipairs(scols) do dl:AddCircleFilled({ rx - DOTW / 2 - 1 - DOTSTEP * (j - 1), ry + lh / 2 }, r, u32(sc), 12) end
+                for j, st in ipairs(scols) do
+                    local at = { rx - DOTW / 2 - 1 - DOTSTEP * (j - 1), ry + lh / 2 };
+                    if st[4] then dl:AddCircle(at, r - 0.5, u32(st[3]), 12, 1.5) else dl:AddCircleFilled(at, r, u32(st[3]), 12) end
+                end
             end
-            ncol = own and COL_OWN_NAME or COL_NAME;
+            ncol = COL_NAME;
         elseif own and (#states == 0) then
             ncol = COL_OWN_NAME; -- Windower: the name shows the state, else gold for yours
         end
