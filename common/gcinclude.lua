@@ -1552,11 +1552,15 @@ end
 		end
 	end
 
+	local holdTick;
 	function gcinclude.HoldTick()
 		local now = os.clock();
 		if (now < gcinclude.NextHoldCheck) then return end
 		gcinclude.NextHoldCheck = now + 0.1;
 		if gcinclude.Zoning() then return end -- nothing sent or swapped by itself mid-zone
+		gcinclude.WithBuffs(holdTick, now);
+	end
+	holdTick = function(now)
 		trackSlots(now);
 		gcinclude.CheckEnchantHold();
 		if gcinclude.CheckDualWieldChange(now) then return end -- forced 1h swap: let it land before the hold re-checks
@@ -2091,16 +2095,29 @@ end
 
 	-- Buff counts by id. LAC's GetBuffCount(name) converts every active buff name on each call;
 	-- here each name is resolved to its ids once and counted against the raw buff list.
-	local buffIds = {};
+	-- GetBuffs copies the 32-entry buff array (Ashita.h IPlayer::GetBuffs) into a new table per call. Inside
+	-- WithBuffs (CheckDefault, HoldTick: a dozen counts each) it is read once, as id -> count, for that call only.
+	local buffIds, buffCache = {}, nil;
+	local function buffCounts()
+		if (buffCache ~= nil) then return buffCache end
+		local counts = {};
+		for _, b in pairs(AshitaCore:GetMemoryManager():GetPlayer():GetBuffs()) do counts[b] = (counts[b] or 0) + 1 end
+		return counts;
+	end
+	function gcinclude.WithBuffs(fn, ...)
+		if (buffCache ~= nil) then return fn(...) end -- already inside one
+		buffCache = buffCounts();
+		local ok, err = pcall(fn, ...);
+		buffCache = nil; -- also after an error, so nothing later reads a stale list
+		if not ok then error(err, 0) end
+	end
 	function gcinclude.BuffCount(m)
-		local buffs = AshitaCore:GetMemoryManager():GetPlayer():GetBuffs();
-		local count = 0;
+		local counts = buffCounts();
+		local predicted = (gcauto ~= nil) and gcauto.Predicted or nil; -- landed, not listed yet
 		if (type(m) == 'number') then
-			for _, b in pairs(buffs) do
-				if (b == m) then count = count + 1 end
-			end
-			if (count == 0) and (gcauto ~= nil) and (gcauto.Predicted ~= nil) and gcauto.Predicted(m) then count = 1 end -- landed, not listed yet
-			return count;
+			local n = counts[m] or 0;
+			if (n == 0) and (predicted ~= nil) and predicted(m) then n = 1 end
+			return n;
 		end
 		if (type(m) ~= 'string') then return 0 end
 		local key = string.lower(m);
@@ -2114,12 +2131,11 @@ end
 			end
 			buffIds[key] = ids;
 		end
-		for _, b in pairs(buffs) do
-			if ids[b] then count = count + 1 end
-		end
-		if (count == 0) and (gcauto ~= nil) and (gcauto.Predicted ~= nil) then -- landed, not listed yet
+		local count = 0;
+		for id in pairs(ids) do count = count + (counts[id] or 0) end
+		if (count == 0) and (predicted ~= nil) then
 			for id in pairs(ids) do
-				if gcauto.Predicted(id) then return 1 end
+				if predicted(id) then return 1 end
 			end
 		end
 		return count;
@@ -4247,7 +4263,9 @@ end
 	end
 
 local UTIL_ORDER = {'craftset', 'zeniset', 'fishset', 'rrset'};
-function gcinclude.CheckDefault()
+local checkDefault;
+function gcinclude.CheckDefault() gcinclude.WithBuffs(checkDefault) end
+checkDefault = function()
     -- Self-healing check: Rebuild toggles if the memory manager updates to a new job
     local player = AshitaCore:GetMemoryManager():GetPlayer();
     if (player ~= nil) and (gcinclude.ActiveJobId ~= nil) then
