@@ -138,12 +138,19 @@ end
 -- own colour (DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green...) then its name.
 local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
 local COL_KEY = { 0.62, 0.68, 0.80, 1.0 };
--- Jobs in their role's colour; the main job's colour also outlines the job text (a badge; Ashita only).
-local ROLE_COL = { tank = { 0.43, 0.65, 1.00, 1.0 }, heal = { 0.92, 0.96, 0.92, 1.0 }, sup = { 0.39, 0.88, 0.51, 1.0 },
-	mage = { 0.75, 0.55, 1.00, 1.0 }, rng = { 0.95, 0.85, 0.35, 1.0 }, melee = { 1.00, 0.55, 0.35, 1.0 } };
-local JOB_ROLE = { PLD = 'tank', RUN = 'tank', WHM = 'heal', BRD = 'sup', COR = 'sup', RDM = 'sup', GEO = 'sup',
-	BLM = 'mage', SCH = 'mage', SMN = 'mage', RNG = 'rng' }; -- the rest: melee
-local function job_col(j) return ROLE_COL[JOB_ROLE[string.upper(tostring(j or ''))] or 'melee'] end
+-- Every job its own colour (picked to tell all 22 apart on the dark bar). Ashita outlines the job text: the main job's
+-- half in its colour, the sub job's in its.
+local JOB_COL = {
+	WAR = { 1.00, 0.45, 0.40, 1.0 }, MNK = { 0.96, 0.70, 0.04, 1.0 }, WHM = { 0.97, 0.97, 0.97, 1.0 },
+	BLM = { 0.71, 0.39, 1.00, 1.0 }, RDM = { 1.00, 0.22, 0.61, 1.0 }, THF = { 0.53, 1.00, 0.14, 1.0 },
+	PLD = { 0.12, 0.71, 1.00, 1.0 }, DRK = { 0.73, 0.44, 0.80, 1.0 }, BST = { 0.85, 0.58, 0.33, 1.0 },
+	BRD = { 0.80, 0.85, 0.02, 1.0 }, RNG = { 0.99, 1.00, 0.64, 1.0 }, SAM = { 0.72, 0.49, 0.48, 1.0 },
+	NIN = { 0.53, 0.62, 0.70, 1.0 }, DRG = { 0.02, 0.98, 1.00, 1.0 }, SMN = { 0.18, 1.00, 0.76, 1.0 },
+	BLU = { 0.19, 0.54, 1.00, 1.0 }, COR = { 0.28, 0.70, 0.57, 1.0 }, PUP = { 1.00, 0.55, 0.74, 1.0 },
+	DNC = { 1.00, 0.18, 0.89, 1.0 }, SCH = { 0.82, 0.75, 1.00, 1.0 }, GEO = { 0.11, 0.81, 0.33, 1.0 },
+	RUN = { 1.00, 0.45, 0.04, 1.0 }
+};
+local function job_col(j) return JOB_COL[string.upper(tostring(j or ''))] or COL_HEAD end
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };
 local COL_VAL_DEF = { 0.73, 0.67, 0.50, 1.0 };
 local COL_DIV = { 1.0, 1.0, 1.0, 0.20 };
@@ -232,6 +239,7 @@ local function track_drag()
 	x, y = tonumber(x), tonumber(y);
 	if (x == nil) or (y == nil) or imgui.IsMouseDown(0) then return end
 	x, y = math.floor(x + 0.5), math.floor(y + 0.5);
+	if (y > 0) and (y <= 8) then y = 0; barPlaced = false end -- dropped near the top: flush with it
 	if (x ~= barSavedX) or (y ~= barSavedY) then
 		cfg.DisplayBarX, cfg.DisplayBarY = x, y;
 		bar_save();
@@ -276,15 +284,32 @@ local function bar_body()
 		imgui.PopStyleColor();
 	end
 	if (headText ~= '') then -- set by Update
-		put(Main .. tostring(MainLV or ''), job_col(Main));
-		local x1, y1 = nil, nil;
-		if (dl ~= nil) then x1, y1 = xy(imgui.GetItemRectMin()) end
+		local mainT, subT = Main .. tostring(MainLV or ''), Sub .. tostring(SubLV or '');
+		local x, y, split = nil, nil, nil;
+		if (dl ~= nil) then x, y = xy(imgui.GetCursorScreenPos()) end
+		put(mainT, job_col(Main));
 		put('/', COL_KEY, 0);
-		put(Sub .. tostring(SubLV or ''), job_col(Sub), 0);
-		if (dl ~= nil) and (x1 ~= nil) and (y1 ~= nil) then
+		if (dl ~= nil) then
+			local s1, s2 = xy(imgui.GetItemRectMin()), xy(imgui.GetItemRectMax());
+			if (s1 ~= nil) and (s2 ~= nil) then split = (s1 + s2) / 2 end -- the outline changes colour at the '/'
+		end
+		put(subT, job_col(Sub), 0);
+		if (x ~= nil) and (y ~= nil) and (split ~= nil) then
 			local x2, y2 = xy(imgui.GetItemRectMax());
-			local c = job_col(Main);
-			if (x2 ~= nil) and (y2 ~= nil) then dl:AddRect({ x1 - 5, y1 }, { x2 + 5, y2 }, imgui.GetColorU32({ c[1], c[2], c[3], 0.85 }), 8, 0, 1) end
+			if (x2 ~= nil) and (y2 ~= nil) then
+				local a, b = { x - 5, y + 1 }, { x2 + 5, y2 - 1 }; -- 1px in from the bar's edge
+				local function line(c) return imgui.GetColorU32({ c[1], c[2], c[3], 0.90 }) end
+				if (dl.PushClipRect ~= nil) and (dl.PopClipRect ~= nil) then -- left half the main job's colour, right half the sub's
+					dl:PushClipRect({ a[1] - 1, a[2] - 1 }, { split, b[2] + 1 }, true);
+					dl:AddRect(a, b, line(job_col(Main)), 7, 0, 1);
+					dl:PopClipRect();
+					dl:PushClipRect({ split, a[2] - 1 }, { b[1] + 1, b[2] + 1 }, true);
+					dl:AddRect(a, b, line(job_col(Sub)), 7, 0, 1);
+					dl:PopClipRect();
+				else
+					dl:AddRect(a, b, line(job_col(Main)), 7, 0, 1);
+				end
+			end
 		end
 	else
 		put(headText, COL_HEAD);
@@ -344,7 +369,7 @@ local function render_bar()
 	end
 	local flags = bit.bor(ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoFocusOnAppearing,
 		ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
-	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 10, 0 }); -- no space above or below the text
+	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 10, 1 }); -- 1px above and below the text: room for the job outline
 	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 5, 1 });
 	imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 12); -- a capsule
 	imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
