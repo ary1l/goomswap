@@ -254,11 +254,12 @@ Bryn: `/sir` (blue dot), `/wsset high` (purple dot). Cora: you (gold name), `/th
 
 - **Open:** `/gchud`; `/gchud large|compact`; `/gchud pos X Y` or drag; `/gchud debug`. `HUDOwners` boxes open it
   with every box; other boxes see their own row (empty list: everyone sees all).
-- **Dot:** blue SIR, gold TH, green Kite, red PROC. **Gold name:** you.
-- **`wpn`:** weapon mode (main pick if the job has none). Colour = `/mmode`: green Base, gold Acc, orange SB.
+- **Dots** left of the name, every one on (first nearest): blue SIR, gold TH, green Kite, red PROC. **Gold name:** you.
+- **Fade:** a box with no update for 7s fades; gone at 15s. Hover its name: how long.
+- **`wpn`:** weapon mode (main pick if the job has none). Line under it = `/mmode`: green Base, gold Acc, orange SB.
   `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Dots after: purple `/wsset high`, blue
   `/hoxne`. Hover: all of them. Ctrl+click: `/mmode`.
-- **Colours:** bright gold changed, soft gold default, faint `-` none. `def` DT orange, MDT blue, Amin purple. `*`
+- **Colours:** gold changed, grey-white default, faint `-` none. `def` DT orange, MDT blue, Amin purple. `*`
   after `nuke` = `/burst`.
 
 | Column | Shows |
@@ -275,7 +276,8 @@ Bryn: `/sir` (blue dot), `/wsset high` (purple dot). Cora: you (gold name), `/th
 - The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).
 - Settings: `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDX` `HUDY` `HUDStyle` `HUDScale` `HUDScaleLarge`
   `HUDAlpha` `HUDAbbr` `HUDLabels`.
-- Windower: same, no fade/shadow; the name takes the dot's colour; `wpn` dots are a coloured `o`.
+- Windower: no shapes. The name takes the first dot's colour, `wpn` text the `/mmode` colour, its dots are a coloured
+  `o`, a stale box is grey.
 
 ## Status bar
 
@@ -283,14 +285,15 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 
 ![The status bar](docs/gcbar.png)
 
-- **Job**, `Atk` and `Def` | **modes that are set** | **toggles that are on** as dots.
+- **Job**, `Atk` and `Def` (Ashita) | **modes that are set** | **toggles that are on** as dots.
 - Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its.
 - Dropped within 8px of the screen's top, the bar snaps flush to it.
-- `wpn` as the HUD's: `+` slot pick, colour `/mmode`, purple dot `/wsset high`, blue dot `/hoxne`. `idle`: MP HP TP.
+- `wpn` as the HUD's: `+` slot pick, line under it `/mmode`, purple dot `/wsset high`, blue `/hoxne`. `idle`: MP HP TP.
 - A job without weapon modes (WHM...) shows `melee` and `wsset` by name, only once changed.
 - Dots: DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green, Burst pink, PROC red, Harp teal, Song lock
   purple, Death red.
-- Grows with what it shows. Windower: `|` and coloured names, no capsule, outline or dots (`wpn`'s are a coloured `o`).
+- Grows with what it shows. Windower: `|` and coloured names, no capsule, outline, line or dots (`wpn` text the
+  `/mmode` colour, its dots a coloured `o`).
 
 ## How sets stack
 

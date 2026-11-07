@@ -14,7 +14,8 @@ local expanded = {};
 local placed = false;
 
 
-local STALE = 15;
+local STALE = 15; -- s without an update: the box is dropped
+local STALE_DIM = 7; -- s: its row fades (a box writes at least every 3s)
 
 gchud.CycleCommands = {
     MeleeSet = 'mmode',
@@ -197,7 +198,7 @@ local COL_ON_DEF = { 0.30, 0.70, 0.38, 0.85 }; -- on, default
 local COL_OFF = { 0.50, 0.50, 0.56, 0.85 };    -- off, default
 local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off something that loads on)
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
-local COL_VAL_DEF = { 0.73, 0.67, 0.50, 1.0 }; -- cycle, default (softer than changed)
+local COL_VAL_DEF = { 0.80, 0.80, 0.84, 1.0 }; -- cycle, default: grey-white, so gold always means changed
 local COL_EMPTY = { 0.36, 0.36, 0.41, 0.85 };  -- cycle at None/Off: faint
 -- def cell by state; a dot before the name in its SIR/TH/Kite/PROC colour; your own name gold; the header on a soft
 -- blue fade; a 1px shadow under the text (drawn shapes: Ashita only)
@@ -206,17 +207,19 @@ local COL_OWN_NAME = { 0.95, 0.85, 0.35, 1.0 };
 local COL_FADE_TOP, COL_FADE_BOT = { 0.24, 0.27, 0.43, 0.55 }, { 0.24, 0.27, 0.43, 0.0 };
 local COL_SHADOW = { 0.0, 0.0, 0.0, 0.85 };
 local COL_HEAD = { 0.59, 0.63, 0.71, 1.0 };
-local DOTW = 10; -- px left of the names for the state dot
+local DOTW, DOTSTEP = 10, 8; -- px left of the names for one state dot; px per extra dot (body reserves one per state a box has)
 
 -- This frame's draw list (Ashita); nil on Windower, whose text box draws no shapes.
 local DL, SHADOW = nil, nil;
+local DIM, dimPushed = false, false; -- this row is stale (body); Windower: drawn grey, Ashita: faded (style Alpha)
 local function shadow(text, padx) -- the shadow goes in first, so the item's own text sits on it
     if (DL == nil) then return end
     local x, y = imgui.GetCursorScreenPos();
     if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
     if (tonumber(x) ~= nil) then DL:AddText({ x + (padx or 0) + 1, y + 1 }, SHADOW, tostring(text)) end
 end
--- wpn cell: its text in the melee mode's colour, then a dot for /wsset high (purple) and /hoxne (blue).
+-- wpn cell: white text, a line under it in the melee mode's colour (Windower, no shapes: the text in that colour),
+-- then a dot for /wsset high (purple) and /hoxne (blue).
 local COL_MELEE = { Default = { 0.35, 0.95, 0.45, 1.0 }, Acc = { 0.95, 0.85, 0.35, 1.0 }, SubtleBlow = { 1.00, 0.67, 0.24, 1.0 } };
 local COL_MELEE_MORE = { { 0.95, 0.55, 0.75, 1.0 }, { 0.55, 0.85, 1.00, 1.0 }, { 0.85, 0.85, 0.90, 1.0 } }; -- a job file's own modes
 local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- /wsset high dot: purple
@@ -347,6 +350,7 @@ local function read_all(everyBox)
                     local cmap, corder = decode(parts[4]);
                     out[#out + 1] = {
                         Raw = table.concat(parts, '\t', 1, 4),
+                        Stamp = stamp,
                         Name = parts[1],
                         Job = parts[2],
                         Toggles = tmap, ToggleOrder = torder,
@@ -388,7 +392,10 @@ local function read_all(everyBox)
         local raw = {};
         for i, r in ipairs(out) do raw[i] = r.Raw end
         local key = table.concat(raw, '\n');
-        if (key == rowsKey) then return end
+        if (key == rowsKey) then -- same rows in the same order: only their timestamps move on
+            for i, r in ipairs(out) do if (rows[i] ~= nil) then rows[i].Stamp = r.Stamp end end
+            return;
+        end
         rowsKey = key;
     end
     rows = out;
@@ -649,7 +656,7 @@ end
 
 local function draw_cell(row, key, c)
     shadow(c.text, (c.cmd ~= nil) and ((style().frame or { 0 })[1] or 0) or 0);
-    imgui.PushStyleColor(ImGuiCol_Text, c.col);
+    imgui.PushStyleColor(ImGuiCol_Text, (DIM and (DL == nil)) and COL_EMPTY or c.col);
     local clicked = false;
     if (c.cmd == nil) then
         imgui.Text(c.text);
@@ -724,7 +731,10 @@ local function build_grid(x0)
             end
             if (#picks > 0) then w.text = w.text .. '+'; w.tip = w.tip .. '  |  ' .. table.concat(picks, ', ') end
             local mm = (row.Cycles.MeleeSet ~= nil) and strip_default(row.Cycles.MeleeSet) or 'Default';
-            if not w.empty then w.col = melee_col(mm) end
+            if (DL ~= nil) then -- Ashita: white text, the melee mode a line under it (none on a box without /mmode)
+                if (row.Cycles.MeleeSet ~= nil) then w.under = melee_col(mm) end
+                if not w.empty then w.col = COL_NAME end
+            elseif not w.empty then w.col = melee_col(mm) end
             if (row.Cycles.MeleeSet ~= nil) then
                 w.tip = w.tip .. '  |  melee: ' .. ((mm == 'Default') and 'Base' or mm) .. ' (ctrl+click: /mmode)';
                 w.ctrlCmd = 'mmode';
@@ -817,7 +827,17 @@ local function body(scale)
     DL = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil;
     if (DL ~= nil) and ((imgui.GetColorU32 == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetTextLineHeight == nil)) then DL = nil end
     SHADOW = (DL ~= nil) and imgui.GetColorU32(COL_SHADOW) or nil;
-    local x0 = imgui.GetCursorPosX() + ((DL ~= nil) and DOTW or 0);
+    -- one dot slot left of the names per state a box's job has (on or off), so turning one on never widens the HUD
+    local slots = 0;
+    if (DL ~= nil) then
+        for _, st in ipairs(NAME_STATES) do
+            for _, row in ipairs(view) do
+                if (row.Toggles[st[1]] ~= nil) then slots = slots + 1; break end
+            end
+        end
+        slots = math.max(slots, 1);
+    end
+    local x0 = imgui.GetCursorPosX() + ((slots > 0) and (DOTW + DOTSTEP * (slots - 1)) or 0);
     local g = grid;
     if (g == nil) or (g.view ~= view) or (g.style ~= style_name()) or (g.scale ~= scale) or (g.x0 ~= x0) then
         g = build_grid(x0);
@@ -864,28 +884,41 @@ local function body(scale)
     for i, row in ipairs(view) do
       local own = (mine ~= nil) and (string.lower(row.Name) == mine);
       if not collapsedView or own then
+        local age = (row.Stamp ~= nil) and (os.time() - row.Stamp) or 0;
+        DIM = (not own) and (age >= STALE_DIM);
+        if DIM and (dl ~= nil) and (ImGuiStyleVar_Alpha ~= nil) then
+            imgui.PushStyleVar(ImGuiStyleVar_Alpha, 0.4);
+            dimPushed = true;
+            SHADOW = u32(COL_SHADOW); -- faded with the row
+        end
         local open = (expanded[row.Name] == true);
         imgui.SetCursorPosX(x0);
-        local ncol, states = COL_NAME, {};
+        local ncol, states, scols = COL_NAME, {}, {};
         for _, st in ipairs(NAME_STATES) do
             if (part(row, st[1]) == true) then
                 if (#states == 0) then ncol = st[3] end
                 states[#states + 1] = st[2];
+                scols[#scols + 1] = st[3];
             end
         end
         if (dl ~= nil) then -- the state as a dot left of the name; the name white, yours gold
             local rx, ry = pair(imgui.GetCursorScreenPos());
-            if (rx ~= nil) and (#states > 0) then dl:AddCircleFilled({ rx - DOTW / 2 - 1, ry + lh / 2 }, 3.5, u32(ncol), 12) end
+            if (rx ~= nil) then -- the first state next to the name, the next ones to its left
+                local r = (#scols > 1) and 3 or 3.5;
+                for j, sc in ipairs(scols) do dl:AddCircleFilled({ rx - DOTW / 2 - 1 - DOTSTEP * (j - 1), ry + lh / 2 }, r, u32(sc), 12) end
+            end
             ncol = own and COL_OWN_NAME or COL_NAME;
         elseif own and (#states == 0) then
             ncol = COL_OWN_NAME; -- Windower: the name shows the state, else gold for yours
         end
+        if DIM and (dl == nil) then ncol = COL_EMPTY end
         shadow(short_name(row.Name), (style().frame or { 0 })[1] or 0);
         imgui.PushStyleColor(ImGuiCol_Text, ncol);
         local clicked = imgui.SmallButton(g.nameIds[i]);
         imgui.PopStyleColor();
         if imgui.IsItemHovered() then
             tip(row.Name .. '  ' .. tostring(row.Job) .. ((#states > 0) and ('  |  on: ' .. table.concat(states, ', ')) or '')
+                .. (DIM and ('  |  no update for ' .. age .. 's') or '')
                 .. '  (click: ' .. (open and 'hide' or 'show') .. ' details)');
         end
         for _, col in ipairs(cols) do
@@ -893,6 +926,14 @@ local function body(scale)
             if (c ~= nil) then
                 at(col, c.w + PADX * 2, false);
                 draw_cell(row, col.key, c);
+                if (c.under ~= nil) and (dl ~= nil) and (imgui.GetItemRectMin ~= nil) and (imgui.GetItemRectMax ~= nil) then -- wpn: melee mode
+                    local ux = pair(imgui.GetItemRectMin());
+                    local _, uy = pair(imgui.GetItemRectMax());
+                    if (ux ~= nil) and (uy ~= nil) then
+                        ux = ux + ((c.cmd ~= nil) and ((style().frame or { 0 })[1] or 0) or 0);
+                        dl:AddLine({ ux, uy - 1 }, { ux + (c.w or 0), uy - 1 }, u32(c.under), 2);
+                    end
+                end
                 if (c.dots ~= nil) and (#c.dots > 0) then -- wpn: /wsset high, /hoxne
                     local x2, y2, y1, _;
                     if (imgui.GetItemRectMax ~= nil) and (imgui.GetItemRectMin ~= nil) then
@@ -904,7 +945,7 @@ local function body(scale)
                     else
                         for _, dc in ipairs(c.dots) do
                             imgui.SameLine(0, 0);
-                            imgui.PushStyleColor(ImGuiCol_Text, dc);
+                            imgui.PushStyleColor(ImGuiCol_Text, DIM and COL_EMPTY or dc);
                             imgui.Text('o');
                             imgui.PopStyleColor();
                         end
@@ -949,6 +990,8 @@ local function body(scale)
                 end
             end
         end
+        if dimPushed then imgui.PopStyleVar(1); dimPushed = false; SHADOW = u32(COL_SHADOW) end
+        DIM = false;
         if clicked then expanded[row.Name] = not open end
       end
     end
@@ -1034,6 +1077,8 @@ local function render()
         end
         -- any error between Begin and End must not skip PopFont/End/Pop*, or ImGui asserts every frame after
         ok, err = pcall(inner);
+        if dimPushed then imgui.PopStyleVar(1); dimPushed = false; end -- an error mid-row
+        DIM = false;
         if fontPushed then imgui.PopFont(); fontPushed = false; end
     end
     imgui.End();
