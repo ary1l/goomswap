@@ -288,6 +288,7 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 ![The status bar](docs/gcbar.png)
 
 - **Job**, `Atk` and `Def` (Ashita) | **modes that are set** | **toggles that are on** as dots.
+- **Click** a value or a toggle's name: cycles it on this box, as the HUD's cells (ctrl+click `wpn`: `/mset`).
 - Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its.
 - Dropped within 8px of the screen's top, the bar snaps flush to it.
 - `wpn` as the HUD's: `+` slot pick, colour `/mset`, purple dot `/wsset high`, bronze `/hoxne`. `idle`: MP HP TP;

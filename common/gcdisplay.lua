@@ -146,10 +146,10 @@ end
 -- own colour (DT orange, MDT blue, Aminon mauve, SIR teal, TH a gold ring, Kite green...) then its name.
 local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
 local COL_KEY = { 0.62, 0.68, 0.80, 1.0 };
--- Every job its own colour (picked to tell all 22 apart on the dark bar; RNG moss green, COR mustard gold). Ashita outlines the job text: the main job's
+-- Every job its own colour (picked to tell all 22 apart on the dark bar; RNG moss green, COR mustard gold, WHM light rose). Ashita outlines the job text: the main job's
 -- half in its colour, the sub job's in its.
 local JOB_COL = {
-	WAR = { 1.00, 0.45, 0.40, 1.0 }, MNK = { 0.96, 0.70, 0.04, 1.0 }, WHM = { 0.97, 0.97, 0.97, 1.0 },
+	WAR = { 1.00, 0.45, 0.40, 1.0 }, MNK = { 0.96, 0.70, 0.04, 1.0 }, WHM = { 1.00, 0.82, 0.75, 1.0 },
 	BLM = { 0.71, 0.39, 1.00, 1.0 }, RDM = { 1.00, 0.22, 0.61, 1.0 }, THF = { 0.53, 1.00, 0.14, 1.0 },
 	PLD = { 0.12, 0.71, 1.00, 1.0 }, DRK = { 0.73, 0.44, 0.80, 1.0 }, BST = { 0.85, 0.58, 0.33, 1.0 },
 	BRD = { 0.80, 0.85, 0.02, 1.0 }, RNG = { 0.52, 0.65, 0.36, 1.0 }, SAM = { 0.72, 0.49, 0.48, 1.0 },
@@ -178,6 +178,12 @@ local BAR_TOGGLES = { 'DTset', 'MDTset', 'Aminon', 'SIR', 'TH', 'Kite', 'Burst',
 local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 'nuke'}, {'IdleSet', 'idle'} };
 
 local IDLE_SHORT = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' }; -- /idleset, kept small
+-- Click a value or a toggle's name: the command that cycles it, as the HUD's cells send (ctrl+click wpn: /mset).
+local BAR_CMD = { Weapons = 'wm', Main = 'mainset', Sub = 'subset', Range = 'rangeset', Ammo = 'ammoset', MeleeSet = 'mset',
+	WsSet = 'wsset', NukeSet = 'nukeset', Element = 'elecycle', Weapon = 'weapon', TankSet = 'tankset', Hoxne = 'hoxne',
+	PupMode = 'pupmode', IdleSet = 'idleset', RangedSet = 'rangedset' };
+local BAR_TCMD = { DTset = 'dt', MDTset = 'mdt', Aminon = 'aminon', SIR = 'sir', TH = 'th', Kite = 'kite', Burst = 'burst',
+	PROC = 'proc', String = 'forcestring', SongLock = 'songlock', Death = 'death' };
 -- With a weapon mode on the job, the wpn entry also carries (as the HUD's wpn cell): a + when a slot pick (/mw /sw /rw
 -- /ammoset) is changed, its colour for the melee mode (grey-white Base, cyan Acc, magenta SB), then a purple dot for /wsset
 -- high and a bronze dot for /hoxne. /gcmodes names them in full. A job without weapon modes shows them as their own entries.
@@ -281,7 +287,7 @@ local function bar_model()
 		local hoxne = (hx ~= nil) and (hx.Array[hx.Index] ~= 'Off');
 		local high = (ws ~= nil) and (ws.Array[ws.Index] == 'High');
 		if (v ~= '-') or picked or (mm ~= 'Default') or hoxne or high then
-			local parts = { { 'wpn ', COL_KEY }, { v .. (picked and '+' or ''), melee_col(mm) } };
+			local parts = { { 'wpn ', COL_KEY }, { v .. (picked and '+' or ''), melee_col(mm), cmd = BAR_CMD[wk], ctrl = (mc ~= nil) and 'mset' or nil } };
 			if high then parts[#parts + 1] = { dot = COL_HIGHBUFF } end
 			if hoxne then parts[#parts + 1] = { dot = COL_HOXNE } end
 			modes[#modes + 1] = parts;
@@ -292,12 +298,12 @@ local function bar_model()
 		local c = Cycles[k];
 		local v = ((c ~= nil) and (k ~= wk) and not folded(k)) and value_text(k, c.Array[c.Index]) or '-';
 		if (v ~= '-') and FOLD[k] and (wk == nil) and gcdisplay.IsDefault('cycle', k) then v = '-' end -- no wpn entry to carry them: only once changed
-		if (v ~= '-') then modes[#modes + 1] = { { label .. ' ', COL_KEY }, { v, gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL } } end
+		if (v ~= '-') then modes[#modes + 1] = { { label .. ' ', COL_KEY }, { v, gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL, cmd = BAR_CMD[k] } } end
 	end
 	local tnames = (inc ~= nil) and inc.ToggleNames or {};
 	local on = {};
 	for _, k in ipairs(BAR_TOGGLES) do
-		if (Toggles[k] == true) then on[#on + 1] = { tnames[k] or k, TOGGLE_COL[k] or { 0.35, 0.95, 0.45, 1.0 }, TOGGLE_RING[k] } end
+		if (Toggles[k] == true) then on[#on + 1] = { tnames[k] or k, TOGGLE_COL[k] or { 0.35, 0.95, 0.45, 1.0 }, TOGGLE_RING[k], BAR_TCMD[k] } end
 	end
 	modelVer, modelModes, modelOn = version, modes, on;
 	return modes, on;
@@ -311,11 +317,18 @@ local function bar_body()
 	if (dl ~= nil) and ((lh == nil) or (imgui.GetColorU32 == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetItemRectMax == nil) or (imgui.GetItemRectMin == nil)) then dl = nil end
 	local ITEM, SEG, DOT = 14, 9, 11; -- px: between items, each side of a divider, a dot and its name
 	local first, gapNext, tail = true, nil, 0; -- tail: px of dots drawn after the last text
-	local function put(text, col, gap)
+	local function item(text, cmd, ctrl) -- text, or a borderless button that runs cmd on this box
+		if (cmd == nil) or (imgui.SmallButton == nil) then imgui.Text(text); return end
+		if imgui.SmallButton(text .. '##gcbar_' .. cmd) then
+			local ok, held = pcall(function() return imgui.GetIO().KeyCtrl end);
+			AshitaCore:GetChatManager():QueueCommand(-1, '/lac fwd ' .. ((ok and held and ctrl) or cmd));
+		end
+	end
+	local function put(text, col, gap, cmd, ctrl)
 		if first then first = false else imgui.SameLine(0, gapNext or gap or ITEM) end
 		gapNext, tail = nil, 0;
 		imgui.PushStyleColor(ImGuiCol_Text, col);
-		imgui.Text(text);
+		item(text, cmd, ctrl);
 		imgui.PopStyleColor();
 	end
 	local function divider()
@@ -328,7 +341,7 @@ local function bar_body()
 			put('|', COL_KEY);
 		end
 	end
-	local function dotted(text, col, ring)
+	local function dotted(text, col, ring, cmd)
 		if first then first = false else imgui.SameLine(0, gapNext or ITEM) end
 		gapNext, tail = nil, 0;
 		if (dl ~= nil) then
@@ -340,7 +353,7 @@ local function bar_body()
 			imgui.SetCursorPosX(imgui.GetCursorPosX() + DOT);
 		end
 		imgui.PushStyleColor(ImGuiCol_Text, col);
-		imgui.Text(text);
+		item(text, cmd);
 		imgui.PopStyleColor();
 	end
 	if (headText ~= '') then -- set by Update
@@ -385,7 +398,7 @@ local function bar_body()
 			local dots = 0;
 			for i, p in ipairs(parts) do
 				if (p.dot == nil) then
-					put(p[1], p[2], (i > 1) and 0 or nil);
+					put(p[1], p[2], (i > 1) and 0 or nil, p.cmd, p.ctrl);
 				elseif (dl ~= nil) then -- after the last text, which the next entry's gap makes room for
 					local x2, y2 = xy(imgui.GetItemRectMax());
 					local _, y1 = xy(imgui.GetItemRectMin());
@@ -403,7 +416,7 @@ local function bar_body()
 	end
 	if (#on > 0) then
 		divider();
-		for _, t in ipairs(on) do dotted(t[1], t[2], t[3]) end
+		for _, t in ipairs(on) do dotted(t[1], t[2], t[3], t[4]) end
 	end
 	track_drag();
 end
@@ -420,16 +433,24 @@ local function render_bar()
 	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 5, 1 });
 	imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 12); -- a capsule
 	imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
+	-- clickable values and toggle names: plain text, no box, a soft pill on hover (as the HUD's cells)
+	local styleVars = 4;
+	if (ImGuiStyleVar_FramePadding ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FramePadding, { 1, 0 }); styleVars = styleVars + 1 end
+	if (ImGuiStyleVar_FrameBorderSize ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0); styleVars = styleVars + 1 end
+	if (ImGuiStyleVar_FrameRounding ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FrameRounding, 4); styleVars = styleVars + 1 end
 	imgui.PushStyleColor(ImGuiCol_WindowBg, { COL_BAR_BG[1], COL_BAR_BG[2], COL_BAR_BG[3], cfg.HUDAlpha or 0.70 }); -- as the HUD
 	imgui.PushStyleColor(ImGuiCol_Border, COL_EDGE);
+	imgui.PushStyleColor(ImGuiCol_Button, { 0, 0, 0, 0 });
+	imgui.PushStyleColor(ImGuiCol_ButtonHovered, { 1, 1, 1, 0.12 });
+	imgui.PushStyleColor(ImGuiCol_ButtonActive, { 1, 1, 1, 0.12 });
 	local ok, err = true, nil;
 	if imgui.Begin('GC##gcdisplay_bar', true, flags) then
 		-- an error here must not skip End/PopStyleVar, or ImGui asserts every frame after (as in gchud)
 		ok, err = pcall(bar_body);
 	end
 	imgui.End();
-	imgui.PopStyleColor(2);
-	imgui.PopStyleVar(4);
+	imgui.PopStyleColor(5);
+	imgui.PopStyleVar(styleVars);
 	if (ok ~= true) then error(err, 0) end
 end
 
