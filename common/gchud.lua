@@ -1099,6 +1099,10 @@ local function render()
     imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, st.spacing);
     imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 10); -- as the bar: rounded, a soft 1px edge
     imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
+    -- clickable cells and names: plain text, no box (some themes give every button a 1px frame), a soft pill on hover
+    local styleVars = 5;
+    if (ImGuiStyleVar_FrameBorderSize ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0); styleVars = styleVars + 1 end
+    if (ImGuiStyleVar_FrameRounding ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FrameRounding, 4); styleVars = styleVars + 1 end
     imgui.PushStyleColor(ImGuiCol_Button, COL_CLEAR);
     imgui.PushStyleColor(ImGuiCol_ButtonHovered, COL_HOVER);
     imgui.PushStyleColor(ImGuiCol_ButtonActive, COL_HOVER);
@@ -1143,7 +1147,7 @@ local function render()
     end
     imgui.End();
     imgui.PopStyleColor(5);
-    imgui.PopStyleVar(5);
+    imgui.PopStyleVar(styleVars);
     if (ok ~= true) then error(err, 0) end
 end
 
