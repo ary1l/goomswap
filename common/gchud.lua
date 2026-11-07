@@ -62,20 +62,6 @@ local SHORT = {
     IdleSet = 'idle', RangedSet = 'ra',
 };
 
--- Full names, hover tooltips only.
-local FULL = {
-    DTset = 'DT set', MDTset = 'MDT set', Aminon = 'Aminon', SIR = 'Spell interrupt', TH = 'Treasure Hunter',
-    Kite = 'Kite', PROC = 'Proc',
-    Burst = 'Burst set on every nuke (/burst): * after the nuke value', String = 'Harp (force string)', SongLock = 'Song lock (enemy songs keep main/sub)',
-    Death = 'Death', Weapons = 'Weapon set', WsSet = 'WS buff level (/wsset): High wears <WS set>_HighBuff',
-    Def = 'Defense (click = /def: DT > MDT > Aminon > none)',
-    MeleeSet = 'Melee set', Main = 'Main', Sub = 'Sub',
-    Range = 'Range', Ammo = 'Ammo', NukeSet = 'Nuke set', Element = 'Element', TankSet = 'Tank set',
-    Hoxne = 'Hoxne', PupMode = 'Pup mode', Weapon = 'Weapon',
-    IdleSet = 'Idle set (click = /idleset: Default > Refresh > Regen > Regain; compact: MP HP TP)',
-    RangedSet = 'Ranged accuracy (click = /rangedset: Default > Acc)',
-};
-
 -- Modes whose Default draws as '-' (nothing laid over), and their compact-style values.
 local DASH_DEFAULT = { IdleSet = true, RangedSet = true };
 local SHORT_VALUE = { IdleSet = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' }, NukeSet = { OccultAcumen = 'OA' } };
@@ -550,12 +536,6 @@ local function label(key)
     return SHORT[key] or string.lower(key);
 end
 
-local function tip(text)
-    if imgui.IsItemHovered() then
-        imgui.SetTooltip((string.gsub(text, '%%', '%%%%')));
-    end
-end
-
 local function strip_default(value)
     value = value or '';
     if (string.sub(value, 1, 1) == '~') then return string.sub(value, 2), true end
@@ -585,13 +565,11 @@ local function toggle_cell(row, key)
         def = def,
         col = on and (def and COL_ON_DEF or COL_ON) or (def and COL_OFF or COL_OFF_CHG),
         cmd = cmd,
-        tip = row.Name .. '  ' .. (FULL[key] or key) .. ': ' .. (on and 'on' or 'off')
-            .. (def and ' (default)' or '') .. ((cmd ~= nil) and ('  /' .. cmd) or ''),
     };
 end
 
 -- Folded into the wpn cell, no columns of their own: the slot picks ('+' when one is changed), the melee mode (the
--- text colour), /wsset high and /hoxne (dots). Hover the cell for all of them; click the name for the detail line.
+-- text colour), /wsset high and /hoxne (dots); README "HUD schema" lists them. Click the name for the detail line.
 local SLOT_PICK = { Weapons = true, Main = true, Sub = true, Range = true, Ammo = true };
 local SLOT_PICKS = { 'Main', 'Sub', 'Range', 'Ammo' };
 local FOLDED = { Main = true, Sub = true, Range = true, Ammo = true, MeleeSet = true, WsSet = true, Hoxne = true };
@@ -617,8 +595,6 @@ local function cycle_cell(row, key)
         col = empty and COL_EMPTY or (def and COL_VAL_DEF or COL_VAL),
         cmd = cmd,
         empty = empty,
-        tip = row.Name .. '  ' .. (FULL[key] or key) .. ': ' .. value
-            .. (def and ' (default)' or '') .. ((cmd ~= nil) and ('  /' .. cmd) or ''),
     };
 end
 
@@ -652,8 +628,6 @@ local function group_cell(row, key)
             col = (#on > 0) and (COL_DEF[on[1]] or COL_ON) or (alldef and COL_EMPTY or COL_OFF_CHG),
             cmd = 'def',
             def = alldef,
-            tip = row.Name .. '  Defense: ' .. ((#on == 0) and 'none' or table.concat(on, ', '))
-                .. (alldef and ' (default)' or '') .. '  /def',
         };
     end
     return nil;
@@ -670,7 +644,6 @@ local function draw_cell(row, key, c)
         clicked = imgui.SmallButton(c.id);
     end
     imgui.PopStyleColor();
-    tip(c.tip);
     if clicked then
         local ok, ctrl = pcall(function() return imgui.GetIO().KeyCtrl end);
         send(row.Name, (ok and ctrl and c.ctrlCmd) or c.cmd);
@@ -717,7 +690,6 @@ local function build_grid(x0)
             cells[i].c[k] = c;
             if (k == 'NukeSet') and (c ~= nil) and (part(row, 'Burst') == true) then
                 c.text = c.text .. '*'; -- /burst on: Burst set on every nuke (the column leaves room for it)
-                c.tip = c.tip .. '  |  Burst set: every nuke (/burst)';
             end
             if (c ~= nil) and not FOLDED[k] then shown[k] = true end -- any shown box's job has it, set or not: the width holds
         end
@@ -728,29 +700,24 @@ local function build_grid(x0)
             local w = cc[src];
             cc.Weapons = w;
             shown.Weapons = true;
-            local picks = {};
+            local picked = false;
             for _, k in ipairs(SLOT_PICKS) do
                 if (k ~= src) and (row.Cycles[k] ~= nil) then
                     local v, d = strip_default(row.Cycles[k]);
-                    if (not d) and (EMPTY[string.lower(v)] ~= true) then picks[#picks + 1] = label(k) .. ' ' .. v end
+                    if (not d) and (EMPTY[string.lower(v)] ~= true) then picked = true end
                 end
             end
-            if (#picks > 0) then w.text = w.text .. '+'; w.tip = w.tip .. '  |  ' .. table.concat(picks, ', ') end
+            if picked then w.text = w.text .. '+' end -- a slot pick changed
             local mm = (row.Cycles.MeleeSet ~= nil) and strip_default(row.Cycles.MeleeSet) or 'Default';
             if not w.empty then w.col = melee_col(mm) end
-            if (row.Cycles.MeleeSet ~= nil) then
-                w.tip = w.tip .. '  |  melee: ' .. ((mm == 'Default') and 'Base' or mm) .. ' (ctrl+click: /mset)';
-                w.ctrlCmd = 'mset';
-            end
+            if (row.Cycles.MeleeSet ~= nil) then w.ctrlCmd = 'mset' end -- ctrl+click: /mset
             w.dots = {};
             if (strip_default(row.Cycles.WsSet or '') == 'High') then
                 w.dots[#w.dots + 1] = COL_HIGHBUFF;
-                w.tip = w.tip .. '  |  WS buff: High (/wsset)';
             end
             local hx = strip_default(row.Cycles.Hoxne or '');
             if (hx ~= '') and (EMPTY[string.lower(hx)] ~= true) then
                 w.dots[#w.dots + 1] = COL_HOXNE;
-                w.tip = w.tip .. '  |  Hoxne: ' .. hx .. ' (/hoxne)';
             end
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
@@ -796,7 +763,7 @@ local function build_grid(x0)
         local wk = ((#view == 1) and '1' or '*') .. kind .. key; -- the one-row (collapsed) grid keeps its own widths
         w = math.max(w, widthMax[wk] or 0);
         widthMax[wk] = w;
-        cols[#cols + 1] = { key = key, kind = kind, w = w, center = center, label = l, labelW = lw, tip = FULL[key] or key };
+        cols[#cols + 1] = { key = key, kind = kind, w = w, center = center, label = l, labelW = lw };
     end
     for _, k in ipairs(vis) do measure(k, 'c', false) end
     local ngrid = #cols;
@@ -893,20 +860,11 @@ local function body(scale)
     if (dl ~= nil) and (wx ~= nil) and (slots > 0) then -- the state spots, as faint ghosts over the gutter
         local _, hy = pair(imgui.GetCursorScreenPos());
         if (hy ~= nil) then
-            local names = {};
             for p, st in ipairs(slotStates) do
                 local c = st[3];
                 local at = { wx + x0 - DOTW / 2 - 1 - DOTSTEP * (slots - p), hy + lh / 2 };
                 local ghost = u32({ c[1], c[2], c[3], 0.35 });
                 if st[4] then dl:AddCircle(at, 2.5, ghost, 12, 1.5) else dl:AddCircleFilled(at, 3, ghost, 12) end
-                names[#names + 1] = st[2];
-            end
-            if (imgui.GetMousePos ~= nil) then
-                local mx, my = pair(imgui.GetMousePos());
-                local gx = wx + x0 - DOTW - DOTSTEP * (slots - 1);
-                if (mx ~= nil) and (my ~= nil) and (mx >= gx) and (mx <= wx + x0) and (my >= hy) and (my <= hy + lh) then
-                    imgui.SetTooltip('State dots, left to right: ' .. table.concat(names, ', ') .. ' (an empty spot on a row = off)');
-                end
             end
         end
     end
@@ -916,7 +874,6 @@ local function body(scale)
         if not col.center then imgui.SetCursorPosX(imgui.GetCursorPosX() + PADX) end
         shadow(col.label);
         imgui.Text(col.label);
-        tip(col.tip);
     end
     imgui.PopStyleColor();
     end
@@ -955,10 +912,6 @@ local function body(scale)
         imgui.PushStyleColor(ImGuiCol_Text, ncol);
         local clicked = imgui.SmallButton(g.nameIds[i]);
         imgui.PopStyleColor();
-        if imgui.IsItemHovered() then
-            tip(row.Name .. '  ' .. tostring(row.Job) .. ((#states > 0) and ('  |  on: ' .. table.concat(states, ', ')) or '')
-                .. '  (click: ' .. (open and 'hide' or 'show') .. ' details)');
-        end
         for _, col in ipairs(cols) do
             local c = cells[i][col.kind][col.key];
             if (c ~= nil) then
@@ -1015,7 +968,7 @@ local function body(scale)
                 local c = cells[i].t[k];
                 if (c ~= nil) and not tshown[k] then
                     imgui.SameLine();
-                    c.alt = c.alt or { text = label(k), col = c.col, cmd = c.cmd, tip = c.tip };
+                    c.alt = c.alt or { text = label(k), col = c.col, cmd = c.cmd };
                     draw_cell(row, k, c.alt);
                 end
             end

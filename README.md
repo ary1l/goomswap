@@ -251,31 +251,30 @@ reads them twice a second (Ashita `luashitacast/hud/`, Windower IPC).
 Alba: `/rangedset acc`. Bryn: `/sir`, `/wsset high`. Cora: you (band), `/th`. Dain: `/mset acc`, a slot pick (`+`),
 `/idleset refresh` (`MP`), DT. Elle: `/mset sb`, `/hoxne`, `/nukeset oa` + `/burst` (`OA*`). Names in job colour.
 
+**Schema**, left to right (no tooltips: this is the key):
+
+| Part | Shows | Click |
+|---|---|---|
+| Dots | SIR teal, TH gold ring, Kite green, PROC red; each always in its own spot. Faint in the header = the spot; empty on a row = off | |
+| Name | the box (4 letters in compact), in its main job's colour; your row on a faint band | detail line: job + the modes not shown |
+| `wpn` | weapon mode (main pick if the job has none). `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Text colour = `/mset`: grey-white Base, cyan Acc, magenta SB (own modes: lime, salmon, periwinkle). Dots after: purple `/wsset high`, bronze `/hoxne` | `/wm`; ctrl+click `/mset` |
+| `ra` | `/rangedset` (`Acc`) | `/rangedset` |
+| `idle` | `/idleset`: `MP` Refresh, `HP` Regen, `TP` Regain | `/idleset` |
+| `nuke` | `/nukeset` (`OA` = Occult Acumen); `*` after = `/burst` | `/nukeset` |
+| `elem` `w` | BLM SCH element / weapon | `/elecycle` / `/weapon` |
+| `tank` `pup` | `/tankset` / `/pupmode` | same |
+| `def` | `DT` orange, `MDT` blue, `Amin` mauve; `+` = more than one | `/def` |
+
+**Values:** gold = changed since load, grey-white = its load default, faint `-` = none/off, blank = that job has no
+such mode. Thin lines split names | modes | `def`.
+
 - **Open:** `/gchud`; `/gchud large|compact` (large: bigger text, full names); `/gchud pos X Y` or drag (kept on
-  screen; within 8px of the top or bottom it snaps flush); `/gchud debug`. `HUDOwners` boxes open it
-  with every box; other boxes see their own row (empty list: everyone sees all).
-- **Names** in their main job's colour, as on the bar. **Your row:** faint band.
-- **Dots** left of the name, each always in its own spot (faint in the header): teal SIR, gold ring TH, green Kite,
-  red PROC.
-- **`wpn`:** weapon mode (main pick if the job has none). Colour = `/mset`: grey-white Base, cyan Acc, magenta SB.
-  `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Dots after: purple `/wsset high`, bronze
-  `/hoxne`. Hover: all of them. Ctrl+click: `/mset`.
-- **Colours:** gold changed, grey-white default, faint `-` none. `def` DT orange, MDT blue, Amin mauve. `*`
-  after `nuke` = `/burst`.
-
-| Column | Shows |
-|---|---|
-| `wpn` | `/wm` + slot picks, `/mset`, `/wsset`, `/hoxne` (above) |
-| `ra` `idle` | `/rangedset` / `/idleset` (`MP` `HP` `TP`) |
-| `nuke` `elem` `w` | `/nukeset` / BLM SCH element and weapon |
-| `tank` `pup` `def` | `/tankset` / `/pupmode` / `/def` |
-
-- Click a cell: runs it on that box. Click a name: its other modes.
+  screen; within 8px of the top or bottom it snaps flush); `/gchud debug`. `HUDOwners` boxes open it with every
+  box; other boxes see their own row (empty list: everyone sees all).
 - Mouse away: your row only, with just its columns; over: all (`HUDHover`). Opens upward in the screen's bottom
   half (`HUDGrow`).
-- Fixed width: every column a shown box's job has stays (`-` when unset); folded cycles are on the detail line.
-  Compact: names that fit show whole (wpn 6 letters, others 5), else `DP` `Max` `GH` `KC` or 4 letters (`HUDAbbr`
-  to set your own); `/nukeset oa` shows `OA`.
+- Fixed width: every column a shown box's job has stays. Compact: names that fit show whole (wpn 6 letters, others
+  5), else `DP` `Max` `GH` `KC` or 4 letters (`HUDAbbr` to set your own).
 - The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).
 - Settings: `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDX` `HUDY` `HUDStyle` `HUDScale` `HUDScaleLarge`
   `HUDAlpha` `HUDAbbr` `HUDLabels`.
