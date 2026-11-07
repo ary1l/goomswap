@@ -216,8 +216,7 @@ local function shadow(text, padx) -- the shadow goes in first, so the item's own
     if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
     if (tonumber(x) ~= nil) then DL:AddText({ x + (padx or 0) + 1, y + 1 }, SHADOW, tostring(text)) end
 end
--- wpn cell: white text, a line under it in the melee mode's colour (Windower, no shapes: the text in that colour),
--- then a dot for /wsset high (purple) and /hoxne (blue).
+-- wpn cell: its text in the melee mode's colour, then a dot for /wsset high (purple) and /hoxne (blue).
 local COL_MELEE = { Default = { 0.35, 0.95, 0.45, 1.0 }, Acc = { 0.95, 0.85, 0.35, 1.0 }, SubtleBlow = { 1.00, 0.67, 0.24, 1.0 } };
 local COL_MELEE_MORE = { { 0.95, 0.55, 0.75, 1.0 }, { 0.55, 0.85, 1.00, 1.0 }, { 0.85, 0.85, 0.90, 1.0 } }; -- a job file's own modes
 local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- /wsset high dot: purple
@@ -725,10 +724,7 @@ local function build_grid(x0)
             end
             if (#picks > 0) then w.text = w.text .. '+'; w.tip = w.tip .. '  |  ' .. table.concat(picks, ', ') end
             local mm = (row.Cycles.MeleeSet ~= nil) and strip_default(row.Cycles.MeleeSet) or 'Default';
-            if (DL ~= nil) then -- Ashita: white text, the melee mode a line under it (none on a box without /mset)
-                if (row.Cycles.MeleeSet ~= nil) then w.under = melee_col(mm) end
-                if not w.empty then w.col = COL_NAME end
-            elseif not w.empty then w.col = melee_col(mm) end
+            if not w.empty then w.col = melee_col(mm) end
             if (row.Cycles.MeleeSet ~= nil) then
                 w.tip = w.tip .. '  |  melee: ' .. ((mm == 'Default') and 'Base' or mm) .. ' (ctrl+click: /mset)';
                 w.ctrlCmd = 'mset';
@@ -911,14 +907,6 @@ local function body(scale)
             if (c ~= nil) then
                 at(col, c.w + PADX * 2, false);
                 draw_cell(row, col.key, c);
-                if (c.under ~= nil) and (dl ~= nil) and (imgui.GetItemRectMin ~= nil) and (imgui.GetItemRectMax ~= nil) then -- wpn: melee mode
-                    local ux = pair(imgui.GetItemRectMin());
-                    local _, uy = pair(imgui.GetItemRectMax());
-                    if (ux ~= nil) and (uy ~= nil) then
-                        ux = ux + ((c.cmd ~= nil) and ((style().frame or { 0 })[1] or 0) or 0);
-                        dl:AddLine({ ux, uy - 1 }, { ux + (c.w or 0), uy - 1 }, u32(c.under), 2);
-                    end
-                end
                 if (c.dots ~= nil) and (#c.dots > 0) then -- wpn: /wsset high, /hoxne
                     local x2, y2, y1, _;
                     if (imgui.GetItemRectMax ~= nil) and (imgui.GetItemRectMin ~= nil) then

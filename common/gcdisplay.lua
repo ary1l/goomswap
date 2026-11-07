@@ -169,8 +169,7 @@ local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 
 
 local IDLE_SHORT = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' }; -- /idleset, kept small
 -- With a weapon mode on the job, the wpn entry also carries (as the HUD's wpn cell): a + when a slot pick (/mw /sw /rw
--- /ammoset) is changed, a line under it in the melee mode's colour (green Base, gold Acc, orange SB; Windower: the text
--- in that colour), then a purple dot for /wsset
+-- /ammoset) is changed, its colour for the melee mode (green Base, gold Acc, orange SB), then a purple dot for /wsset
 -- high and a blue dot for /hoxne. /gcmodes names them in full. A job without weapon modes shows them as their own entries.
 local SLOT_PICKS = { Main = true, Sub = true, Range = true, Ammo = true };
 local FOLD = { Main = true, Sub = true, Range = true, Ammo = true, MeleeSet = true, WsSet = true, Hoxne = true };
@@ -338,8 +337,7 @@ local function bar_body()
 		local hoxne = (hx ~= nil) and (hx.Array[hx.Index] ~= 'Off');
 		local high = (ws ~= nil) and (ws.Array[ws.Index] == 'High');
 		if (v ~= '-') or picked or (mm ~= 'Default') or hoxne or high then
-			local parts = { { 'wpn ', COL_KEY }, (dl ~= nil) and { v .. (picked and '+' or ''), COL_HEAD, under = melee_col(mm) }
-				or { v .. (picked and '+' or ''), melee_col(mm) } };
+			local parts = { { 'wpn ', COL_KEY }, { v .. (picked and '+' or ''), melee_col(mm) } };
 			if high then parts[#parts + 1] = { dot = COL_HIGHBUFF } end
 			if hoxne then parts[#parts + 1] = { dot = COL_HOXNE } end
 			modes[#modes + 1] = parts;
@@ -359,11 +357,6 @@ local function bar_body()
 			for i, p in ipairs(parts) do
 				if (p.dot == nil) then
 					put(p[1], p[2], (i > 1) and 0 or nil);
-					if (p.under ~= nil) then -- the melee mode, under the wpn value
-						local x1, _ = xy(imgui.GetItemRectMin());
-						local x2, y2 = xy(imgui.GetItemRectMax());
-						if (x1 ~= nil) and (x2 ~= nil) and (y2 ~= nil) then dl:AddLine({ x1, y2 - 1 }, { x2, y2 - 1 }, imgui.GetColorU32(p.under), 2) end
-					end
 				elseif (dl ~= nil) then -- after the last text, which the next entry's gap makes room for
 					local x2, y2 = xy(imgui.GetItemRectMax());
 					local _, y1 = xy(imgui.GetItemRectMin());
