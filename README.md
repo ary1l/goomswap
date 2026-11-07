@@ -281,11 +281,12 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 ![The status bar](docs/gcbar.png)
 
 - **Job**, `Atk` and `Def` | **modes that are set** | **toggles that are on** as dots.
-- Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its. Dropped within 8px of the screen's
-  top, the bar snaps flush to it.
+- Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its.
+- Dropped within 8px of the screen's top, the bar snaps flush to it.
 - `wpn` as the HUD's: `+` slot pick, colour `/mmode`, purple dot `/wsset high`, blue dot `/hoxne`. `idle`: `MP` `HP` `TP`.
-- Dots: DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green, Burst pink, PROC red, Harp teal.
-- Grows with what it shows. Windower: `|` and coloured names, no capsule or dots.
+- Dots: DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green, Burst pink, PROC red, Harp teal, Song lock
+  purple, Death red.
+- Grows with what it shows. Windower: `|` and coloured names, no capsule, outline or dots (`wpn`'s are a coloured `o`).
 
 ## How sets stack
 
