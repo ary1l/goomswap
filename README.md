@@ -90,8 +90,8 @@ Selindrile automation (`AutoWSMode`, `SkillchainMode`...) are left out; the file
 2. `/checksets` (empty sets, misspellings), `/gctrace` (what each action wore).
 3. Leave `gSettings.FastCast` at 0.
 
-Template jobs (BLM BST DNC DRG DRK NIN PUP RUN SAM SMN WAR) name sets after the action (`['Savage Blade']`); a spell
-without one uses its family's (`['Cure']` for Cure IV). Worth copying: `WHM.lua` cures, `MNK.lua` Hoxne, `PLD.lua` `/subset`.
+Every example names sets after the action (`['Savage Blade']`); a spell without one uses its family's (`['Cure']` for
+Cure IV). Worth copying: `WHM.lua` cures, `MNK.lua` Hoxne, `PLD.lua` `/subset`.
 
 ## Settings
 
@@ -241,7 +241,8 @@ Waltz TP. Nothing is queued.
 
 ## HUD
 
-Every box's modes in one window; the box with it open reads the others 4x/s (Ashita `luashitacast/hud/`, Windower IPC).
+Every box's modes in one window. Each box saves its modes when they change (checked 4x/s); the box with it open
+reads them twice a second (Ashita `luashitacast/hud/`, Windower IPC).
 
 ![The HUD, compact style](docs/hud.png)
 

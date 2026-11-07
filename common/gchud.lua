@@ -1068,8 +1068,8 @@ local function present()
     end
 end
 
--- True when <name> is one of my boxes: every box running this engine rewrites hud\<Name>.txt every
--- 0.25s (write_state), so a fresh file means a box that can take '/lac fwd'. Cached 5s per name.
+-- True when <name> is one of my boxes: every box running this engine rewrites hud\<Name>.txt when its modes
+-- change and at least every 3s (write_state), so a fresh file means a box that can take '/lac fwd'. Cached 5s per name.
 local boxCache = {};
 -- Every reporting box's modes (for /gcmodes all): { Name, Job, Toggles, Cycles }, owner first.
 function gchud.AllRows()
