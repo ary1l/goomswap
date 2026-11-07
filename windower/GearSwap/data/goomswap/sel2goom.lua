@@ -224,8 +224,8 @@ local JA_SET = {
 -- Spell / skill / Selindrile spell_maps name -> template set names to try, first one the template has wins.
 local MID_TRY = {
     ['Enhancing Magic'] = { 'Enhancing' }, ['Enfeebling Magic'] = { 'Enfeebling' }, ['Elemental Magic'] = { 'Nuke' },
-    ['Healing Magic'] = { 'Cure' }, ['Cure'] = { 'Cure' }, ['Divine Magic'] = { 'Divine' }, ['Dark Magic'] = { 'Macc' },
-    ['Drain'] = { 'Drain' }, ['Aspir'] = { 'Drain' }, ['Aquaveil'] = { 'aquaveil' }, ['StatusRemoval'] = { 'erase' },
+    ['Healing Magic'] = { 'Cure' }, ['Cure'] = { 'Cure', 'Healing Magic' }, ['Divine Magic'] = { 'Divine' }, ['Dark Magic'] = { 'Macc' },
+    ['Drain'] = { 'Drain' }, ['Aspir'] = { 'Aspir', 'Drain' }, ['Regen'] = { 'Regen', 'Regen IV' }, ['Aquaveil'] = { 'aquaveil' }, ['StatusRemoval'] = { 'erase' },
     ['Absorb-TP'] = { 'Absorb_TP' }, ['IntEnfeebles'] = { 'Int_Enfeebling' }, ['MndEnfeebles'] = { 'Mind_Enfeebling' },
     ['Blue Magic'] = { 'BluSkill' }, ['BardSong'] = { 'Buff' }, ['SongEffect'] = { 'Buff' }, ['SongDebuff'] = { 'Wind' },
     ['Foe Lullaby'] = { 'Foe' }, ['Horde Lullaby'] = { 'Horde' }, ["Sentinel's Scherzo"] = { 'Scherzo' },
@@ -233,10 +233,11 @@ local MID_TRY = {
 };
 local PRECAST_FC = { Cure = { 'Cure_Precast', 'Healing Magic_Precast' }, Curaga = { 'Cure_Precast', 'Healing Magic_Precast' },
     ['Healing Magic'] = { 'Cure_Precast', 'Healing Magic_Precast' }, ['Enhancing Magic'] = { 'Enhancing_Precast', 'Enhancing Magic_Precast' },
-    Stoneskin = { 'Stoneskin_Precast' }, Utsusemi = { 'Precast_Utsusemi' }, BardSong = { 'Song_Precast' },
-    ['Honor March'] = { 'Honor_Precast' }, ['Aria of Passion'] = { 'Aria_Precast' }, ['Blue Magic'] = { 'Blu_Precast' },
-    Dispelga = { 'dispelga_precast' } };
-local BUFF_SET = { Impetus = 'Impetus', Footwork = 'Footwork', ['Triple Shot'] = 'TripleShot', Barrage = 'Barrage',
+    Stoneskin = { 'Stoneskin_Precast' }, Utsusemi = { 'Precast_Utsusemi' }, BardSong = { 'Singing_Precast', 'Song_Precast' },
+    ['Honor March'] = { 'Honor March_Precast', 'Honor_Precast' }, ['Aria of Passion'] = { 'Aria of Passion_Precast', 'Aria_Precast' },
+    ['Blue Magic'] = { 'Blue Magic_Precast', 'Blu_Precast' },
+    Dispelga = { 'Dispelga_Precast', 'dispelga_precast' } };
+local BUFF_SET = { Impetus = 'Tp_Impetus', Footwork = 'Tp_Footwork', ['Triple Shot'] = 'TripleShot', Barrage = 'Barrage',
     ['Double Shot'] = 'DoubleShot', Sublimation = 'Sublimation', Doom = 'Doomed', Sleep = 'Sleeping',
     ['Sneak Attack'] = 'SA', ['Trick Attack'] = 'TA' };
 -- Selindrile's precast sets for a family of abilities -> one set, plus one alias per ability name (ByName finds them).
@@ -293,9 +294,10 @@ local function mapper(ctx)
             if (b == 'RA') and (n == 3) then return first(({ Flurry = { 'Preshot_FlurryI' }, Flurry2 = { 'Preshot_FlurryII' } })[c]) end
             if (n == 2) and (GROUPS[b] ~= nil) then return GROUPS[b].set end
             if (n == 3) and (GROUPS[b] ~= nil) and (b ~= 'FC') then return c end -- precast.Waltz['Healing Waltz']: by name
-            if (b == 'CorsairRoll') and (n == 2) then return first({ 'Rolls' }) end
-            if (b == 'CorsairShot') and (n == 2) then return first({ 'QD' }) end
+            if (b == 'CorsairRoll') and (n == 2) then return first({ 'Phantom Roll', 'Rolls' }) end
+            if (b == 'CorsairShot') and (n == 2) then return first({ 'Quick Draw', 'QD' }) end
             if (b == 'JA') and (n == 3) then
+                if has(c) then return c end -- the template's set named after the ability
                 local m = JA_SET[job] and JA_SET[job][c];
                 if (m ~= nil) and has(m) then return m end
                 if generic or has(c) then return c end
@@ -314,7 +316,7 @@ local function mapper(ctx)
                     if (mode == nil) then nm = p .. '_Default'
                     elseif modes[mode] then nm = p .. '_' .. mode
                     else nm = p .. '_Default_' .. mode end
-                    return has(nm) and nm or nil;
+                    if has(nm) then return nm end -- older templates: <prefix>_Default; named ones fall through
                 end
                 if generic or has(c) then return (mode == nil) and c or (c .. '_' .. mode) end
                 return nil;
@@ -334,8 +336,9 @@ local function mapper(ctx)
             end
             if (n == 3) and (c == 'OccultAcumen') and (b == 'Elemental Magic') and has('OccultAcumen') then return 'OccultAcumen' end -- /nukeset oa
             if (n == 3) and (c == 'Resistant') then
-                local base = has(b) and b or first(MID_TRY[b]);
-                if (base ~= nil) and has(base .. 'ACC') then return base .. 'ACC' end
+                for _, base in ipairs({ b, unpack(MID_TRY[b] or {}) }) do -- ['Elemental Magic'] or Nuke -> NukeACC
+                    if has(base .. 'ACC') then return base .. 'ACC' end
+                end
                 return nil;
             end
             return nil;
@@ -636,9 +639,9 @@ function S2G.Convert(opts)
                 name = nil; -- taken by an earlier path
             end
         end
-        if (name == nil) and (not generic) and (next(gear) ~= nil) and not placedTable[f.set] then
-            -- custom-handler template: weapon skills, abilities and spells it has no set for keep their own name,
-            -- and the handlers get a by-name lookup (below) so they are used
+        if (name == nil) and (next(gear) ~= nil) and not placedTable[f.set] then
+            -- weapon skills, abilities and spells the template has no free set for keep their own name; a
+            -- custom-handler template's handlers get a by-name lookup (below) so they are used
             local k, kind = f.path, nil;
             local nk = #k;
             if (nk == 2) and (k[1] == 'midcast') and (k[2] ~= 'FastRecast') and (k[2] ~= 'RA') then name, kind = k[2], 'mid'

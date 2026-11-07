@@ -136,6 +136,7 @@ local sets = {
     Tp_Acc = {
         Ring1 = 'Petrov Ring',
     },
+    Midcast = {},
 
 
     Precast = {
@@ -149,7 +150,7 @@ local sets = {
     },
 
 
-    Cure = {
+    ['Healing Magic'] = {
         Neck = 'Incanter\'s Torque',
         Ear2 = 'Mendi. Earring',
         Ring1 = 'Metamor. Ring +1',
@@ -158,25 +159,30 @@ local sets = {
         Legs = 'Carmine Cuisses +1',
     },
 
-    Enhancing = {
+    ['Enhancing Magic'] = {
         Neck = 'Incanter\'s Torque',
         Ear1 = 'Andoaa Earring',
         Ear2 = 'Mendi. Earring',
         Ring1 = 'Metamor. Ring +1',
     },
 
-    Enfeebling = {
+    ['Enfeebling Magic'] = {
         Neck = 'Erra Pendant',
         Ring1 = 'Metamor. Ring +1',
     },
-    Macc = {},
+    ['Dark Magic'] = {},
 
     Drain = {
         Neck = 'Erra Pendant',
         Ring1 = 'Metamor. Ring +1',
     },
 
-    Nuke = {
+    Aspir = {
+        Neck = 'Erra Pendant',
+        Ring1 = 'Metamor. Ring +1',
+    },
+
+    ['Elemental Magic'] = {
         Head = 'Nyame Helm',
         Neck = 'Baetyl Pendant',
         Ear1 = 'Friomisi Earring',
@@ -251,11 +257,8 @@ local sets = {
     },
     Ws_Acc = {
     },
-    WsObi = {--puts elemental obi on for leaden/wildfire under dark/fire situations
-        Waist = 'Anrin Obi',
-    },
 
-    Savage_Default = {
+    ['Savage Blade'] = {
 		Head = 'Nyame Helm',
         Neck = 'Rep. Plat. Medal',
         Ear1 = 'Ishvara Earring',
@@ -268,11 +271,11 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
     },
-    Savage_Acc = {
+    ['Savage Blade_Acc'] = {
         --Ear1 = 'Telos Earring',
     },
 
-    Evisceration_Default = {
+    Evisceration = {
         Head = 'Adhemar Bonnet +1',
         Neck = 'Fotia Gorget',
         Ear1 = 'Odr Earring',
@@ -289,7 +292,7 @@ local sets = {
     Evisceration_Acc = {
     },
 
-    Aedge_Default = {
+    ['Aeolian Edge'] = {
         Ammo = 'Hauksbok Bullet',
         Head = 'Nyame Helm',
         Neck = 'Baetyl Pendant',
@@ -304,10 +307,10 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
     },
-    Aedge_Acc = {
+    ['Aeolian Edge_Acc'] = {
     },
 
-    Laststand_Default = {
+    ['Last Stand'] = {
 		Ammo = 'chrono bullet',
         Head = 'Lanun Tricorne +4',
         Neck = 'Iskur Gorget',
@@ -321,11 +324,11 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
     },
-    Laststand_Acc = {
+    ['Last Stand_Acc'] = {
 	Neck = 'null loop',
     },
 
-    Wildfire_Default = {
+    Wildfire = {
         Ammo = 'Living Bullet',
         Head = 'Nyame Helm',
         Neck = 'Comm. Charm +2',
@@ -342,7 +345,7 @@ local sets = {
     Wildfire_Acc = {
         --Ear2 = 'Digni. Earring',
     },
-	HS_Default = {
+	['Hot Shot'] = {
         Ammo = 'Living Bullet',
         Head = 'Nyame Helm',
         Neck = 'Fotia Gorget',
@@ -356,11 +359,11 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
     },
-    HS_Acc = {
+    ['Hot Shot_Acc'] = {
         --Ear2 = 'Digni. Earring',
     },
 
-    Leaden_Default = {
+    ['Leaden Salute'] = {
         Ammo = 'Living Bullet',
         Head = 'Pixie Hairpin +1',
         Neck = 'Comm. Charm +2',
@@ -374,12 +377,12 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
     },
-    Leaden_Acc = {
+    ['Leaden Salute_Acc'] = {
         --Ear2 = 'Digni. Earring',
         --Waist = 'Eschan Stone',
     },
 
-    QD = {
+    ['Quick Draw'] = {
         Ammo = 'Hauksbok Bullet',
         Head = 'Ikenga\'s hat',
         Neck = 'Comm. Charm +2',
@@ -394,7 +397,7 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Chass. Bottes +3',
     },
-    QD_Acc = {--with AF 2/3 and regal is better
+    ['Quick Draw_Acc'] = {--with AF 2/3 and regal is better
         Ammo = 'Animikii Bullet',
         Head = 'laksa. tricorne +4',
         Neck = 'Comm. Charm +2',
@@ -409,10 +412,10 @@ local sets = {
         Legs = 'Ikenga\'s Trousers',
         Feet = 'Laksa. Bottes +2',
     },
-    DoubleUp = { -- layered on the DT set; roll+ gear set on the initial roll carries over, Luzaf keeps the 16' range
+    ['Double-Up'] = { -- layered on the DT set; roll+ gear set on the initial roll carries over, Luzaf keeps the 16' range
 		Ring1 = 'Luzaf\'s Ring',
     },
-    Rolls = { -- it will put on ur DT gear set first then layer this set on for phantom roll (not dbl up), use /dt if you think you need to lock dt set while rolling
+    ['Phantom Roll'] = { -- it will put on ur DT gear set first then layer this set on for phantom roll (not dbl up), use /dt if you think you need to lock dt set while rolling
         Main = { Name = 'Rostam', AugPath='C'},
         Range = 'Compensator',
         Head = 'Lanun Tricorne +4',
@@ -424,7 +427,7 @@ local sets = {
 		Legs = 'desultor tassets',
     },
 
-	Bolt = { -- it will put on ur DT gear set first then layer this set on for phantom roll (not dbl up), use /dt if you think you need to lock dt set while rolling
+	['Bolter\'s Roll'] = { -- it will put on ur DT gear set first then layer this set on for phantom roll (not dbl up), use /dt if you think you need to lock dt set while rolling
         Main = { Name = 'Rostam', AugPath='C' },
 		Neck = 'null loop',
 		Ring1 = 'Luzaf\'s Ring',
@@ -433,9 +436,9 @@ local sets = {
     },
 
     Fold = {Hands = 'Lanun Gants +4'},
-    WildCard = {Feet = 'Lanun Bottes +4'},
-    RandomDeal = {Body = 'Lanun Frac +4'},
-    SnakeEye = {Legs = 'Lanun Trews +2'},
+    ['Wild Card'] = {Feet = 'Lanun Bottes +4'},
+    ['Random Deal'] = {Body = 'Lanun Frac +4'},
+    ['Snake Eye'] = {Legs = 'Lanun Trews +2'},
     TH = {
         Head = { Name = 'Herculean Helm', Augment = { [1] = 'Accuracy+30', [2] = 'Attack+18', [3] = '"Fast Cast"+3', [4] = '"Treasure Hunter"+2' } },
 		Waist = 'Chaac Belt',
@@ -453,6 +456,18 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
 		},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    ['Leaden Salute_HighBuff'] = {}, -- /wsset high: this WS
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_DeathPenalty_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_DeathPenalty
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -477,6 +492,8 @@ profile.Packer = {
     {Name = 'trump card', Quantity = 'all'},
 	{Name = 'trump card case', Quantity = 'all'}
 };
+
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
@@ -524,29 +541,15 @@ end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-
-	if (ability.Name == 'Bolter\'s Roll') then
-		gFunc.EquipSet(sets.Dt);
-		gFunc.EquipSet(sets.Bolt);
-		gcinclude.DoCORmsg(ability.Name);
-    elseif (ability.Name:contains('Roll')) then
-        gFunc.EquipSet(sets.Dt);
-        gFunc.EquipSet(sets.Rolls);
-        gcinclude.DoCORmsg(ability.Name);
-    elseif (ability.Name == 'Double-Up') then
-        gFunc.EquipSet(sets.Dt);
-        gFunc.EquipSet(sets.DoubleUp);
-    elseif (ability.Name == 'Wild Card') then gFunc.EquipSet(sets.WildCard);
-    elseif (ability.Name == 'Fold') then gFunc.EquipSet(sets.Fold);
-    elseif (ability.Name == 'Random Deal') then gFunc.EquipSet(sets.RandomDeal);
-    elseif (ability.Name == 'Snake Eye') then gFunc.EquipSet(sets.SnakeEye);
-    elseif (ability.Type == 'Quick Draw') then
-        gFunc.EquipSet(sets.QD);
-        if (gcdisplay.GetCycle('MeleeSet') == 'Acc') or (ability.Name == 'Dark Shot') or (ability.Name == 'Light Shot') then
-            gFunc.EquipSet(sets.QD_Acc);
-        end
+    local roll = (string.find(ability.Name, 'Roll', 1, true) ~= nil);
+    if roll or (ability.Name == 'Double-Up') then gFunc.EquipSet(sets.Dt) end -- rolls and Double-Up: DT under the roll gear
+    if roll and (ability.Name ~= 'Bolter\'s Roll') then ByName('Phantom Roll') end -- every roll but Bolter's
+    if roll then gcinclude.DoCORmsg(ability.Name) end
+    if (ability.Type == 'Quick Draw') then
+        ByName('Quick Draw'); -- every shot; ['Quick Draw_Acc'] with /mmode acc
+        if (ability.Name == 'Dark Shot') or (ability.Name == 'Light Shot') then ByName('Quick Draw_Acc') end
     end
-
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Bolter\'s Roll'], ['Wild Card']
     gcinclude.CheckCancels();
 end
 
@@ -557,29 +560,19 @@ profile.HandleItem = function()
 end
 
 profile.HandlePrecast = function()
+    local spell = gData.GetAction();
     gFunc.EquipSet(sets.Precast);
-
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
 end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
-
-    if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing);
-    elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure);
-    elseif (spell.Skill == 'Elemental Magic') then
-        gFunc.EquipSet(sets.Nuke);
-    elseif (spell.Skill == 'Enfeebling Magic') then
-        gFunc.EquipSet(sets.Enfeebling);
-    elseif (spell.Skill == 'Dark Magic') then
-        gFunc.EquipSet(sets.Macc);
-        if (string.contains(spell.Name, 'Aspir') or string.contains(spell.Name, 'Drain')) then
-            gFunc.EquipSet(sets.Drain);
-        end
-    end
-	gcinclude.CheckTH();
+    gFunc.EquipSet(sets.Midcast);
+    ByName(spell.Skill); -- e.g. ['Enhancing Magic']
+    if not ByName(spell.Name) then ByName(Family(spell.Name)) end -- e.g. ['Cure'] for Cure IV
+    gcinclude.CheckTH();
 end
 
 profile.HandlePreshot = function()
@@ -614,24 +607,8 @@ profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
     if (gcinclude.CheckBlockedAmmoWS(ws.Name) == true) then return end
-
     gcinclude.EquipMode('Ws');
-
-    if string.match(ws.Name, 'Savage Blade') then
-        gcinclude.EquipMode('Savage');
-    elseif string.match(ws.Name, 'Evisceration') then
-        gcinclude.EquipMode('Evisceration');
-    elseif string.match(ws.Name, 'Aeolian Edge') then
-        gcinclude.EquipMode('Aedge');
-    elseif string.match(ws.Name, 'Last Stand') then
-        gcinclude.EquipMode('Laststand');
-    elseif string.match(ws.Name, 'Wildfire') then
-        gcinclude.EquipMode('Wildfire');
-	elseif string.match(ws.Name, 'Hot Shot') then
-        gcinclude.EquipMode('HS');
-    elseif string.match(ws.Name, 'Leaden Salute') then
-        gcinclude.EquipMode('Leaden');
-    end
+    ByName(ws.Name); -- e.g. ['Leaden Salute'], then ['Leaden Salute_<mmode>']
 end
 
 return profile;

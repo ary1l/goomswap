@@ -121,6 +121,7 @@ local sets = {
         Legs = 'Tatena. Haidate +1',
         Feet = 'Tatena. Sune. +1',
     },
+    Midcast = {},
 
 
     Precast = {
@@ -133,7 +134,7 @@ local sets = {
     },
 
 
-    Cure = {
+    ['Healing Magic'] = {
         Neck = 'Incanter\'s Torque',
         Ear2 = 'Mendi. Earring',
         Ring1 = 'Metamor. Ring +1',
@@ -141,25 +142,30 @@ local sets = {
         Legs = 'Carmine Cuisses +1',
     },
 
-    Enhancing = {
+    ['Enhancing Magic'] = {
         Neck = 'Incanter\'s Torque',
         Ear1 = 'Andoaa Earring',
         Ear2 = 'Mendi. Earring',
         Ring1 = 'Metamor. Ring +1',
     },
 
-    Enfeebling = {
+    ['Enfeebling Magic'] = {
         Neck = 'Erra Pendant',
         Ring1 = 'Metamor. Ring +1',
     },
-    Macc = {},
+    ['Dark Magic'] = {},
 
     Drain = {
         Neck = 'Erra Pendant',
         Ring1 = 'Metamor. Ring +1',
     },
 
-    Nuke = {
+    Aspir = {
+        Neck = 'Erra Pendant',
+        Ring1 = 'Metamor. Ring +1',
+    },
+
+    ['Elemental Magic'] = {
         Head = 'Nyame Helm',
         Neck = 'Baetyl Pendant',
         Ear2 = 'Crematio Earring',
@@ -238,11 +244,8 @@ local sets = {
     },
     Ws_Acc = {
     },
-    WsObi = {--puts elemental obi on for trueflight/wildfire under light/fire situations
-        Waist = 'Hachirin-no-Obi',
-    },
 
-    Savage_Default = {
+    ['Savage Blade'] = {
         Head = 'Nyame Helm',
         Ear2 = 'Sherida Earring',
         Body = 'Nyame Mail',
@@ -254,9 +257,9 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Accuracy+14', [3] = 'Attack+26', [4] = 'DEX+8' } },
     },
-    Savage_Acc = {
+    ['Savage Blade_Acc'] = {
     },
-    Aedge_Default = {
+    ['Aeolian Edge'] = {
         Head = 'Nyame Helm',
         Neck = 'Baetyl Pendant',
         Ear1 = 'Friomisi Earring',
@@ -270,9 +273,9 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Mag. Acc.+17', [3] = 'MND+8', [4] = '"Mag. Atk. Bns."+29' } },
     },
-    Aedge_Acc = {
+    ['Aeolian Edge_Acc'] = {
     },
-    Wildfire_Default = {
+    Wildfire = {
         Head = 'Nyame Helm',
         Neck = 'Baetyl Pendant',
         Ear1 = 'Friomisi Earring',
@@ -288,7 +291,7 @@ local sets = {
     },
     Wildfire_Acc = {
     },
-    HS_Default = {
+    ['Hot Shot'] = {
         Head = 'Nyame Helm',
         Neck = 'Baetyl Pendant',
         Ear1 = 'Friomisi Earring',
@@ -302,9 +305,9 @@ local sets = {
         Legs = 'Nyame Flanchard',--relic+3
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Mag. Acc.+17', [3] = 'MND+8', [4] = '"Mag. Atk. Bns."+29' } },
     },
-    HS_Acc = {
+    ['Hot Shot_Acc'] = {
     },
-    TrueFlight_Default = {
+    Trueflight = {
         Head = 'Nyame Helm',
         Neck = 'Baetyl Pendant',
         Ear1 = 'Friomisi Earring',
@@ -318,7 +321,7 @@ local sets = {
         Legs = 'Nyame Flanchard',--relic+3
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Mag. Acc.+17', [3] = 'MND+8', [4] = '"Mag. Atk. Bns."+29' } },
     },
-    TrueFlight_Acc = {
+    Trueflight_Acc = {
     },
 
     Scavenge = {
@@ -334,6 +337,18 @@ local sets = {
     Movement = {
         Ring1 = 'shneddick ring',
 	},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    ['Savage Blade_HighBuff'] = {}, -- /wsset high: this WS
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_Annihilator_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Annihilator
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -352,6 +367,8 @@ local sets = {
     },
 };
 profile.Sets = sets;
+
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
@@ -392,10 +409,7 @@ end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-
-    if string.match(ability.Name, 'Scavenge') then gFunc.EquipSet(sets.Scavenge);
-    elseif string.match(ability.Name, 'Sharpshot') then gFunc.EquipSet(sets.Sharpshot) end
-
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Scavenge']
     gcinclude.CheckCancels();
 end
 
@@ -406,29 +420,19 @@ profile.HandleItem = function()
 end
 
 profile.HandlePrecast = function()
+    local spell = gData.GetAction();
     gFunc.EquipSet(sets.Precast);
-
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
 end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
-
-    if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing);
-    elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure);
-    elseif (spell.Skill == 'Elemental Magic') then
-        gFunc.EquipSet(sets.Nuke);
-    elseif (spell.Skill == 'Enfeebling Magic') then
-        gFunc.EquipSet(sets.Enfeebling);
-    elseif (spell.Skill == 'Dark Magic') then
-        gFunc.EquipSet(sets.Macc);
-        if (string.contains(spell.Name, 'Aspir') or string.contains(spell.Name, 'Drain')) then
-            gFunc.EquipSet(sets.Drain);
-        end
-    end
-	gcinclude.CheckTH();
+    gFunc.EquipSet(sets.Midcast);
+    ByName(spell.Skill); -- e.g. ['Enhancing Magic']
+    if not ByName(spell.Name) then ByName(Family(spell.Name)) end -- e.g. ['Cure'] for Cure IV
+    gcinclude.CheckTH();
 end
 
 profile.HandlePreshot = function()
@@ -469,20 +473,8 @@ profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
     if (gcinclude.CheckBlockedAmmoWS(ws.Name) == true) then return end
-
     gcinclude.EquipMode('Ws');
-
-    if string.match(ws.Name, 'Savage Blade') then
-        gcinclude.EquipMode('Savage');
-    elseif string.match(ws.Name, 'Aeolian Edge') then
-        gcinclude.EquipMode('Aedge');
-    elseif string.match(ws.Name, 'Trueflight') then
-        gcinclude.EquipMode('TrueFlight');
-    elseif string.match(ws.Name, 'Hot Shot') then
-        gcinclude.EquipMode('HS');
-    elseif string.match(ws.Name, 'Wildfire') then
-        gcinclude.EquipMode('Wildfire');
-    end
+    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mmode>']
 end
 
 return profile;

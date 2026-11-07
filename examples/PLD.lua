@@ -167,6 +167,7 @@ local sets = {
         Legs = { Name = 'nyame flanchard', Priority = 114 },
         Feet = { Name = 'nyame sollerets', Priority = 68 },
     },
+    Midcast = {},
 
     Precast = { --47FC
         Ammo = 'Sapience Orb',--2
@@ -183,11 +184,11 @@ local sets = {
         Legs = { Name = 'odyssean cuisses', Priority = 54 },--6
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--7
     },
-    Cure_Precast = {
+    ['Healing Magic_Precast'] = {
 	    --Ear1 = 'Nourish. Earring +1',
         Ear2 = 'Mendi. Earring',
     },
-    Enhancing_Precast = {
+    ['Enhancing Magic_Precast'] = {
 		Body = { Name = 'shab. cuirass +1', Priority = 115 },
 		Hands = { Name = 'regal gauntlets', Priority = 205 },
         Waist = 'Siegel Sash',
@@ -289,6 +290,22 @@ local sets = {
         Feet = { Name = 'odyssean greaves', Priority = 20 },--20
     },
 
+    Protect = { --105 SIR
+        Ammo = 'staunch tathlum +1',--10
+        Head = { Name = 'souv. schaller +1', Priority = 175 },--20
+        Neck = 'moonlight necklace', --15
+        Ear1 = 'Tuisto Earring',
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Body = { Name = 'Shab. Cuirass +1', Priority = 115 },
+		Hands = { Name = 'regal gauntlets', Priority = 205 },--20
+		Ring1 = { Name = 'eihwaz ring', Priority = 70 },
+        Ring2 = { Name = 'Moonlight Ring', Priority = 110 },
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
+        Waist = 'audumbla sash',--10
+        Legs = { Name = 'cab. breeches +4', Priority = 82 },--10
+        Feet = { Name = 'odyssean greaves', Priority = 20 },--20
+    },
+
     Absorb_TP = { -- /sir never goes over this (settings.SIRSkip); /aminon's weapons stay
         Head = { Name = 'Chev. Armet +3', Priority = 145 },
         Neck = { Name = 'Null Loop', Priority = 50 },
@@ -358,7 +375,7 @@ local sets = {
     },
     Ws_Acc = {
     },
-    Chant_Default = {
+    ['Chant du Cygne'] = {
         Ammo = 'coiste bodhar',
         Head = { Name = 'Nyame Helm', Priority = 91 },
         Neck = 'rep. plat. medal',
@@ -372,9 +389,9 @@ local sets = {
         Legs = { Name = 'nyame flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
-    Chant_Acc = {
+    ['Chant du Cygne_Acc'] = {
     },
-    Savage_Default = {
+    ['Savage Blade'] = {
 		Ammo = 'coiste bodhar',
         Head = { Name = 'Nyame Helm', Priority = 91 },
         Neck = 'rep. plat. medal',
@@ -388,9 +405,9 @@ local sets = {
         Legs = { Name = 'nyame flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
-    Savage_Acc = {
+    ['Savage Blade_Acc'] = {
     },
-    Atone_Default = {
+    Atonement = {
         Ammo = 'sapience orb',
         Head = { Name = 'loess barbuta +1', Priority = 105 },
         Neck = 'Moonlight Necklace', -- 15
@@ -405,9 +422,9 @@ local sets = {
         Legs = { Name = 'cab. breeches +4', Priority = 82 },
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },
     },
-    Atone_Acc = {
+    Atonement_Acc = {
     },
-    Aedge_Default = {
+    ['Aeolian Edge'] = {
         Ammo = 'Pemphredo Tathlum',
         Head = { Name = 'Nyame Helm', Priority = 91 },
         Neck = 'sibyl scarf',
@@ -422,9 +439,9 @@ local sets = {
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
-    Aedge_Acc = {},
+    ['Aeolian Edge_Acc'] = {},
 
-    sanguine_Default = {
+    ['Sanguine Blade'] = {
         Ammo = 'Pemphredo tathlum',
         Head = { Name = 'pixie hairpin +1', Priority = -35 },
         Neck = 'sibyl scarf',
@@ -439,9 +456,9 @@ local sets = {
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
-    sanguine_Acc = {},
+    ['Sanguine Blade_Acc'] = {},
 
-	shining_Default = {
+	['Shining Blade'] = {
         Ammo = 'Pemphredo Tathlum',
         Head = { Name = 'Nyame Helm', Priority = 91 },
         Neck = 'sibyl scarf',
@@ -456,9 +473,43 @@ local sets = {
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
-    shining_Acc = {},
 
-	KOR_Default = {
+	['Shining Strike'] = {
+        Ammo = 'Pemphredo Tathlum',
+        Head = { Name = 'Nyame Helm', Priority = 91 },
+        Neck = 'sibyl scarf',
+        Ear1 = 'Crematio Earring',
+        Ear2 = 'Friomisi Earring',
+        Body = { Name = 'Nyame Mail', Priority = 136 },
+        Hands = { Name = 'Nyame Gauntlets', Priority = 91 },
+        Ring1 = { Name = 'regal ring', Priority = 50 },
+        Ring2 = 'metamor. ring +1',
+		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'orpheus\'s sash',
+        Legs = { Name = 'Nyame Flanchard', Priority = 114 },
+        Feet = { Name = 'Nyame Sollerets', Priority = 68 },
+    },
+
+	['Seraph Blade'] = {
+        Ammo = 'Pemphredo Tathlum',
+        Head = { Name = 'Nyame Helm', Priority = 91 },
+        Neck = 'sibyl scarf',
+        Ear1 = 'Crematio Earring',
+        Ear2 = 'Friomisi Earring',
+        Body = { Name = 'Nyame Mail', Priority = 136 },
+        Hands = { Name = 'Nyame Gauntlets', Priority = 91 },
+        Ring1 = { Name = 'regal ring', Priority = 50 },
+        Ring2 = 'metamor. ring +1',
+		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'orpheus\'s sash',
+        Legs = { Name = 'Nyame Flanchard', Priority = 114 },
+        Feet = { Name = 'Nyame Sollerets', Priority = 68 },
+    },
+    ['Shining Blade_Acc'] = {},
+    ['Shining Strike_Acc'] = {},
+    ['Seraph Blade_Acc'] = {},
+
+	['Knights of Round'] = {
         Ammo = 'crepuscular pebble',
         Head = { Name = 'nyame helm', Priority = 91 },
         Neck = 'fotia gorget',
@@ -473,9 +524,9 @@ local sets = {
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'nyame sollerets', Priority = 68 },
     },
-    KOR_Acc = {},
+    ['Knights of Round_Acc'] = {},
 
-	Imperator_Default = {
+	Imperator = {
         Ammo = 'coiste bodhar',
         Head = { Name = 'nyame helm', Priority = 91 },
         Neck = 'rep. plat. medal',
@@ -523,7 +574,23 @@ local sets = {
         Legs = { Name = 'cab. breeches +4', Priority = 82 },--9
         Feet = { Name = 'Cab. Leggings +2', Priority = 53 },
     },
-    Bash = {
+    ['Shield Bash'] = {
+		Sub = 'aegis',
+		Ammo = 'Sapience Orb',--2
+        Head = { Name = 'loess barbuta +1', Priority = 105 },--19
+        Neck = 'Moonlight Necklace', -- 15
+        Ear1 = { Name = 'cryptic earring', Priority = 40 },--2
+		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Body = { Name = 'Cab. Surcoat +4', Priority = 148 },
+		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Ring1 = { Name = 'eihwaz ring', Priority = 70 },
+        Ring2 = { Name = 'vexer ring +1', Priority = 55 },
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
+        Waist = { Name = 'Creed Baudrier', Priority = 40 },--5
+        Legs = { Name = 'cab. breeches +4', Priority = 82 },--9
+        Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
+    },
+    Majesty = {
 		Sub = 'aegis',
 		Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
@@ -554,7 +621,7 @@ local sets = {
         Legs = { Name = 'Cab. Breeches +4', Priority = 82 },
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
 		},
-	de = {
+	['Divine Emblem'] = {
 		Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--9
         Neck = 'Moonlight Necklace', -- 15
@@ -602,7 +669,7 @@ local sets = {
         Legs = { Name = 'cab. breeches +4', Priority = 82 },--9
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
     },
-	circle = {
+	['Holy Circle'] = {
 		Sub = 'diamond aspis',
 		Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
@@ -619,7 +686,7 @@ local sets = {
 		Feet = { Name = 'rev. leggings +4', Priority = 92 },
 		},
 
-	palisade = {
+	Palisade = {
 		Sub = 'diamond aspis',
 		Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
@@ -636,7 +703,7 @@ local sets = {
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
 		},
 
-	chiv = {
+	Chivalry = {
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2',
@@ -651,7 +718,7 @@ local sets = {
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
 		},
 
-    intervene = {
+    Intervene = {
 		Sub = 'duban',
 		Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
@@ -715,6 +782,19 @@ local sets = {
         Legs = { Name = 'chev. cuisses +3', Priority = 127 },
         Feet = { Name = 'nyame sollerets', Priority = 68 },
 	},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    ['Savage Blade_HighBuff'] = {}, -- /wsset high: this WS
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Example
+    -- Weapon_Example_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Cure_Received = {
     },
@@ -732,6 +812,8 @@ local sets = {
     },
 	};
 profile.Sets = sets;
+
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
@@ -776,31 +858,8 @@ end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-    gFunc.EquipSet(sets.Enmity)
-	if string.match(ability.Name, 'Fealty') then
-		gFunc.EquipSet(sets.Fealty);
-    elseif string.match(ability.Name, 'Sentinel') then
-		gFunc.EquipSet(sets.Sentinel);
-	elseif string.match(ability.Name, 'Divine Emblem') then
-		gFunc.EquipSet(sets.de);
-    elseif string.match(ability.Name, 'Shield Bash') or string.match(ability.Name, 'Majesty') then
-		gFunc.EquipSet(sets.Bash);
-    elseif string.match(ability.Name, 'Invincible') then
-		gFunc.EquipSet(sets.Invincible);
-	elseif string.match(ability.Name, 'Intervene') then
-		gFunc.EquipSet(sets.intervene);
-    elseif string.match(ability.Name, 'Cover') then
-		gFunc.EquipSet(sets.Cover);
-	elseif string.match(ability.Name, 'Palisade') then
-		gFunc.EquipSet(sets.palisade);
-    elseif string.match(ability.Name, 'Rampart') then
-		gFunc.EquipSet(sets.Rampart);
-	elseif string.match(ability.Name, 'Holy Circle') then
-		gFunc.EquipSet(sets.circle);
-	elseif string.match(ability.Name, 'Chivalry') then
-		gFunc.EquipSet(sets.chiv);
-	end
-
+    gFunc.EquipSet(sets.Enmity); -- PLD: enmity under every ability
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Sentinel']
     gcinclude.CheckCancels();
 end
 
@@ -812,39 +871,19 @@ end
 
 profile.HandlePrecast = function()
     local spell = gData.GetAction();
-    gFunc.EquipSet(sets.Precast)
-
-    if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing_Precast);
-    elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure_Precast);
-    end
-
+    gFunc.EquipSet(sets.Precast);
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
 end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
-    local family = gcinclude.Family(spell.Name); -- 'Cure IV' -> 'Cure', 'Protect V' -> 'Protect'
-	if (family == 'Cure') then -- PLD: Cure I-IV
-        gFunc.EquipSet(sets.Cure);
-	elseif (family == 'Protect') then -- Protect I-V: same SIR/enmity gear as Reprisal
-        gFunc.EquipSet(sets.Reprisal);
-    elseif string.match(spell.Name, 'Phalanx') then
-        gFunc.EquipSet(sets.Phalanx);
-    elseif string.match(spell.Name, 'Reprisal') then
-        gFunc.EquipSet(sets.Reprisal);
-	elseif string.match(spell.Name, 'Stoneskin') then
-        gFunc.EquipSet(sets.Stoneskin);
-    elseif (spell.Name == 'Absorb-TP') then
-        gFunc.EquipSet(sets.Absorb_TP);
-    elseif string.match(spell.Name, 'Flash') then
-        gFunc.EquipSet(sets.Flash);
-    else
-        gFunc.EquipSet(sets.Enmity);
-    end
-
-	gcinclude.CheckTH();
+    gFunc.EquipSet(sets.Midcast);
+    ByName(spell.Skill); -- e.g. ['Enhancing Magic']
+    -- a set named after the spell or its family (['Cure'], ['Protect'], ['Phalanx'], ['Flash']); none: Enmity
+    if not (ByName(spell.Name) or ByName(Family(spell.Name))) then gFunc.EquipSet(sets.Enmity) end
+    gcinclude.CheckTH();
 end
 
 profile.HandlePreshot = function()
@@ -860,25 +899,7 @@ end
 profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
-
     gcinclude.EquipMode('Ws');
-
-    if string.match(ws.Name, 'Chant du Cygne') then
-        gcinclude.EquipMode('Chant');
-    elseif string.match(ws.Name, 'Savage Blade') then
-        gcinclude.EquipMode('Savage');
-	elseif string.match(ws.Name, 'Imperator') then
-        gcinclude.EquipMode('Imperator');
-    elseif string.match(ws.Name, 'Atonement') then
-        gcinclude.EquipMode('Atone');
-	elseif string.match(ws.Name, 'Sanguine Blade') then
-        gcinclude.EquipMode('sanguine');
-	elseif string.match(ws.Name, 'Knights of Round') then
-        gcinclude.EquipMode('KOR');
-	elseif string.match(ws.Name, 'Shining Blade') or string.match(ws.Name, 'Seraph Blade') or string.match(ws.Name, 'Shining Strike') then
-        gcinclude.EquipMode('shining');
-    elseif string.match(ws.Name, 'Aeolian Edge') then
-        gcinclude.EquipMode('Aedge');
-    end
+    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mmode>']
 end
 return profile;

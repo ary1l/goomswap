@@ -266,6 +266,20 @@ local sets = {
     ['Soul Enslavement'] = {},
     ['Consume Mana'] = {},
     ['Scarlet Delirium'] = {},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    ['Aeolian Edge_Acc'] = {}, -- /mmode acc: this WS, over Ws_Acc
+    ['Aeolian Edge_HighBuff'] = {}, -- /wsset high: this WS
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Example
+    -- Weapon_Example_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Cure_Received = {},
     Cursna_Received = {},
     Phalanx_Received = {},

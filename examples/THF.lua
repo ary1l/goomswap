@@ -105,6 +105,7 @@ local sets = {
         Legs = 'Gleti\'s Breeches',
         Feet = 'Gleti\'s Boots',
     },
+    Midcast = {},
 
 
     Precast = {
@@ -161,7 +162,7 @@ local sets = {
     Ws_Acc_TA = {},
     Ws_Acc_SATA = {},
 
-    Evis_Default = {
+    Evisceration = {
         Head = 'Pill. Bonnet +3',
         Neck = 'Fotia Gorget',
         Ear1 = 'Odr Earring',
@@ -175,23 +176,23 @@ local sets = {
         Legs = 'Gleti\'s Breeches',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Accuracy+14', [3] = 'Attack+26', [4] = 'DEX+8' } },
     },
-    Evis_Default_SA = {
+    Evisceration_SA = {
     },
-    Evis_Default_TA = {
+    Evisceration_TA = {
 
     },
-    Evis_Default_SATA = {
+    Evisceration_SATA = {
     },
-    Evis_SubtleBlow_SA = {},
-    Evis_SubtleBlow_TA = {},
-    Evis_SubtleBlow_SATA = {},
-    Evis_Acc = {
+    Evisceration_SubtleBlow_SA = {},
+    Evisceration_SubtleBlow_TA = {},
+    Evisceration_SubtleBlow_SATA = {},
+    Evisceration_Acc = {
     },
-    Evis_Acc_SA = {},
-    Evis_Acc_TA = {},
-    Evis_Acc_SATA = {},
+    Evisceration_Acc_SA = {},
+    Evisceration_Acc_TA = {},
+    Evisceration_Acc_SATA = {},
 
-	Rudra_Default = {
+	['Rudra\'s Storm'] = {
         Head = 'Nyame Helm',
         Neck = 'Asn. Gorget +2',
         Ear1 = 'Sherida Earring',
@@ -204,23 +205,23 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Rudra_Default_SA = {
+    ['Rudra\'s Storm_SA'] = {
     },
-    Rudra_Default_TA = {
+    ['Rudra\'s Storm_TA'] = {
 
     },
-    Rudra_Default_SATA = {
+    ['Rudra\'s Storm_SATA'] = {
     },
-    Rudra_SubtleBlow_SA = {},
-    Rudra_SubtleBlow_TA = {},
-    Rudra_SubtleBlow_SATA = {},
-    Rudra_Acc = {
+    ['Rudra\'s Storm_SubtleBlow_SA'] = {},
+    ['Rudra\'s Storm_SubtleBlow_TA'] = {},
+    ['Rudra\'s Storm_SubtleBlow_SATA'] = {},
+    ['Rudra\'s Storm_Acc'] = {
     },
-    Rudra_Acc_SA = {},
-    Rudra_Acc_TA = {},
-    Rudra_Acc_SATA = {},
+    ['Rudra\'s Storm_Acc_SA'] = {},
+    ['Rudra\'s Storm_Acc_TA'] = {},
+    ['Rudra\'s Storm_Acc_SATA'] = {},
 
-	Savage_Default = {
+	['Savage Blade'] = {
 		Ammo = 'coiste bodhar',
         Head = 'Nyame Helm',
         Neck = { Name = 'Asn. Gorget +2', AugPath='A' },
@@ -234,23 +235,23 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Savage_Default_SA = {
+    ['Savage Blade_SA'] = {
     },
-    Savage_Default_TA = {
+    ['Savage Blade_TA'] = {
 
     },
-    Savage_Default_SATA = {
+    ['Savage Blade_SATA'] = {
     },
-    Savage_SubtleBlow_SA = {},
-    Savage_SubtleBlow_TA = {},
-    Savage_SubtleBlow_SATA = {},
-    Savage_Acc = {
+    ['Savage Blade_SubtleBlow_SA'] = {},
+    ['Savage Blade_SubtleBlow_TA'] = {},
+    ['Savage Blade_SubtleBlow_SATA'] = {},
+    ['Savage Blade_Acc'] = {
     },
-    Savage_Acc_SA = {},
-    Savage_Acc_TA = {},
-    Savage_Acc_SATA = {},
+    ['Savage Blade_Acc_SA'] = {},
+    ['Savage Blade_Acc_TA'] = {},
+    ['Savage Blade_Acc_SATA'] = {},
 
-	AE_Default = {
+	['Aeolian Edge'] = {
 		Ammo = "C. Palug Stone",
         Head = 'Nyame Helm',
         Neck = 'Sanctity Necklace',
@@ -265,21 +266,21 @@ local sets = {
         Feet = 'Nyame Sollerets',
     },
 
-    AE_Default_SA = {
+    ['Aeolian Edge_SA'] = {
     },
 
-	AE_Default_TA = {
+	['Aeolian Edge_TA'] = {
     },
-    AE_Default_SATA = {
+    ['Aeolian Edge_SATA'] = {
     },
-    AE_SubtleBlow_SA = {},
-    AE_SubtleBlow_TA = {},
-    AE_SubtleBlow_SATA = {},
-    AE_Acc = {
+    ['Aeolian Edge_SubtleBlow_SA'] = {},
+    ['Aeolian Edge_SubtleBlow_TA'] = {},
+    ['Aeolian Edge_SubtleBlow_SATA'] = {},
+    ['Aeolian Edge_Acc'] = {
     },
-    AE_Acc_SA = {},
-    AE_Acc_TA = {},
-    AE_Acc_SATA = {},
+    ['Aeolian Edge_Acc_SA'] = {},
+    ['Aeolian Edge_Acc_TA'] = {},
+    ['Aeolian Edge_Acc_SATA'] = {},
 
     SATA = {
 
@@ -318,6 +319,19 @@ local sets = {
     Movement = {
         Feet = 'Pill. Poulaines +2',
 	},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    ['Rudra\'s Storm_HighBuff'] = {}, -- /wsset high: this WS
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_Mpu_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Mpu
+    -- Weapon_Mpu_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -338,6 +352,8 @@ local sets = {
 profile.Sets = sets;
 
 
+
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
@@ -387,10 +403,7 @@ end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-	if string.match(ability.Name, 'Flee') then
-		gFunc.EquipSet(sets.Flee);
-	end
-
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Flee']
     gcinclude.CheckCancels();
 end
 
@@ -401,12 +414,18 @@ profile.HandleItem = function()
 end
 
 profile.HandlePrecast = function()
+    local spell = gData.GetAction();
     gFunc.EquipSet(sets.Precast);
-
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
 end
 
 profile.HandleMidcast = function()
+    local spell = gData.GetAction();
+    gFunc.EquipSet(sets.Midcast);
+    ByName(spell.Skill); -- e.g. ['Enhancing Magic']
+    if not ByName(spell.Name) then ByName(Family(spell.Name)) end -- e.g. ['Cure'] for Cure IV
     gcinclude.CheckTH();
 end
 
@@ -423,28 +442,14 @@ end
 profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
-    local sa = gcinclude.BuffCount('Sneak Attack');
-    local ta = gcinclude.BuffCount('Trick Attack');
-
-    local prefix = 'Ws';
-    if string.match(ws.Name, 'Savage Blade') then
-        prefix = 'Savage';
-    elseif string.match(ws.Name, 'Evisceration') then
-        prefix = 'Evis';
-    elseif string.match(ws.Name, 'Aeolian Edge') then
-        prefix = 'AE';
-    elseif string.match(ws.Name, 'Rudra\'s Storm') then
-        prefix = 'Rudra';
-    end
-
     gcinclude.EquipMode('Ws');
-    if (prefix ~= 'Ws') then gcinclude.EquipMode(prefix) end
-
-    -- SA/TA on top of the WS set: <prefix>_<mode>_SA/_TA/_SATA, or Ws_<mode>_... when that one is missing or empty.
+    ByName(ws.Name); -- e.g. ['Rudra\'s Storm'], then ['Rudra\'s Storm_<mmode>']
+    -- Sneak/Trick Attack on top: ['<WS>_SA'] / _TA / _SATA (['<WS>_Acc_SA'] with /mmode acc), else Ws_<mmode>_SA ...
+    local sa, ta = gcinclude.BuffCount('Sneak Attack'), gcinclude.BuffCount('Trick Attack');
     local suffix = ((sa > 0) and (ta > 0) and 'SATA') or ((sa > 0) and 'SA') or ((ta > 0) and 'TA') or nil;
     if (suffix ~= nil) then
         local mode = gcdisplay.GetCycle('MeleeSet');
-        local set = gcinclude.FindSet(prefix .. '_' .. mode .. '_' .. suffix);
+        local set = gcinclude.FindSet(ws.Name .. ((mode == 'Default') and '' or ('_' .. mode)) .. '_' .. suffix);
         if (set == nil) or (next(set) == nil) then set = gcinclude.FindSet('Ws_' .. mode .. '_' .. suffix) end
         if (set ~= nil) then gFunc.EquipSet(set) end
     end

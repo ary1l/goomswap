@@ -120,6 +120,7 @@ local sets = {
     },
     Tp_Acc = {
     },
+    Midcast = {},
 
 
     Precast = {
@@ -137,11 +138,11 @@ local sets = {
         Legs = 'Pinga Pants +1',--11
         Feet = 'peda. Loafers +2',
     },
-    Cure_Precast = {
+    ['Healing Magic_Precast'] = {
         Ear2 = 'Mendi. Earring',
         Feet = 'acad. loafers +4',
     },
-    Enhancing_Precast = {
+    ['Enhancing Magic_Precast'] = {
         Waist = 'Siegel Sash',
     },
     Stoneskin_Precast = {
@@ -151,7 +152,7 @@ local sets = {
     },
 
 
-    Cure = {--I cap is 50, II cap is 30
+    ['Healing Magic'] = {--I cap is 50, II cap is 30
         Main = 'Bunzi\'s Rod',--I 30
         Sub = 'Ammurapi Shield',
         Ammo = 'Pemphredo Tathlum',
@@ -196,7 +197,7 @@ local sets = {
 		Waist = 'Gishdubar Sash',
     },
 
-    Enhancing = {
+    ['Enhancing Magic'] = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
         Ammo = 'Pemphredo Tathlum',
@@ -225,7 +226,7 @@ local sets = {
     },
     Self_Refresh = {},
 
-    Enfeebling = {
+    ['Enfeebling Magic'] = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
         Ammo = 'Pemphredo Tathlum',
@@ -261,7 +262,25 @@ local sets = {
         Feet = 'Agwu\'s Pigaches',
     },
 
-    Nuke = {
+    Aspir = {
+        Main = 'Bunzi\'s Rod',
+        Sub = 'Ammurapi Shield',
+        Ammo = 'Pemphredo Tathlum',
+        Head = 'Pixie Hairpin +1',
+        Neck = 'Erra Pendant',
+        Ear1 = 'Regal Earring',
+        Ear2 = 'Malignance Earring',
+        Body = 'Acad. Gown +3',
+        Hands = 'Acad. Bracers +4',
+        Ring1 = 'evanescence ring',
+        Ring2 = 'mujin band',
+        Back = 'Aurist\'s Cape +1',
+        Waist = 'Fucho-no-Obi',
+        Legs = 'Acad. Pants +3',
+        Feet = 'Agwu\'s Pigaches',
+    },
+
+    ['Elemental Magic'] = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
         Ammo = 'Pemphredo Tathlum',
@@ -360,7 +379,7 @@ local sets = {
     },
     Ws_Acc = {
     },
-    Mykyr_Default = {
+    Myrkr = {
         Ammo = 'Ghastly Tathlum +1',
         Head = 'Pixie Hairpin +1',
         Neck = 'Sanctity Necklace',
@@ -375,9 +394,9 @@ local sets = {
         Legs = 'Amalric Slops +1',
         Feet = 'Arbatel Loafers +3',
     },
-    Mykyr_Acc = {
+    Myrkr_Acc = {
     },
-    Cataclysm_Default = {
+    Cataclysm = {
         Ammo = 'Pemphredo Tathlum',
         Head = 'Pixie Hairpin +1',
         Neck = 'Sanctity Necklace',
@@ -413,6 +432,20 @@ local sets = {
     Movement = {
         Feet = 'Herald\'s Gaiters',
 	},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    Myrkr_HighBuff = {}, -- /wsset high: this WS
+    ['Tabula Rasa'] = {}, -- a job ability: worn as it goes off (ByName)
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Example
+    -- Weapon_Example_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -436,6 +469,8 @@ profile.Packer = {
     {Name = 'Tropical Crepe', Quantity = 'all'},
     {Name = 'Rolan. Daifuku', Quantity = 'all'},
 };
+
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
@@ -480,7 +515,8 @@ profile.HandleDefault = function()
 end
 
 profile.HandleAbility = function()
-
+    local ability = gData.GetAction();
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Tabula Rasa']
     gcinclude.CheckCancels();
 end
 
@@ -492,57 +528,27 @@ end
 
 profile.HandlePrecast = function()
     local spell = gData.GetAction();
-
     gFunc.EquipSet(sets.Precast);
-
-    if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing_Precast);
-
-        if string.contains(spell.Name, 'Stoneskin') then
-            gFunc.EquipSet(sets.Stoneskin_Precast);
-        end
-    elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure_Precast);
-    end
-
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then
-        gFunc.EquipSet(sets.Idle_Staff);
-    end
+    if (gcdisplay.GetCycle('Weapon') == 'Staff') then gFunc.EquipSet(sets.Idle_Staff) end
 end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
     local target = gData.GetActionTarget();
     local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
-    local power = gcinclude.BuffCount('Ebullience') +  gcinclude.BuffCount('Rapture');
-
+    local power = gcinclude.BuffCount('Ebullience') + gcinclude.BuffCount('Rapture');
+    local family = Family(spell.Name); -- 'Cure IV' -> 'Cure'
+    gFunc.EquipSet(sets.Midcast);
+    ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Elemental Magic']
     if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing);
-        if (target.Name == me) then
-            gFunc.EquipSet(sets.Self_Enhancing);
-        end
-
-        if string.match(spell.Name, 'Phalanx') then
-            gFunc.EquipSet(sets.Phalanx);
-        elseif string.match(spell.Name, 'Stoneskin') then
-            gFunc.EquipSet(sets.Stoneskin);
-        elseif string.contains(spell.Name, 'Regen') then
-            gFunc.EquipSet(sets.Regen);
-        elseif string.contains(spell.Name, 'storm') then
-            gFunc.EquipSet(sets.Storm);
-        elseif string.contains(spell.Name, 'Refresh') then
-            gFunc.EquipSet(sets.Refresh);
-            if (target.Name == me) then
-                gFunc.EquipSet(sets.Self_Refresh);
-            end
-        end
+        if (target.Name == me) then gFunc.EquipSet(sets.Self_Enhancing) end
+        if string.contains(spell.Name, 'storm') then gFunc.EquipSet(sets.Storm) end
     elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure);
-        if (target.Name == me) then
-            gFunc.EquipSet(sets.Self_Cure);
-        end
-        if T{'Cure', 'Cura', 'Curaga'}:contains(gcinclude.Family(spell.Name)) then
+        if (target.Name == me) then gFunc.EquipSet(sets.Self_Cure) end
+        if T{'Cure', 'Cura', 'Curaga'}:contains(family) then
             if (gData.GetPlayer().MPP <= 50) then
                 -- Light weather: Aurorastorm counts (LAC GetEnvironment reads storm buffs as weather), so does natural Light
                 local env = gData.GetEnvironment();
@@ -554,53 +560,28 @@ profile.HandleMidcast = function()
             end
             if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Cure_Dt) end
         end
-        if string.match(spell.Name, 'Cursna') then
-            gFunc.EquipSet(sets.Cursna);
-        end
     elseif (spell.Skill == 'Elemental Magic') then
         local burst = gcinclude.BurstWanted();
-        gFunc.EquipSet(sets.Nuke);
-
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then
-            gFunc.EquipSet(sets.NukeACC);
-        end
-        if burst then
-            gFunc.EquipSet(sets.Burst);
-        end
+        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.NukeACC) end
+        if burst then gFunc.EquipSet(sets.Burst) end
         if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
         if (gcinclude.BuffCount('Klimaform') > 0) and (spell.Element == gData.GetEnvironment().WeatherElement) then
-                gFunc.EquipSet(sets.Klimaform);
+            gFunc.EquipSet(sets.Klimaform);
         end
-        if (gData.GetPlayer().MPP <= 40) then
-            gFunc.EquipSet(sets.Mp_Body);
-        end
+        if (gData.GetPlayer().MPP <= 40) then gFunc.EquipSet(sets.Mp_Body) end
         if string.contains(spell.Name, 'helix') then
             gFunc.EquipSet(sets.Helix);
-            if burst then
-                gFunc.EquipSet(sets.HelixBurst);
-            end
-            if string.contains(spell.Name, 'Nocto') then
-                gFunc.Equip('Head', 'Pixie Hairpin +1');
-            end
+            if burst then gFunc.EquipSet(sets.HelixBurst) end
+            if string.contains(spell.Name, 'Nocto') then gFunc.Equip('Head', 'Pixie Hairpin +1') end
         end
-    elseif (spell.Skill == 'Enfeebling Magic') then
-        gFunc.EquipSet(sets.Enfeebling);
     elseif (spell.Skill == 'Dark Magic') then
-        gFunc.EquipSet(sets.Enfeebling); -- mostly macc anyways
-        if (string.contains(spell.Name, 'Aspir') or string.contains(spell.Name, 'Drain')) then
-            gFunc.EquipSet(sets.Drain);
-        elseif (string.match(spell.Name, 'Kaustra')) then
-            gFunc.EquipSet(sets.Kaustra);
-        end
+        gFunc.EquipSet(sets['Enfeebling Magic']); -- mostly macc anyways; Kaustra by name below
     end
-
-    if (power > 0) then
-        gFunc.EquipSet(sets.Power);
-    end
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then
-        gFunc.EquipSet(sets.Idle_Staff);
-    end
-	gcinclude.CheckTH();
+    if not ByName(spell.Name) then ByName(family) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna'], ['Drain']
+    if (family == 'Refresh') and (target.Name == me) then gFunc.EquipSet(sets.Self_Refresh) end
+    if (power > 0) then gFunc.EquipSet(sets.Power) end
+    if (gcdisplay.GetCycle('Weapon') == 'Staff') then gFunc.EquipSet(sets.Idle_Staff) end
+    gcinclude.CheckTH();
 end
 
 profile.HandlePreshot = function()
@@ -615,14 +596,8 @@ end
 profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
-
     gcinclude.EquipMode('Ws');
-
-    if string.match(ws.Name, 'Cataclysm') then
-        gcinclude.EquipMode('Cataclysm');
-    elseif string.match(ws.Name, 'Myrkr') then
-        gcinclude.EquipMode('Mykyr');
-    end
+    ByName(ws.Name); -- e.g. ['Myrkr'], then ['Myrkr_<mmode>']
 end
 
 return profile;

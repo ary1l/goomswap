@@ -83,6 +83,7 @@ local sets = {
         Ring2 = 'Chirich Ring +1',
         Feet = 'Tatena. Sune. +1',
     },
+    Midcast = {},
 
 
     Precast = {
@@ -115,25 +116,25 @@ local sets = {
     Ws_Acc = {
     },
 
-    Victory_Default = {
+    ['Victory Smite'] = {
         Ear2 = 'Sherida Earring',
         Back = { Name = 'Segomo\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Legs = 'Mpaca\'s Hose',
     },
-    Victory_Imp = {
+    ['Victory Smite_Impetus'] = {
         Ammo = 'Coiste Bodhar',
         Ear1 = 'Schere Earring',
         Ear2 = 'Sherida Earring',
         Body = 'Bhikku Cyclas +3',
         Back = { Name = 'Segomo\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
     },
-    Victory_Acc = {},
+    ['Victory Smite_Acc'] = {},
 
-    Shijin_Default = {
+    ['Shijin Spiral'] = {
     },
-    Shijin_Acc = {},
+    ['Shijin Spiral_Acc'] = {},
 
-	Howling_Default = {
+	['Howling Fist'] = {
         Ammo = 'Knobkierrie',
         Head = 'Mpaca\'s Cap',
         Neck = 'Mnk. Nodowa +2',
@@ -147,10 +148,10 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Howling_Acc = {},
+    ['Howling Fist_Acc'] = {},
 
 
-	kickws_Default = {
+	['Dragon Kick'] = {
         Ammo = 'Knobkierrie',
         Head = 'Mpaca\'s Cap',
         Neck = 'Mnk. Nodowa +2',
@@ -164,12 +165,31 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'anch. gaiters +4',
     },
-    kickws_Acc = {},
-    kickws_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over kickws_Default (Dragon Kick, Tornado Kick)
+
+
+	['Tornado Kick'] = {
+        Ammo = 'Knobkierrie',
+        Head = 'Mpaca\'s Cap',
+        Neck = 'Mnk. Nodowa +2',
+        Ear1 = 'schere earring',
+        Body = 'bhikku cyclas +3',
+        Hands = 'bhikku gloves +3',
+        Ring1 = 'Niqmaddu Ring',
+        Ring2 = 'ephramad\'s Ring',
+        Back = { Name = 'Segomo\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'Moonbow Belt +1',
+        Legs = 'nyame flanchard',
+        Feet = 'anch. gaiters +4',
+    },
+    ['Dragon Kick_Acc'] = {},
+    ['Tornado Kick_Acc'] = {},
+    ['Dragon Kick_SubtleBlow'] = { -- /mmode subtleblow: Subtle Blow pieces over kickws_Default (Dragon Kick, Tornado Kick)
+    },
+    ['Tornado Kick_SubtleBlow'] = { -- /mmode subtleblow: Subtle Blow pieces over kickws_Default (Dragon Kick, Tornado Kick)
     },
 
 
-    Impetus = {--over rides your TP set if impetus is up
+    Tp_Impetus = {--over rides your TP set if impetus is up
 		Ear1 = 'dedition earring',
         Body = 'Bhikku Cyclas +3',
     },
@@ -196,19 +216,22 @@ local sets = {
         Body = 'Anch. Cyclas +4',
         Hands = 'Hes. Gloves',
     },
-    FootworkJA = {--this is used on JA activation
+    Footwork = {--this is used on JA activation
         Feet = 'Bhikku Gaiters +3',
     },
-    Footwork = {--this will override your TP while footwork is active
+    Tp_Footwork = {--this will override your TP while footwork is active
         Feet = 'Bhikku Gaiters +3',
     },
-    HundredFists = {
+    ['Hundred Fists'] = {
         Legs = 'Hes. Hose +3',
     },
-    FormlessStrikes = {
+    ['Formless Strikes'] = {
         Body = 'Hes. Cyclas',
     },
     Counterstance = {--these feet are also for Mantra
+        Feet = 'Hes. Gaiters',
+    },
+    Mantra = {--these feet are also for Mantra
         Feet = 'Hes. Gaiters',
     },
     Buffs = { -- worn while that buff is up (engine layer, on top of Dt/TH)
@@ -223,6 +246,16 @@ local sets = {
     Movement = {
         Feet = 'Herald\'s Gaiters',
 	},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    ['Victory Smite_HighBuff'] = {}, -- /wsset high: this WS
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_Godhands_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Godhands
+    -- Weapon_Godhands_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -245,6 +278,8 @@ profile.Sets = sets;
 profile.Packer = {
 };
 
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
+
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None', 'Godhands'};
@@ -266,8 +301,8 @@ profile.HandleDefault = function()
 
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
-        if (gcinclude.BuffCount('Impetus') > 0) then gFunc.EquipSet(sets.Impetus) end
-        if (gcinclude.BuffCount('Footwork') > 0) then gFunc.EquipSet(sets.Footwork) end
+        if (gcinclude.BuffCount('Impetus') > 0) then gFunc.EquipSet(sets.Tp_Impetus) end
+        if (gcinclude.BuffCount('Footwork') > 0) then gFunc.EquipSet(sets.Tp_Footwork) end
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
@@ -282,16 +317,8 @@ end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-
-    if string.match(ability.Name, 'Focus') then gFunc.EquipSet(sets.Focus);
-    elseif string.match(ability.Name, 'Dodge') then gFunc.EquipSet(sets.Dodge);
-    elseif string.match(ability.Name, 'Hundred Fists') then gFunc.EquipSet(sets.HundredFists);
-    elseif string.match(ability.Name, 'Chakra') then gFunc.EquipSet(sets.Chakra);
-    elseif string.match(ability.Name, 'Footwork') then gFunc.EquipSet(sets.FootworkJA);
-    elseif string.match(ability.Name, 'Counterstance') or string.match(ability.Name, 'Mantra') then gFunc.EquipSet(sets.Counterstance);
-    elseif string.contains(ability.Name, 'Formless Strikes') then gFunc.EquipSet(sets.FormlessStrikes)
-    elseif (ability.Name == 'Boost') then gFunc.EquipSet(sets.Buffs.Boost) end -- sash on from the start
-
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Focus'], ['Hundred Fists']
+    if (ability.Name == 'Boost') then gFunc.EquipSet(sets.Buffs.Boost) end -- sash on from the start
     gcinclude.CheckCancels();
 end
 
@@ -302,13 +329,19 @@ profile.HandleItem = function()
 end
 
 profile.HandlePrecast = function()
+    local spell = gData.GetAction();
     gFunc.EquipSet(sets.Precast);
-
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
 end
 
 profile.HandleMidcast = function()
-	gcinclude.CheckTH();
+    local spell = gData.GetAction();
+    gFunc.EquipSet(sets.Midcast);
+    ByName(spell.Skill); -- e.g. ['Enhancing Magic']
+    if not ByName(spell.Name) then ByName(Family(spell.Name)) end -- e.g. ['Cure'] for Cure IV
+    gcinclude.CheckTH();
 end
 
 profile.HandlePreshot = function()
@@ -323,21 +356,9 @@ end
 profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
-
     gcinclude.EquipMode('Ws');
-
-    if string.match(ws.Name, 'Victory Smite') then
-        gFunc.EquipSet(sets.Victory_Default)
-        if (gcinclude.BuffCount('Impetus') > 0) then gFunc.EquipSet(sets.Victory_Imp) end
-        if (gcdisplay.GetCycle('MeleeSet') ~= 'Default') then
-        gFunc.EquipSet('Victory_' .. gcdisplay.GetCycle('MeleeSet')); end
-    elseif string.match(ws.Name, 'Shijin Spiral') then
-        gcinclude.EquipMode('Shijin');
-	elseif string.match(ws.Name, 'Dragon Kick') or string.match(ws.Name, 'Tornado Kick') then
-        gcinclude.EquipMode('kickws');
-	elseif string.match(ws.Name, 'Howling Fist') then
-        gcinclude.EquipMode('Howling');
-    end
+    ByName(ws.Name); -- e.g. ['Victory Smite'], then ['Victory Smite_<mmode>']
+    if (ws.Name == 'Victory Smite') and (gcinclude.BuffCount('Impetus') > 0) then ByName('Victory Smite_Impetus') end
 end
 
 return profile;
