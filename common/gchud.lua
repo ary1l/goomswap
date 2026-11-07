@@ -78,7 +78,7 @@ local FULL = {
 
 -- Modes whose Default draws as '-' (nothing laid over), and their compact-style values.
 local DASH_DEFAULT = { IdleSet = true, RangedSet = true };
-local SHORT_VALUE = { IdleSet = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' } };
+local SHORT_VALUE = { IdleSet = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' }, NukeSet = { OccultAcumen = 'OA' } };
 
 -- Cycle values drawn as '-'. A cycle column empty on every box is hidden from the grid.
 local EMPTY = { none = true, off = true, unknown = true };
@@ -199,8 +199,8 @@ local COL_OFF_CHG = { 0.62, 0.62, 0.68, 1.0 }; -- off, changed (turned off somet
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
 local COL_VAL_DEF = { 0.80, 0.80, 0.84, 1.0 }; -- cycle, default: grey-white, so gold always means changed
 local COL_EMPTY = { 0.36, 0.36, 0.41, 0.85 };  -- cycle at None/Off: faint
--- def cell by state; a dot before the name in its SIR/TH/Kite/PROC colour; your own name gold; the header on a soft
--- blue fade; a 1px shadow under the text; a faint band behind your row (drawn shapes: Ashita only)
+-- def cell by state; SIR/TH/Kite/PROC dots left of the names, each in its own spot; names in their job's colour; the
+-- header on a soft blue fade; a 1px shadow under the text; a faint band behind your row (drawn shapes: Ashita only)
 local COL_DEF = { DT = { 1.00, 0.54, 0.24, 1.0 }, MDT = { 0.43, 0.53, 1.00, 1.0 }, Amin = { 0.75, 0.47, 0.85, 1.0 } }; -- orange, blue, mauve
 local COL_OWN_NAME = { 0.95, 0.85, 0.35, 1.0 }; -- Windower only (no shapes); Ashita marks your row with a band
 local COL_OWN_BAND = { 1.0, 1.0, 1.0, 0.07 };
@@ -233,8 +233,8 @@ local function melee_col(mode)
     return COL_MELEE_MORE[(n % #COL_MELEE_MORE) + 1];
 end
 local COL_NAME = { 0.93, 0.93, 0.96, 1.0 };     -- white: SIR/TH/Kite/PROC colours stand out
--- The name shows SIR, TH, Kite, PROC (first one on, in this order; its tooltip lists all on). The rest of the toggles
--- (food, soda, harp, song lock, death) have no place on the HUD: their changes come in as chat lines.
+-- SIR, TH, Kite, PROC: a dot each left of the name, always in this order (Windower: the name takes the first one's
+-- colour). The rest of the toggles (harp, song lock, death...) have no place on the HUD: their changes come in as chat lines.
 local NAME_STATES = { { 'SIR', 'SIR', { 0.24, 0.82, 0.71, 1.0 } }, { 'TH', 'TH', { 0.95, 0.85, 0.35, 1.0 }, true },
     { 'Kite', 'Kite', { 0.35, 0.95, 0.45, 1.0 } }, { 'PROC', 'PROC', { 1.00, 0.35, 0.35, 1.0 } } }; -- teal, gold ring (4th: ring), green, red
 local COL_JOB = { 0.60, 0.65, 0.75, 1.0 };
@@ -564,7 +564,7 @@ end
 
 -- Grid: one header line, one line per box, columns aligned by measured text width.
 -- Cycle columns first (weapon set leads), then toggle columns. Clicking a cell drives that box.
--- A column shows while some box has it set (columns never shrink while you play); toggles are one-letter flags.
+-- Every column a shown box's job has always shows ('-' when unset), so the width holds while you play.
 -- DT/MDT/Aminon merge into one 'def' column (/def); SIR (a casting mode) keeps its own 'si' column; Burst is a * on the nuke cell.
 -- Clicking a name adds a detail line under it: job + that box's hidden cycles and toggles.
 local PADX = 1; -- cell padding; set from the style each frame in render()
@@ -719,7 +719,7 @@ local function build_grid(x0)
                 c.text = c.text .. '*'; -- /burst on: Burst set on every nuke (the column leaves room for it)
                 c.tip = c.tip .. '  |  Burst set: every nuke (/burst)';
             end
-            if (c ~= nil) and (not c.empty) and not FOLDED[k] then shown[k] = true end -- a column only while some box has it set
+            if (c ~= nil) and not FOLDED[k] then shown[k] = true end -- any shown box's job has it, set or not: the width holds
         end
         -- wpn: the weapon mode (the main pick on a job with no modes), with the folded cycles on it
         local cc = cells[i].c;
@@ -762,12 +762,12 @@ local function build_grid(x0)
     for _, k in ipairs(ccols) do
         if shown[k] and (k ~= 'Weapons') then vis[#vis + 1] = k end
     end
-    -- def: only while some box has DT/MDT/Aminon on. Hidden columns are on the detail line (click a name).
+    -- def: while some box's job has DT/MDT/Aminon ('-' when none is on). Folded cycles are on the detail line (click a name).
     local gvis, gshown = {}, {};
     for _, k in ipairs(GROUP_ORDER) do
         for i = 1, #view do
             local c = cells[i].g[k];
-            if (c ~= nil) and (c.text ~= '-') then gvis[#gvis + 1] = k; gshown[k] = true; break end
+            if (c ~= nil) then gvis[#gvis + 1] = k; gshown[k] = true; break end
         end
     end
     local tvis, tshown = {}, {}; -- toggles: no columns (name colour, chat lines, detail line)
@@ -817,12 +817,12 @@ local function build_grid(x0)
         nameIds[i] = short .. '##' .. row.Name .. 'row';
         local main = string.match(tostring(row.Job or ''), '^(%a+)');
         local jobcol = (main ~= nil) and (type(disp.JobColor) == 'function') and disp.JobColor(main) or nil;
-        local r = { lname = string.lower(row.Name), short = short, states = {}, scols = {}, first = nil, jobcol = jobcol };
+        local r = { lname = string.lower(row.Name), short = short, states = {}, on = {}, first = nil, jobcol = jobcol };
         for _, st in ipairs(NAME_STATES) do
             if (part(row, st[1]) == true) then
                 r.first = r.first or st[3];
                 r.states[#r.states + 1] = st[2];
-                r.scols[#r.scols + 1] = st;
+                r.on[st[1]] = true;
             end
         end
         info[i] = r;
@@ -832,7 +832,7 @@ local function build_grid(x0)
 end
 
 local grid = nil;
-local slotsView, slots = nil, 0; -- body: the dot room, per view
+local slotsView, slots, slotStates = nil, 0, {}; -- body: the state spots, per view
 local function body(scale)
     if (#view == 0) then
         imgui.Text('no characters reporting');
@@ -842,19 +842,18 @@ local function body(scale)
     DL = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil;
     if (DL ~= nil) and ((imgui.GetColorU32 == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetTextLineHeight == nil)) then DL = nil end
     SHADOW = (DL ~= nil) and imgui.GetColorU32(COL_SHADOW) or nil;
-    -- room left of the names for as many state dots as a shown box has on; none on: no room at all (worked out again
-    -- only when the rows change, which a state change does)
+    -- State dots left of the names: one fixed spot per state a shown box's job has (SIR, TH, Kite, PROC in that
+    -- order), the same spot on every row and a faint ghost of each in the header, so an empty spot reads as off.
     if (slotsView ~= view) then
-        slotsView, slots = view, 0;
+        slotsView, slotStates = view, {};
         if (DL ~= nil) then
-            for _, row in ipairs(view) do
-                local n = 0;
-                for _, st in ipairs(NAME_STATES) do
-                    if (part(row, st[1]) == true) then n = n + 1 end
+            for _, st in ipairs(NAME_STATES) do
+                for _, row in ipairs(view) do
+                    if (row.Toggles[st[1]] ~= nil) then slotStates[#slotStates + 1] = st; break end
                 end
-                slots = math.max(slots, n);
             end
         end
+        slots = #slotStates;
     end
     local x0 = imgui.GetCursorPosX() + ((slots > 0) and (DOTW + DOTSTEP * (slots - 1)) or 0);
     local g = grid;
@@ -891,6 +890,26 @@ local function body(scale)
             for _, d in ipairs(g.divs) do dl:AddLine({ wx + d, wy + 3 }, { wx + d, wy + wh - 3 }, u32(COL_DIV), 1) end
         end
     end
+    if (dl ~= nil) and (wx ~= nil) and (slots > 0) then -- the state spots, as faint ghosts over the gutter
+        local _, hy = pair(imgui.GetCursorScreenPos());
+        if (hy ~= nil) then
+            local names = {};
+            for p, st in ipairs(slotStates) do
+                local c = st[3];
+                local at = { wx + x0 - DOTW / 2 - 1 - DOTSTEP * (slots - p), hy + lh / 2 };
+                local ghost = u32({ c[1], c[2], c[3], 0.35 });
+                if st[4] then dl:AddCircle(at, 2.5, ghost, 12, 1.5) else dl:AddCircleFilled(at, 3, ghost, 12) end
+                names[#names + 1] = st[2];
+            end
+            if (imgui.GetMousePos ~= nil) then
+                local mx, my = pair(imgui.GetMousePos());
+                local gx = wx + x0 - DOTW - DOTSTEP * (slots - 1);
+                if (mx ~= nil) and (my ~= nil) and (mx >= gx) and (mx <= wx + x0) and (my >= hy) and (my <= hy + lh) then
+                    imgui.SetTooltip('State dots, left to right: ' .. table.concat(names, ', ') .. ' (an empty spot on a row = off)');
+                end
+            end
+        end
+    end
     imgui.PushStyleColor(ImGuiCol_Text, COL_HEAD);
     for i, col in ipairs(cols) do
         at(col, col.labelW, i == 1);
@@ -912,19 +931,20 @@ local function body(scale)
       if not collapsedView or own then
         local open = (expanded[row.Name] == true);
         imgui.SetCursorPosX(x0);
-        local states, scols = ri.states, ri.scols;
+        local states = ri.states;
         local ncol = ri.first or ri.jobcol or COL_NAME; -- Windower: the first state's colour, else the job's
-        if (dl ~= nil) then -- the states as dots left of the name; the name white, your row on a faint band
+        if (dl ~= nil) then -- your row on a faint band; the states as dots, each in its own spot
             local rx, ry = pair(imgui.GetCursorScreenPos());
             if own and (not collapsedView) and (#view > 1) and (wx ~= nil) and (ww ~= nil) and (ry ~= nil) then
                 local fy, sy = (style().frame or { 0, 0 })[2] or 0, (style().spacing or { 0, 0 })[2] or 0;
                 dl:AddRectFilled({ wx, ry - sy / 2 }, { wx + ww, ry + lh + fy * 2 + sy / 2 }, u32(COL_OWN_BAND), 0);
             end
-            if (rx ~= nil) then -- the first state next to the name, the next ones to its left
-                local r = (#scols > 1) and 3 or 3.5;
-                for j, st in ipairs(scols) do
-                    local at = { rx - DOTW / 2 - 1 - DOTSTEP * (j - 1), ry + lh / 2 };
-                    if st[4] then dl:AddCircle(at, r - 0.5, u32(st[3]), 12, 1.5) else dl:AddCircleFilled(at, r, u32(st[3]), 12) end
+            if (rx ~= nil) then -- SIR, TH, Kite, PROC from the left, each in its own spot (as the header's ghosts)
+                for p, st in ipairs(slotStates) do
+                    if ri.on[st[1]] then
+                        local at = { rx - DOTW / 2 - 1 - DOTSTEP * (slots - p), ry + lh / 2 };
+                        if st[4] then dl:AddCircle(at, 2.5, u32(st[3]), 12, 1.5) else dl:AddCircleFilled(at, 3, u32(st[3]), 12) end
+                    end
                 end
             end
             ncol = ri.jobcol or COL_NAME; -- the main job's colour, as on the bar
