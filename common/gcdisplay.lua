@@ -17,6 +17,7 @@ local SubLV = 0;
 local Main = 'FOO';
 local Sub = 'BAR';
 local headText = '';
+local headMID, headSID = nil, nil;
 
 function gcdisplay.AdvanceCycle(name)
 	local ctable = Cycles[name];
@@ -60,12 +61,12 @@ function gcdisplay.Update()
     local player = AshitaCore:GetMemoryManager():GetPlayer();
     if (player == nil) then return; end
 
-    local MID = player:GetMainJob();
-    local SID = player:GetSubJob();
+    local MID, SID = player:GetMainJob(), player:GetSubJob();
+    local mlv, slv = player:GetMainJobLevel(), player:GetSubJobLevel();
     Def = player:GetDefense();
     Attk = player:GetAttack();
-    MainLV = player:GetMainJobLevel();
-    SubLV = player:GetSubJobLevel();
+    if (MID == headMID) and (SID == headSID) and (mlv == MainLV) and (slv == SubLV) and (headText ~= '') then return end -- job text unchanged
+    headMID, headSID, MainLV, SubLV = MID, SID, mlv, slv;
     Main = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", MID) or 'NON';
     Sub = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", SID) or 'NON';
     headText = string.format('%s%d/%s%d', Main, MainLV, Sub, SubLV);
@@ -133,7 +134,7 @@ function gcdisplay.IsDefault(kind, name)
 	return (c ~= nil) and (DefCycles[name] == c.Index);
 end
 
--- Bar colours: as the HUD's (labels blue-grey, a changed value gold, one still at its load default soft gold).
+-- Bar colours: as the HUD's (labels blue-grey, a changed value gold, one still at its load default grey-white).
 -- One rounded capsule in three parts, split by thin lines: job | modes | the toggles that are on, each a dot in its
 -- own colour (DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green...) then its name.
 local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
@@ -152,7 +153,7 @@ local JOB_COL = {
 };
 local function job_col(j) return JOB_COL[string.upper(tostring(j or ''))] or COL_HEAD end
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };
-local COL_VAL_DEF = { 0.73, 0.67, 0.50, 1.0 };
+local COL_VAL_DEF = { 0.80, 0.80, 0.84, 1.0 }; -- grey-white, so gold always means changed
 local COL_DIV = { 1.0, 1.0, 1.0, 0.20 };
 local COL_EDGE = { 1.0, 1.0, 1.0, 0.10 };
 local COL_BAR_BG = { 0.04, 0.045, 0.06 };
@@ -168,7 +169,8 @@ local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 
 
 local IDLE_SHORT = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' }; -- /idleset, kept small
 -- With a weapon mode on the job, the wpn entry also carries (as the HUD's wpn cell): a + when a slot pick (/mw /sw /rw
--- /ammoset) is changed, its colour for the melee mode (green Base, gold Acc, orange SB), then a purple dot for /wsset
+-- /ammoset) is changed, a line under it in the melee mode's colour (green Base, gold Acc, orange SB; Windower: the text
+-- in that colour), then a purple dot for /wsset
 -- high and a blue dot for /hoxne. /gcmodes names them in full. A job without weapon modes shows them as their own entries.
 local SLOT_PICKS = { Main = true, Sub = true, Range = true, Ammo = true };
 local FOLD = { Main = true, Sub = true, Range = true, Ammo = true, MeleeSet = true, WsSet = true, Hoxne = true };
@@ -316,8 +318,10 @@ local function bar_body()
 	else
 		put(headText, COL_HEAD);
 	end
-	put('Atk ', COL_KEY, (dl ~= nil) and 13 or 8); put(tostring(Attk), COL_HEAD, 0); -- labelled, so it doesn't read as HP
-	put('Def ', COL_KEY, 8); put(tostring(Def), COL_HEAD, 0);
+	if (windower == nil) then -- Windower's player table has no attack/defense (the shim returns 0)
+		put('Atk ', COL_KEY, (dl ~= nil) and 13 or 8); put(tostring(Attk), COL_HEAD, 0); -- labelled, so it doesn't read as HP
+		put('Def ', COL_KEY, 8); put(tostring(Def), COL_HEAD, 0);
+	end
 	local names = ((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES;
 	local picked = false;
 	for k in pairs(SLOT_PICKS) do
@@ -334,7 +338,8 @@ local function bar_body()
 		local hoxne = (hx ~= nil) and (hx.Array[hx.Index] ~= 'Off');
 		local high = (ws ~= nil) and (ws.Array[ws.Index] == 'High');
 		if (v ~= '-') or picked or (mm ~= 'Default') or hoxne or high then
-			local parts = { { 'wpn ', COL_KEY }, { v .. (picked and '+' or ''), melee_col(mm) } };
+			local parts = { { 'wpn ', COL_KEY }, (dl ~= nil) and { v .. (picked and '+' or ''), COL_HEAD, under = melee_col(mm) }
+				or { v .. (picked and '+' or ''), melee_col(mm) } };
 			if high then parts[#parts + 1] = { dot = COL_HIGHBUFF } end
 			if hoxne then parts[#parts + 1] = { dot = COL_HOXNE } end
 			modes[#modes + 1] = parts;
@@ -354,6 +359,11 @@ local function bar_body()
 			for i, p in ipairs(parts) do
 				if (p.dot == nil) then
 					put(p[1], p[2], (i > 1) and 0 or nil);
+					if (p.under ~= nil) then -- the melee mode, under the wpn value
+						local x1, _ = xy(imgui.GetItemRectMin());
+						local x2, y2 = xy(imgui.GetItemRectMax());
+						if (x1 ~= nil) and (x2 ~= nil) and (y2 ~= nil) then dl:AddLine({ x1, y2 - 1 }, { x2, y2 - 1 }, imgui.GetColorU32(p.under), 2) end
+					end
 				elseif (dl ~= nil) then -- after the last text, which the next entry's gap makes room for
 					local x2, y2 = xy(imgui.GetItemRectMax());
 					local _, y1 = xy(imgui.GetItemRectMin());

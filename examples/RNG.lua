@@ -111,7 +111,7 @@ local sets = {
         Legs = 'Samnuha Tights',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Accuracy+7', [2] = 'Attack+18', [3] = 'Spell interruption rate down -8%', [4] = 'Quadruple Attack +2' } },
     },
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear2 = 'Mache Earring +1',
@@ -348,7 +348,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Annihilator_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Annihilator
+    -- Weapon_Annihilator_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Annihilator
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -474,7 +474,7 @@ profile.HandleWeaponskill = function()
     local ws = gData.GetAction();
     if (gcinclude.CheckBlockedAmmoWS(ws.Name) == true) then return end
     gcinclude.EquipMode('Ws');
-    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mmode>']
+    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mset>']
 end
 
 return profile;

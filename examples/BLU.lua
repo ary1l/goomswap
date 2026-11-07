@@ -137,7 +137,7 @@ local sets = {
         Legs = 'malignance tights',
 		Feet = 'malignance boots',
     },
-	Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+	Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
 	    Body = 'volte harness', -- Subtle Blow+10
 	},
 	Tp_Acc = {
@@ -397,7 +397,7 @@ local sets = {
     },
     Expiacion_Acc = {
     },
-    Expiacion_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Expiacion_Default (any WS: <its set>_SubtleBlow)
+    Expiacion_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Expiacion_Default (any WS: <its set>_SubtleBlow)
     },
     Requiescat = {
         Head = 'Hashishin Kavuk +3',
@@ -483,7 +483,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Tizona_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Tizona
+    -- Weapon_Tizona_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Tizona
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -609,7 +609,7 @@ profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
-    ByName(ws.Name); -- e.g. ['Expiacion'], then ['Expiacion_<mmode>']
+    ByName(ws.Name); -- e.g. ['Expiacion'], then ['Expiacion_<mset>']
 end
 
 return profile;

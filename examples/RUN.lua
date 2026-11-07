@@ -171,7 +171,7 @@ local sets = {
         Legs = 'Meg. Chausses +2',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Accuracy+20', [2] = 'Attack+6', [3] = 'AGI+1', [4] = '"Triple Atk."+3' } },
     },
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ring1 = 'Cacoethic Ring +1',
@@ -415,7 +415,7 @@ local sets = {
     ['Provoke'] = {},
     -- Templates: fill the ones you use; an empty set changes nothing.
     Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
-    Dimidiation_Acc = {}, -- /mmode acc: this WS, over Ws_Acc
+    Dimidiation_Acc = {}, -- /mset acc: this WS, over Ws_Acc
     Dimidiation_HighBuff = {}, -- /wsset high: this WS
     Buffs = { -- while the buff is up: idle and engaged
         ['Aftermath: Lv.3'] = {},
@@ -425,7 +425,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Example
+    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Example
     -- Weapon_Example_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb

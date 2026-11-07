@@ -92,7 +92,7 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
 		--Ammo = "Ginsen",
@@ -330,7 +330,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Mpu_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Mpu
+    -- Weapon_Mpu_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Mpu
     -- Weapon_Mpu_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
@@ -358,7 +358,7 @@ local ByName, Family = gcinclude.ByName, gcinclude.Family;
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
     gcinclude.AlwaysDualWield = true;
-    gcinclude.WeaponModes = {'None', 'Mpu', 'Naegling'}; -- Weapon_MpuAcc goes on with /mmode Acc
+    gcinclude.WeaponModes = {'None', 'Mpu', 'Naegling'}; -- Weapon_MpuAcc goes on with /mset Acc
     gcinclude.DefaultWeapons = 'Mpu';
     gcinclude.MainModes = {'None', 'Mpu Gandring', 'Naegling'};
     gcinclude.SubModes = {'None', 'Gleti\'s Knife', 'Fusetto +2', 'Gandring'};
@@ -443,8 +443,8 @@ profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
-    ByName(ws.Name); -- e.g. ['Rudra\'s Storm'], then ['Rudra\'s Storm_<mmode>']
-    -- Sneak/Trick Attack on top: ['<WS>_SA'] / _TA / _SATA (['<WS>_Acc_SA'] with /mmode acc), else Ws_<mmode>_SA ...
+    ByName(ws.Name); -- e.g. ['Rudra\'s Storm'], then ['Rudra\'s Storm_<mset>']
+    -- Sneak/Trick Attack on top: ['<WS>_SA'] / _TA / _SATA (['<WS>_Acc_SA'] with /mset acc), else Ws_<mset>_SA ...
     local sa, ta = gcinclude.BuffCount('Sneak Attack'), gcinclude.BuffCount('Trick Attack');
     local suffix = ((sa > 0) and (ta > 0) and 'SATA') or ((sa > 0) and 'SA') or ((ta > 0) and 'TA') or nil;
     if (suffix ~= nil) then

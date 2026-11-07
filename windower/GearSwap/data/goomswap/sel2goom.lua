@@ -442,12 +442,12 @@ end
 -- opts: io_ { read(path)->text|nil, loadstring, setfenv }, name, job, sub, gear_file, pre_files (list, loaded first,
 -- missing ones skipped), mappings_file, template_text, source_label
 -- Selindrile binds -> GoomSwap Keybinds. GoomSwap's own keys (keep in step with Keybinds in common/gcinclude.lua):
-local GOOM_KEYS = { f7 = 'wm', ['+f7'] = 'wm default', f9 = 'mmode', ['^f9'] = 'tankset', ['+f9'] = 'rangedset',
+local GOOM_KEYS = { f7 = 'wm', ['+f7'] = 'wm default', f9 = 'mset', ['^f9'] = 'tankset', ['+f9'] = 'rangedset',
     ['!f9'] = 'wsset', f10 = 'def', ['!f10'] = 'kite', ['@f10'] = 'hoxne', ['+f11'] = 'nukeset', ['!f11'] = 'burst',
     ['+f12'] = 'idleset', ['!f12'] = 'def off', ['!@^f12'] = '/lac reload' };
 -- 'gs c <words>' -> GoomSwap command; a table = per job (others: no GoomSwap match there).
 local SEL_CMD = {
-    ['cycle weapons'] = 'wm', ['weapons default'] = 'wm default', ['cycle offensemode'] = 'mmode',
+    ['cycle weapons'] = 'wm', ['weapons default'] = 'wm default', ['cycle offensemode'] = 'mset',
     ['cycle weaponskillmode'] = 'wsset', ['toggle kiting'] = 'kite', ['cycle idlemode'] = 'idleset',
     ['toggle capacity'] = 'capacity', ['cycle treasuremode'] = 'th',
     ['cycle hybridmode'] = { PLD = 'tankset', RUN = 'tankset' },
@@ -569,7 +569,7 @@ function S2G.Convert(opts)
         if (type(m) == 'string') and (m ~= 'Normal') then melee[#melee + 1] = m; modes[m] = true end
     end
     for _, m in ipairs(opts_of('WeaponskillMode')) do
-        if (type(m) == 'string') and (m ~= 'Normal') and (m ~= 'Match') and not modes[m] then report.notes[#report.notes + 1] = 'WS mode ' .. m .. ' (no /mmode of that name: its WS sets are kept as Sel_*)' end
+        if (type(m) == 'string') and (m ~= 'Normal') and (m ~= 'Match') and not modes[m] then report.notes[#report.notes + 1] = 'WS mode ' .. m .. ' (no /mset of that name: its WS sets are kept as Sel_*)' end
     end
 
     -- template
@@ -693,7 +693,7 @@ function S2G.Convert(opts)
     end
     if (#extra > 0) then
         lines[#lines + 1] = '';
-        lines[#lines + 1] = '    -- Your sets the template has no line for (weapon modes, /mmode variants, action names):';
+        lines[#lines + 1] = '    -- Your sets the template has no line for (weapon modes, /mset variants, action names):';
         for _, lk in ipairs(extra) do
             lines[#lines + 1] = '    -- from sets.' .. out[lk].from;
             lines[#lines + 1] = set_code(out[lk].name, out[lk].gear, '    ');
@@ -729,7 +729,7 @@ function S2G.Convert(opts)
         sub_line('(\n%s*)(gcinclude%.' .. cname .. '%s*=)', '%1-- (template slot picks, its example weapons) %2');
     end
     if (#melee > 1) then
-        sub_line('(\n%s*)gcinclude%.Initialize%(%);', '%1gcinclude.MeleeModes = ' .. lua_list(melee) .. '; -- /mmode, from your OffenseMode%1gcinclude.Initialize();');
+        sub_line('(\n%s*)gcinclude%.Initialize%(%);', '%1gcinclude.MeleeModes = ' .. lua_list(melee) .. '; -- /mset, from your OffenseMode%1gcinclude.Initialize();');
     end
     local sird = false;
     for _, m in ipairs(opts_of('CastingMode')) do if (m == 'SIRD') then sird = true end end

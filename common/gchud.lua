@@ -17,7 +17,7 @@ local placed = false;
 local STALE = 15;
 
 gchud.CycleCommands = {
-    MeleeSet = 'mmode',
+    MeleeSet = 'mset',
     WsSet = 'wsset',
     Weapons = 'wm',
     Main = 'mainset',
@@ -157,6 +157,7 @@ end
 -- Once per load: two of this box's weapon choices that shorten to the same text get longer forms (the later words'
 -- initials, then their first 3 letters, then the full name) until they differ, so each reads as its own.
 local abbrChecked = false;
+local rowsKey = nil; -- read_all: the rows' content (not their timestamps); unchanged keeps rows, and so the built grid
 local function check_abbr()
     abbrChecked = true;
     if (type(inc.WeaponCycleList) ~= 'function') then return end
@@ -185,6 +186,7 @@ local function check_abbr()
         abbrCache = {}; -- the next pass and drawing see the longer forms
         if not clash then break end
     end
+    rowsKey = nil; -- cells are rebuilt with these forms
 end
 
 local COL_CLEAR = { 0.0, 0.0, 0.0, 0.0 };
@@ -195,7 +197,7 @@ local COL_ON_DEF = { 0.30, 0.70, 0.38, 0.85 }; -- on, default
 local COL_OFF = { 0.50, 0.50, 0.56, 0.85 };    -- off, default
 local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off something that loads on)
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
-local COL_VAL_DEF = { 0.73, 0.67, 0.50, 1.0 }; -- cycle, default (softer than changed)
+local COL_VAL_DEF = { 0.80, 0.80, 0.84, 1.0 }; -- cycle, default: grey-white, so gold always means changed
 local COL_EMPTY = { 0.36, 0.36, 0.41, 0.85 };  -- cycle at None/Off: faint
 -- def cell by state; a dot before the name in its SIR/TH/Kite/PROC colour; your own name gold; the header on a soft
 -- blue fade; a 1px shadow under the text (drawn shapes: Ashita only)
@@ -204,7 +206,7 @@ local COL_OWN_NAME = { 0.95, 0.85, 0.35, 1.0 };
 local COL_FADE_TOP, COL_FADE_BOT = { 0.24, 0.27, 0.43, 0.55 }, { 0.24, 0.27, 0.43, 0.0 };
 local COL_SHADOW = { 0.0, 0.0, 0.0, 0.85 };
 local COL_HEAD = { 0.59, 0.63, 0.71, 1.0 };
-local DOTW = 10; -- px left of the names for the state dot
+local DOTW, DOTSTEP = 10, 8; -- px left of the names for one state dot; px per extra dot (body reserves one per state a box has)
 
 -- This frame's draw list (Ashita); nil on Windower, whose text box draws no shapes.
 local DL, SHADOW = nil, nil;
@@ -214,7 +216,8 @@ local function shadow(text, padx) -- the shadow goes in first, so the item's own
     if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
     if (tonumber(x) ~= nil) then DL:AddText({ x + (padx or 0) + 1, y + 1 }, SHADOW, tostring(text)) end
 end
--- wpn cell: its text in the melee mode's colour, then a dot for /wsset high (purple) and /hoxne (blue).
+-- wpn cell: white text, a line under it in the melee mode's colour (Windower, no shapes: the text in that colour),
+-- then a dot for /wsset high (purple) and /hoxne (blue).
 local COL_MELEE = { Default = { 0.35, 0.95, 0.45, 1.0 }, Acc = { 0.95, 0.85, 0.35, 1.0 }, SubtleBlow = { 1.00, 0.67, 0.24, 1.0 } };
 local COL_MELEE_MORE = { { 0.95, 0.55, 0.75, 1.0 }, { 0.55, 0.85, 1.00, 1.0 }, { 0.85, 0.85, 0.90, 1.0 } }; -- a job file's own modes
 local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- /wsset high dot: purple
@@ -344,6 +347,7 @@ local function read_all(everyBox)
                     local tmap, torder = decode(parts[3]);
                     local cmap, corder = decode(parts[4]);
                     out[#out + 1] = {
+                        Raw = table.concat(parts, '\t', 1, 4),
                         Name = parts[1],
                         Job = parts[2],
                         Toggles = tmap, ToggleOrder = torder,
@@ -380,6 +384,13 @@ local function read_all(everyBox)
             end
             out = mine;
         end
+    end
+    if (everyBox ~= true) then -- /gcmodes all reads every box without touching the HUD's rows
+        local raw = {};
+        for i, r in ipairs(out) do raw[i] = r.Raw end
+        local key = table.concat(raw, '\n');
+        if (key == rowsKey) then return end
+        rowsKey = key;
     end
     rows = out;
 end
@@ -714,10 +725,13 @@ local function build_grid(x0)
             end
             if (#picks > 0) then w.text = w.text .. '+'; w.tip = w.tip .. '  |  ' .. table.concat(picks, ', ') end
             local mm = (row.Cycles.MeleeSet ~= nil) and strip_default(row.Cycles.MeleeSet) or 'Default';
-            if not w.empty then w.col = melee_col(mm) end
+            if (DL ~= nil) then -- Ashita: white text, the melee mode a line under it (none on a box without /mset)
+                if (row.Cycles.MeleeSet ~= nil) then w.under = melee_col(mm) end
+                if not w.empty then w.col = COL_NAME end
+            elseif not w.empty then w.col = melee_col(mm) end
             if (row.Cycles.MeleeSet ~= nil) then
-                w.tip = w.tip .. '  |  melee: ' .. ((mm == 'Default') and 'Base' or mm) .. ' (ctrl+click: /mmode)';
-                w.ctrlCmd = 'mmode';
+                w.tip = w.tip .. '  |  melee: ' .. ((mm == 'Default') and 'Base' or mm) .. ' (ctrl+click: /mset)';
+                w.ctrlCmd = 'mset';
             end
             w.dots = {};
             if (strip_default(row.Cycles.WsSet or '') == 'High') then
@@ -807,7 +821,17 @@ local function body(scale)
     DL = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil;
     if (DL ~= nil) and ((imgui.GetColorU32 == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetTextLineHeight == nil)) then DL = nil end
     SHADOW = (DL ~= nil) and imgui.GetColorU32(COL_SHADOW) or nil;
-    local x0 = imgui.GetCursorPosX() + ((DL ~= nil) and DOTW or 0);
+    -- one dot slot left of the names per state a box's job has (on or off), so turning one on never widens the HUD
+    local slots = 0;
+    if (DL ~= nil) then
+        for _, st in ipairs(NAME_STATES) do
+            for _, row in ipairs(view) do
+                if (row.Toggles[st[1]] ~= nil) then slots = slots + 1; break end
+            end
+        end
+        slots = math.max(slots, 1);
+    end
+    local x0 = imgui.GetCursorPosX() + ((slots > 0) and (DOTW + DOTSTEP * (slots - 1)) or 0);
     local g = grid;
     if (g == nil) or (g.view ~= view) or (g.style ~= style_name()) or (g.scale ~= scale) or (g.x0 ~= x0) then
         g = build_grid(x0);
@@ -848,22 +872,28 @@ local function body(scale)
     end
 
     -- rows
-    local mine = me();
+    local party = AshitaCore:GetMemoryManager():GetParty();
+    local mine = (party ~= nil) and party:GetMemberName(0) or nil; -- as gData.GetPlayer().Name, without the rest
+    mine = ((type(mine) == 'string') and (mine ~= '')) and string.lower(mine) or nil;
     for i, row in ipairs(view) do
-      if not collapsedView or ((mine ~= nil) and (string.lower(row.Name) == string.lower(mine.Name))) then
+      local own = (mine ~= nil) and (string.lower(row.Name) == mine);
+      if not collapsedView or own then
         local open = (expanded[row.Name] == true);
         imgui.SetCursorPosX(x0);
-        local ncol, states = COL_NAME, {};
+        local ncol, states, scols = COL_NAME, {}, {};
         for _, st in ipairs(NAME_STATES) do
             if (part(row, st[1]) == true) then
                 if (#states == 0) then ncol = st[3] end
                 states[#states + 1] = st[2];
+                scols[#scols + 1] = st[3];
             end
         end
-        local own = (mine ~= nil) and (string.lower(row.Name) == string.lower(mine.Name));
         if (dl ~= nil) then -- the state as a dot left of the name; the name white, yours gold
             local rx, ry = pair(imgui.GetCursorScreenPos());
-            if (rx ~= nil) and (#states > 0) then dl:AddCircleFilled({ rx - DOTW / 2 - 1, ry + lh / 2 }, 3.5, u32(ncol), 12) end
+            if (rx ~= nil) then -- the first state next to the name, the next ones to its left
+                local r = (#scols > 1) and 3 or 3.5;
+                for j, sc in ipairs(scols) do dl:AddCircleFilled({ rx - DOTW / 2 - 1 - DOTSTEP * (j - 1), ry + lh / 2 }, r, u32(sc), 12) end
+            end
             ncol = own and COL_OWN_NAME or COL_NAME;
         elseif own and (#states == 0) then
             ncol = COL_OWN_NAME; -- Windower: the name shows the state, else gold for yours
@@ -881,6 +911,14 @@ local function body(scale)
             if (c ~= nil) then
                 at(col, c.w + PADX * 2, false);
                 draw_cell(row, col.key, c);
+                if (c.under ~= nil) and (dl ~= nil) and (imgui.GetItemRectMin ~= nil) and (imgui.GetItemRectMax ~= nil) then -- wpn: melee mode
+                    local ux = pair(imgui.GetItemRectMin());
+                    local _, uy = pair(imgui.GetItemRectMax());
+                    if (ux ~= nil) and (uy ~= nil) then
+                        ux = ux + ((c.cmd ~= nil) and ((style().frame or { 0 })[1] or 0) or 0);
+                        dl:AddLine({ ux, uy - 1 }, { ux + (c.w or 0), uy - 1 }, u32(c.under), 2);
+                    end
+                end
                 if (c.dots ~= nil) and (#c.dots > 0) then -- wpn: /wsset high, /hoxne
                     local x2, y2, y1, _;
                     if (imgui.GetItemRectMax ~= nil) and (imgui.GetItemRectMin ~= nil) then
@@ -1056,8 +1094,8 @@ local function present()
     end
 end
 
--- True when <name> is one of my boxes: every box running this engine rewrites hud\<Name>.txt every
--- 0.25s (write_state), so a fresh file means a box that can take '/lac fwd'. Cached 5s per name.
+-- True when <name> is one of my boxes: every box running this engine rewrites hud\<Name>.txt when its modes
+-- change and at least every 3s (write_state), so a fresh file means a box that can take '/lac fwd'. Cached 5s per name.
 local boxCache = {};
 -- Every reporting box's modes (for /gcmodes all): { Name, Job, Toggles, Cycles }, owner first.
 function gchud.AllRows()
@@ -1096,6 +1134,7 @@ function gchud.Start()
     abbrCache, abbrLevel = {}, {};
     boxCache = {};
     seenSeq = {};
+    rowsKey = nil;
     placed = false;
     ashita.events.register('d3d_present', 'gchud_present', present);
     local player = me();
