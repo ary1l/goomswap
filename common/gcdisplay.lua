@@ -146,15 +146,15 @@ end
 -- own colour (DT orange, MDT blue, Aminon mauve, SIR teal, TH a gold ring, Kite green...) then its name.
 local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
 local COL_KEY = { 0.62, 0.68, 0.80, 1.0 };
--- Every job its own colour (picked to tell all 22 apart on the dark bar). Ashita outlines the job text: the main job's
+-- Every job its own colour (picked to tell all 22 apart on the dark bar; RNG moss green, COR mustard gold). Ashita outlines the job text: the main job's
 -- half in its colour, the sub job's in its.
 local JOB_COL = {
 	WAR = { 1.00, 0.45, 0.40, 1.0 }, MNK = { 0.96, 0.70, 0.04, 1.0 }, WHM = { 0.97, 0.97, 0.97, 1.0 },
 	BLM = { 0.71, 0.39, 1.00, 1.0 }, RDM = { 1.00, 0.22, 0.61, 1.0 }, THF = { 0.53, 1.00, 0.14, 1.0 },
 	PLD = { 0.12, 0.71, 1.00, 1.0 }, DRK = { 0.73, 0.44, 0.80, 1.0 }, BST = { 0.85, 0.58, 0.33, 1.0 },
-	BRD = { 0.80, 0.85, 0.02, 1.0 }, RNG = { 0.99, 1.00, 0.64, 1.0 }, SAM = { 0.72, 0.49, 0.48, 1.0 },
+	BRD = { 0.80, 0.85, 0.02, 1.0 }, RNG = { 0.52, 0.65, 0.36, 1.0 }, SAM = { 0.72, 0.49, 0.48, 1.0 },
 	NIN = { 0.53, 0.62, 0.70, 1.0 }, DRG = { 0.02, 0.98, 1.00, 1.0 }, SMN = { 0.18, 1.00, 0.76, 1.0 },
-	BLU = { 0.19, 0.54, 1.00, 1.0 }, COR = { 0.28, 0.70, 0.57, 1.0 }, PUP = { 1.00, 0.55, 0.74, 1.0 },
+	BLU = { 0.19, 0.54, 1.00, 1.0 }, COR = { 0.65, 0.61, 0.10, 1.0 }, PUP = { 1.00, 0.55, 0.74, 1.0 },
 	DNC = { 1.00, 0.18, 0.89, 1.0 }, SCH = { 0.82, 0.75, 1.00, 1.0 }, GEO = { 0.11, 0.81, 0.33, 1.0 },
 	RUN = { 1.00, 0.45, 0.04, 1.0 }
 };
@@ -208,6 +208,7 @@ local function value_text(k, v)
 	v = tostring(v);
 	if (k == 'MeleeSet') and (v == 'Default') then return 'Base' end
 	if (k == 'MeleeSet') and (v == 'SubtleBlow') then return 'SB' end
+	if (k == 'NukeSet') and (v == 'OccultAcumen') then return 'OA' end
 	if (k == 'IdleSet') and (IDLE_SHORT[v] ~= nil) then return IDLE_SHORT[v] end
 	if (v == 'None') or (v == 'Off') or (v == 'Default') then return '-' end
 	if (inc ~= nil) and (inc.ModeLabel ~= nil) then return tostring(inc.ModeLabel(k, v)) end

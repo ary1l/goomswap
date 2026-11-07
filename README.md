@@ -249,13 +249,14 @@ reads them twice a second (Ashita `luashitacast/hud/`, Windower IPC).
 ![The HUD, compact style](docs/hud.png)
 
 Alba: `/rangedset acc`. Bryn: `/sir`, `/wsset high`. Cora: you (band), `/th`. Dain: `/mset acc`, a slot pick (`+`),
-`/idleset refresh` (`MP`), DT. Elle: `/mset sb`, `/hoxne`, `/nukeset oa` + `/burst` (`Occu*`). Names in job colour.
+`/idleset refresh` (`MP`), DT. Elle: `/mset sb`, `/hoxne`, `/nukeset oa` + `/burst` (`OA*`). Names in job colour.
 
 - **Open:** `/gchud`; `/gchud large|compact` (large: bigger text, full names); `/gchud pos X Y` or drag (kept on
   screen; within 8px of the top or bottom it snaps flush); `/gchud debug`. `HUDOwners` boxes open it
   with every box; other boxes see their own row (empty list: everyone sees all).
 - **Names** in their main job's colour, as on the bar. **Your row:** faint band.
-- **Dots** left of the name, every one on (first nearest): teal SIR, gold ring TH, green Kite, red PROC.
+- **Dots** left of the name, each always in its own spot (faint in the header): teal SIR, gold ring TH, green Kite,
+  red PROC.
 - **`wpn`:** weapon mode (main pick if the job has none). Colour = `/mset`: grey-white Base, cyan Acc, magenta SB.
   `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Dots after: purple `/wsset high`, bronze
   `/hoxne`. Hover: all of them. Ctrl+click: `/mset`.
@@ -272,9 +273,9 @@ Alba: `/rangedset acc`. Bryn: `/sir`, `/wsset high`. Cora: you (band), `/th`. Da
 - Click a cell: runs it on that box. Click a name: its other modes.
 - Mouse away: your row only, with just its columns; over: all (`HUDHover`). Opens upward in the screen's bottom
   half (`HUDGrow`).
-- A column shows while some box has it set (`def`: DT/MDT/Aminon on); the rest are on the detail line. Columns
-  never shrink while you play. Compact: names that fit show whole (wpn 6 letters, others 5), else `DP` `Max` `GH`
-  `KC` or 4 letters (`HUDAbbr` to set your own).
+- Fixed width: every column a shown box's job has stays (`-` when unset); folded cycles are on the detail line.
+  Compact: names that fit show whole (wpn 6 letters, others 5), else `DP` `Max` `GH` `KC` or 4 letters (`HUDAbbr`
+  to set your own); `/nukeset oa` shows `OA`.
 - The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).
 - Settings: `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDX` `HUDY` `HUDStyle` `HUDScale` `HUDScaleLarge`
   `HUDAlpha` `HUDAbbr` `HUDLabels`.
@@ -290,7 +291,8 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 - **Job**, `Atk` and `Def` (Ashita) | **modes that are set** | **toggles that are on** as dots.
 - Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its.
 - Dropped within 8px of the screen's top, the bar snaps flush to it.
-- `wpn` as the HUD's: `+` slot pick, colour `/mset`, purple dot `/wsset high`, bronze `/hoxne`. `idle`: MP HP TP.
+- `wpn` as the HUD's: `+` slot pick, colour `/mset`, purple dot `/wsset high`, bronze `/hoxne`. `idle`: MP HP TP;
+  `nuke`: OA for Occult Acumen.
 - A job without weapon modes (WHM...) shows `melee` and `wsset` by name, only once changed.
 - Dots: DT orange, MDT blue, Aminon mauve, SIR teal, Kite green, Burst pink, PROC red. Rings: TH gold, Harp teal,
   Song lock purple, Death red.
