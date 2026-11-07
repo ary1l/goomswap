@@ -138,6 +138,12 @@ end
 -- own colour (DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green...) then its name.
 local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
 local COL_KEY = { 0.62, 0.68, 0.80, 1.0 };
+-- Jobs in their role's colour; the main job's colour also outlines the job text (a badge; Ashita only).
+local ROLE_COL = { tank = { 0.43, 0.65, 1.00, 1.0 }, heal = { 0.92, 0.96, 0.92, 1.0 }, sup = { 0.39, 0.88, 0.51, 1.0 },
+	mage = { 0.75, 0.55, 1.00, 1.0 }, rng = { 0.95, 0.85, 0.35, 1.0 }, melee = { 1.00, 0.55, 0.35, 1.0 } };
+local JOB_ROLE = { PLD = 'tank', RUN = 'tank', WHM = 'heal', BRD = 'sup', COR = 'sup', RDM = 'sup', GEO = 'sup',
+	BLM = 'mage', SCH = 'mage', SMN = 'mage', RNG = 'rng' }; -- the rest: melee
+local function job_col(j) return ROLE_COL[JOB_ROLE[string.upper(tostring(j or ''))] or 'melee'] end
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };
 local COL_VAL_DEF = { 0.73, 0.67, 0.50, 1.0 };
 local COL_DIV = { 1.0, 1.0, 1.0, 0.20 };
@@ -269,8 +275,21 @@ local function bar_body()
 		imgui.Text(text);
 		imgui.PopStyleColor();
 	end
-	put(headText, COL_HEAD);
-	put('Atk ', COL_KEY, 8); put(tostring(Attk), COL_HEAD, 0); -- labelled, so it doesn't read as HP
+	if (headText ~= '') then -- set by Update
+		put(Main .. tostring(MainLV or ''), job_col(Main));
+		local x1, y1 = nil, nil;
+		if (dl ~= nil) then x1, y1 = xy(imgui.GetItemRectMin()) end
+		put('/', COL_KEY, 0);
+		put(Sub .. tostring(SubLV or ''), job_col(Sub), 0);
+		if (dl ~= nil) and (x1 ~= nil) and (y1 ~= nil) then
+			local x2, y2 = xy(imgui.GetItemRectMax());
+			local c = job_col(Main);
+			if (x2 ~= nil) and (y2 ~= nil) then dl:AddRect({ x1 - 5, y1 }, { x2 + 5, y2 }, imgui.GetColorU32({ c[1], c[2], c[3], 0.85 }), 8, 0, 1) end
+		end
+	else
+		put(headText, COL_HEAD);
+	end
+	put('Atk ', COL_KEY, (dl ~= nil) and 13 or 8); put(tostring(Attk), COL_HEAD, 0); -- labelled, so it doesn't read as HP
 	put('Def ', COL_KEY, 8); put(tostring(Def), COL_HEAD, 0);
 	local names = ((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES;
 	local picked = false;
