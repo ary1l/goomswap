@@ -128,6 +128,7 @@ local sets = {
     },
     Tp_Acc = {
     },
+    Midcast = {},
 
 
     Precast = { --74
@@ -147,11 +148,11 @@ local sets = {
         Legs = 'volte brais',
         Feet = 'Fili Cothurnes +3',
     },
-    Cure_Precast = {
+    ['Healing Magic_Precast'] = {
         Ear2 = 'Mendi. Earring',
         Feet = 'Vanya Clogs',
     },
-    Enhancing_Precast = {
+    ['Enhancing Magic_Precast'] = {
         Waist = 'Siegel Sash',
     },
     Stoneskin_Precast = {
@@ -160,7 +161,7 @@ local sets = {
         Waist = 'Siegel Sash',
 		Legs = 'haven hose',
     },
-    Song_Precast = { --87
+    Singing_Precast = { --87
 		Main = 'Carnwenhan',
 		Sub = 'Kali',
 		Range = 'loughnashade',
@@ -178,7 +179,7 @@ local sets = {
         Feet = 'Fili Cothurnes +3',
     },
 
-	Honor_Precast = { --87
+	['Honor March_Precast'] = { --87
         Main = 'Carnwenhan',
 		Sub = 'Kali',
 		Range = 'Marsyas',
@@ -196,7 +197,7 @@ local sets = {
         Feet = 'Fili Cothurnes +3',
     },
 
-	Aria_Precast = { --87
+	['Aria of Passion_Precast'] = { --87
         Main = 'Carnwenhan',
 		Sub = 'Kali',
 		Range = 'Loughnashade',
@@ -214,7 +215,7 @@ local sets = {
         Feet = 'Fili Cothurnes +3',--13
     },
 
-    Cure = {--I cap is 50, II cap is 30
+    ['Healing Magic'] = {--I cap is 50, II cap is 30
        --Main = 'Bunzi\'s Rod',--I 30
         Sub = 'Ammurapi Shield',
         Ammo = 'Pemphredo Tathlum',
@@ -246,7 +247,7 @@ local sets = {
         Feet = 'Vanya Clogs',
     },
 
-    Enhancing = {
+    ['Enhancing Magic'] = {
         Head = 'Befouled Crown',
         Neck = 'Incanter\'s Torque',
         Ear1 = 'Andoaa Earring',
@@ -269,7 +270,7 @@ local sets = {
 		Waist = 'Gishdubar Sash',
     },
 
-    Enfeebling = { --abs-tp
+    ['Enfeebling Magic'] = { --abs-tp
         Sub = 'Ammurapi Shield',
         Head = 'bunzi\'s hat',
         Neck = 'voltsurge torque',
@@ -526,7 +527,9 @@ local sets = {
 
     Drain = {},
 
-    Nuke = {
+    Aspir = {},
+
+    ['Elemental Magic'] = {
 	--main = '',
 	},
 
@@ -551,7 +554,7 @@ local sets = {
     },
     Ws_Acc = {},
 
-    Mordant_Default = {
+    ['Mordant Rime'] = {
         Range = { Name = 'Linos', Augment = { [1] = 'Weapon skill damage +2%', [2] = 'Attack+13', [3] = 'STR+8' } },
 		Head = 'Nyame Helm',
         Neck = 'Bard\'s Charm +2',
@@ -566,9 +569,9 @@ local sets = {
 		Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Mordant_Acc = {},
+    ['Mordant Rime_Acc'] = {},
 
-    Savage_Default = {
+    ['Savage Blade'] = {
         Range = { Name = 'Linos', Augment = { [1] = 'Weapon skill damage +2%', [2] = 'Attack+13', [3] = 'STR+8' } },
 		Head = 'nyame helm',
         Neck = 'Bard\'s Charm +2',
@@ -583,9 +586,9 @@ local sets = {
 		Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Savage_Acc = {},
+    ['Savage Blade_Acc'] = {},
 
-	Ruthless_Default = { -- Ruthless Stroke (Mpu Gandring): guide Mid buff set with your gear. Moonshade: the engine's (Ear2 under 1750 TP);
+	['Ruthless Stroke'] = { -- Ruthless Stroke (Mpu Gandring): guide Mid buff set with your gear. Moonshade: the engine's (Ear2 under 1750 TP);
 	                     -- Epaminondas's Ring -> Ephramad's Ring, Alabaster Mantle -> Intarabus's Cape (WSD)
         Range = { Name = 'Linos', Augment = { [1] = 'Weapon skill damage +2%', [2] = 'Attack+13', [3] = 'STR+8' } },
 		Head = 'nyame helm',
@@ -601,7 +604,7 @@ local sets = {
 		Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
-    Ruthless_Acc = {},
+    ['Ruthless Stroke_Acc'] = {},
 
     Nitro = {--includes legs for soul voice as well
         Body = 'Bihu Just. +4',
@@ -626,6 +629,19 @@ local sets = {
     Movement = {
         Feet = 'Fili Cothurnes +3',
 	},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    ['Savage Blade_HighBuff'] = {}, -- /wsset high: this WS
+    ['Soul Voice'] = {}, -- a job ability: worn as it goes off (ByName)
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_Carnwenhan_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Carnwenhan
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -670,6 +686,8 @@ local function SongWeapons(spell)
 end
 
 
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
+
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan'}; -- Weapon_CarnwenhanAcc goes on with /mmode Acc; Hoxne is /hoxne
@@ -706,15 +724,8 @@ end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-
-    if string.match(ability.Name, 'Troubadour')
-        or string.match(ability.Name, 'Nightingale')
-        or string.match(ability.Name, 'Soul Voice')
-        or string.match(ability.Name, 'Clarion Call') then
-
-        gFunc.EquipSet(sets.Nitro)
-    end
-
+    if T{'Troubadour', 'Nightingale', 'Soul Voice', 'Clarion Call'}:contains(ability.Name) then gFunc.EquipSet(sets.Nitro) end
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Soul Voice'] (over Nitro)
     gcinclude.CheckCancels();
     FixSub(gData.GetPlayer().Status == 'Engaged');
 end
@@ -727,64 +738,24 @@ end
 
 profile.HandlePrecast = function()
     local spell = gData.GetAction();
-    gFunc.EquipSet(sets.Precast)
-
-    if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing_Precast);
-
-        if string.contains(spell.Name, 'Stoneskin') then
-            gFunc.EquipSet(sets.Stoneskin_Precast);
-        end
-    elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure_Precast);
-    elseif (spell.Skill == 'Singing') then
-        gFunc.EquipSet(sets.Song_Precast);
-    end
-	if string.contains(spell.Name, 'Honor March') then
-            gFunc.EquipSet(sets.Honor_Precast);
-        end
-			if string.contains(spell.Name, 'Aria of Passion') then
-            gFunc.EquipSet(sets.Aria_Precast);
-        end
-
+    gFunc.EquipSet(sets.Precast);
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Singing_Precast'], ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Honor March_Precast'], ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
     SongWeapons(spell);
 end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
-
-    if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing);
-
-        if string.match(spell.Name, 'Phalanx') then
-            gFunc.EquipSet(sets.Phalanx);
-        elseif string.match(spell.Name, 'Stoneskin') then
-            gFunc.EquipSet(sets.Stoneskin);
-        elseif string.contains(spell.Name, 'Refresh') then
-            gFunc.EquipSet(sets.Refresh);
-        elseif string.contains(spell.Name, 'Regen') then
-            gFunc.EquipSet(sets.Regen);
-        end
-    elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure);
+    gFunc.EquipSet(sets.Midcast);
+    ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Enfeebling Magic']
+    if (spell.Skill == 'Healing Magic') then
         if (gData.GetActionTarget().Name == AshitaCore:GetMemoryManager():GetParty():GetMemberName(0)) then
             gFunc.EquipSet(sets.Self_Cure);
         end
-        if string.match(spell.Name, 'Cursna') then
-            gFunc.EquipSet(sets.Cursna);
-        end
-    elseif (spell.Skill == 'Elemental Magic') then
-        gFunc.EquipSet(sets.Nuke);
-
-    elseif (spell.Skill == 'Enfeebling Magic') then
-        gFunc.EquipSet(sets.Enfeebling);
     elseif (spell.Skill == 'Dark Magic') then
-        gFunc.EquipSet(sets.Enfeebling); -- mostly macc anyways
-        if (string.contains(spell.Name, 'Aspir') or string.contains(spell.Name, 'Drain')) then
-            gFunc.EquipSet(sets.Drain);
-        end
-    elseif (spell.Skill == 'Singing') then
+        gFunc.EquipSet(sets['Enfeebling Magic']); -- mostly macc anyways
+    elseif (spell.Skill == 'Singing') then -- songs by group
         if (string.contains(spell.Name, 'Army\'s Paeon III')) or (string.contains(spell.Name, 'Army\'s Paeon IV')) or (string.contains(spell.Name, 'Army\'s Paeon V')) then
             gFunc.EquipSet(sets.Paeon);
         elseif (string.contains(spell.Name, 'Victory March')) or (string.contains(spell.Name, 'Advancing March')) then
@@ -821,7 +792,8 @@ profile.HandleMidcast = function()
             gFunc.EquipSet(sets.Harp);
         end
     end
-	gcinclude.CheckTH();
+    if not ByName(spell.Name) then ByName(Family(spell.Name)) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna']
+    gcinclude.CheckTH();
     SongWeapons(spell);
 end
 
@@ -837,20 +809,8 @@ end
 profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
-
     gcinclude.EquipMode('Ws');
-
-       if string.match(ws.Name, 'Mordant Rime') then
-        gcinclude.EquipMode('Mordant');
-    end
-
-	if string.match(ws.Name, 'Ruthless Stroke') then
-        gcinclude.EquipMode('Ruthless');
-    end
-
-    if string.match(ws.Name, 'Savage Blade') then
-        gcinclude.EquipMode('Savage');
-    end
+    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mmode>']
     FixSub(gData.GetPlayer().Status == 'Engaged');
 end
 

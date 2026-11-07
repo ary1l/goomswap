@@ -148,6 +148,7 @@ local sets = {
     Tp_Acc = {
         Ring2 = 'Cacoethic Ring +1',
     },
+    Midcast = {},
 
 
     Precast = {--30 from traits, 80 from gear
@@ -166,12 +167,12 @@ local sets = {
         Legs = 'chironic hose',--5
         Feet = 'amalric nails +1',--6
     },
-    Cure_Precast = {
+    ['Healing Magic_Precast'] = {
         Ear2 = 'Mendi. Earring',
 		Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
         Feet = 'Vanya Clogs',
     },
-    Enhancing_Precast = {
+    ['Enhancing Magic_Precast'] = {
 		Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
         Waist = 'Siegel Sash',
     },
@@ -180,7 +181,7 @@ local sets = {
 		Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
 		Waist = 'Siegel Sash',
     },
-	dispelga_precast = {
+	Dispelga_Precast = {
 		Main = 'daybreak',
 		Sub = 'ammurapi shield',
 		Range = 'ullr',
@@ -200,7 +201,7 @@ local sets = {
 	},
 
 
-    Cure = {--I cap is 50, II cap is 30
+    ['Healing Magic'] = {--I cap is 50, II cap is 30
         Main = 'daybreak',--I 30
         Sub = 'Ammurapi Shield',
         Ammo = 'Pemphredo Tathlum',
@@ -239,7 +240,7 @@ local sets = {
 		Waist = 'Gishdubar Sash',
     },
 
-    Enhancing = {
+    ['Enhancing Magic'] = {
         Main = 'Sakpata\'s Sword',
         Sub = 'Ammurapi Shield',
         Ammo = 'hydrocera',
@@ -305,7 +306,7 @@ local sets = {
         Feet = 'Leth. Houseaux +3',
 	},
 
-	aquaveil = {
+	Aquaveil = {
 		Sub = 'Ammurapi Shield',
         Ammo = 'hydrocera',
         Head = 'amalric coif +1',
@@ -322,7 +323,7 @@ local sets = {
         Feet = 'Leth. Houseaux +3',
 	},
 
-    Enfeebling = {
+    ['Enfeebling Magic'] = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
         Range = 'Ullr',
@@ -346,7 +347,7 @@ local sets = {
         Body = 'Atrophy Tabard +2',
         Hands = 'Atrophy Gloves +2',
     },
-	dispelga = {
+	Dispelga = {
         Main = 'Daybreak',
         Sub = 'Ammurapi Shield',
         Range = 'Ullr',
@@ -389,7 +390,26 @@ local sets = {
         Feet = 'Leth. Houseaux +3',
     },
 
-    Nuke = {
+    Aspir = {
+        Main = 'Bunzi\'s Rod',
+        Sub = 'Ammurapi Shield',
+        Range = 'Ullr',
+		Ammo = 'chapuli arrow',
+        Head = 'Viti. Chapeau +4',
+        Neck = 'Erra Pendant',
+        Ear1 = 'Regal Earring',
+        Ear2 = 'Malignance Earring',
+        Body = 'Atrophy Tabard +2',
+        Hands = 'Atrophy Gloves +2',
+        Ring1 = 'Metamor. Ring +1',
+        Ring2 = 'stikini ring +1',
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = '"Mag. Atk. Bns."+10', [3] = 'Mag. Acc.+20', [4] = 'INT+20', [5] = 'Magic Damage+20' } },
+        Waist = 'Fucho-no-Obi',
+        Legs = 'leth. fuseau +3',
+        Feet = 'Leth. Houseaux +3',
+    },
+
+    ['Elemental Magic'] = {
         Main = 'bunzi\'s rod',
         Sub = 'ammurapi shield',
         Ammo = 'Pemphredo Tathlum',
@@ -445,7 +465,7 @@ local sets = {
     Ws_Acc = {
     },
 
-    Savage_Default = {
+    ['Savage Blade'] = {
         Ammo = 'coiste bodhar',
         Head = 'Viti. Chapeau +4',
         Neck = 'rep. plat. medal',
@@ -459,9 +479,9 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'leth. houseaux +3',
     },
-    Savage_Acc = {},
+    ['Savage Blade_Acc'] = {},
 
-    Imperator_Default = {
+    Imperator = {
         Ammo = 'coiste bodhar',
         Head = 'Viti. Chapeau +4',
         Neck = 'rep. plat. medal',
@@ -477,7 +497,7 @@ local sets = {
     },
     Imperator_Acc = {},
 
-    Chant_Default = {
+    ['Chant du Cygne'] = {
         Ammo = 'Voluspa Tathlum',
         Head = 'Blistering Sallet +1',
         Neck = 'Fotia Gorget',
@@ -492,9 +512,9 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'Thereoid Greaves',
     },
-    Chant_Acc = {},
+    ['Chant du Cygne_Acc'] = {},
 
-	BH_Default = {
+	['Black Halo'] = {
         Ammo = 'coiste bodhar',
         Head = 'Viti. Chapeau +4',
         Neck = 'rep. plat. medal',
@@ -508,9 +528,9 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'leth. houseaux +3',
     },
-    BH_Acc = {},
+    ['Black Halo_Acc'] = {},
 
-	shining_Default = {
+	['Shining Blade'] = {
         Ammo = 'Voluspa Tathlum',
         Head = 'leth. chappel +3',
         Neck = 'Fotia Gorget',
@@ -524,9 +544,41 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'leth. houseaux +3',
     },
-    shining_Acc = {},
 
-	sanguine_Default = {
+	['Shining Strike'] = {
+        Ammo = 'Voluspa Tathlum',
+        Head = 'leth. chappel +3',
+        Neck = 'Fotia Gorget',
+        Ear2 = 'malignance Earring',
+        Body = 'Nyame Mail',
+        Hands = 'Nyame Gauntlets',
+        Ring1 = 'Metamor. ring +1',
+        Ring2 = 'ilabrat ring',
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'orpheus\'s sash',
+        Legs = 'Nyame Flanchard',
+        Feet = 'leth. houseaux +3',
+    },
+
+	['Seraph Blade'] = {
+        Ammo = 'Voluspa Tathlum',
+        Head = 'leth. chappel +3',
+        Neck = 'Fotia Gorget',
+        Ear2 = 'malignance Earring',
+        Body = 'Nyame Mail',
+        Hands = 'Nyame Gauntlets',
+        Ring1 = 'Metamor. ring +1',
+        Ring2 = 'ilabrat ring',
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'orpheus\'s sash',
+        Legs = 'Nyame Flanchard',
+        Feet = 'leth. houseaux +3',
+    },
+    ['Shining Blade_Acc'] = {},
+    ['Shining Strike_Acc'] = {},
+    ['Seraph Blade_Acc'] = {},
+
+	['Sanguine Blade'] = {
         Ammo = 'oshasha\'s treatise',
         Head = 'pixie hairpin +1',
         Neck = 'sibyl scarf',
@@ -541,9 +593,9 @@ local sets = {
         Legs = 'leth. fuseau +3',
         Feet = 'leth. houseaux +3',
     },
-    sanguine_Acc = {},
+    ['Sanguine Blade_Acc'] = {},
 
-	KOR_Default = {
+	['Knights of Round'] = {
         Ammo = 'coiste bodhar',
         Head = 'viti. chapeau +4',
         Neck = 'rep. plat. medal',
@@ -558,13 +610,13 @@ local sets = {
         Legs = 'Nyame Flanchard',
         Feet = 'leth. houseaux +3',
     },
-    KOR_Acc = {},
+    ['Knights of Round_Acc'] = {},
 
-    CS = {
+    Chainspell = {
 		Body = 'Viti. Tabard +4',
 	},
 
-	sab = {
+	Saboteur = {
 		Sub = 'diamond aspis',
 	},
 
@@ -585,6 +637,18 @@ local sets = {
     Movement = {
         Ring1 = 'shneddick ring',
 	},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    ['Savage Blade_HighBuff'] = {}, -- /wsset high: this WS
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_Naegling_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Naegling
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -603,6 +667,8 @@ local sets = {
     },
 };
 profile.Sets = sets;
+
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
@@ -644,16 +710,7 @@ end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-
-    if ability.Name == 'Chainspell' then
-        gFunc.EquipSet(sets.CS);
-    end
-
-	if ability.Name == 'Saboteur' then
-        gFunc.EquipSet(sets.sab);
-    end
-
-
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Chainspell']
     gcinclude.CheckCancels();
 end
 
@@ -665,18 +722,9 @@ end
 
 profile.HandlePrecast = function()
     local spell = gData.GetAction();
-    gFunc.EquipSet(sets.Precast)
-
-    if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing_Precast);
-
-        if string.contains(spell.Name, 'Stoneskin') then
-            gFunc.EquipSet(sets.Stoneskin_Precast);
-        end
-    elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure_Precast);
-    end
-    if (spell.Name == 'Dispelga') then gFunc.EquipSet(sets.dispelga_precast) end
+    gFunc.EquipSet(sets.Precast);
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
 end
 
@@ -684,39 +732,19 @@ profile.HandleMidcast = function()
     local spell = gData.GetAction();
     local target = gData.GetActionTarget();
     local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
-
+    local family = Family(spell.Name); -- 'Cure IV' -> 'Cure'
+    gFunc.EquipSet(sets.Midcast);
+    ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Elemental Magic']
     if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing);
-        if (target.Name == me) then
-            gFunc.EquipSet(sets.Self_Enhancing);
-        end
-
-        if string.match(spell.Name, 'Phalanx') then
-            gFunc.EquipSet(sets.Phalanx);
-        elseif string.match(spell.Name, 'Stoneskin') then
-            gFunc.EquipSet(sets.Stoneskin);
-        elseif string.contains(spell.Name, 'Temper') then
+        if (target.Name == me) then gFunc.EquipSet(sets.Self_Enhancing) end
+        if string.contains(spell.Name, 'Temper') or ((target.Name == me) and string.contains(spell.Name, 'En')) then
             gFunc.EquipSet(sets.Skill_Enhancing);
-        elseif string.contains(spell.Name, 'Regen') then
-            gFunc.EquipSet(sets.Regen);
-		elseif string.contains(spell.Name, 'Gain') then
+        elseif string.contains(spell.Name, 'Gain') then
             gFunc.EquipSet(sets.Gain);
-		elseif string.contains(spell.Name, 'Aquaveil') then
-			gFunc.EquipSet(sets.aquaveil);
-        elseif string.contains(spell.Name, 'Refresh') then
-            gFunc.EquipSet(sets.Refresh);
-            if (target.Name == me) then
-                gFunc.EquipSet(sets.Self_Refresh);
-            end
-        elseif (target.Name == me) and string.contains(spell.Name, 'En') then
-            gFunc.EquipSet(sets.Skill_Enhancing);
         end
     elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure);
-        if (target.Name == me) then
-            gFunc.EquipSet(sets.Self_Cure);
-        end
-        if T{'Cure', 'Cura', 'Curaga'}:contains(gcinclude.Family(spell.Name)) then
+        if (target.Name == me) then gFunc.EquipSet(sets.Self_Cure) end
+        if T{'Cure', 'Cura', 'Curaga'}:contains(family) then
             if (gData.GetPlayer().MPP <= 50) then
                 -- Light weather: Aurorastorm counts (LAC GetEnvironment reads storm buffs as weather), so does natural Light
                 local env = gData.GetEnvironment();
@@ -728,47 +756,27 @@ profile.HandleMidcast = function()
             end
             if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Cure_Dt) end
         end
-        if string.match(spell.Name, 'Cursna') then
-            gFunc.EquipSet(sets.Cursna);
-        end
     elseif (spell.Skill == 'Elemental Magic') then
-        gFunc.EquipSet(sets.Nuke);
-
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then
-            gFunc.EquipSet(sets.NukeACC);
-        end
-        if gcinclude.BurstWanted() then
-            gFunc.EquipSet(sets.Burst);
-        end
+        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.NukeACC) end
+        if gcinclude.BurstWanted() then gFunc.EquipSet(sets.Burst) end
         if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
-        if string.match(spell.Name, 'helix') then
-            gFunc.EquipSet(sets.Helix);
-        end
-        if (gData.GetPlayer().MPP <= 40) then
-            gFunc.EquipSet(sets.Mp_Body);
-        end
+        if string.match(spell.Name, 'helix') then gFunc.EquipSet(sets.Helix) end
+        if (gData.GetPlayer().MPP <= 40) then gFunc.EquipSet(sets.Mp_Body) end
     elseif (spell.Skill == 'Enfeebling Magic') then
-        gFunc.EquipSet(sets.Enfeebling);
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then
-            gFunc.EquipSet(sets.EnfeeblingACC);
-        end
+        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.EnfeeblingACC) end
         if string.contains(spell.Name, 'Paralyze') or string.contains(spell.Name, 'Slow') or string.contains(spell.Name, 'Addle') then
             gFunc.EquipSet(sets.Mind_Enfeebling);
         elseif string.contains(spell.Name, 'Poison') then
             gFunc.EquipSet(sets.Int_Enfeebling);
-		elseif string.contains(spell.Name, 'Dispelga') then
-            gFunc.EquipSet(sets.dispelga);
         elseif string.contains(spell.Name, 'Distract') or string.match(spell.Name, 'Frazzle III') then
             gFunc.EquipSet(sets.Potency_Enfeebling);
         end
     elseif (spell.Skill == 'Dark Magic') then
         gFunc.EquipSet(sets.EnfeeblingACC); -- mostly MACC anyways
-        if (string.contains(spell.Name, 'Aspir') or string.contains(spell.Name, 'Drain')) then
-            gFunc.EquipSet(sets.Drain);
-        end
     end
-
-	gcinclude.CheckTH();
+    if not ByName(spell.Name) then ByName(family) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna'], ['Drain']
+    if (family == 'Refresh') and (target.Name == me) then gFunc.EquipSet(sets.Self_Refresh) end
+    gcinclude.CheckTH();
 end
 
 profile.HandlePreshot = function()
@@ -783,24 +791,8 @@ end
 profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
-
     gcinclude.EquipMode('Ws');
-
-    if string.match(ws.Name, 'Chant du Cygne') then
-        gcinclude.EquipMode('Chant');
-	elseif string.match(ws.Name, 'Sanguine Blade') then
-        gcinclude.EquipMode('sanguine');
-	elseif string.match(ws.Name, 'Black Halo') then
-        gcinclude.EquipMode('BH');
-	elseif string.match(ws.Name, 'Knights of Round') then
-        gcinclude.EquipMode('KOR');
-	elseif string.match(ws.Name, 'Shining Blade') or string.match(ws.Name, 'Seraph Blade') or string.match(ws.Name, 'Shining Strike') then
-        gcinclude.EquipMode('shining');
-    elseif string.match(ws.Name, 'Savage Blade') then
-        gcinclude.EquipMode('Savage');
-    elseif string.match(ws.Name, 'Imperator') then
-        gcinclude.EquipMode('Imperator');
-    end
+    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mmode>']
 end
 
 return profile;

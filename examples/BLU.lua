@@ -142,6 +142,7 @@ local sets = {
 	},
 	Tp_Acc = {
         },
+    Midcast = {},
 
 	Precast = {--64
         Ammo = 'Sapience Orb',--2
@@ -158,7 +159,7 @@ local sets = {
         Legs = 'Pinga Pants +1',--11
         Feet = 'Carmine Greaves +1',--7
     },
-    Blu_Precast = {
+    ['Blue Magic_Precast'] = {
 		Ammo = 'Sapience Orb',--2
         Head = 'Carmine Mask +1',--14
         Neck = 'voltsurge torque',--4
@@ -204,7 +205,7 @@ local sets = {
         Legs = 'Pinga Pants +1',--11
         Feet = 'Medium\'s Sabots',--10 atm
     },
-    WhiteWind = {--HP+ go!
+    ['White Wind'] = {--HP+ go!
 		--sub = 'sakpata\'s sword',
         Ammo = 'egoist\'s Tathlum',
         Head = 'nyame helm',
@@ -332,7 +333,7 @@ local sets = {
     },
     Ws_Acc = {
     },
-    Chant_Default = {
+    ['Chant du Cygne'] = {
         Ammo = 'Jukukik Feather',
         Head = 'Adhemar Bonnet +1',
 		Neck = 'Mirage Stole +2',
@@ -346,9 +347,9 @@ local sets = {
         Legs = 'Gleti\'s Breeches',
         Feet = 'Gleti\'s Boots',
     },
-    Chant_Acc = {
+    ['Chant du Cygne_Acc'] = {
     },
-    Savage_Default = {
+    ['Savage Blade'] = {
 	    Ammo = 'coiste bodhar',
         Head = 'Hashishin Kavuk +3',
 		Neck = 'Mirage Stole +2',
@@ -362,9 +363,9 @@ local sets = {
 		Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Savage_Acc = {
+    ['Savage Blade_Acc'] = {
     },
-    Imperator_Default = {
+    Imperator = {
         Ammo = 'coiste bodhar',
         Head = 'Hashishin Kavuk +3',
         Neck = 'Mirage Stole +2',
@@ -380,7 +381,7 @@ local sets = {
     },
     Imperator_Acc = {
     },
-    Expiacion_Default = {
+    Expiacion = {
         Ammo = 'crepuscular pebble',
         Head = 'Hashishin Kavuk +3',
         Neck = 'Mirage Stole +2',
@@ -398,7 +399,7 @@ local sets = {
     },
     Expiacion_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Expiacion_Default (any WS: <its set>_SubtleBlow)
     },
-    Requiescat_Default = {
+    Requiescat = {
         Head = 'Hashishin Kavuk +3',
         Neck = 'Fotia Gorget',
         Ear1 = 'Brutal Earring',
@@ -412,7 +413,7 @@ local sets = {
     },
     Requiescat_Acc = {
     },
-	sanguine_Default = {
+	['Sanguine Blade'] = {
         Ammo = 'ghastly tathlum',
         Head = 'Hashishin kavuk +3',
         Neck = 'sibyl scarf',
@@ -427,7 +428,7 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'Hashi. Basmak +3',
     },
-    sanguine_Acc = {},
+    ['Sanguine Blade_Acc'] = {},
     Ca = {
         Head = 'Hashishin Kavuk +3',
 		Feet = 'Hashi. Basmak +3',
@@ -470,6 +471,19 @@ local sets = {
 	Movement = {
 		Ring1 = 'shneddick ring',
 	},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    Expiacion_HighBuff = {}, -- /wsset high: this WS
+    ['Azure Lore'] = {}, -- a job ability: worn as it goes off (ByName)
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_Tizona_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Tizona
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -489,6 +503,8 @@ local sets = {
 };
 profile.Sets = sets;
 
+
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
@@ -532,10 +548,9 @@ profile.HandleDefault = function()
 end
 
 profile.HandleAbility = function()
-	local ability = gData.GetAction();
-
-    if string.match(ability.Name, 'Provoke') then gFunc.EquipSet(sets.Enmity) end
-
+    local ability = gData.GetAction();
+    if (ability.Name == 'Provoke') then gFunc.EquipSet(sets.Enmity) end
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Azure Lore']
     gcinclude.CheckCancels();
 end
 
@@ -548,13 +563,8 @@ end
 profile.HandlePrecast = function()
     local spell = gData.GetAction();
     gFunc.EquipSet(sets.Precast);
-
-    if string.contains(spell.Skill, 'Blue Magic') then
-        gFunc.EquipSet(sets.Blu_Precast);
-    elseif string.contains(spell.Name, 'Stoneskin') then
-        gFunc.EquipSet(sets.Stoneskin_Precast);
-    end
-
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
 end
 
@@ -565,6 +575,7 @@ profile.HandleMidcast = function()
     local ef = gcinclude.BuffCount('Efflux');
     local spell = gData.GetAction();
 
+    gFunc.EquipSet(sets.Midcast);
     if (spell.Skill == 'Blue Magic') then gFunc.EquipSet(gcinclude.BluMagPhysical:contains(spell.Name) and sets.BluPhysical or sets.BluMagical) end -- non-blue spells (Utsusemi etc.) keep precast gear
     if (gcinclude.BluMagDebuff:contains(spell.Name)) then gFunc.EquipSet(sets.BluMagicAccuracy)
     elseif (gcinclude.BluMagStun:contains(spell.Name)) then gFunc.EquipSet(sets.BluStun);
@@ -572,9 +583,9 @@ profile.HandleMidcast = function()
     elseif (gcinclude.BluMagSkill:contains(spell.Name)) then gFunc.EquipSet(sets.BluSkill);
     elseif (gcinclude.BluMagCure:contains(spell.Name)) then gFunc.EquipSet(sets.Cure);
     elseif (gcinclude.BluMagEnmity:contains(spell.Name)) then gFunc.EquipSet(sets.Enmity);
-    elseif string.match(spell.Name, 'White Wind') then gFunc.EquipSet(sets.WhiteWind);
     elseif string.match(spell.Name, 'Evryone. Grudge') or string.match(spell.Name, 'Tenebral Crush') then gFunc.EquipSet(sets.BluDark);
     end
+    ByName(spell.Name); -- a set named after the spell, e.g. ['White Wind']
 
     if (ca>=1) then gFunc.EquipSet(sets.Ca) end
     if (ba>=1) then gFunc.EquipSet(sets.Ba) end
@@ -597,22 +608,8 @@ end
 profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
-
     gcinclude.EquipMode('Ws');
-
-    if string.match(ws.Name, 'Chant du Cygne') then
-        gcinclude.EquipMode('Chant');
-    elseif string.match(ws.Name, 'Savage Blade') then
-        gcinclude.EquipMode('Savage');
-    elseif string.match(ws.Name, 'Imperator') then
-        gcinclude.EquipMode('Imperator');
-    elseif string.match(ws.Name, 'Expiacion') then
-        gcinclude.EquipMode('Expiacion');
-    elseif string.match(ws.Name, 'Requiescat') then
-        gcinclude.EquipMode('Requiescat');
-	elseif string.match(ws.Name, 'Sanguine Blade') then
-        gcinclude.EquipMode('sanguine');
-    end
+    ByName(ws.Name); -- e.g. ['Expiacion'], then ['Expiacion_<mmode>']
 end
 
 return profile;

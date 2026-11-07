@@ -73,7 +73,7 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 | `engaged` `.<OffenseMode>` | `Tp_Default` `Tp_<mode>`; OffenseMode = `/mmode` list |
 | `defense.PDT` `.MDT` (else `.MEVA`) | `Dt` `mdt` |
 | `precast.FC`, `FC.Cure`, `FC['Enhancing Magic']` | `Precast` `Cure_Precast` `Enhancing_Precast` |
-| `precast.WS` `['Savage Blade']` `.Acc` | `Ws_Default`, the template's WS set (else by name), `_Acc` |
+| `precast.WS` `['Savage Blade']` `.Acc` | `Ws_Default`, `['Savage Blade']`, `['Savage Blade_Acc']` |
 | `precast.JA[...]`, `midcast.Cure`, `midcast['Enhancing Magic']` | the template's set, else by name |
 | `midcast.RA` `.Acc`; `midcast['Elemental Magic'].OccultAcumen` | `Midshot` `Midshot_Acc`; `OccultAcumen` |
 | `weapons.<Name>` + `state.Weapons` | `Weapon_<Name>` + `/wm` modes |
@@ -301,7 +301,7 @@ Later wins, slot by slot.
 5. `Sleeping` → `Doomed` → `Reraise` → craft/zeni/fish/rr.
 
 **Midcast:** job file → `TH` → `_Self` `_Others` `_Burst` → `Absorb` → `Buffs_Midcast` → `LightBonus` →
-obi/Orpheus/back/ring → `SIR`. WHM cures: `Cure` → `Self_Cure` → `Cure_LowMP` → `Cure_Dt` → obi → `SIR`.
+obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` → `Cure_LowMP` → `Cure_Dt` → obi → `SIR`.
 
 **WS:** job file → `_HighBuff` → Hoxne → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
 
@@ -360,6 +360,21 @@ end
 | `gcinclude.CheckTH(force)` | `TH` at an untagged mob |
 | `gcinclude.CheckWsBailout()` | false if the WS would fail |
 | `gcinclude.BuffCount(x)` | buff count |
+
+**Set names** (every example, same handlers): the game's own name, worn by `ByName`; empty sets do nothing.
+
+| Set | Worn |
+|---|---|
+| `['Savage Blade']` `['Savage Blade_Acc']` `['Savage Blade_HighBuff']` | that WS; `/mmode acc`; `/wsset high` |
+| `Ws_Default` `Ws_Acc` `Ws_HighBuff` | any WS, under its own |
+| `['Berserk']` | that job ability |
+| `['Enhancing Magic']` `['Cure']` `['Phalanx']` | skill, then spell or family (`Cure IV` → `Cure`) |
+| `['Healing Magic_Precast']` `['Stoneskin_Precast']` | over `Precast` |
+| `Tp_Default` `Tp_SubtleBlow` `Tp_Acc` | engaged, `/mmode` |
+| `Buffs` `Buffs_Ws` `Buffs_Midcast` `{ ['Aftermath: Lv.3'] = {...} }` | while that buff is up |
+
+Each file ends its sets with a Templates block (one of each, blank) to copy from. Groups keep a plain name
+(`Phantom Roll` for every roll, `Quick Draw`, `Nitro`, `Enmity`, BRD song groups).
 
 ## Tips
 

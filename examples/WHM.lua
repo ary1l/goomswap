@@ -122,6 +122,7 @@ local sets = {
         Ring1 = 'Cacoethic Ring +1',
         Ring2 = 'Chirich Ring +1',
     },
+    Midcast = {},
 
 
     Precast = {
@@ -141,7 +142,7 @@ local sets = {
         Legs = 'sworn brais',--8
         Feet = 'sworn sabatons',--5
     },
-    Cure_Precast = {
+    ['Healing Magic_Precast'] = {
 		Main = 'gada',--5
 		Sub = 'chanter\'s shield',--3
         Ammo = 'Impatiens',
@@ -158,7 +159,7 @@ local sets = {
         Legs = 'sworn brais',
         Feet = 'sworn sabatons',
     },
-    Enhancing_Precast = {
+    ['Enhancing Magic_Precast'] = {
         Waist = 'Siegel Sash',
     },
     Stoneskin_Precast = {
@@ -172,7 +173,7 @@ local sets = {
     --   Cure -> Self_Cure (on you) -> Cure_LowMP or Cure_LowMP_Storm (MP <= 50%) -> Cure_Dt (/dt on)
     --   -> engine: Hachirin-no-Obi (Light day/weather) -> SIR set (/sir on) last, over all of it.
     -- MP above 50%: Cure's own Main/Sub stay (Raetic Rod +1 / Thuellaic Ecu +1).
-    Cure = {--I cap is 50, II cap is 30
+    ['Healing Magic'] = {--I cap is 50, II cap is 30
         Main = 'raetic rod +1',
 		Sub = 'thuellaic ecu +1',
         Ammo = 'impatiens',
@@ -205,7 +206,7 @@ local sets = {
         Ear1 = 'alabaster earring',
         Ring1 = 'murky ring',
     },
-    Regen = {
+    ['Regen IV'] = {
         Main = 'Bolelabunga',
         Sub = 'Ammurapi Shield',
 		Head = 'inyanga tiara +2',
@@ -244,7 +245,7 @@ local sets = {
         Feet = 'Vanya Clogs',
     },
 
-    Enhancing = {
+    ['Enhancing Magic'] = {
         Main = 'yagrush',
         Sub = 'Ammurapi Shield',
         Ammo = 'Pemphredo Tathlum',
@@ -271,8 +272,8 @@ local sets = {
     },
     Self_Refresh = {},
 
-    Divine = {}, -- Flash, Repose, Banish, Holy: layered over Enfeebling
-    Enfeebling = {
+    ['Divine Magic'] = {}, -- Flash, Repose, Banish, Holy: layered over Enfeebling
+    ['Enfeebling Magic'] = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
         Ammo = 'Pemphredo Tathlum',
@@ -304,7 +305,22 @@ local sets = {
 		Feet = 'theo. duckbills +4',
     },
 
-    Nuke = {
+    Aspir = {
+        Main = 'Bunzi\'s Rod',
+        Sub = 'Ammurapi Shield',
+        Ammo = 'Pemphredo Tathlum',
+        Neck = 'Erra Pendant',
+        Ear1 = 'Regal Earring',
+        Ear2 = 'Malignance Earring',
+        Ring1 = 'Kishar Ring',
+        Ring2 = 'Metamor. Ring +1',
+        Back = 'Aurist\'s Cape +1',
+        Waist = 'Fucho-no-Obi',
+		Legs = 'chironic hose',
+		Feet = 'theo. duckbills +4',
+    },
+
+    ['Elemental Magic'] = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
         Ammo = 'Pemphredo Tathlum',
@@ -345,7 +361,7 @@ local sets = {
     },
     Ws_Acc = {
     },
-    Cataclysm_Default = {
+    Cataclysm = {
         Ammo = 'Pemphredo Tathlum',
         Head = 'Pixie Hairpin +1',
         Neck = 'Sanctity Necklace',
@@ -370,6 +386,20 @@ local sets = {
     Movement = {
         Feet = 'Herald\'s Gaiters',
 	},
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
+    Cataclysm_HighBuff = {}, -- /wsset high: this WS
+    Benediction = {}, -- a job ability: worn as it goes off (ByName)
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
+    },
+    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Example
+    -- Weapon_Example_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -388,6 +418,8 @@ local sets = {
     },
 };
 profile.Sets = sets;
+
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
@@ -423,7 +455,8 @@ profile.HandleDefault = function()
 end
 
 profile.HandleAbility = function()
-
+    local ability = gData.GetAction();
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Benediction']
     gcinclude.CheckCancels();
 end
 
@@ -435,56 +468,29 @@ end
 
 profile.HandlePrecast = function()
     local spell = gData.GetAction();
-
     gFunc.EquipSet(sets.Precast);
-
-    if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing_Precast);
-
-        if string.contains(spell.Name, 'Stoneskin') then
-            gFunc.EquipSet(sets.Stoneskin_Precast);
-        end
-    elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure_Precast);
-    end
-
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
 end
 
 profile.HandleMidcast = function()
-    local player = gData.GetPlayer();
-    local weather = gData.GetEnvironment();
     local spell = gData.GetAction();
     local target = gData.GetActionTarget();
     local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
-
+    local family = Family(spell.Name); -- 'Cure IV' -> 'Cure'
+    gFunc.EquipSet(sets.Midcast);
+    if (spell.Skill == 'Divine Magic') then gFunc.EquipSet(sets['Enfeebling Magic']) end -- under ['Divine Magic']
+    ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Elemental Magic']
     if (spell.Skill == 'Enhancing Magic') then
-        gFunc.EquipSet(sets.Enhancing);
-        if (target.Name == me) then
-            gFunc.EquipSet(sets.Self_Enhancing);
-        end
-
-        if string.match(spell.Name, 'Phalanx') then
-            gFunc.EquipSet(sets.Phalanx);
-        elseif string.match(spell.Name, 'Stoneskin') then
-            gFunc.EquipSet(sets.Stoneskin);
-        elseif string.contains(spell.Name, 'Regen IV') then
-            gFunc.EquipSet(sets.Regen);
-        elseif string.contains(spell.Name, 'Refresh') then
-            gFunc.EquipSet(sets.Refresh);
-            if (target.Name == me) then
-                gFunc.EquipSet(sets.Self_Refresh);
-            end
-        end
+        if (target.Name == me) then gFunc.EquipSet(sets.Self_Enhancing) end
     elseif (spell.Skill == 'Healing Magic') then
-        gFunc.EquipSet(sets.Cure);
-        if (target.Name == me) then
-            gFunc.EquipSet(sets.Self_Cure);
-        end
-        if T{'Cure', 'Cura', 'Curaga'}:contains(gcinclude.Family(spell.Name)) then
-            if (player.MPP <= 50) then -- above 50%: Cure's Raetic Rod +1 / Ecu stay
+        if (target.Name == me) then gFunc.EquipSet(sets.Self_Cure) end
+        if T{'Cure', 'Cura', 'Curaga'}:contains(family) then
+            if (gData.GetPlayer().MPP <= 50) then
                 -- Light weather: Aurorastorm counts (LAC GetEnvironment reads storm buffs as weather), so does natural Light
-                if (weather ~= nil) and (weather.WeatherElement == 'Light') then
+                local env = gData.GetEnvironment();
+                if (env ~= nil) and (env.WeatherElement == 'Light') then
                     gFunc.EquipSet(sets.Cure_LowMP_Storm);
                 else
                     gFunc.EquipSet(sets.Cure_LowMP);
@@ -492,30 +498,17 @@ profile.HandleMidcast = function()
             end
             if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Cure_Dt) end
         end
-		if string.match(spell.Name, 'Paralyna') or string.match(spell.Name, 'Erase') or string.match(spell.Name, 'Blindna') or (string.match(spell.Name, 'Silena') or string.match(spell.Name, 'Poisona') or string.match(spell.Name, 'Stona') or string.match(spell.Name, 'Viruna')) then
+        if T{'Paralyna', 'Erase', 'Blindna', 'Silena', 'Poisona', 'Stona', 'Viruna'}:contains(spell.Name) then
             gFunc.EquipSet(sets.erase);
         end
-        if string.match(spell.Name, 'Cursna') then
-            gFunc.EquipSet(sets.Cursna);
-        end
     elseif (spell.Skill == 'Elemental Magic') then
-        gFunc.EquipSet(sets.Nuke);
-
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then
-            gFunc.EquipSet(sets.NukeACC);
-        end
-    elseif (spell.Skill == 'Divine Magic') then
-        gFunc.EquipSet(sets.Enfeebling);
-        gFunc.EquipSet(sets.Divine);
-    elseif (spell.Skill == 'Enfeebling Magic') then
-        gFunc.EquipSet(sets.Enfeebling);
+        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.NukeACC) end
     elseif (spell.Skill == 'Dark Magic') then
-        gFunc.EquipSet(sets.Enfeebling); -- mostly macc anyways
-        if (string.contains(spell.Name, 'Aspir') or string.contains(spell.Name, 'Drain')) then
-            gFunc.EquipSet(sets.Drain);
-        end
+        gFunc.EquipSet(sets['Enfeebling Magic']); -- mostly macc anyways
     end
-	gcinclude.CheckTH();
+    if not ByName(spell.Name) then ByName(family) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna'], ['Drain']
+    if (family == 'Refresh') and (target.Name == me) then gFunc.EquipSet(sets.Self_Refresh) end
+    gcinclude.CheckTH();
 end
 
 profile.HandlePreshot = function()
@@ -530,12 +523,8 @@ end
 profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
-
     gcinclude.EquipMode('Ws');
-
-    if string.match(ws.Name, 'Cataclysm') then
-        gcinclude.EquipMode('Cataclysm');
-    end
+    ByName(ws.Name); -- e.g. ['Cataclysm'], then ['Cataclysm_<mmode>']
 end
 
 return profile;
