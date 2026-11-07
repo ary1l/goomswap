@@ -83,10 +83,13 @@ local SHORT_VALUE = { IdleSet = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' } 
 -- Cycle values drawn as '-'. A cycle column empty on every box is hidden from the grid.
 local EMPTY = { none = true, off = true, unknown = true };
 
--- Short value: first word (whole if <= 4 letters, else 3), '+N' and one-letter words (paths) kept.
--- 'Bunzi's Rod' -> Bun, 'Anarchy +2' -> Ana+2, 'RostamB' -> RosB. Two of this box's choices that would match get
--- the initial of each later word too ('Death Penalty' -> DeaP). Override any with
--- settings.HUDAbbr = { ['Carnwenhan'] = 'Carn' } (case-insensitive).
+-- Short value (compact styles): the full value if it is no wider than FIT_TEXT (the widest def cell, so the column
+-- doesn't widen); else a short form players use (DP, Max, GH, KC); else the first word, whole if it fits, else its
+-- first 4 letters. '+N' and one-letter words (paths) are kept: 'Anarchy +2' -> Anar+2, 'RostamB' -> RostB. Two of
+-- this box's choices that would match get longer forms (check_abbr): 'ProcStaff' / 'ProcSword' -> ProcSta / ProcSwo.
+-- Override any with settings.HUDAbbr = { ['Carnwenhan'] = 'Carn' } (case-insensitive).
+local FIT_TEXT = 'Amin+';
+local SHORT_FORM = { deathpenalty = 'DP', maxentius = 'Max', godhands = 'GH', krakenclub = 'KC' }; -- leading words, letters only, lower case
 local abbrCache, abbrLevel = {}, {}; -- level: 0 short, 1 + later words' initials, 2 + their first 3 letters, 3 full name
 local function user_abbr(value)
     local user = inc.settings.HUDAbbr;
@@ -97,6 +100,12 @@ local function user_abbr(value)
     end
     return nil;
 end
+local function textw(t)
+    local w = imgui.CalcTextSize(t);
+    if (type(w) == 'table') then w = w[1] or w.x end
+    return tonumber(w) or 0;
+end
+local function cap(w) return string.upper(string.sub(w, 1, 1)) .. string.sub(w, 2) end
 local function abbr(value)
     value = tostring(value or '');
     if (value == '') then return '' end
@@ -105,25 +114,41 @@ local function abbr(value)
     local u = user_abbr(value);
     if (u ~= nil) then abbrCache[value] = u; return u end
     local lvl = abbrLevel[value] or 0;
-    if (lvl >= 3) then abbrCache[value] = value; return value end
-    local t = string.gsub(value, "['%.]", '');
+    local budget = textw(FIT_TEXT);
+    if (lvl >= 3) or (textw(value) <= budget) then abbrCache[value] = value; return value end
+    local t = string.gsub(value, "'s ", ' '); -- Bunzi's Rod -> Bunzi
+    t = string.gsub(t, "['%.]", '');
     t = string.gsub(t, '[^%w%+]', ' ');
     t = string.gsub(t, '(%l)(%u)', '%1 %2');
     t = string.gsub(t, '(%w)(%+)', '%1 %2');
-    local out = {};
-    for tok in string.gmatch(t, '%S+') do
-        if (#out == 0) then
-            local w = (#tok <= 4) and tok or string.sub(tok, 1, 3);
-            out[1] = string.upper(string.sub(w, 1, 1)) .. string.sub(w, 2);
-        elseif string.match(tok, '^%+?%d+$') then
-            out[#out + 1] = tok;
-        elseif (#tok == 1) or (lvl == 1) then
-            out[#out + 1] = string.upper(string.sub(tok, 1, 1));
-        elseif (lvl == 2) then
-            out[#out + 1] = string.upper(string.sub(tok, 1, 1)) .. string.sub(tok, 2, 3);
+    local tok = {};
+    for w in string.gmatch(t, '%S+') do tok[#tok + 1] = w end
+    if (#tok == 0) then abbrCache[value] = value; return value end
+    local out, from = {}, 2;
+    local key = '';
+    for i = 1, #tok do -- a known short form for the leading words
+        key = key .. string.lower(tok[i]);
+        if (SHORT_FORM[key] ~= nil) then out[1], from = SHORT_FORM[key], i + 1; break end
+    end
+    if (out[1] == nil) then
+        local first = tok[1];
+        if (#first <= 4) or ((lvl == 0) and (#tok > 1) and (textw(cap(first)) <= budget)) then
+            out[1] = cap(first);
+        else
+            out[1] = cap(string.sub(first, 1, 4));
         end
     end
-    hit = (#out > 0) and table.concat(out) or value;
+    for i = from, #tok do
+        local w = tok[i];
+        if string.match(w, '^%+?%d+$') then
+            out[#out + 1] = w;
+        elseif (#w == 1) or (lvl == 1) then
+            out[#out + 1] = string.upper(string.sub(w, 1, 1));
+        elseif (lvl == 2) then
+            out[#out + 1] = cap(string.sub(w, 1, 3));
+        end
+    end
+    hit = table.concat(out);
     abbrCache[value] = hit;
     return hit;
 end
@@ -502,12 +527,6 @@ local PADX = 1; -- cell padding; set from the style each frame in render()
 local function short_name(name)
     local n = style().name;
     return (n ~= nil) and string.sub(name, 1, n) or name;
-end
-
-local function textw(t)
-    local w = imgui.CalcTextSize(t);
-    if (type(w) == 'table') then w = w[1] or w.x end
-    return tonumber(w) or 0;
 end
 
 local function toggle_cell(row, key)

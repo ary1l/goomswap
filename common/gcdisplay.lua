@@ -325,7 +325,7 @@ local function render_bar()
 	end
 	local flags = bit.bor(ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoFocusOnAppearing,
 		ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
-	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 10, 3 });
+	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 10, 0 }); -- no space above or below the text
 	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 5, 1 });
 	imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 12); -- a capsule
 	imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
