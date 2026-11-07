@@ -157,6 +157,7 @@ end
 -- Once per load: two of this box's weapon choices that shorten to the same text get longer forms (the later words'
 -- initials, then their first 3 letters, then the full name) until they differ, so each reads as its own.
 local abbrChecked = false;
+local rowsKey = nil; -- read_all: the rows' content (not their timestamps); unchanged keeps rows, and so the built grid
 local function check_abbr()
     abbrChecked = true;
     if (type(inc.WeaponCycleList) ~= 'function') then return end
@@ -185,6 +186,7 @@ local function check_abbr()
         abbrCache = {}; -- the next pass and drawing see the longer forms
         if not clash then break end
     end
+    rowsKey = nil; -- cells are rebuilt with these forms
 end
 
 local COL_CLEAR = { 0.0, 0.0, 0.0, 0.0 };
@@ -344,6 +346,7 @@ local function read_all(everyBox)
                     local tmap, torder = decode(parts[3]);
                     local cmap, corder = decode(parts[4]);
                     out[#out + 1] = {
+                        Raw = table.concat(parts, '\t', 1, 4),
                         Name = parts[1],
                         Job = parts[2],
                         Toggles = tmap, ToggleOrder = torder,
@@ -380,6 +383,13 @@ local function read_all(everyBox)
             end
             out = mine;
         end
+    end
+    if (everyBox ~= true) then -- /gcmodes all reads every box without touching the HUD's rows
+        local raw = {};
+        for i, r in ipairs(out) do raw[i] = r.Raw end
+        local key = table.concat(raw, '\n');
+        if (key == rowsKey) then return end
+        rowsKey = key;
     end
     rows = out;
 end
@@ -848,9 +858,12 @@ local function body(scale)
     end
 
     -- rows
-    local mine = me();
+    local party = AshitaCore:GetMemoryManager():GetParty();
+    local mine = (party ~= nil) and party:GetMemberName(0) or nil; -- as gData.GetPlayer().Name, without the rest
+    mine = ((type(mine) == 'string') and (mine ~= '')) and string.lower(mine) or nil;
     for i, row in ipairs(view) do
-      if not collapsedView or ((mine ~= nil) and (string.lower(row.Name) == string.lower(mine.Name))) then
+      local own = (mine ~= nil) and (string.lower(row.Name) == mine);
+      if not collapsedView or own then
         local open = (expanded[row.Name] == true);
         imgui.SetCursorPosX(x0);
         local ncol, states = COL_NAME, {};
@@ -860,7 +873,6 @@ local function body(scale)
                 states[#states + 1] = st[2];
             end
         end
-        local own = (mine ~= nil) and (string.lower(row.Name) == string.lower(mine.Name));
         if (dl ~= nil) then -- the state as a dot left of the name; the name white, yours gold
             local rx, ry = pair(imgui.GetCursorScreenPos());
             if (rx ~= nil) and (#states > 0) then dl:AddCircleFilled({ rx - DOTW / 2 - 1, ry + lh / 2 }, 3.5, u32(ncol), 12) end
@@ -1096,6 +1108,7 @@ function gchud.Start()
     abbrCache, abbrLevel = {}, {};
     boxCache = {};
     seenSeq = {};
+    rowsKey = nil;
     placed = false;
     ashita.events.register('d3d_present', 'gchud_present', present);
     local player = me();
