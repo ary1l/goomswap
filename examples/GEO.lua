@@ -171,7 +171,7 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         --Head = 'Blistering Sallet +1',
@@ -579,7 +579,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Idris_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Idris
+    -- Weapon_Idris_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Idris
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {
 		Main = 'Bunzi\'s Rod',
@@ -730,7 +730,7 @@ profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
-    ByName(ws.Name); -- e.g. ['Black Halo'], then ['Black Halo_<mmode>']
+    ByName(ws.Name); -- e.g. ['Black Halo'], then ['Black Halo_<mset>']
 end
 
 return profile;

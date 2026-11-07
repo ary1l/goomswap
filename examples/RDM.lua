@@ -142,7 +142,7 @@ local sets = {
         Feet = 'malignance boots',
     },
 
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
 
     Tp_Acc = {
@@ -648,7 +648,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Naegling_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Naegling
+    -- Weapon_Naegling_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Naegling
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -792,7 +792,7 @@ profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
-    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mmode>']
+    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mset>']
 end
 
 return profile;

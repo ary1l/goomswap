@@ -74,7 +74,7 @@ local sets = {
         Legs = 'bhikku hose +3',
         Feet = 'anch. gaiters +4',
     },
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear2 = 'Mache Earring +1',
@@ -183,9 +183,9 @@ local sets = {
     },
     ['Dragon Kick_Acc'] = {},
     ['Tornado Kick_Acc'] = {},
-    ['Dragon Kick_SubtleBlow'] = { -- /mmode subtleblow: Subtle Blow pieces over kickws_Default (Dragon Kick, Tornado Kick)
+    ['Dragon Kick_SubtleBlow'] = { -- /mset subtleblow: Subtle Blow pieces over kickws_Default (Dragon Kick, Tornado Kick)
     },
-    ['Tornado Kick_SubtleBlow'] = { -- /mmode subtleblow: Subtle Blow pieces over kickws_Default (Dragon Kick, Tornado Kick)
+    ['Tornado Kick_SubtleBlow'] = { -- /mset subtleblow: Subtle Blow pieces over kickws_Default (Dragon Kick, Tornado Kick)
     },
 
 
@@ -254,7 +254,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Godhands_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Godhands
+    -- Weapon_Godhands_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Godhands
     -- Weapon_Godhands_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
@@ -357,7 +357,7 @@ profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
-    ByName(ws.Name); -- e.g. ['Victory Smite'], then ['Victory Smite_<mmode>']
+    ByName(ws.Name); -- e.g. ['Victory Smite'], then ['Victory Smite_<mset>']
     if (ws.Name == 'Victory Smite') and (gcinclude.BuffCount('Impetus') > 0) then ByName('Victory Smite_Impetus') end
 end
 

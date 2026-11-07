@@ -131,7 +131,7 @@ local sets = {
         Legs = 'Chas. Culottes +3',
         Feet = 'malignance boots',
     },
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ring1 = 'Petrov Ring',
@@ -467,7 +467,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_DeathPenalty_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_DeathPenalty
+    -- Weapon_DeathPenalty_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_DeathPenalty
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -546,7 +546,7 @@ profile.HandleAbility = function()
     if roll and (ability.Name ~= 'Bolter\'s Roll') then ByName('Phantom Roll') end -- every roll but Bolter's
     if roll then gcinclude.DoCORmsg(ability.Name) end
     if (ability.Type == 'Quick Draw') then
-        ByName('Quick Draw'); -- every shot; ['Quick Draw_Acc'] with /mmode acc
+        ByName('Quick Draw'); -- every shot; ['Quick Draw_Acc'] with /mset acc
         if (ability.Name == 'Dark Shot') or (ability.Name == 'Light Shot') then ByName('Quick Draw_Acc') end
     end
     ByName(ability.Name); -- a set named after the ability, e.g. ['Bolter\'s Roll'], ['Wild Card']
@@ -608,7 +608,7 @@ profile.HandleWeaponskill = function()
     local ws = gData.GetAction();
     if (gcinclude.CheckBlockedAmmoWS(ws.Name) == true) then return end
     gcinclude.EquipMode('Ws');
-    ByName(ws.Name); -- e.g. ['Leaden Salute'], then ['Leaden Salute_<mmode>']
+    ByName(ws.Name); -- e.g. ['Leaden Salute'], then ['Leaden Salute_<mset>']
 end
 
 return profile;
