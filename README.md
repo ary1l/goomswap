@@ -245,29 +245,34 @@ Every box's modes in one window; the box with it open reads the others 4x/s (Ash
 
 ![The HUD, compact style](docs/hud.png)
 
-Bryn: `/sir` (blue dot). Cora: you (gold name), `/th` (gold dot). Dain: `/mmode acc`, `/idleset refresh` (`MP`),
-DT. Elle: `/nukeset oa` + `/burst` (`Occ*`).
+Bryn: `/sir` (blue dot), `/wsset high` (purple dot). Cora: you (gold name), `/th` (gold dot). Dain: `/mmode acc`
+(gold), a slot pick (`+`), `/idleset refresh` (`MP`), DT. Elle: `/mmode sb` (orange), `/hoxne` (blue dot),
+`/nukeset oa` + `/burst` (`Occu*`).
 
 - **Open:** `/gchud`; `/gchud large|compact`; `/gchud pos X Y` or drag; `/gchud debug`. `HUDOwners` boxes open it
   with every box; other boxes see their own row (empty list: everyone sees all).
 - **Dot:** blue SIR, gold TH, green Kite, red PROC. **Gold name:** you.
-- **Colours:** bright gold changed, soft gold default, faint `-` none. `def` DT orange, MDT blue, Amin purple. `melee`
-  purple = `/wsset high`; `wpn` teal = `/hoxne`; `*` after `nuke` = `/burst`.
+- **`wpn`:** weapon mode (main pick if the job has none). Colour = `/mmode`: green Base, gold Acc, orange SB.
+  `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Dots after: purple `/wsset high`, blue
+  `/hoxne`. Hover: all of them. Ctrl+click: `/mmode`.
+- **Colours:** bright gold changed, soft gold default, faint `-` none. `def` DT orange, MDT blue, Amin purple. `*`
+  after `nuke` = `/burst`.
 
 | Column | Shows |
 |---|---|
-| `wpn` / `main` `sub` `rng` `ammo` | `/wm` / slot picks |
-| `melee` `ra` `idle` | `/mmode` / `/rangedset` / `/idleset` (`MP` `HP` `TP`) |
+| `wpn` | `/wm` + slot picks, `/mmode`, `/wsset`, `/hoxne` (above) |
+| `ra` `idle` | `/rangedset` / `/idleset` (`MP` `HP` `TP`) |
 | `nuke` `elem` `w` | `/nukeset` / BLM SCH element and weapon |
 | `tank` `pup` `def` | `/tankset` / `/pupmode` / `/def` |
 
 - Click a cell: runs it on that box. Click a name: its other modes.
 - Mouse away: your row only; over: all (`HUDHover`). Opens upward in the screen's bottom half (`HUDGrow`).
-- Fixed width: every column a job has always shows. Compact shortens names (`HUDAbbr` to set your own).
+- Fixed width: every column a job has always shows. Compact: names that fit show whole (wpn 6 letters, others 5),
+  else `DP` `Max` `GH` `KC` or 4 letters (`HUDAbbr` to set your own).
 - The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).
 - Settings: `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDX` `HUDY` `HUDStyle` `HUDScale` `HUDScaleLarge`
   `HUDAlpha` `HUDAbbr` `HUDLabels`.
-- Windower: same, no dots/fade/shadow; the name takes the dot's colour.
+- Windower: same, no fade/shadow; the name takes the dot's colour; `wpn` dots are a coloured `o`.
 
 ## Status bar
 
@@ -276,6 +281,8 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 ![The status bar](docs/gcbar.png)
 
 - **Job**, `Atk` and `Def` | **modes that are set** | **toggles that are on** as dots.
+- Jobs in their role's colour (tank blue, healer white, support green, mage purple, RNG gold, melee orange), outlined
+  in the main job's.
 - `wpn`: `+` = slot pick changed; tag = `/mmode` (`Acc`, `SB`); teal = `/hoxne`. `idle`: `MP` `HP` `TP`.
 - Dots: DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green, Burst pink, PROC red, Harp teal.
 - Grows with what it shows. Windower: `|` and coloured names, no capsule or dots.
