@@ -195,6 +195,7 @@ end
 local function value_text(k, v)
 	v = tostring(v);
 	if (k == 'MeleeSet') and (v == 'Default') then return 'Base' end
+	if (k == 'MeleeSet') and (v == 'SubtleBlow') then return 'SB' end
 	if (k == 'IdleSet') and (IDLE_SHORT[v] ~= nil) then return IDLE_SHORT[v] end
 	if (v == 'None') or (v == 'Off') or (v == 'Default') then return '-' end
 	if (inc ~= nil) and (inc.ModeLabel ~= nil) then return tostring(inc.ModeLabel(k, v)) end
@@ -343,6 +344,7 @@ local function bar_body()
 		local k, label = m[1], m[2];
 		local c = Cycles[k];
 		local v = ((c ~= nil) and (k ~= wk) and not folded(k)) and value_text(k, c.Array[c.Index]) or '-';
+		if (v ~= '-') and FOLD[k] and (wk == nil) and gcdisplay.IsDefault('cycle', k) then v = '-' end -- no wpn entry to carry them: only once changed
 		if (v ~= '-') then modes[#modes + 1] = { { label .. ' ', COL_KEY }, { v, gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL } } end
 	end
 	if (#modes > 0) then
