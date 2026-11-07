@@ -62,8 +62,9 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 
 1. Install as above, plus `goomswap_migrate.lua` next to `default.lua` and `examples/` as `data/goomswap/examples/`.
 2. On the character: `//gs load goomswap_migrate`. Each `data/<Name>/<Name>_<Job>_Gear.lua` becomes
-   `data/goomswap/<Name>/<JOB>.lua` (`.migrated.lua` if one exists) plus a one-line `data/<Name>/<JOB>.lua` that loads
-   GoomSwap. Selindrile files are only read.
+   `data/goomswap/<Name>/<JOB>.lua` plus a one-line `data/<Name>/<JOB>.lua` that loads GoomSwap. Re-run replaces its
+   own earlier file (old one kept as `.lua.bak`); a file you wrote stays, new one is `.migrated.lua`. Selindrile files
+   are only read.
 3. `//gs reload`, `//gs c checksets`. Back to Selindrile: delete `data/<Name>/<JOB>.lua`.
 
 | Selindrile | GoomSwap |
