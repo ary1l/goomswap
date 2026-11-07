@@ -832,6 +832,7 @@ local function build_grid(x0)
 end
 
 local grid = nil;
+local slotsView, slots = nil, 0; -- body: the dot room, per view
 local function body(scale)
     if (#view == 0) then
         imgui.Text('no characters reporting');
@@ -841,15 +842,19 @@ local function body(scale)
     DL = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil;
     if (DL ~= nil) and ((imgui.GetColorU32 == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetTextLineHeight == nil)) then DL = nil end
     SHADOW = (DL ~= nil) and imgui.GetColorU32(COL_SHADOW) or nil;
-    -- one dot slot left of the names per state a box's job has (on or off), so turning one on never widens the HUD
-    local slots = 0;
-    if (DL ~= nil) then
-        for _, st in ipairs(NAME_STATES) do
+    -- room left of the names for as many state dots as a shown box has on; none on: no room at all (worked out again
+    -- only when the rows change, which a state change does)
+    if (slotsView ~= view) then
+        slotsView, slots = view, 0;
+        if (DL ~= nil) then
             for _, row in ipairs(view) do
-                if (row.Toggles[st[1]] ~= nil) then slots = slots + 1; break end
+                local n = 0;
+                for _, st in ipairs(NAME_STATES) do
+                    if (part(row, st[1]) == true) then n = n + 1 end
+                end
+                slots = math.max(slots, n);
             end
         end
-        slots = math.max(slots, 1);
     end
     local x0 = imgui.GetCursorPosX() + ((slots > 0) and (DOTW + DOTSTEP * (slots - 1)) or 0);
     local g = grid;

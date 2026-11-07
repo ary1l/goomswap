@@ -159,7 +159,7 @@
 		HUDHover = true; -- the HUD owner sees its own line until the mouse is over the HUD, then every box; false = always every box
 		HUDGrow = 'auto'; -- which way the HUD opens on hover: 'up' (your line stays at the bottom), 'down', or 'auto' = up in the bottom half of the screen
 		HUDAlpha = 0.70; -- HUD background opacity, 0 = none
-		HUDScale = 0.9; -- HUD text size (compact style)
+		HUDScale = 1.0; -- HUD text size (compact style)
 		HUDStyle = 'compact'; -- HUD look: 'compact' (tight) or 'large' (bigger text, more spacing, full names); /gchud large|compact, saved per character
 		HUDScaleLarge = 1.1; -- HUD text size in the large style
 		HUDAbbr = {}; -- HUD short value overrides, e.g. { ['Carnwenhan'] = 'Carn' }; auto-shortened otherwise
