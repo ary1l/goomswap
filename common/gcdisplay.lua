@@ -18,6 +18,8 @@ local Main = 'FOO';
 local Sub = 'BAR';
 local headText = '';
 local headMID, headSID = nil, nil;
+local version = 0; -- bumped on every toggle/cycle change: the bar's model and the HUD's state line rebuild on it
+function gcdisplay.Version() return version end
 
 function gcdisplay.AdvanceCycle(name)
 	local ctable = Cycles[name];
@@ -29,6 +31,7 @@ function gcdisplay.AdvanceCycle(name)
 	if (ctable.Index > #ctable.Array) then
 		ctable.Index = 1;
 	end
+	version = version + 1;
 end
 
 function gcdisplay.SetCycle(name,val)
@@ -39,7 +42,7 @@ function gcdisplay.SetCycle(name,val)
 
 	for k,v in pairs(ctable.Array) do
 		if val == v then
-			ctable.Index = k
+			if (ctable.Index ~= k) then ctable.Index = k; version = version + 1 end
 			return true
 		end
 	end
@@ -47,12 +50,12 @@ function gcdisplay.SetCycle(name,val)
 end
 
 function gcdisplay.AdvanceToggle(name)
-	if (type(Toggles[name]) == 'boolean') then Toggles[name] = not Toggles[name] end
+	if (type(Toggles[name]) == 'boolean') then Toggles[name] = not Toggles[name]; version = version + 1 end
 end
 
 function gcdisplay.SetToggle(name, val)
 	if (type(Toggles[name]) ~= 'boolean') then return end
-	Toggles[name] = (val == true);
+	if (Toggles[name] ~= (val == true)) then Toggles[name] = (val == true); version = version + 1 end
 end
 
 -- Only the bar shows these, so nothing is read while it is off (BarCommand reads them when it goes on).
@@ -74,6 +77,7 @@ end
 
 function gcdisplay.CreateToggle(name, default)
 	Toggles[name] = default;
+	version = version + 1;
 end
 
 function gcdisplay.GetToggle(name)
@@ -103,6 +107,7 @@ function gcdisplay.CreateCycle(name, values)
 		Array = values
 	};
 	Cycles[name] = newCycle;
+	version = version + 1;
 end
 
 function gcdisplay.GetCycle(name)
@@ -119,6 +124,7 @@ function gcdisplay.ClearAll()
 	Cycles = {};
 	DefToggles = {};
 	DefCycles = {};
+	version = version + 1;
 end
 
 -- Snapshot of every toggle and cycle right after the job loads; the HUD hides values still at it.
@@ -126,6 +132,7 @@ function gcdisplay.MarkDefaults()
 	DefToggles, DefCycles = {}, {};
 	for k, v in pairs(Toggles) do DefToggles[k] = v end
 	for k, v in pairs(Cycles) do DefCycles[k] = v.Index end
+	version = version + 1;
 end
 
 function gcdisplay.IsDefault(kind, name)
@@ -136,7 +143,7 @@ end
 
 -- Bar colours: as the HUD's (labels blue-grey, a changed value gold, one still at its load default grey-white).
 -- One rounded capsule in three parts, split by thin lines: job | modes | the toggles that are on, each a dot in its
--- own colour (DT orange, MDT blue, Aminon violet, SIR teal, TH a gold ring, Kite green...) then its name.
+-- own colour (DT orange, MDT blue, Aminon mauve, SIR teal, TH a gold ring, Kite green...) then its name.
 local COL_HEAD = { 0.93, 0.93, 0.96, 1.0 };
 local COL_KEY = { 0.62, 0.68, 0.80, 1.0 };
 -- Every job its own colour (picked to tell all 22 apart on the dark bar). Ashita outlines the job text: the main job's
@@ -158,11 +165,11 @@ local COL_DIV = { 1.0, 1.0, 1.0, 0.20 };
 local COL_EDGE = { 1.0, 1.0, 1.0, 0.10 };
 local COL_BAR_BG = { 0.04, 0.045, 0.06 };
 -- Every meaning its own colour, as the HUD's; where hues run out the dot is a ring (TOGGLE_RING) instead of filled.
-local TOGGLE_COL = { DTset = { 1.00, 0.54, 0.24, 1.0 }, MDTset = { 0.43, 0.53, 1.00, 1.0 }, Aminon = { 0.69, 0.55, 1.00, 1.0 },
+local TOGGLE_COL = { DTset = { 1.00, 0.54, 0.24, 1.0 }, MDTset = { 0.43, 0.53, 1.00, 1.0 }, Aminon = { 0.75, 0.47, 0.85, 1.0 },
 	SIR = { 0.24, 0.82, 0.71, 1.0 }, TH = { 0.95, 0.85, 0.35, 1.0 }, Kite = { 0.35, 0.95, 0.45, 1.0 },
 	Burst = { 1.00, 0.48, 0.72, 1.0 }, PROC = { 1.00, 0.35, 0.35, 1.0 }, String = { 0.24, 0.82, 0.71, 1.0 },
-	SongLock = { 0.82, 0.44, 1.00, 1.0 }, Death = { 1.00, 0.35, 0.35, 1.0 } };
-local TOGGLE_RING = { TH = true, String = true, SongLock = true, Death = true }; -- gold TH, teal Harp, orchid Song lock, red Death
+	SongLock = { 0.65, 0.40, 1.00, 1.0 }, Death = { 1.00, 0.35, 0.35, 1.0 } };
+local TOGGLE_RING = { TH = true, String = true, SongLock = true, Death = true }; -- gold TH, teal Harp, purple Song lock, red Death
 
 -- Modes in /gcmodes order (gcinclude.ModeNames), only those set to something ('-' ones are left out), then the
 -- toggles that are on. The bar fits what it shows.
@@ -171,7 +178,7 @@ local FALLBACK_MODES = { {'Weapons', 'wpn'}, {'MeleeSet', 'melee'}, {'NukeSet', 
 
 local IDLE_SHORT = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' }; -- /idleset, kept small
 -- With a weapon mode on the job, the wpn entry also carries (as the HUD's wpn cell): a + when a slot pick (/mw /sw /rw
--- /ammoset) is changed, its colour for the melee mode (grey-white Base, cyan Acc, magenta SB), then an orchid dot for /wsset
+-- /ammoset) is changed, its colour for the melee mode (grey-white Base, cyan Acc, magenta SB), then a purple dot for /wsset
 -- high and a bronze dot for /hoxne. /gcmodes names them in full. A job without weapon modes shows them as their own entries.
 local SLOT_PICKS = { Main = true, Sub = true, Range = true, Ammo = true };
 local FOLD = { Main = true, Sub = true, Range = true, Ammo = true, MeleeSet = true, WsSet = true, Hoxne = true };
@@ -180,8 +187,8 @@ local function wpn_key() return ((Cycles.Weapons ~= nil) and 'Weapons') or ((Cyc
 local function folded(k) local w = wpn_key(); return FOLD[k] and (w ~= nil) and (k ~= w) end
 -- Every meaning its own colour (HUD and bar alike); where hues run out a dot is a ring instead of filled.
 local COL_MELEE = { Default = { 0.80, 0.80, 0.84, 1.0 }, Acc = { 0.25, 0.88, 1.00, 1.0 }, SubtleBlow = { 0.94, 0.35, 0.90, 1.0 } }; -- Base grey-white (a default), Acc cyan, SB magenta
-local COL_MELEE_MORE = { { 0.71, 0.94, 0.35, 1.0 }, { 1.00, 0.69, 0.48, 1.0 }, { 0.78, 0.90, 1.00, 1.0 } }; -- a job file's own modes: lime, peach, ice
-local COL_HIGHBUFF = { 0.82, 0.44, 1.00, 1.0 }; -- /wsset high dot: orchid
+local COL_MELEE_MORE = { { 0.71, 0.94, 0.35, 1.0 }, { 1.00, 0.59, 0.55, 1.0 }, { 0.55, 0.74, 1.00, 1.0 } }; -- a job file's own modes: lime, salmon, periwinkle
+local COL_HIGHBUFF = { 0.65, 0.40, 1.00, 1.0 }; -- /wsset high dot: purple
 local COL_HOXNE = { 0.82, 0.63, 0.39, 1.0 };    -- /hoxne dot: bronze
 local function melee_col(mode) -- the same colours as the HUD's wpn cell
 	mode = tostring(mode or 'Default');
@@ -250,6 +257,48 @@ local function track_drag()
 		cfg.DisplayBarX, cfg.DisplayBarY = x, y;
 		bar_save();
 	end
+end
+
+-- What the bar shows after the job part: built when a toggle or cycle changes (gcdisplay's version), not every frame.
+local modelVer, modelModes, modelOn = -1, nil, nil;
+local function bar_model()
+	if (modelVer == version) then return modelModes, modelOn end
+	local names = ((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES;
+	local picked = false;
+	for k in pairs(SLOT_PICKS) do
+		local c = Cycles[k];
+		-- set, and not the job's own default pick (PLD's Aegis): a + means you changed one
+		if folded(k) and (c ~= nil) and (value_text(k, c.Array[c.Index]) ~= '-') and not gcdisplay.IsDefault('cycle', k) then picked = true end
+	end
+	local modes = {};
+	local wk = wpn_key();
+	if (wk ~= nil) then
+		local c, mc, hx, ws = Cycles[wk], Cycles.MeleeSet, Cycles.Hoxne, Cycles.WsSet;
+		local v = value_text(wk, c.Array[c.Index]);
+		local mm = (mc ~= nil) and mc.Array[mc.Index] or 'Default';
+		local hoxne = (hx ~= nil) and (hx.Array[hx.Index] ~= 'Off');
+		local high = (ws ~= nil) and (ws.Array[ws.Index] == 'High');
+		if (v ~= '-') or picked or (mm ~= 'Default') or hoxne or high then
+			local parts = { { 'wpn ', COL_KEY }, { v .. (picked and '+' or ''), melee_col(mm) } };
+			if high then parts[#parts + 1] = { dot = COL_HIGHBUFF } end
+			if hoxne then parts[#parts + 1] = { dot = COL_HOXNE } end
+			modes[#modes + 1] = parts;
+		end
+	end
+	for _, m in ipairs(names) do
+		local k, label = m[1], m[2];
+		local c = Cycles[k];
+		local v = ((c ~= nil) and (k ~= wk) and not folded(k)) and value_text(k, c.Array[c.Index]) or '-';
+		if (v ~= '-') and FOLD[k] and (wk == nil) and gcdisplay.IsDefault('cycle', k) then v = '-' end -- no wpn entry to carry them: only once changed
+		if (v ~= '-') then modes[#modes + 1] = { { label .. ' ', COL_KEY }, { v, gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL } } end
+	end
+	local tnames = (inc ~= nil) and inc.ToggleNames or {};
+	local on = {};
+	for _, k in ipairs(BAR_TOGGLES) do
+		if (Toggles[k] == true) then on[#on + 1] = { tnames[k] or k, TOGGLE_COL[k] or { 0.35, 0.95, 0.45, 1.0 }, TOGGLE_RING[k] } end
+	end
+	modelVer, modelModes, modelOn = version, modes, on;
+	return modes, on;
 end
 
 local function bar_body()
@@ -327,35 +376,7 @@ local function bar_body()
 		put('Atk ', COL_KEY, (dl ~= nil) and 13 or 8); put(tostring(Attk), COL_HEAD, 0); -- labelled, so it doesn't read as HP
 		put('Def ', COL_KEY, 8); put(tostring(Def), COL_HEAD, 0);
 	end
-	local names = ((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES;
-	local picked = false;
-	for k in pairs(SLOT_PICKS) do
-		local c = Cycles[k];
-		-- set, and not the job's own default pick (PLD's Aegis): a + means you changed one
-		if folded(k) and (c ~= nil) and (value_text(k, c.Array[c.Index]) ~= '-') and not gcdisplay.IsDefault('cycle', k) then picked = true end
-	end
-	local modes = {};
-	local wk = wpn_key();
-	if (wk ~= nil) then
-		local c, mc, hx, ws = Cycles[wk], Cycles.MeleeSet, Cycles.Hoxne, Cycles.WsSet;
-		local v = value_text(wk, c.Array[c.Index]);
-		local mm = (mc ~= nil) and mc.Array[mc.Index] or 'Default';
-		local hoxne = (hx ~= nil) and (hx.Array[hx.Index] ~= 'Off');
-		local high = (ws ~= nil) and (ws.Array[ws.Index] == 'High');
-		if (v ~= '-') or picked or (mm ~= 'Default') or hoxne or high then
-			local parts = { { 'wpn ', COL_KEY }, { v .. (picked and '+' or ''), melee_col(mm) } };
-			if high then parts[#parts + 1] = { dot = COL_HIGHBUFF } end
-			if hoxne then parts[#parts + 1] = { dot = COL_HOXNE } end
-			modes[#modes + 1] = parts;
-		end
-	end
-	for _, m in ipairs(names) do
-		local k, label = m[1], m[2];
-		local c = Cycles[k];
-		local v = ((c ~= nil) and (k ~= wk) and not folded(k)) and value_text(k, c.Array[c.Index]) or '-';
-		if (v ~= '-') and FOLD[k] and (wk == nil) and gcdisplay.IsDefault('cycle', k) then v = '-' end -- no wpn entry to carry them: only once changed
-		if (v ~= '-') then modes[#modes + 1] = { { label .. ' ', COL_KEY }, { v, gcdisplay.IsDefault('cycle', k) and COL_VAL_DEF or COL_VAL } } end
-	end
+	local modes, on = bar_model();
 	if (#modes > 0) then
 		divider();
 		for _, parts in ipairs(modes) do
@@ -378,14 +399,9 @@ local function bar_body()
 			end
 		end
 	end
-	local tnames = (inc ~= nil) and inc.ToggleNames or {};
-	local on = {};
-	for _, k in ipairs(BAR_TOGGLES) do
-		if (Toggles[k] == true) then on[#on + 1] = k end
-	end
 	if (#on > 0) then
 		divider();
-		for i, k in ipairs(on) do dotted(tnames[k] or k, TOGGLE_COL[k] or { 0.35, 0.95, 0.45, 1.0 }, TOGGLE_RING[k]) end
+		for _, t in ipairs(on) do dotted(t[1], t[2], t[3]) end
 	end
 	track_drag();
 end

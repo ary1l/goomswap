@@ -256,9 +256,9 @@ Elle: `/mset sb`, `/hoxne`, `/nukeset oa` + `/burst` (`Occu*`). (Picture from be
 - **Dots** left of the name, every one on (first nearest): teal SIR, gold ring TH, green Kite, red PROC. **Your row:**
   faint band.
 - **`wpn`:** weapon mode (main pick if the job has none). Colour = `/mset`: grey-white Base, cyan Acc, magenta SB.
-  `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Dots after: orchid `/wsset high`, bronze
+  `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Dots after: purple `/wsset high`, bronze
   `/hoxne`. Hover: all of them. Ctrl+click: `/mset`.
-- **Colours:** gold changed, grey-white default, faint `-` none. `def` DT orange, MDT blue, Amin violet. `*`
+- **Colours:** gold changed, grey-white default, faint `-` none. `def` DT orange, MDT blue, Amin mauve. `*`
   after `nuke` = `/burst`.
 
 | Column | Shows |
@@ -286,10 +286,10 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 - **Job**, `Atk` and `Def` (Ashita) | **modes that are set** | **toggles that are on** as dots.
 - Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its.
 - Dropped within 8px of the screen's top, the bar snaps flush to it.
-- `wpn` as the HUD's: `+` slot pick, colour `/mset`, orchid dot `/wsset high`, bronze `/hoxne`. `idle`: MP HP TP.
+- `wpn` as the HUD's: `+` slot pick, colour `/mset`, purple dot `/wsset high`, bronze `/hoxne`. `idle`: MP HP TP.
 - A job without weapon modes (WHM...) shows `melee` and `wsset` by name, only once changed.
-- Dots: DT orange, MDT blue, Aminon violet, SIR teal, Kite green, Burst pink, PROC red. Rings: TH gold, Harp teal,
-  Song lock orchid, Death red.
+- Dots: DT orange, MDT blue, Aminon mauve, SIR teal, Kite green, Burst pink, PROC red. Rings: TH gold, Harp teal,
+  Song lock purple, Death red.
 - Grows with what it shows. Windower: `|` and coloured names, no capsule, outline or dots (`wpn`'s are a coloured
   `o`).
 

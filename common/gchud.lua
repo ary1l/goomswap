@@ -201,7 +201,7 @@ local COL_VAL_DEF = { 0.80, 0.80, 0.84, 1.0 }; -- cycle, default: grey-white, so
 local COL_EMPTY = { 0.36, 0.36, 0.41, 0.85 };  -- cycle at None/Off: faint
 -- def cell by state; a dot before the name in its SIR/TH/Kite/PROC colour; your own name gold; the header on a soft
 -- blue fade; a 1px shadow under the text; a faint band behind your row (drawn shapes: Ashita only)
-local COL_DEF = { DT = { 1.00, 0.54, 0.24, 1.0 }, MDT = { 0.43, 0.53, 1.00, 1.0 }, Amin = { 0.69, 0.55, 1.00, 1.0 } }; -- orange, blue, violet
+local COL_DEF = { DT = { 1.00, 0.54, 0.24, 1.0 }, MDT = { 0.43, 0.53, 1.00, 1.0 }, Amin = { 0.75, 0.47, 0.85, 1.0 } }; -- orange, blue, mauve
 local COL_OWN_NAME = { 0.95, 0.85, 0.35, 1.0 }; -- Windower only (no shapes); Ashita marks your row with a band
 local COL_OWN_BAND = { 1.0, 1.0, 1.0, 0.07 };
 local COL_FADE_TOP, COL_FADE_BOT = { 0.24, 0.27, 0.43, 0.55 }, { 0.24, 0.27, 0.43, 0.0 };
@@ -217,11 +217,11 @@ local function shadow(text, padx) -- the shadow goes in first, so the item's own
     if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
     if (tonumber(x) ~= nil) then DL:AddText({ x + (padx or 0) + 1, y + 1 }, SHADOW, tostring(text)) end
 end
--- wpn cell: its text in the melee mode's colour, then a dot for /wsset high (orchid) and /hoxne (bronze).
+-- wpn cell: its text in the melee mode's colour, then a dot for /wsset high (purple) and /hoxne (bronze).
 -- Every meaning its own colour (HUD and bar alike); where hues run out a dot is a ring instead of filled.
 local COL_MELEE = { Default = { 0.80, 0.80, 0.84, 1.0 }, Acc = { 0.25, 0.88, 1.00, 1.0 }, SubtleBlow = { 0.94, 0.35, 0.90, 1.0 } }; -- Base grey-white (a default), Acc cyan, SB magenta
-local COL_MELEE_MORE = { { 0.71, 0.94, 0.35, 1.0 }, { 1.00, 0.69, 0.48, 1.0 }, { 0.78, 0.90, 1.00, 1.0 } }; -- a job file's own modes: lime, peach, ice
-local COL_HIGHBUFF = { 0.82, 0.44, 1.00, 1.0 }; -- /wsset high dot: orchid
+local COL_MELEE_MORE = { { 0.71, 0.94, 0.35, 1.0 }, { 1.00, 0.59, 0.55, 1.0 }, { 0.55, 0.74, 1.00, 1.0 } }; -- a job file's own modes: lime, salmon, periwinkle
+local COL_HIGHBUFF = { 0.65, 0.40, 1.00, 1.0 }; -- /wsset high dot: purple
 local COL_HOXNE = { 0.82, 0.63, 0.39, 1.0 };    -- /hoxne dot: bronze
 local DOTSP = 8; -- px per wpn dot
 local function melee_col(mode)
@@ -294,7 +294,19 @@ local function decode(text)
     return map, order;
 end
 
+-- Nothing changed (gcdisplay's version, jobs, name) and the 3s heartbeat isn't due: skip building the line
+-- (me() is LAC's whole gData.GetPlayer). A sub job change without a profile reload is caught by the heartbeat too.
+local lastKey = nil;
+local function state_key()
+    if (type(disp.Version) ~= 'function') then return nil end
+    local mm = AshitaCore:GetMemoryManager();
+    local p, party = mm:GetPlayer(), mm:GetParty();
+    if (p == nil) or (party == nil) then return nil end
+    return disp.Version() .. '|' .. tostring(p:GetMainJob()) .. '|' .. tostring(p:GetSubJob()) .. '|' .. tostring(party:GetMemberName(0));
+end
 local function write_state()
+    local key = state_key();
+    if (key ~= nil) and (key == lastKey) and ((os.time() - lastWriteTime) < 3) then return end
     local player = me();
     if (player == nil) then return end
     -- '~' marks a value still at its load default, so readers can hide it.
@@ -312,7 +324,7 @@ local function write_state()
         cycles,
     }, '\t');
     local now = os.time();
-    if (line == lastLine) and ((now - lastWriteTime) < 3) then return end
+    if (line == lastLine) and ((now - lastWriteTime) < 3) then lastKey = key; return end
     local d = dir();
     if not ashita.fs.exists(d) then ashita.fs.create_directory(d) end
     local f = io.open(d .. player.Name .. '.txt', 'w');
@@ -321,6 +333,7 @@ local function write_state()
     f:close();
     lastLine = line;
     lastWriteTime = now;
+    lastKey = key;
 end
 
 local function read_all(everyBox)
@@ -451,9 +464,14 @@ local STYLES = {
     compact = { window = { 4, 2 }, frame = { 1, 0 }, spacing = { 4, 1 }, padx = 1, gap = 1, name = 4 },
     large = { window = { 8, 5 }, frame = { 3, 1 }, spacing = { 6, 3 }, padx = 2, gap = 2, name = nil },
 };
+local styleRaw, styleName = {}, 'compact'; -- HUDStyle as last read, and its name (called per cell per frame)
 local function style_name()
-    local s = string.lower(tostring(inc.settings.HUDStyle or 'compact'));
-    return (STYLES[s] ~= nil) and s or 'compact';
+    local raw = inc.settings.HUDStyle;
+    if (raw ~= styleRaw) then
+        local s = string.lower(tostring(raw or 'compact'));
+        styleRaw, styleName = raw, (STYLES[s] ~= nil) and s or 'compact';
+    end
+    return styleName;
 end
 local function style() return STYLES[style_name()] end
 
@@ -803,9 +821,22 @@ local function build_grid(x0)
         col.x = x;
         x = x + col.w + (flag and 0 or gap);
     end
-    local nameIds = {};
-    for i, row in ipairs(view) do nameIds[i] = short_name(row.Name) .. '##' .. row.Name .. 'row' end
-    return { view = view, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds,
+    -- per row, so a frame doesn't redo them: the name's ImGui id, short form and lower case, the states that are on
+    local nameIds, info = {}, {};
+    for i, row in ipairs(view) do
+        local short = short_name(row.Name);
+        nameIds[i] = short .. '##' .. row.Name .. 'row';
+        local r = { lname = string.lower(row.Name), short = short, states = {}, scols = {}, first = nil };
+        for _, st in ipairs(NAME_STATES) do
+            if (part(row, st[1]) == true) then
+                r.first = r.first or st[3];
+                r.states[#r.states + 1] = st[2];
+                r.scols[#r.scols + 1] = st;
+            end
+        end
+        info[i] = r;
+    end
+    return { view = view, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds, info = info,
         ccols = ccols, tcols = tcols, shown = shown, gshown = gshown, tshown = tshown };
 end
 
@@ -874,18 +905,13 @@ local function body(scale)
     local mine = (party ~= nil) and party:GetMemberName(0) or nil; -- as gData.GetPlayer().Name, without the rest
     mine = ((type(mine) == 'string') and (mine ~= '')) and string.lower(mine) or nil;
     for i, row in ipairs(view) do
-      local own = (mine ~= nil) and (string.lower(row.Name) == mine);
+      local ri = g.info[i];
+      local own = (mine ~= nil) and (ri.lname == mine);
       if not collapsedView or own then
         local open = (expanded[row.Name] == true);
         imgui.SetCursorPosX(x0);
-        local ncol, states, scols = COL_NAME, {}, {};
-        for _, st in ipairs(NAME_STATES) do
-            if (part(row, st[1]) == true) then
-                if (#states == 0) then ncol = st[3] end
-                states[#states + 1] = st[2];
-                scols[#scols + 1] = st;
-            end
-        end
+        local states, scols = ri.states, ri.scols;
+        local ncol = ri.first or COL_NAME;
         if (dl ~= nil) then -- the states as dots left of the name; the name white, your row on a faint band
             local rx, ry = pair(imgui.GetCursorScreenPos());
             if own and (not collapsedView) and (#view > 1) and (wx ~= nil) and (ww ~= nil) and (ry ~= nil) then
@@ -903,7 +929,7 @@ local function body(scale)
         elseif own and (#states == 0) then
             ncol = COL_OWN_NAME; -- Windower: the name shows the state, else gold for yours
         end
-        shadow(short_name(row.Name), (style().frame or { 0 })[1] or 0);
+        shadow(ri.short, (style().frame or { 0 })[1] or 0);
         imgui.PushStyleColor(ImGuiCol_Text, ncol);
         local clicked = imgui.SmallButton(g.nameIds[i]);
         imgui.PopStyleColor();
