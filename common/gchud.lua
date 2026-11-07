@@ -192,17 +192,18 @@ end
 local COL_CLEAR = { 0.0, 0.0, 0.0, 0.0 };
 local COL_HOVER = { 1.0, 1.0, 1.0, 0.12 };
 -- bright = changed since load, dim = still at load default
-local COL_ON = { 0.35, 0.95, 0.45, 1.0 };      -- on, changed
-local COL_ON_DEF = { 0.30, 0.70, 0.38, 0.85 }; -- on, default
+local COL_ON = { 0.95, 0.85, 0.35, 1.0 };      -- on, changed: gold, as a changed value
+local COL_ON_DEF = { 0.80, 0.80, 0.84, 1.0 };  -- on, default: grey-white, as a default value
 local COL_OFF = { 0.50, 0.50, 0.56, 0.85 };    -- off, default
-local COL_OFF_CHG = { 1.00, 0.55, 0.25, 1.0 }; -- off, changed (turned off something that loads on)
+local COL_OFF_CHG = { 0.62, 0.62, 0.68, 1.0 }; -- off, changed (turned off something that loads on): dim grey, its glyph shown
 local COL_VAL = { 0.95, 0.85, 0.35, 1.0 };     -- cycle, changed
 local COL_VAL_DEF = { 0.80, 0.80, 0.84, 1.0 }; -- cycle, default: grey-white, so gold always means changed
 local COL_EMPTY = { 0.36, 0.36, 0.41, 0.85 };  -- cycle at None/Off: faint
 -- def cell by state; a dot before the name in its SIR/TH/Kite/PROC colour; your own name gold; the header on a soft
--- blue fade; a 1px shadow under the text (drawn shapes: Ashita only)
-local COL_DEF = { DT = { 1.00, 0.59, 0.27, 1.0 }, MDT = { 0.43, 0.71, 1.00, 1.0 }, Amin = { 0.75, 0.59, 1.00, 1.0 } };
-local COL_OWN_NAME = { 0.95, 0.85, 0.35, 1.0 };
+-- blue fade; a 1px shadow under the text; a faint band behind your row (drawn shapes: Ashita only)
+local COL_DEF = { DT = { 1.00, 0.54, 0.24, 1.0 }, MDT = { 0.43, 0.53, 1.00, 1.0 }, Amin = { 0.75, 0.47, 0.85, 1.0 } }; -- orange, blue, mauve
+local COL_OWN_NAME = { 0.95, 0.85, 0.35, 1.0 }; -- Windower only (no shapes); Ashita marks your row with a band
+local COL_OWN_BAND = { 1.0, 1.0, 1.0, 0.07 };
 local COL_FADE_TOP, COL_FADE_BOT = { 0.24, 0.27, 0.43, 0.55 }, { 0.24, 0.27, 0.43, 0.0 };
 local COL_SHADOW = { 0.0, 0.0, 0.0, 0.85 };
 local COL_HEAD = { 0.59, 0.63, 0.71, 1.0 };
@@ -216,12 +217,12 @@ local function shadow(text, padx) -- the shadow goes in first, so the item's own
     if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
     if (tonumber(x) ~= nil) then DL:AddText({ x + (padx or 0) + 1, y + 1 }, SHADOW, tostring(text)) end
 end
--- wpn cell: white text, a line under it in the melee mode's colour (Windower, no shapes: the text in that colour),
--- then a dot for /wsset high (purple) and /hoxne (blue).
-local COL_MELEE = { Default = { 0.35, 0.95, 0.45, 1.0 }, Acc = { 0.95, 0.85, 0.35, 1.0 }, SubtleBlow = { 1.00, 0.67, 0.24, 1.0 } };
-local COL_MELEE_MORE = { { 0.95, 0.55, 0.75, 1.0 }, { 0.55, 0.85, 1.00, 1.0 }, { 0.85, 0.85, 0.90, 1.0 } }; -- a job file's own modes
-local COL_HIGHBUFF = { 0.72, 0.52, 1.00, 1.0 }; -- /wsset high dot: purple
-local COL_HOXNE = { 0.40, 0.62, 1.00, 1.0 };    -- /hoxne dot: blue
+-- wpn cell: its text in the melee mode's colour, then a dot for /wsset high (purple) and /hoxne (bronze).
+-- Every meaning its own colour (HUD and bar alike); where hues run out a dot is a ring instead of filled.
+local COL_MELEE = { Default = { 0.80, 0.80, 0.84, 1.0 }, Acc = { 0.25, 0.88, 1.00, 1.0 }, SubtleBlow = { 0.94, 0.35, 0.90, 1.0 } }; -- Base grey-white (a default), Acc cyan, SB magenta
+local COL_MELEE_MORE = { { 0.71, 0.94, 0.35, 1.0 }, { 1.00, 0.59, 0.55, 1.0 }, { 0.55, 0.74, 1.00, 1.0 } }; -- a job file's own modes: lime, salmon, periwinkle
+local COL_HIGHBUFF = { 0.65, 0.40, 1.00, 1.0 }; -- /wsset high dot: purple
+local COL_HOXNE = { 0.82, 0.63, 0.39, 1.0 };    -- /hoxne dot: bronze
 local DOTSP = 8; -- px per wpn dot
 local function melee_col(mode)
     if (COL_MELEE[mode] ~= nil) then return COL_MELEE[mode] end
@@ -232,8 +233,8 @@ end
 local COL_NAME = { 0.93, 0.93, 0.96, 1.0 };     -- white: SIR/TH/Kite/PROC colours stand out
 -- The name shows SIR, TH, Kite, PROC (first one on, in this order; its tooltip lists all on). The rest of the toggles
 -- (food, soda, harp, song lock, death) have no place on the HUD: their changes come in as chat lines.
-local NAME_STATES = { { 'SIR', 'SIR', { 0.35, 0.55, 1.00, 1.0 } }, { 'TH', 'TH', { 1.00, 0.80, 0.20, 1.0 } },
-    { 'Kite', 'Kite', { 0.35, 0.95, 0.45, 1.0 } }, { 'PROC', 'PROC', { 1.00, 0.35, 0.35, 1.0 } } }; -- blue, gold, green, red
+local NAME_STATES = { { 'SIR', 'SIR', { 0.24, 0.82, 0.71, 1.0 } }, { 'TH', 'TH', { 0.95, 0.85, 0.35, 1.0 }, true },
+    { 'Kite', 'Kite', { 0.35, 0.95, 0.45, 1.0 } }, { 'PROC', 'PROC', { 1.00, 0.35, 0.35, 1.0 } } }; -- teal, gold ring (4th: ring), green, red
 local COL_JOB = { 0.60, 0.65, 0.75, 1.0 };
 local COL_KEY = { 0.78, 0.82, 0.90, 1.0 };     -- headers
 
@@ -293,7 +294,19 @@ local function decode(text)
     return map, order;
 end
 
+-- Nothing changed (gcdisplay's version, jobs, name) and the 3s heartbeat isn't due: skip building the line
+-- (me() is LAC's whole gData.GetPlayer). A sub job change without a profile reload is caught by the heartbeat too.
+local lastKey = nil;
+local function state_key()
+    if (type(disp.Version) ~= 'function') then return nil end
+    local mm = AshitaCore:GetMemoryManager();
+    local p, party = mm:GetPlayer(), mm:GetParty();
+    if (p == nil) or (party == nil) then return nil end
+    return disp.Version() .. '|' .. tostring(p:GetMainJob()) .. '|' .. tostring(p:GetSubJob()) .. '|' .. tostring(party:GetMemberName(0));
+end
 local function write_state()
+    local key = state_key();
+    if (key ~= nil) and (key == lastKey) and ((os.time() - lastWriteTime) < 3) then return end
     local player = me();
     if (player == nil) then return end
     -- '~' marks a value still at its load default, so readers can hide it.
@@ -311,7 +324,7 @@ local function write_state()
         cycles,
     }, '\t');
     local now = os.time();
-    if (line == lastLine) and ((now - lastWriteTime) < 3) then return end
+    if (line == lastLine) and ((now - lastWriteTime) < 3) then lastKey = key; return end
     local d = dir();
     if not ashita.fs.exists(d) then ashita.fs.create_directory(d) end
     local f = io.open(d .. player.Name .. '.txt', 'w');
@@ -320,6 +333,7 @@ local function write_state()
     f:close();
     lastLine = line;
     lastWriteTime = now;
+    lastKey = key;
 end
 
 local function read_all(everyBox)
@@ -450,9 +464,14 @@ local STYLES = {
     compact = { window = { 4, 2 }, frame = { 1, 0 }, spacing = { 4, 1 }, padx = 1, gap = 1, name = 4 },
     large = { window = { 8, 5 }, frame = { 3, 1 }, spacing = { 6, 3 }, padx = 2, gap = 2, name = nil },
 };
+local styleRaw, styleName = {}, 'compact'; -- HUDStyle as last read, and its name (called per cell per frame)
 local function style_name()
-    local s = string.lower(tostring(inc.settings.HUDStyle or 'compact'));
-    return (STYLES[s] ~= nil) and s or 'compact';
+    local raw = inc.settings.HUDStyle;
+    if (raw ~= styleRaw) then
+        local s = string.lower(tostring(raw or 'compact'));
+        styleRaw, styleName = raw, (STYLES[s] ~= nil) and s or 'compact';
+    end
+    return styleName;
 end
 local function style() return STYLES[style_name()] end
 
@@ -725,10 +744,7 @@ local function build_grid(x0)
             end
             if (#picks > 0) then w.text = w.text .. '+'; w.tip = w.tip .. '  |  ' .. table.concat(picks, ', ') end
             local mm = (row.Cycles.MeleeSet ~= nil) and strip_default(row.Cycles.MeleeSet) or 'Default';
-            if (DL ~= nil) then -- Ashita: white text, the melee mode a line under it (none on a box without /mset)
-                if (row.Cycles.MeleeSet ~= nil) then w.under = melee_col(mm) end
-                if not w.empty then w.col = COL_NAME end
-            elseif not w.empty then w.col = melee_col(mm) end
+            if not w.empty then w.col = melee_col(mm) end
             if (row.Cycles.MeleeSet ~= nil) then
                 w.tip = w.tip .. '  |  melee: ' .. ((mm == 'Default') and 'Base' or mm) .. ' (ctrl+click: /mset)';
                 w.ctrlCmd = 'mset';
@@ -805,9 +821,22 @@ local function build_grid(x0)
         col.x = x;
         x = x + col.w + (flag and 0 or gap);
     end
-    local nameIds = {};
-    for i, row in ipairs(view) do nameIds[i] = short_name(row.Name) .. '##' .. row.Name .. 'row' end
-    return { view = view, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds,
+    -- per row, so a frame doesn't redo them: the name's ImGui id, short form and lower case, the states that are on
+    local nameIds, info = {}, {};
+    for i, row in ipairs(view) do
+        local short = short_name(row.Name);
+        nameIds[i] = short .. '##' .. row.Name .. 'row';
+        local r = { lname = string.lower(row.Name), short = short, states = {}, scols = {}, first = nil };
+        for _, st in ipairs(NAME_STATES) do
+            if (part(row, st[1]) == true) then
+                r.first = r.first or st[3];
+                r.states[#r.states + 1] = st[2];
+                r.scols[#r.scols + 1] = st;
+            end
+        end
+        info[i] = r;
+    end
+    return { view = view, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds, info = info,
         ccols = ccols, tcols = tcols, shown = shown, gshown = gshown, tshown = tshown };
 end
 
@@ -876,29 +905,31 @@ local function body(scale)
     local mine = (party ~= nil) and party:GetMemberName(0) or nil; -- as gData.GetPlayer().Name, without the rest
     mine = ((type(mine) == 'string') and (mine ~= '')) and string.lower(mine) or nil;
     for i, row in ipairs(view) do
-      local own = (mine ~= nil) and (string.lower(row.Name) == mine);
+      local ri = g.info[i];
+      local own = (mine ~= nil) and (ri.lname == mine);
       if not collapsedView or own then
         local open = (expanded[row.Name] == true);
         imgui.SetCursorPosX(x0);
-        local ncol, states, scols = COL_NAME, {}, {};
-        for _, st in ipairs(NAME_STATES) do
-            if (part(row, st[1]) == true) then
-                if (#states == 0) then ncol = st[3] end
-                states[#states + 1] = st[2];
-                scols[#scols + 1] = st[3];
-            end
-        end
-        if (dl ~= nil) then -- the state as a dot left of the name; the name white, yours gold
+        local states, scols = ri.states, ri.scols;
+        local ncol = ri.first or COL_NAME;
+        if (dl ~= nil) then -- the states as dots left of the name; the name white, your row on a faint band
             local rx, ry = pair(imgui.GetCursorScreenPos());
+            if own and (not collapsedView) and (#view > 1) and (wx ~= nil) and (ww ~= nil) and (ry ~= nil) then
+                local fy, sy = (style().frame or { 0, 0 })[2] or 0, (style().spacing or { 0, 0 })[2] or 0;
+                dl:AddRectFilled({ wx, ry - sy / 2 }, { wx + ww, ry + lh + fy * 2 + sy / 2 }, u32(COL_OWN_BAND), 0);
+            end
             if (rx ~= nil) then -- the first state next to the name, the next ones to its left
                 local r = (#scols > 1) and 3 or 3.5;
-                for j, sc in ipairs(scols) do dl:AddCircleFilled({ rx - DOTW / 2 - 1 - DOTSTEP * (j - 1), ry + lh / 2 }, r, u32(sc), 12) end
+                for j, st in ipairs(scols) do
+                    local at = { rx - DOTW / 2 - 1 - DOTSTEP * (j - 1), ry + lh / 2 };
+                    if st[4] then dl:AddCircle(at, r - 0.5, u32(st[3]), 12, 1.5) else dl:AddCircleFilled(at, r, u32(st[3]), 12) end
+                end
             end
-            ncol = own and COL_OWN_NAME or COL_NAME;
+            ncol = COL_NAME;
         elseif own and (#states == 0) then
             ncol = COL_OWN_NAME; -- Windower: the name shows the state, else gold for yours
         end
-        shadow(short_name(row.Name), (style().frame or { 0 })[1] or 0);
+        shadow(ri.short, (style().frame or { 0 })[1] or 0);
         imgui.PushStyleColor(ImGuiCol_Text, ncol);
         local clicked = imgui.SmallButton(g.nameIds[i]);
         imgui.PopStyleColor();
@@ -911,14 +942,6 @@ local function body(scale)
             if (c ~= nil) then
                 at(col, c.w + PADX * 2, false);
                 draw_cell(row, col.key, c);
-                if (c.under ~= nil) and (dl ~= nil) and (imgui.GetItemRectMin ~= nil) and (imgui.GetItemRectMax ~= nil) then -- wpn: melee mode
-                    local ux = pair(imgui.GetItemRectMin());
-                    local _, uy = pair(imgui.GetItemRectMax());
-                    if (ux ~= nil) and (uy ~= nil) then
-                        ux = ux + ((c.cmd ~= nil) and ((style().frame or { 0 })[1] or 0) or 0);
-                        dl:AddLine({ ux, uy - 1 }, { ux + (c.w or 0), uy - 1 }, u32(c.under), 2);
-                    end
-                end
                 if (c.dots ~= nil) and (#c.dots > 0) then -- wpn: /wsset high, /hoxne
                     local x2, y2, y1, _;
                     if (imgui.GetItemRectMax ~= nil) and (imgui.GetItemRectMin ~= nil) then
