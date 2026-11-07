@@ -248,11 +248,11 @@ reads them twice a second (Ashita `luashitacast/hud/`, Windower IPC).
 
 ![The HUD, compact style](docs/hud.png)
 
-Bryn: `/sir`, `/wsset high`. Cora: you, `/th`. Dain: `/mset acc`, a slot pick (`+`), `/idleset refresh` (`MP`), DT.
-Elle: `/mset sb`, `/hoxne`, `/nukeset oa` + `/burst` (`Occu*`). (Picture from before the colours below.)
+Alba: `/rangedset acc`. Bryn: `/sir`, `/wsset high`. Cora: you (band), `/th`. Dain: `/mset acc`, a slot pick (`+`),
+`/idleset refresh` (`MP`), DT. Elle: `/mset sb`, `/hoxne`, `/nukeset oa` + `/burst` (`Occu*`). Names in job colour.
 
 - **Open:** `/gchud`; `/gchud large|compact` (large: bigger text, full names); `/gchud pos X Y` or drag (kept on
-  screen); `/gchud debug`. `HUDOwners` boxes open it
+  screen; within 8px of the top or bottom it snaps flush); `/gchud debug`. `HUDOwners` boxes open it
   with every box; other boxes see their own row (empty list: everyone sees all).
 - **Names** in their main job's colour, as on the bar. **Your row:** faint band.
 - **Dots** left of the name, every one on (first nearest): teal SIR, gold ring TH, green Kite, red PROC.
@@ -270,7 +270,8 @@ Elle: `/mset sb`, `/hoxne`, `/nukeset oa` + `/burst` (`Occu*`). (Picture from be
 | `tank` `pup` `def` | `/tankset` / `/pupmode` / `/def` |
 
 - Click a cell: runs it on that box. Click a name: its other modes.
-- Mouse away: your row only; over: all (`HUDHover`). Opens upward in the screen's bottom half (`HUDGrow`).
+- Mouse away: your row only, with just its columns; over: all (`HUDHover`). Opens upward in the screen's bottom
+  half (`HUDGrow`).
 - A column shows while some box has it set (`def`: DT/MDT/Aminon on); the rest are on the detail line. Columns
   never shrink while you play. Compact: names that fit show whole (wpn 6 letters, others 5), else `DP` `Max` `GH`
   `KC` or 4 letters (`HUDAbbr` to set your own).

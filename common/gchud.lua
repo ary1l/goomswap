@@ -682,6 +682,7 @@ local view = {}; -- the rows the grid is built from (all of them)
 local collapsedView, hoverUntil = false, 0; -- collapsed: only this box's line is drawn, in the full grid's columns
 local growUp, homeH, collapsedFrames = false, nil, 0; -- grows up: own line stays at the bottom; homeH = its height
 local revSrc, revView = nil, {};
+local ownSrc, ownView = nil, nil; -- collapsed: just this box's row, so the grid takes only its columns
 local function columns(orderKey, canonical)
     local out, seen, present = {}, {}, {};
     for _, row in ipairs(view) do
@@ -792,8 +793,9 @@ local function build_grid(x0)
             if (c ~= nil) then c.w = textw(c.text); w = math.max(w, c.w) end -- reused when the row is drawn
         end
         if (key == 'Weapons') then w = w + textw('+') + ((DL ~= nil) and (2 * DOTSP + 2) or textw('oo')) end -- room for '+' and the dots
-        w = math.max(w, widthMax[kind .. key] or 0);
-        widthMax[kind .. key] = w;
+        local wk = ((#view == 1) and '1' or '*') .. kind .. key; -- the one-row (collapsed) grid keeps its own widths
+        w = math.max(w, widthMax[wk] or 0);
+        widthMax[wk] = w;
         cols[#cols + 1] = { key = key, kind = kind, w = w, center = center, label = l, labelW = lw, tip = FULL[key] or key };
     end
     for _, k in ipairs(vis) do measure(k, 'c', false) end
@@ -1041,15 +1043,18 @@ local function render()
         local up = grows_up();
         if growUp and not up then placed = false end -- own line back on top, where it is now (HUDY)
         growUp = up;
-        -- Keep your own line on screen (a position saved in compact can put the taller large one past the edge).
-        -- Moves HUDX/HUDY, so it is saved like a drag.
+        -- Keep your own line on screen (a position saved in compact can put the taller large one past the edge), and
+        -- flush with the top or bottom when within 8px of it. Moves HUDX/HUDY, so it is saved like a drag.
         local sw, sh = screen_size();
         local w, h = lastWW, homeH or lastWH;
         if (sw ~= nil) and (w ~= nil) and (h ~= nil) then
             local x, y = inc.settings.HUDX or 300, inc.settings.HUDY or 40;
             local cx = math.max(0, math.min(x, sw - w));
             local cy = math.max(0, math.min(y, sh - h));
-            if (cx ~= x) or (cy ~= y) then inc.settings.HUDX, inc.settings.HUDY = math.floor(cx), math.floor(cy); placed = false end
+            if (cy > 0) and (cy <= 8) then cy = 0 end -- within 8px of an edge: flush with it, as the bar does
+            if (cy < sh - h) and (cy >= sh - h - 8) then cy = sh - h end
+            cx, cy = math.floor(cx), math.floor(cy);
+            if (cx ~= x) or (cy ~= y) then inc.settings.HUDX, inc.settings.HUDY = cx, cy; placed = false end
         end
     end
     if (not placed) then
@@ -1095,6 +1100,17 @@ local function render()
             view = revView;
         else
             view = rows;
+        end
+        if collapsedView then
+            if (ownSrc ~= view) then
+                ownSrc, ownView = view, nil;
+                local party = AshitaCore:GetMemoryManager():GetParty();
+                local mine = (party ~= nil) and string.lower(tostring(party:GetMemberName(0) or '')) or '';
+                for _, r in ipairs(view) do
+                    if (string.lower(r.Name) == mine) then ownView = { r }; break end
+                end
+            end
+            view = ownView or view;
         end
         -- any error between Begin and End must not skip PopFont/End/Pop*, or ImGui asserts every frame after
         ok, err = pcall(inner);
