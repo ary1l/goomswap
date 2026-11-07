@@ -16,7 +16,7 @@ local MainLV = 0;
 local SubLV = 0;
 local Main = 'FOO';
 local Sub = 'BAR';
-local headText, statText = '', '';
+local headText = '';
 
 function gcdisplay.AdvanceCycle(name)
 	local ctable = Cycles[name];
@@ -69,7 +69,6 @@ function gcdisplay.Update()
     Main = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", MID) or 'NON';
     Sub = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", SID) or 'NON';
     headText = string.format('%s%d/%s%d', Main, MainLV, Sub, SubLV);
-    statText = string.format('%d/%d', Attk, Def); -- attack/defense
 end
 
 function gcdisplay.CreateToggle(name, default)
@@ -271,7 +270,8 @@ local function bar_body()
 		imgui.PopStyleColor();
 	end
 	put(headText, COL_HEAD);
-	put(statText, COL_KEY, 6);
+	put('Atk ', COL_KEY, 8); put(tostring(Attk), COL_HEAD, 0); -- labelled, so it doesn't read as HP
+	put('Def ', COL_KEY, 8); put(tostring(Def), COL_HEAD, 0);
 	local names = ((inc ~= nil) and inc.ModeNames) or FALLBACK_MODES;
 	local picked = false;
 	for k in pairs(SLOT_PICKS) do

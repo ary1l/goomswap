@@ -71,7 +71,12 @@ local sets = {
     Weapon_Armageddon = {
         Range = 'Armageddon',
     },
-    Weapon_Annihilator = {
+    Weapon_Annihilator = { -- dual wields; _1h (shield) when you can't (sub not DNC/NIN, or /dw off)
+        Main = 'Naegling',
+        Sub = 'Kraken Club',
+        Range = 'Annihilator',
+    },
+    Weapon_Annihilator_1h = {
         Main = 'Naegling',
         Sub = 'Nusku Shield',
         Range = 'Annihilator',

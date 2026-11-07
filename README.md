@@ -274,7 +274,7 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 
 ![The status bar](docs/gcbar.png)
 
-- **Job** and attack/defense | **modes that are set** | **toggles that are on** as dots.
+- **Job**, `Atk` and `Def` | **modes that are set** | **toggles that are on** as dots.
 - `wpn`: `+` = slot pick changed; tag = `/mmode` (`Acc`, `SB`); teal = `/hoxne`. `idle`: `MP` `HP` `TP`.
 - Dots: DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green, Burst pink, PROC red, Harp teal.
 - Grows with what it shows. Windower: `|` and coloured names, no capsule or dots.
