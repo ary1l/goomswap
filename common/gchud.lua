@@ -17,7 +17,7 @@ local placed = false;
 local STALE = 15;
 
 gchud.CycleCommands = {
-    MeleeSet = 'mmode',
+    MeleeSet = 'mset',
     WsSet = 'wsset',
     Weapons = 'wm',
     Main = 'mainset',
@@ -725,13 +725,13 @@ local function build_grid(x0)
             end
             if (#picks > 0) then w.text = w.text .. '+'; w.tip = w.tip .. '  |  ' .. table.concat(picks, ', ') end
             local mm = (row.Cycles.MeleeSet ~= nil) and strip_default(row.Cycles.MeleeSet) or 'Default';
-            if (DL ~= nil) then -- Ashita: white text, the melee mode a line under it (none on a box without /mmode)
+            if (DL ~= nil) then -- Ashita: white text, the melee mode a line under it (none on a box without /mset)
                 if (row.Cycles.MeleeSet ~= nil) then w.under = melee_col(mm) end
                 if not w.empty then w.col = COL_NAME end
             elseif not w.empty then w.col = melee_col(mm) end
             if (row.Cycles.MeleeSet ~= nil) then
-                w.tip = w.tip .. '  |  melee: ' .. ((mm == 'Default') and 'Base' or mm) .. ' (ctrl+click: /mmode)';
-                w.ctrlCmd = 'mmode';
+                w.tip = w.tip .. '  |  melee: ' .. ((mm == 'Default') and 'Base' or mm) .. ' (ctrl+click: /mset)';
+                w.ctrlCmd = 'mset';
             end
             w.dots = {};
             if (strip_default(row.Cycles.WsSet or '') == 'High') then

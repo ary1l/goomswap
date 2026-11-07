@@ -105,7 +105,7 @@ local sets = {
         Legs = 'Sakpata\'s Cuisses',--af+3
         Feet = 'Flam. Gambieras +2',
     },
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ammo = 'Seeth. Bomblet +1',
@@ -268,7 +268,7 @@ local sets = {
     ['Scarlet Delirium'] = {},
     -- Templates: fill the ones you use; an empty set changes nothing.
     Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
-    ['Aeolian Edge_Acc'] = {}, -- /mmode acc: this WS, over Ws_Acc
+    ['Aeolian Edge_Acc'] = {}, -- /mset acc: this WS, over Ws_Acc
     ['Aeolian Edge_HighBuff'] = {}, -- /wsset high: this WS
     Buffs = { -- while the buff is up: idle and engaged
         ['Aftermath: Lv.3'] = {},
@@ -278,7 +278,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Example
+    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Example
     -- Weapon_Example_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Cure_Received = {},
     Cursna_Received = {},

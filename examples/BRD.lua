@@ -124,7 +124,7 @@ local sets = {
         Legs = 'revelation brais',
         Feet = 'revelation sab.',
     },
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
     },
@@ -641,7 +641,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Carnwenhan_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Carnwenhan
+    -- Weapon_Carnwenhan_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Carnwenhan
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
     Cure_Received = {
@@ -690,7 +690,7 @@ local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
 	gSettings.AllowAddSet = true;
-    gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan'}; -- Weapon_CarnwenhanAcc goes on with /mmode Acc; Hoxne is /hoxne
+    gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan'}; -- Weapon_CarnwenhanAcc goes on with /mset Acc; Hoxne is /hoxne
     gcinclude.DefaultWeapons = 'Naegling';
     gcinclude.Initialize();
 end
@@ -810,7 +810,7 @@ profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
-    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mmode>']
+    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mset>']
     FixSub(gData.GetPlayer().Status == 'Engaged');
 end
 

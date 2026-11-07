@@ -70,7 +70,7 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 | Selindrile | GoomSwap |
 |---|---|
 | `idle` `.Refresh` `.Regen` `.Regain`, `resting`, `Kiting`, `TreasureHunter` | `Idle` `Idle_Refresh` `Idle_Regen` `Idle_Regain`, `Resting`, `Movement`, `TH` |
-| `engaged` `.<OffenseMode>` | `Tp_Default` `Tp_<mode>`; OffenseMode = `/mmode` list |
+| `engaged` `.<OffenseMode>` | `Tp_Default` `Tp_<mode>`; OffenseMode = `/mset` list |
 | `defense.PDT` `.MDT` (else `.MEVA`) | `Dt` `mdt` |
 | `precast.FC`, `FC.Cure`, `FC['Enhancing Magic']` | `Precast` `Cure_Precast` `Enhancing_Precast` |
 | `precast.WS` `['Savage Blade']` `.Acc` | `Ws_Default`, `['Savage Blade']`, `['Savage Blade_Acc']` |
@@ -80,7 +80,7 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 | `buff.Doom` `.Sleep`, `Cure_Received`... | `Doomed` `Sleeping` `Cure_Received`... |
 
 No place (`.DT` hybrids, `Resistant`, latent sets...): kept as `['Sel_<path>']`. Binds become that job's `Keybinds`:
-chat commands as is, modes mapped (`Weapons`→`wm`, `OffenseMode`→`mmode`, `IdleMode`→`idleset`, `HybridMode`→`tankset`,
+chat commands as is, modes mapped (`Weapons`→`wm`, `OffenseMode`→`mset`, `IdleMode`→`idleset`, `HybridMode`→`tankset`,
 `RangedMode`→`rangedset`, `CastingMode`→`nukeset` or `sir`, `gs reload`→`/lac reload`). Defense keys and
 Selindrile automation (`AutoWSMode`, `SkillchainMode`...) are left out; the file's top comment lists what was.
 
@@ -137,7 +137,7 @@ idle `AutoGear` `PetDTGearHPP`; WS `WScheck` `WSdistance` `MoonshadeSlot` `Moons
 ## Commands
 
 Ashita `/name`, Windower `//name` or `//gs c name`. Toggles take `on`/`off`, no word flips. Values, any case: no word =
-next; else name, start, initials, contains, or number (`/wm max`, `/mmode sb`, `/wm 3`). Windower: with Stopwatch or
+next; else name, start, initials, contains, or number (`/wm max`, `/mset sb`, `/wm 3`). Windower: with Stopwatch or
 THTracker loaded use `//subset` / `//gs c th`.
 
 | Command | Does |
@@ -147,7 +147,7 @@ THTracker loaded use `//subset` / `//gs c th`.
 | `/dw [on\|off\|auto]` | Dual Wield: why; `off` = `_1h` always |
 | `/smartswap` | Light spells (Dia, Blink…) keep weapons at `SmartSwapTP`+ |
 | `/setcycle <cycle> <value>` | Any mode by name |
-| `/mmode [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets |
+| `/mset [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets |
 | `/wsset [mid\|high]` | `high`: WS sets add their `_HighBuff` |
 | `/rangedset [acc]` | COR RNG PLD: `Midshot_Acc` |
 | `/th` | `TH` until tagged (THF main: always) |
@@ -180,7 +180,7 @@ THTracker loaded use `//subset` / `//gs c th`.
 | `/gctrace` `/gcstyle [N]` `/gcmessages` `/gchelp` | Trace / lockstyle / chat lines / help |
 | `/gckey <key> <cmd>` | Bind a key |
 
-Old names still work: `/meleeset` `/melee` = `/mmode`, `/weaponset` = `/wm`.
+Old names still work: `/mmode` `/meleeset` `/melee` = `/mset`, `/weaponset` = `/wm`.
 
 ## Keys
 
@@ -189,7 +189,7 @@ Bound on load, removed on unload/job change.
 | Key | Runs | Key | Runs |
 |---|---|---|---|
 | F7 | `/wm` | Shift+F7 | `/wm default` |
-| F9 | `/mmode` | Ctrl+F9 | `/tankset` |
+| F9 | `/mset` | Ctrl+F9 | `/tankset` |
 | Shift+F9 | `/rangedset` | Alt+F9 | `/wsset` |
 | F10 | `/def` | Alt+F10 | `/kite` |
 | Win+F10 | `/hoxne` | Shift+F11 | `/nukeset` |
@@ -248,22 +248,22 @@ reads them twice a second (Ashita `luashitacast/hud/`, Windower IPC).
 
 ![The HUD, compact style](docs/hud.png)
 
-Bryn: `/sir` (blue dot), `/wsset high` (purple dot). Cora: you (gold name), `/th` (gold dot). Dain: `/mmode acc`
-(gold), a slot pick (`+`), `/idleset refresh` (`MP`), DT. Elle: `/mmode sb` (orange), `/hoxne` (blue dot),
+Bryn: `/sir` (blue dot), `/wsset high` (purple dot). Cora: you (gold name), `/th` (gold dot). Dain: `/mset acc`
+(gold), a slot pick (`+`), `/idleset refresh` (`MP`), DT. Elle: `/mset sb` (orange), `/hoxne` (blue dot),
 `/nukeset oa` + `/burst` (`Occu*`).
 
 - **Open:** `/gchud`; `/gchud large|compact`; `/gchud pos X Y` or drag; `/gchud debug`. `HUDOwners` boxes open it
   with every box; other boxes see their own row (empty list: everyone sees all).
 - **Dots** left of the name, every one on (first nearest): blue SIR, gold TH, green Kite, red PROC. **Gold name:** you.
-- **`wpn`:** weapon mode (main pick if the job has none). Line under it = `/mmode`: green Base, gold Acc, orange SB.
+- **`wpn`:** weapon mode (main pick if the job has none). Line under it = `/mset`: green Base, gold Acc, orange SB.
   `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Dots after: purple `/wsset high`, blue
-  `/hoxne`. Hover: all of them. Ctrl+click: `/mmode`.
+  `/hoxne`. Hover: all of them. Ctrl+click: `/mset`.
 - **Colours:** gold changed, grey-white default, faint `-` none. `def` DT orange, MDT blue, Amin purple. `*`
   after `nuke` = `/burst`.
 
 | Column | Shows |
 |---|---|
-| `wpn` | `/wm` + slot picks, `/mmode`, `/wsset`, `/hoxne` (above) |
+| `wpn` | `/wm` + slot picks, `/mset`, `/wsset`, `/hoxne` (above) |
 | `ra` `idle` | `/rangedset` / `/idleset` (`MP` `HP` `TP`) |
 | `nuke` `elem` `w` | `/nukeset` / BLM SCH element and weapon |
 | `tank` `pup` `def` | `/tankset` / `/pupmode` / `/def` |
@@ -275,7 +275,7 @@ Bryn: `/sir` (blue dot), `/wsset high` (purple dot). Cora: you (gold name), `/th
 - The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).
 - Settings: `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDX` `HUDY` `HUDStyle` `HUDScale` `HUDScaleLarge`
   `HUDAlpha` `HUDAbbr` `HUDLabels`.
-- Windower: no shapes. The name takes the first dot's colour, `wpn` text the `/mmode` colour, its dots a coloured `o`.
+- Windower: no shapes. The name takes the first dot's colour, `wpn` text the `/mset` colour, its dots a coloured `o`.
 
 ## Status bar
 
@@ -286,19 +286,19 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 - **Job**, `Atk` and `Def` (Ashita) | **modes that are set** | **toggles that are on** as dots.
 - Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its.
 - Dropped within 8px of the screen's top, the bar snaps flush to it.
-- `wpn` as the HUD's: `+` slot pick, line under it `/mmode`, purple dot `/wsset high`, blue `/hoxne`. `idle`: MP HP TP.
+- `wpn` as the HUD's: `+` slot pick, line under it `/mset`, purple dot `/wsset high`, blue `/hoxne`. `idle`: MP HP TP.
 - A job without weapon modes (WHM...) shows `melee` and `wsset` by name, only once changed.
 - Dots: DT orange, MDT blue, Aminon purple, SIR blue, TH gold, Kite green, Burst pink, PROC red, Harp teal, Song lock
   purple, Death red.
 - Grows with what it shows. Windower: `|` and coloured names, no capsule, outline, line or dots (`wpn` text the
-  `/mmode` colour, its dots a coloured `o`).
+  `/mset` colour, its dots a coloured `o`).
 
 ## How sets stack
 
 Later wins, slot by slot.
 
 **Idle/engaged:**
-1. Job file: `Idle` → `Idle_<mode>` / `Tp_Default` → `Tp_<mmode>` → buff sets → `Dt` (`/dt`) → `Movement` (`/kite`).
+1. Job file: `Idle` → `Idle_<mode>` / `Tp_Default` → `Tp_<mset>` → buff sets → `Dt` (`/dt`) → `Movement` (`/kite`).
 2. Hoxne sets → auto `Idle_Regen` `Idle_Refresh` `Dt` → `Town`.
 3. Weapon mode → `mdt`/`Aminon` → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll.
 4. `Incapacitated` (slept, petrified, stunned, terror), over 1-3: Aminon, else `mdt`, else `Dt` (no weapons), its set.
@@ -312,7 +312,7 @@ obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` 
 | Engine set | Worn |
 |---|---|
 | `<set>_Self` `_Others` `_Burst` | spell on you / on others / a burst |
-| `Weapon_<Mode>` `_1h` `<Mode>Acc` | weapon mode; no DW; `/mmode acc` |
+| `Weapon_<Mode>` `_1h` `<Mode>Acc` | weapon mode; no DW; `/mset acc` |
 | `Dt` `mdt` `Aminon` `SIR` `TH` `Movement` | their toggles; `TH` until tagged |
 | `Idle_Refresh` `Idle_Regen` `Idle_Regain` | `/idleset`; low MP/HP |
 | `Midshot_Acc` | `/rangedset acc` |
@@ -351,7 +351,7 @@ profile.OnLoad = function()
     gcinclude.AlwaysDualWield = true;
     gcinclude.Food = {'Grape Daifuku +1'};
     gcinclude.Packer = { ['Echo Drops'] = 'stack' };
-    gcinclude.MeleeModes = {'Default', 'Acc'};    -- own /mmode list (NukeModes: /nukeset)
+    gcinclude.MeleeModes = {'Default', 'Acc'};    -- own /mset list (NukeModes: /nukeset)
     gcinclude.settings.RefreshGearMPP = 50;
     gcinclude.Initialize();
 end
@@ -361,8 +361,8 @@ end
 |---|---|
 | `gcinclude.EquipIdle()` | `Idle` + `Idle_<mode>` (use in `HandleDefault`) |
 | `gcinclude.RangedAcc()` | true on `/rangedset acc` |
-| `gcinclude.EquipMode('Ws')` | `Ws_Default` + `Ws_<mmode>` |
-| `gcinclude.ByName(name)` | set `name`, then `name_<mmode>`; false if none |
+| `gcinclude.EquipMode('Ws')` | `Ws_Default` + `Ws_<mset>` |
+| `gcinclude.ByName(name)` | set `name`, then `name_<mset>`; false if none |
 | `gcinclude.Family(name)` | `'Drain III'` → `'Drain'` |
 | `gcinclude.CheckTH(force)` | `TH` at an untagged mob |
 | `gcinclude.CheckWsBailout()` | false if the WS would fail |
@@ -372,12 +372,12 @@ end
 
 | Set | Worn |
 |---|---|
-| `['Savage Blade']` `['Savage Blade_Acc']` `['Savage Blade_HighBuff']` | that WS; `/mmode acc`; `/wsset high` |
+| `['Savage Blade']` `['Savage Blade_Acc']` `['Savage Blade_HighBuff']` | that WS; `/mset acc`; `/wsset high` |
 | `Ws_Default` `Ws_Acc` `Ws_HighBuff` | any WS, under its own |
 | `['Berserk']` | that job ability |
 | `['Enhancing Magic']` `['Cure']` `['Phalanx']` | skill, then spell or family (`Cure IV` → `Cure`) |
 | `['Healing Magic_Precast']` `['Stoneskin_Precast']` | over `Precast` |
-| `Tp_Default` `Tp_SubtleBlow` `Tp_Acc` | engaged, `/mmode` |
+| `Tp_Default` `Tp_SubtleBlow` `Tp_Acc` | engaged, `/mset` |
 | `Buffs` `Buffs_Ws` `Buffs_Midcast` `{ ['Aftermath: Lv.3'] = {...} }` | while that buff is up |
 
 Each file ends its sets with a Templates block (one of each, blank) to copy from. Groups keep a plain name

@@ -115,7 +115,7 @@ local sets = {
         Legs = 'sworn brais',
         Feet = 'sworn sabatons',
     },
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ear2 = 'Digni. Earring',
@@ -398,7 +398,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Example
+    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Example
     -- Weapon_Example_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {}, -- Absorb-TP on top of Absorb
@@ -524,7 +524,7 @@ profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
-    ByName(ws.Name); -- e.g. ['Cataclysm'], then ['Cataclysm_<mmode>']
+    ByName(ws.Name); -- e.g. ['Cataclysm'], then ['Cataclysm_<mset>']
 end
 
 return profile;

@@ -129,7 +129,7 @@ local sets = {
         Legs = { Name = 'Sakpata\'s Cuisses', Priority = 114 },
         Feet = { Name = 'sakpata\'s leggings', Priority = 68 },
     },
-    Tp_SubtleBlow = { -- /mmode subtleblow: Subtle Blow pieces over Tp_Default
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
         Ring2 = 'Cacoethic Ring +1',
@@ -793,7 +793,7 @@ local sets = {
     },
     Buffs_Midcast = { -- while the buff is up: spells (e.g. ['Saboteur'])
     },
-    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mmode acc: a whole weapon set in place of Weapon_Example
+    -- Weapon_Example_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Example
     -- Weapon_Example_1h = { Main = 'Item Name', Sub = 'Shield Name' }, -- when you can't dual wield (/dw off, sub not NIN/DNC)
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Cure_Received = {
@@ -900,6 +900,6 @@ profile.HandleWeaponskill = function()
     if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
-    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mmode>']
+    ByName(ws.Name); -- e.g. ['Savage Blade'], then ['Savage Blade_<mset>']
 end
 return profile;

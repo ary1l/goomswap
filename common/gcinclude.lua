@@ -148,7 +148,7 @@
 		HoxneLockSlots = T{'Ammo', 'Range'}; -- locked by the Locked state (nothing worn in Range can stay on with the Ampulla: SE forum ranged/ammo groups)
 		-- Selindrile's F-key layout. Bound on load, unbound on unload; T{} for none. A command starting with / is bound
 		-- as is (the reload key). Per job: set gcinclude.settings.Keybinds in OnLoad before gcinclude.Initialize()
-		Keybinds = T{ {'F7','wm'}, {'+F7','wm default'}, {'F9','mmode'}, {'^F9','tankset'}, {'+F9','rangedset'}, {'!F9','wsset'},
+		Keybinds = T{ {'F7','wm'}, {'+F7','wm default'}, {'F9','mset'}, {'^F9','tankset'}, {'+F9','rangedset'}, {'!F9','wsset'},
 			{'F10','def'}, {'!F10','kite'}, {'@F10','hoxne'}, {'+F11','nukeset'}, {'!F11','burst'}, {'+F12','idleset'},
 			{'!F12','def off'}, {'^@!F12','/lac reload'} };
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
@@ -192,7 +192,7 @@
 		gcinclude.Err('HUD disabled: gchud.lua failed to load.');
 	end
 
-	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
+	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','mset','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
 	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset',
 	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','gctemps','gcgear','idleset','rangedset'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
@@ -307,7 +307,7 @@ function gcinclude.SetVariables()
     gcdisplay.CreateCycle('Hoxne', {[1] = 'Off', [2] = 'Locked'});
     gcdisplay.CreateToggle('Kite', false);
     gcdisplay.CreateToggle('TH', false);
-    -- /mmode modes: <set>_<mode> over <set>_Default (shown and typed as Base). A job file can set its own list (gcinclude.MeleeModes = {...} in
+    -- /mset modes: <set>_<mode> over <set>_Default (shown and typed as Base). A job file can set its own list (gcinclude.MeleeModes = {...} in
     -- OnLoad, before Initialize). DT is not a mode: /dt layers the Dt set over any of them.
     local melee = (type(gcinclude.MeleeModes) == 'table') and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or {'Default', 'SubtleBlow', 'Acc'};
     gcdisplay.CreateCycle('MeleeSet', melee);
@@ -403,7 +403,7 @@ end
 			gcinclude.FlipToggle('MDTset', args[2]);
 			toggle = 'MDT Set';
 			status = gcdisplay.GetToggle('MDTset');
-		elseif (args[1] == 'meleeset') or (args[1] == 'mmode') or (args[1] == 'melee') then
+		elseif (args[1] == 'mset') or (args[1] == 'mmode') or (args[1] == 'meleeset') or (args[1] == 'melee') then -- /mset; the rest old names
 			local before = gcinclude.WeaponLayerKey();
 			gcinclude.PickCycle('MeleeSet', args[2]);
 			if (gcinclude.WeaponLayerKey() ~= before) then gcinclude.ApplyWeapons(true) end -- a Weapon_<mode>Acc: you asked, swaps at any TP
@@ -2302,7 +2302,7 @@ end
 			gFunc.EquipSet(set);
 		elseif (mode == 'Acc') and (modeWarned[n] == nil) then -- other modes (SubtleBlow, a job's own) are optional per set
 			modeWarned[n] = true;
-			gcinclude.Err('no ' .. n .. ' set: ' .. prefix .. '_Default stays (add ' .. n .. ' or /mmode base)');
+			gcinclude.Err('no ' .. n .. ' set: ' .. prefix .. '_Default stays (add ' .. n .. ' or /mset base)');
 		end
 	end
 
@@ -2459,7 +2459,7 @@ end
 		local equip = {};
 		local mode = gcdisplay.GetCycle('Weapons');
 		if gcinclude.IsWeaponValue(mode) then
-			-- /mmode variant first: Weapon_Carnwenhan_Acc or Weapon_CarnwenhanAcc while /mmode Acc, when you have one
+			-- /mset variant first: Weapon_Carnwenhan_Acc or Weapon_CarnwenhanAcc while /mset Acc, when you have one
 			local set = nil;
 			local ms = gcdisplay.GetCycle('MeleeSet');
 			if (type(ms) == 'string') and (ms ~= 'Default') then
@@ -3064,7 +3064,7 @@ end
 			'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots|all] /unlock [slots|all]',
 			'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip, ', ')) or '') .. '; off while Aminon is on)',
 			'hoxne  : /hoxne (Off > Locked), /hoxne use',
-			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /mmode or /meleeset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
+			'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: ' .. table.concat(thskip, ', ')) or '') .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (old: /mmode /meleeset /melee) (no word: Base > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
 			'hud    : /gchud [on|off|pos x y|debug]',
 			'checks : /checksets, /xiroll, /mbinfo',
 			'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
@@ -3075,7 +3075,7 @@ end
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
 			'nuke   : Burst set is automatic on a nuke landing in a live skillchain; /burst = Burst set on every nuke (HUD: * on the nuke cell)',
-			'keys   : F7 wm, Shift+F7 wm default, F9 mmode, Ctrl+F9 tankset, Shift+F9 rangedset, Alt+F9 wsset, F10 def, Alt+F10 kite,',
+			'keys   : F7 wm, Shift+F7 wm default, F9 mset, Ctrl+F9 tankset, Shift+F9 rangedset, Alt+F9 wsset, F10 def, Alt+F10 kite,',
 			'         Win+F10 hoxne, Shift+F11 nukeset, Alt+F11 burst, Shift+F12 idleset, Alt+F12 def off, Ctrl+Win+Alt+F12 reload',
 			'         /gckey <key> <command or /chat command>, e.g. /gckey ^F1 /ma "Cure IV" <stpc>',
 			'idle   : /idleset [default|refresh|regen|regain] (Idle_<mode> over Idle while idle); /rangedset [default|acc] (COR RNG PLD: Midshot_Acc)',
@@ -4224,7 +4224,7 @@ end
 		if (set ~= nil) then
 			gFunc.EquipSet(set);
 		else
-			gcinclude.ByName(spell.Name); -- with its /mmode version, as the job file wore it
+			gcinclude.ByName(spell.Name); -- with its /mset version, as the job file wore it
 		end
 		if (gcinclude.THWorn == true) then gcinclude.CheckTH() end -- TH that this cast already wore stays over it
 	end
