@@ -10,6 +10,6 @@ return {
         ['Holy Water'] = 'stack',
     },
     settings = { -- any gcinclude setting, this character only
-        HUDOwners = T{'YourMain'}, -- the box that shows every box's HUD row; the others show only their own
+        HUDOwners = T{'YourMain'}, -- the box whose bar drops the other boxes in on hover (the HUD)
     },
 };
