@@ -263,6 +263,9 @@ modes when they change (checked 4x/s); the box with the drop reads them twice a 
   blue / `hp` green / `tp` yellow, nuke `macc` teal / `oa` salmon, ranged `racc` cyan, `hoxne` bronze, tank `main`
   periwinkle / `meva` lime, `dt` orange / `mdt` blue / `amin` mauve (`+` = more than one), `sir` teal, `th` gold,
   `kite` green, `proc` red, `burst` pink. Each of the 22 jobs its own colour.
+- **Weapon colour** (the weapon pill, by its weapon: the mode's Main, else Range, else Sub): relic light blue, mythic
+  and ergon green, empyrean red, prime purple, aeonic orange, TP bonus (Sparrowhawk +2, Anarchy +2) dark blue, others
+  grey. Add your own: `WeaponClass = { ['Item Name'] = 'tpbonus' }`.
 - A job without weapon modes (WHM...) shows `melee`, `ws` and `hoxne` only once changed.
 - **Drop:** on hover (`HUDHover = false`: always); in the screen's bottom half the other boxes rise above the bar
   instead (`HUDGrow`). The box with it on also prints the other boxes' chat lines as `[Name]` (`HUDMessages`).

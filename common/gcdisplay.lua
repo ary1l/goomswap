@@ -206,6 +206,54 @@ function gcdisplay.ModeText(k, v) -- lower case, short: sb, mp, oa...
 	if (inc ~= nil) and (inc.ModeLabel ~= nil) then v = tostring(inc.ModeLabel(k, v)) end
 	return string.lower(v);
 end
+-- The weapon pill's colour: its weapon's class, as a job's colour. Classes from the game's own item descriptions
+-- (Windower resources: each class has its own Aftermath) and BG-Wiki's Prime Weapons; TP bonus = the Ambuscade +2
+-- weapons named here. settings.WeaponClass = { ['Item Name'] = 'tpbonus' } adds or overrides (classes as below).
+local WEAPON_COL = { relic = { 0.45, 0.80, 1.00, 1.0 }, mythic = { 0.35, 0.85, 0.45, 1.0 }, empyrean = { 1.00, 0.35, 0.35, 1.0 },
+	prime = { 0.70, 0.45, 1.00, 1.0 }, aeonic = { 1.00, 0.62, 0.20, 1.0 }, tpbonus = { 0.30, 0.45, 1.00, 1.0 } }; -- light blue, green (ergon too), red, purple, orange, dark blue
+local WEAPON_CLASS = {};
+for cls, list in pairs({
+	relic = { 'Spharai', 'Mandau', 'Excalibur', 'Ragnarok', 'Guttler', 'Bravura', 'Apocalypse', 'Gungnir', 'Kikoku', 'Amanomurakumo',
+		'Mjollnir', 'Claustrum', 'Annihilator', 'Yoichinoyumi' },
+	mythic = { 'Conqueror', 'Glanzfaust', 'Yagrush', 'Laevateinn', 'Murgleis', 'Vajra', 'Burtgang', 'Liberator', 'Aymur', 'Carnwenhan',
+		'Gastraphetes', 'Kogarasumaru', 'Nagi', 'Ryunohige', 'Nirvana', 'Tizona', 'Death Penalty', 'Kenkonken', 'Terpsichore', 'Tupsimati',
+		'Idris', 'Epeolatry' }, -- the last two: Ergon
+	empyrean = { 'Verethragna', 'Twashtar', 'Almace', 'Caladbolg', 'Farsha', 'Ukonvasara', 'Redemption', 'Rhongomiant', 'Kannagi',
+		'Masamune', 'Gambanteinn', 'Hvergelmir', 'Gandiva', 'Armageddon' },
+	aeonic = { 'Godhands', 'Aeneas', 'Sequence', 'Lionheart', 'Tri-edge', 'Chango', 'Anguta', 'Trishula', 'Heishi Shorinken',
+		'Dojikiri Yasutsuna', 'Tishtrya', 'Khatvanga', 'Fail-Not', 'Fomalhaut' },
+	prime = { 'Varga Purnikawa', 'Mpu Gandring', 'Caliburnus', 'Helheim', 'Foenaria', 'Spalirisos', 'Laphria', 'Kusanagi', 'Gae Buide',
+		'Dokoku', 'Lorg Mor', 'Opashoro', 'Pinaka', 'Earp', 'Duban', 'Loughnashade' },
+	tpbonus = { 'Sparrowhawk +2', 'Anarchy +2' },
+}) do
+	for _, n in ipairs(list) do WEAPON_CLASS[string.lower(n)] = cls end
+end
+local function item_class(v)
+	local n = (type(v) == 'table') and (v.Name or v.name) or v;
+	if (type(n) ~= 'string') then return nil end
+	n = string.lower(n);
+	local user = (cfg ~= nil) and cfg.WeaponClass or nil;
+	if (type(user) == 'table') then
+		for k, c in pairs(user) do
+			if (string.lower(tostring(k)) == n) and (WEAPON_COL[string.lower(tostring(c))] ~= nil) then return string.lower(tostring(c)) end
+		end
+	end
+	return WEAPON_CLASS[n];
+end
+-- A weapon mode's class: its set's Main if classed, else Range (guns, bows), else Sub; a slot pick (no modes): the item.
+local function mode_class(wk, v)
+	if (v == nil) then return nil end
+	if (wk ~= 'Weapons') then return item_class(v) end
+	local set = (inc ~= nil) and (inc.FindSet ~= nil) and inc.FindSet('Weapon_' .. tostring(v)) or nil;
+	if (type(set) ~= 'table') then return item_class(v) end
+	return item_class(set.Main) or item_class(set.Range) or item_class(set.Sub);
+end
+function gcdisplay.WeaponClass() -- this box's, for the HUD line (the other boxes' drop shows it)
+	local wk = ((Cycles.Weapons ~= nil) and 'Weapons') or ((Cycles.Main ~= nil) and 'Main') or nil;
+	if (wk == nil) then return nil end
+	local c = Cycles[wk];
+	return mode_class(wk, c.Array[c.Index]);
+end
 function gcdisplay.ToggleColor(k) return TOGGLE_COL[k] or { 0.35, 0.95, 0.45, 1.0 } end
 
 -- Pills. LEAD: px from the pill's left edge to its text (the dot before it); PLAIN_LEAD with no dot; TAIL after the text.
@@ -378,7 +426,7 @@ local LINE_COLS = { 'wpn', 'Main', 'Sub', 'Range', 'Ammo', 'MeleeSet', 'WsSet', 
 	'RangedSet', 'TankSet', 'PupMode', 'Hoxne', '|', 'Def', 'SIR', 'TH', 'Kite', 'PROC', 'Burst', 'Death', 'String', 'SongLock' };
 -- One line's pills by column. cyc(k): value, still at its load default; vals(k): every value (own box only, for widths);
 -- tog(k): true / false / nil (the job has none).
-local function build_line(cyc, vals, tog)
+local function build_line(cyc, vals, tog, wclass)
 	local map = {};
 	local wk = (cyc('Weapons') ~= nil) and 'Weapons' or ((cyc('Main') ~= nil) and 'Main' or nil);
 	if (wk ~= nil) then
@@ -391,7 +439,7 @@ local function build_line(cyc, vals, tog)
 		local texts = {};
 		for _, x in ipairs(vals(wk) or {}) do texts[#texts + 1] = value_text(wk, x) .. '+' end
 		map.wpn = { kind = 'plain', text = value_text(wk, (cyc(wk))) .. (picked and '+' or ''), texts = texts, cmd = BAR_CMD[wk],
-			ctrl = (cyc('MeleeSet') ~= nil) and 'mset' or nil };
+			ctrl = (cyc('MeleeSet') ~= nil) and 'mset' or nil, col = WEAPON_COL[wclass(wk, (cyc(wk))) or ''] };
 	else
 		for _, k in ipairs(SLOT_PICKS) do -- no weapon pill to carry them: each once changed
 			local v, d = cyc(k);
@@ -434,7 +482,8 @@ local function own_line()
 		ownLine = build_line(
 			function(k) local c = Cycles[k]; if (c == nil) then return nil end; return c.Array[c.Index], gcdisplay.IsDefault('cycle', k) end,
 			function(k) local c = Cycles[k]; return (c ~= nil) and c.Array or nil end,
-			function(k) return Toggles[k] end);
+			function(k) return Toggles[k] end,
+			mode_class);
 		modelVer = version;
 	end
 	return ownLine;
@@ -451,7 +500,8 @@ local function alt_line(row)
 		l = build_line(
 			function(k) local raw = row.Cycles[k]; if (raw == nil) then return nil end; return strip(raw) end,
 			function() return nil end,
-			function(k) local raw = row.Toggles[k]; if (raw == nil) then return nil end; return (strip(raw) == 'true') end);
+			function(k) local raw = row.Toggles[k]; if (raw == nil) then return nil end; return (strip(raw) == 'true') end,
+			function() return (row.Cycles.WpnClass ~= nil) and strip(row.Cycles.WpnClass) or nil end); -- shared by that box
 		altLines[row] = l;
 	end
 	return l;
@@ -573,7 +623,7 @@ local function bar_body(drop, open, up) -- drop: the other boxes (their columns 
 							dl:AddText({ x + c.lead, y }, imgui.GetColorU32((e.kind == 'def') and COL_PILL_DIM or COL_PILL_TEXT), e.text);
 						end
 					else -- Windower: the word in its colour (grey at its default or off)
-						imgui.PushStyleColor(ImGuiCol_Text, (e.kind == 'set') and e.col or ((e.kind == 'def') and COL_PILL_DIM or COL_HEAD));
+						imgui.PushStyleColor(ImGuiCol_Text, ((e.kind ~= 'def') and e.col) or ((e.kind == 'def') and COL_PILL_DIM or COL_HEAD));
 						if ((e.cmd ~= nil) and (imgui.SmallButton ~= nil)) then
 							if imgui.SmallButton(e.text .. '##gcl_' .. id .. c.id) then run(name, e.cmd, e.ctrl) end
 						else

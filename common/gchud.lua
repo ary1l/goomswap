@@ -129,6 +129,7 @@ local function write_state()
     for k, v in pairs(cmap) do
         if (k ~= 'Weapons') and disp.IsDefault('cycle', k) then cmap[k] = '~' .. tostring(v) end
     end
+    if (type(disp.WeaponClass) == 'function') then cmap.WpnClass = disp.WeaponClass() end -- the drop colours this box's weapon
     local toggles = encode(tmap, gchud.ToggleOrder);
     local cycles = encode(cmap, gchud.CycleOrder);
     local line = table.concat({
