@@ -72,8 +72,7 @@
 		MoonshadeSlot = 'Ear2'; -- the slot the engine puts it in; the other ear when the WS set has a Sortie (right-ear-only) earring there
 		MoonshadeSkip = T{}; -- WS names the engine never gives Moonshade, e.g. T{'Myrkr'}
 		DisplayBar = false; -- the status bar (job, atk/def, modes and toggles as pills), /gcbar to toggle; the HUD drops under it
-		DisplayBarX = 300;
-		DisplayBarY = 0;
+		DisplayBarY = 0; -- DisplayBarX unset: the bar sits centred at the top, or flush right with the HUD on; dragged, it stays there (saved per character; /gcbar reset)
 		warp_Ring = 'Warp Ring'; -- /warpring, /mea, /holla, /dem: held in Ring2, used once its equip delay is up (as /gce), let go after the use (normal ring back)
 		mea_Ring = 'Dim. Ring (Mea)';
 		dem_Ring = 'Dim. Ring (Dem)';
