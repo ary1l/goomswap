@@ -133,8 +133,9 @@ local function write_state()
     local cycles = encode(cmap, gchud.CycleOrder);
     local line = table.concat({
         player.Name,
-        tostring(player.MainJob or '?') .. tostring(player.MainJobLevel or '') .. '/' .. tostring(player.SubJob or '-') ..
-            (((tonumber(player.SubJobLevel) or 0) > 0) and tostring(player.SubJobLevel) or ''), -- COR99/DNC49: the drop's job text
+        -- COR99/DNC49, the drop's job text: the levels in effect (LAC's *Sync; *JobLevel is that job's own level, DNC99)
+        tostring(player.MainJob or '?') .. tostring(player.MainJobSync or player.MainJobLevel or '') .. '/' .. tostring(player.SubJob or '-') ..
+            (((tonumber(player.SubJobSync) or 0) > 0) and tostring(player.SubJobSync) or ''),
         toggles,
         cycles,
     }, '\t');
