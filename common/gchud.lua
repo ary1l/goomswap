@@ -64,7 +64,7 @@ local SHORT = {
 
 -- Modes whose Default draws as '-' (nothing laid over), and their compact-style values.
 local DASH_DEFAULT = { IdleSet = true, RangedSet = true };
-local SHORT_VALUE = { IdleSet = { Refresh = 'MP', Regen = 'HP', Regain = 'TP' }, NukeSet = { OccultAcumen = 'OA' } };
+local SHORT_VALUE = { IdleSet = { Refresh = 'mp', Regen = 'hp', Regain = 'tp' }, NukeSet = { OccultAcumen = 'oa' }, MeleeSet = { SubtleBlow = 'sb' } }; -- as the bar's, both styles
 
 -- Cycle values drawn as '-'. A cycle column empty on every box is hidden from the grid.
 local EMPTY = { none = true, off = true, unknown = true };
@@ -205,24 +205,22 @@ local function shadow(text, padx) -- the shadow goes in first, so the item's own
     if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
     if (tonumber(x) ~= nil) then DL:AddText({ x + (padx or 0) + 1, y + 1 }, SHADOW, tostring(text)) end
 end
--- wpn cell: its text in the melee mode's colour, then a dot for /wsset high (purple) and /hoxne (bronze).
--- Every meaning its own colour (HUD and bar alike); where hues run out a dot is a ring instead of filled.
-local COL_MELEE = { Default = { 0.80, 0.80, 0.84, 1.0 }, Acc = { 0.25, 0.88, 1.00, 1.0 }, SubtleBlow = { 0.94, 0.35, 0.90, 1.0 } }; -- Base grey-white (a default), Acc cyan, SB magenta
-local COL_MELEE_MORE = { { 0.71, 0.94, 0.35, 1.0 }, { 1.00, 0.59, 0.55, 1.0 }, { 0.55, 0.74, 1.00, 1.0 } }; -- a job file's own modes: lime, salmon, periwinkle
-local COL_HIGHBUFF = { 0.65, 0.40, 1.00, 1.0 }; -- /wsset high dot: purple
-local COL_HOXNE = { 0.82, 0.63, 0.39, 1.0 };    -- /hoxne dot: bronze
+-- Cells are the bar's pills (gcdisplay.Pill), in the bar's colours (gcdisplay.ModeKind): set, outlined and tinted with a
+-- solid dot; at its default, dashed grey with a ring and '-'. The wpn pill takes the melee mode's colour, then a dot for
+-- /wsset high (purple) and /hoxne (bronze). Windower: the text in those colours.
 local DOTSP = 8; -- px per wpn dot
-local function melee_col(mode)
-    if (COL_MELEE[mode] ~= nil) then return COL_MELEE[mode] end
-    local n = 0;
-    for i = 1, #mode do n = n + string.byte(mode, i) end
-    return COL_MELEE_MORE[(n % #COL_MELEE_MORE) + 1];
+local LEAD, PLAIN_LEAD, TAIL = 13, 5, 5; -- as gcdisplay's pills: px to the text (past the dot), without a dot, after it
+local COL_RING = { 0.50, 0.50, 0.56, 0.60 }; -- a state that is off
+local function melee_col(mode) -- the melee mode's colour; nil at Base
+    local kind, col = disp.ModeKind('MeleeSet', mode);
+    return (kind == 'set') and col or nil;
 end
 local COL_NAME = { 0.93, 0.93, 0.96, 1.0 };     -- white: SIR/TH/Kite/PROC colours stand out
--- SIR, TH, Kite, PROC: a dot each left of the name, always in this order (Windower: the name takes the first one's
--- colour). The rest of the toggles (harp, song lock, death...) have no place on the HUD: their changes come in as chat lines.
-local NAME_STATES = { { 'SIR', 'SIR', { 0.24, 0.82, 0.71, 1.0 } }, { 'TH', 'TH', { 0.95, 0.85, 0.35, 1.0 }, true },
-    { 'Kite', 'Kite', { 0.35, 0.95, 0.45, 1.0 } }, { 'PROC', 'PROC', { 1.00, 0.35, 0.35, 1.0 } } }; -- teal, gold ring (4th: ring), green, red
+-- SIR, TH, Kite, PROC: a spot each left of the name, always in this order: a dot in its colour when on, a grey ring when
+-- off; click one to toggle it (Windower: the name takes the first one's colour). The rest of the toggles (harp, song
+-- lock, death...) are on the detail line (click the name); their changes also come in as chat lines.
+local NAME_STATES = { { 'SIR', 'SIR', { 0.24, 0.82, 0.71, 1.0 } }, { 'TH', 'TH', { 0.95, 0.85, 0.35, 1.0 } },
+    { 'Kite', 'Kite', { 0.35, 0.95, 0.45, 1.0 } }, { 'PROC', 'PROC', { 1.00, 0.35, 0.35, 1.0 } } }; -- teal, gold, green, red
 local COL_JOB = { 0.60, 0.65, 0.75, 1.0 };
 local COL_KEY = { 0.78, 0.82, 0.90, 1.0 };     -- headers
 
@@ -565,6 +563,7 @@ local function toggle_cell(row, key)
         def = def,
         col = on and (def and COL_ON_DEF or COL_ON) or (def and COL_OFF or COL_OFF_CHG),
         cmd = cmd,
+        kind = on and 'set' or 'def', pcol = disp.ToggleColor(key), -- its pill (the detail line)
     };
 end
 
@@ -580,7 +579,9 @@ local function cell_text(key, value)
     if (key == 'MeleeSet') and (value == 'Default') then value = 'Base' end
     if (EMPTY[string.lower(value)] == true) or (DASH_DEFAULT[key] and (value == 'Default')) then return '-' end
     local short = SHORT_VALUE[key] and SHORT_VALUE[key][value];
-    return (style().name == nil) and (user_abbr(value) or value) or (short or abbr(value, SLOT_PICK[key]));
+    if (short ~= nil) then return short end
+    local t = (style().name == nil) and (user_abbr(value) or value) or abbr(value, SLOT_PICK[key]);
+    return SLOT_PICK[key] and t or string.lower(t); -- modes lower case, as the bar's; weapons as typed
 end
 
 local function cycle_cell(row, key)
@@ -589,12 +590,14 @@ local function cycle_cell(row, key)
     local value, def = strip_default(raw);
     if (key == 'MeleeSet') and (value == 'Default') then value = 'Base' end -- the melee mode Default reads Base
     local empty = (EMPTY[string.lower(value)] == true) or (DASH_DEFAULT[key] == true) and (value == 'Default');
+    local kind, pcol = disp.ModeKind(key, (value == 'Base') and 'Default' or value);
     local cmd = gchud.CycleCommands[key];
     return {
-        text = cell_text(key, value), -- large: full value
-        col = empty and COL_EMPTY or (def and COL_VAL_DEF or COL_VAL),
+        text = (kind == 'def') and '-' or cell_text(key, value), -- large: full value
+        col = (kind == 'set') and pcol or ((empty or (kind == 'def')) and COL_EMPTY or (def and COL_VAL_DEF or COL_VAL)),
         cmd = cmd,
-        empty = empty,
+        empty = empty or (kind == 'def'),
+        kind = kind, pcol = pcol, dim = empty, -- its pill; a weapon slot at None: plain, its '-' dim
     };
 end
 
@@ -622,18 +625,46 @@ local function group_cell(row, key)
             end
         end
         if not any then return nil end
-        local text = (#on == 0) and '-' or (on[1] .. ((#on > 1) and '+' or ''));
+        local text = (#on == 0) and '-' or string.lower(on[1] .. ((#on > 1) and '+' or ''));
         return {
             text = text,
             col = (#on > 0) and (COL_DEF[on[1]] or COL_ON) or (alldef and COL_EMPTY or COL_OFF_CHG),
             cmd = 'def',
             def = alldef,
+            kind = (#on > 0) and 'set' or 'def', pcol = (#on > 0) and (COL_DEF[on[1]] or COL_ON) or nil,
         };
     end
     return nil;
 end
 
-local function draw_cell(row, key, c)
+local function ptext(x, y, col, text) -- pill text, on its shadow
+    if (SHADOW ~= nil) then DL:AddText({ x + 1, y + 1 }, SHADOW, text) end
+    DL:AddText({ x, y }, imgui.GetColorU32(col), text);
+end
+
+-- Ashita: the cell as a pill, w wide (a grid column's; else its text's), its text lead px in (the column's).
+local function draw_cell(row, key, c, w, lead)
+    if (DL ~= nil) and (c.kind ~= nil) then
+        lead = lead or ((c.kind == 'plain') and PLAIN_LEAD or LEAD);
+        local lh = imgui.GetTextLineHeight();
+        local tw = c.w or textw(c.text);
+        w = w or math.floor(lead + tw + TAIL + ((c.dots ~= nil) and (#c.dots * DOTSP + 2) or 0) + 0.5);
+        local x, y = pair(imgui.GetCursorScreenPos());
+        c.id = c.id or ('##' .. row.Name .. key); -- cells live until the next read, so built once
+        local clicked = imgui.Button(c.id, { w, lh });
+        if (x ~= nil) and (y ~= nil) then
+            disp.Pill(DL, x, y + 1, x + w, y + lh - 1, c.kind, c.pcol);
+            ptext(x + lead, y, ((c.kind == 'def') or c.dim) and disp.COL_PILL_DIM or disp.COL_PILL_TEXT, c.text);
+            for j, dc in ipairs(c.dots or {}) do -- wpn: /wsset high, /hoxne
+                DL:AddCircleFilled({ x + lead + tw + 2 + DOTSP * (j - 1) + DOTSP / 2, y + lh / 2 }, 3, imgui.GetColorU32(dc), 12);
+            end
+        end
+        if clicked and (c.cmd ~= nil) then
+            local ok, ctrl = pcall(function() return imgui.GetIO().KeyCtrl end);
+            send(row.Name, (ok and ctrl and c.ctrlCmd) or c.cmd);
+        end
+        return;
+    end
     shadow(c.text, (c.cmd ~= nil) and ((style().frame or { 0 })[1] or 0) or 0);
     imgui.PushStyleColor(ImGuiCol_Text, c.col);
     local clicked = false;
@@ -676,7 +707,7 @@ end
 
 -- Cells, visible columns and widths depend only on the rows (re-read every 0.5s), the style, the text
 -- scale and the window origin, so they are built when one of those changes, not every frame.
-local FIXED_TEXT = { Def = 'Amin+' }; -- widest text those cells can show
+local FIXED_TEXT = { Def = 'amin+' }; -- widest text those cells can show
 local widthUnit, widthMax = nil, {};
 local function build_grid(x0)
     local ccols = columns('CycleOrder', gchud.CycleOrder);
@@ -709,16 +740,17 @@ local function build_grid(x0)
             end
             if picked then w.text = w.text .. '+' end -- a slot pick changed
             local mm = (row.Cycles.MeleeSet ~= nil) and strip_default(row.Cycles.MeleeSet) or 'Default';
-            if not w.empty then w.col = melee_col(mm) end
+            local mcol = melee_col(mm);
+            w.kind, w.pcol = 'plain', mcol; -- the pill in the melee mode's colour (grey at Base)
+            if not w.empty then w.col = mcol or COL_VAL_DEF end
             if (row.Cycles.MeleeSet ~= nil) then w.ctrlCmd = 'mset' end -- ctrl+click: /mset
             w.dots = {};
-            if (strip_default(row.Cycles.WsSet or '') == 'High') then
-                w.dots[#w.dots + 1] = COL_HIGHBUFF;
-            end
+            local ws = strip_default(row.Cycles.WsSet or '');
+            local wk, wcol = disp.ModeKind('WsSet', ws);
+            if (ws ~= '') and (wk == 'set') then w.dots[#w.dots + 1] = wcol end
             local hx = strip_default(row.Cycles.Hoxne or '');
-            if (hx ~= '') and (EMPTY[string.lower(hx)] ~= true) then
-                w.dots[#w.dots + 1] = COL_HOXNE;
-            end
+            local hk, hcol = disp.ModeKind('Hoxne', hx);
+            if (hx ~= '') and (hk == 'set') then w.dots[#w.dots + 1] = hcol end
         end
         for _, k in ipairs(tcols) do cells[i].t[k] = toggle_cell(row, k) end
         cells[i].g = {};
@@ -743,6 +775,7 @@ local function build_grid(x0)
     local gap = textw(string.rep(' ', style().gap));
     local nameW = 0;
     for _, row in ipairs(view) do nameW = math.max(nameW, textw(short_name(row.Name)) + PADX * 2) end
+    if (DL ~= nil) then nameW = nameW - PADX * 2 + PLAIN_LEAD + TAIL end -- the name pill
     local cols = {};
     local x = x0 + nameW + gap;
     local divs = { x0 + nameW + gap / 2 }; -- thin section lines, as the bar's: after the names, before def
@@ -771,7 +804,12 @@ local function build_grid(x0)
     for _, k in ipairs(tvis) do measure(k, 't', true) end
     for i, col in ipairs(cols) do
         local flag = (col.kind == 't'); -- one-letter flags sit side by side
-        if (not flag) then col.w = col.w + PADX * 2 end
+        if (not flag) and (DL ~= nil) then -- a pill: dot, text, tail (no dot where the value is always something)
+            col.lead = ((col.kind == 'c') and (disp.ModeKind(col.key, '') == 'plain')) and PLAIN_LEAD or LEAD;
+            col.w = math.floor(col.lead + col.w + TAIL + 0.5);
+        elseif (not flag) then
+            col.w, col.lead = col.w + PADX * 2, PADX;
+        end
         if (i == ngrid + 1) then divs[#divs + 1] = x; x = x + gap end -- group gap, a line in it
         if flag and (i > 1) and (cols[i - 1].kind ~= 't') then x = x + gap end -- before the flags
         col.x = x;
@@ -781,12 +819,18 @@ local function build_grid(x0)
     local nameIds, info = {}, {};
     for i, row in ipairs(view) do
         local short = short_name(row.Name);
-        nameIds[i] = short .. '##' .. row.Name .. 'row';
+        nameIds[i] = ((DL ~= nil) and '' or short) .. '##' .. row.Name .. 'row';
         local main = string.match(tostring(row.Job or ''), '^(%a+)');
+        local sub = string.match(tostring(row.Job or ''), '/(%a+)');
         local jobcol = (main ~= nil) and (type(disp.JobColor) == 'function') and disp.JobColor(main) or nil;
-        local r = { lname = string.lower(row.Name), short = short, states = {}, on = {}, first = nil, jobcol = jobcol };
+        local subcol = (sub ~= nil) and (type(disp.JobColor) == 'function') and disp.JobColor(sub) or nil;
+        local r = { lname = string.lower(row.Name), short = short, states = {}, on = {}, first = nil, jobcol = jobcol, subcol = subcol,
+            has = {}, dotIds = {} };
         for _, st in ipairs(NAME_STATES) do
-            if (part(row, st[1]) == true) then
+            local v = part(row, st[1]);
+            r.has[st[1]] = (v ~= nil);
+            r.dotIds[st[1]] = '##' .. row.Name .. 'st' .. st[1];
+            if (v == true) then
                 r.first = r.first or st[3];
                 r.states[#r.states + 1] = st[2];
                 r.on[st[1]] = true;
@@ -794,7 +838,7 @@ local function build_grid(x0)
         end
         info[i] = r;
     end
-    return { view = view, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds, info = info, divs = divs,
+    return { view = view, style = style_name(), x0 = x0, cells = cells, cols = cols, nameIds = nameIds, info = info, divs = divs, nameW = nameW,
         ccols = ccols, tcols = tcols, shown = shown, gshown = gshown, tshown = tshown };
 end
 
@@ -863,15 +907,14 @@ local function body(scale)
             for p, st in ipairs(slotStates) do
                 local c = st[3];
                 local at = { wx + x0 - DOTW / 2 - 1 - DOTSTEP * (slots - p), hy + lh / 2 };
-                local ghost = u32({ c[1], c[2], c[3], 0.35 });
-                if st[4] then dl:AddCircle(at, 2.5, ghost, 12, 1.5) else dl:AddCircleFilled(at, 3, ghost, 12) end
+                dl:AddCircleFilled(at, 3, u32({ c[1], c[2], c[3], 0.40 }), 12); -- the key: each state's colour
             end
         end
     end
     imgui.PushStyleColor(ImGuiCol_Text, COL_HEAD);
     for i, col in ipairs(cols) do
         at(col, col.labelW, i == 1);
-        if not col.center then imgui.SetCursorPosX(imgui.GetCursorPosX() + PADX) end
+        if not col.center then imgui.SetCursorPosX(imgui.GetCursorPosX() + (col.lead or PADX)) end -- over the cells' text
         shadow(col.label);
         imgui.Text(col.label);
     end
@@ -896,42 +939,52 @@ local function body(scale)
                 local fy, sy = (style().frame or { 0, 0 })[2] or 0, (style().spacing or { 0, 0 })[2] or 0;
                 dl:AddRectFilled({ wx, ry - sy / 2 }, { wx + ww, ry + lh + fy * 2 + sy / 2 }, u32(COL_OWN_BAND), 0);
             end
-            if (rx ~= nil) then -- SIR, TH, Kite, PROC from the left, each in its own spot (as the header's ghosts)
+            if (rx ~= nil) and (slots > 0) then -- SIR, TH, Kite, PROC from the left, each in its own spot (as the header's key)
+                local placedDot = false;
                 for p, st in ipairs(slotStates) do
-                    if ri.on[st[1]] then
-                        local at = { rx - DOTW / 2 - 1 - DOTSTEP * (slots - p), ry + lh / 2 };
-                        if st[4] then dl:AddCircle(at, 2.5, u32(st[3]), 12, 1.5) else dl:AddCircleFilled(at, 3, u32(st[3]), 12) end
+                    local cx = x0 - DOTW / 2 - 1 - DOTSTEP * (slots - p); -- the spot's centre, window x
+                    if ri.has[st[1]] then -- a button under it: click to toggle
+                        if placedDot then imgui.SameLine(cx - DOTSTEP / 2) else imgui.SetCursorPosX(cx - DOTSTEP / 2) end
+                        placedDot = true;
+                        if imgui.Button(ri.dotIds[st[1]], { DOTSTEP, lh }) and (gchud.ToggleCommands[st[1]] ~= nil) then
+                            send(row.Name, gchud.ToggleCommands[st[1]]);
+                        end
+                        local at = { rx - (x0 - cx), ry + lh / 2 };
+                        if ri.on[st[1]] then dl:AddCircleFilled(at, 3, u32(st[3]), 12) else dl:AddCircle(at, 2.6, u32(COL_RING), 12, 1.2) end
                     end
                 end
+                if placedDot then imgui.SameLine(x0) else imgui.SetCursorPosX(x0) end
             end
             ncol = ri.jobcol or COL_NAME; -- the main job's colour, as on the bar
         elseif own and (#states == 0) then
             ncol = COL_OWN_NAME; -- Windower: the name shows the state, else gold for yours
         end
-        shadow(ri.short, (style().frame or { 0 })[1] or 0);
-        imgui.PushStyleColor(ImGuiCol_Text, ncol);
-        local clicked = imgui.SmallButton(g.nameIds[i]);
-        imgui.PopStyleColor();
+        local clicked;
+        if (dl ~= nil) then -- the name pill: outlined main job | sub job, as the bar's job box
+            local nx, ny = pair(imgui.GetCursorScreenPos());
+            clicked = imgui.Button(g.nameIds[i], { g.nameW, lh });
+            if (nx ~= nil) and (ny ~= nil) then
+                local mc = ri.jobcol or COL_NAME;
+                disp.SplitOutline(dl, nx, ny + 1, nx + g.nameW, ny + lh - 1, nx + g.nameW / 2, mc, ri.subcol or mc);
+                ptext(nx + PLAIN_LEAD, ny, ncol, ri.short);
+            end
+        else
+            shadow(ri.short, (style().frame or { 0 })[1] or 0);
+            imgui.PushStyleColor(ImGuiCol_Text, ncol);
+            clicked = imgui.SmallButton(g.nameIds[i]);
+            imgui.PopStyleColor();
+        end
         for _, col in ipairs(cols) do
             local c = cells[i][col.kind][col.key];
             if (c ~= nil) then
                 at(col, c.w + PADX * 2, false);
-                draw_cell(row, col.key, c);
-                if (c.dots ~= nil) and (#c.dots > 0) then -- wpn: /wsset high, /hoxne
-                    local x2, y2, y1, _;
-                    if (imgui.GetItemRectMax ~= nil) and (imgui.GetItemRectMin ~= nil) then
-                        x2, y2 = pair(imgui.GetItemRectMax());
-                        _, y1 = pair(imgui.GetItemRectMin());
-                    end
-                    if (dl ~= nil) and (x2 ~= nil) and (y1 ~= nil) then
-                        for j, dc in ipairs(c.dots) do dl:AddCircleFilled({ x2 + 1 + DOTSP * (j - 1) + DOTSP / 2, (y1 + y2) / 2 }, 3, u32(dc), 12) end
-                    else
-                        for _, dc in ipairs(c.dots) do
-                            imgui.SameLine(0, 0);
-                            imgui.PushStyleColor(ImGuiCol_Text, dc);
-                            imgui.Text('o');
-                            imgui.PopStyleColor();
-                        end
+                draw_cell(row, col.key, c, (dl ~= nil) and col.w or nil, (dl ~= nil) and col.lead or nil);
+                if (dl == nil) and (c.dots ~= nil) then -- wpn: /wsset high, /hoxne (Ashita: in the pill)
+                    for _, dc in ipairs(c.dots) do
+                        imgui.SameLine(0, 0);
+                        imgui.PushStyleColor(ImGuiCol_Text, dc);
+                        imgui.Text('o');
+                        imgui.PopStyleColor();
                     end
                 end
             end
@@ -949,7 +1002,7 @@ local function body(scale)
                     imgui.PushStyleColor(ImGuiCol_Text, COL_KEY);
                     imgui.Text(label(k));
                     imgui.PopStyleColor();
-                    imgui.SameLine(0, 0);
+                    imgui.SameLine(0, (dl ~= nil) and 3 or 0);
                     draw_cell(row, k, c);
                 end
             end
@@ -960,7 +1013,7 @@ local function body(scale)
                     imgui.PushStyleColor(ImGuiCol_Text, COL_KEY);
                     imgui.Text(label(k));
                     imgui.PopStyleColor();
-                    imgui.SameLine(0, 0);
+                    imgui.SameLine(0, (dl ~= nil) and 3 or 0);
                     draw_cell(row, k, c);
                 end
             end
@@ -968,7 +1021,7 @@ local function body(scale)
                 local c = cells[i].t[k];
                 if (c ~= nil) and not tshown[k] then
                     imgui.SameLine();
-                    c.alt = c.alt or { text = label(k), col = c.col, cmd = c.cmd };
+                    c.alt = c.alt or { text = label(k), col = c.col, cmd = c.cmd, kind = c.kind, pcol = c.pcol };
                     draw_cell(row, k, c.alt);
                 end
             end
@@ -1052,10 +1105,11 @@ local function render()
     imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, st.spacing);
     imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 10); -- as the bar: rounded, a soft 1px edge
     imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
-    -- clickable cells and names: plain text, no box (some themes give every button a 1px frame), a soft pill on hover
+    -- cells, names and state spots: borderless buttons under their drawn pills (some themes give every button a 1px
+    -- frame); hovered, a soft fill as round as the pill
     local styleVars = 5;
     if (ImGuiStyleVar_FrameBorderSize ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0); styleVars = styleVars + 1 end
-    if (ImGuiStyleVar_FrameRounding ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FrameRounding, 4); styleVars = styleVars + 1 end
+    if (ImGuiStyleVar_FrameRounding ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FrameRounding, 7); styleVars = styleVars + 1 end
     imgui.PushStyleColor(ImGuiCol_Button, COL_CLEAR);
     imgui.PushStyleColor(ImGuiCol_ButtonHovered, COL_HOVER);
     imgui.PushStyleColor(ImGuiCol_ButtonActive, COL_HOVER);
