@@ -157,6 +157,7 @@
 		HUDGrow = 'auto'; -- which way they drop: 'down', 'up' (your bar stays put, they rise above it), or 'auto' = up in the bottom half of the screen
 		HUDAlpha = 0.70; -- bar background opacity, 0 = none
 		HUDAbbr = {}; -- extra short names you can type for a value, e.g. { ['Carnwenhan'] = 'Carn' } (/wm carn)
+		WeaponClass = {}; -- the bar's weapon colour for items it doesn't know: { ['Item Name'] = 'tpbonus' } (relic mythic empyrean prime aeonic tpbonus)
 		Validate = true; -- cancel spells/abilities/WS that would fail: KO, sleep/stun/petrify/terror/charm, mute, silence, recast, MP, stratagems, Waltz TP, amnesia
 		ValidateMP = true; -- the MP part; gear "MP cost -%" isn't counted, so turn off if it stops casts that would go off
 		WaltzTPCut = 0; -- total "Waltz TP cost" reduction on your Waltz gear, in TP
