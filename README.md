@@ -260,7 +260,7 @@ Every cell is a **pill**, as on the status bar: **set** = outlined and tinted in
 | Part | Shows | Click |
 |---|---|---|
 | States | SIR teal, TH gold, Kite green, PROC red; each always in its own spot: dot = on, grey ring = off. Header dots = the colour key | toggles it |
-| Name | the box (4 letters in compact), outlined main job \| sub job in their colours; your row on a faint band | detail line: job + the modes and toggles not shown |
+| Name | the box (4 letters in compact): first half of its letters in the main job's colour, the rest in the sub job's, outlined the same; your row on a faint band | detail line: job + the modes and toggles not shown |
 | `wpn` | weapon mode (main pick if the job has none). `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Pill colour = `/mset`: grey Base, cyan acc, magenta sb (own modes: lime, salmon, periwinkle). Dots in it: purple `/wsset high`, bronze `/hoxne` | `/wm`; ctrl+click `/mset` |
 | `ra` | `/rangedset`: `acc` cyan | `/rangedset` |
 | `idle` | `/idleset`: `mp` blue (Refresh), `hp` green (Regen), `tp` yellow (Regain) | `/idleset` |
@@ -274,8 +274,9 @@ Blank = that job has no such mode. Thin lines split names | modes | `def`.
 - **Open:** `/gchud`; `/gchud large|compact` (large: bigger text, full names); `/gchud pos X Y` or drag (kept on
   screen; within 8px of the top or bottom it snaps flush); `/gchud debug`. `HUDOwners` boxes open it with every
   box; other boxes see their own row (empty list: everyone sees all).
-- Mouse away: your row only, with just its columns; over: all (`HUDHover`). Opens upward in the screen's bottom
-  half (`HUDGrow`).
+- **Your own row** is left out while this box's `/gcbar` is on (the bar shows it) and other boxes report: mouse
+  away, just the header; over, the other boxes. Bar off or alone: mouse away, your row only; over, all
+  (`HUDHover`). Opens upward in the screen's bottom half, the header (or your row) staying at the bottom (`HUDGrow`).
 - Fixed width: every column a shown box's job has stays. Compact: names that fit show whole (wpn 6 letters, others
   5), else `DP` `Max` `GH` `KC` or 4 letters (`HUDAbbr` to set your own).
 - The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).

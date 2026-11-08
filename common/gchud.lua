@@ -684,6 +684,9 @@ end
 -- Keys present on any box: canonical order first, then the rest as they appear.
 local view = {}; -- the rows the grid is built from (all of them)
 local collapsedView, hoverUntil = false, 0; -- collapsed: only this box's line is drawn, in the full grid's columns
+-- This box's row is left out while its /gcbar shows the same and other boxes report: collapsed, just the header (the
+-- other boxes' columns, so opening doesn't jump); opening upward, the header stays at the bottom, the rows above it.
+local hideSelf, headerOnly, selfSrc, selfView = false, false, nil, nil;
 local growUp, homeH, collapsedFrames = false, nil, 0; -- grows up: own line stays at the bottom; homeH = its height
 local revSrc, revView = nil, {};
 local ownSrc, ownView = nil, nil; -- collapsed: just this box's row, so the grid takes only its columns
@@ -824,8 +827,10 @@ local function build_grid(x0)
         local sub = string.match(tostring(row.Job or ''), '/(%a+)');
         local jobcol = (main ~= nil) and (type(disp.JobColor) == 'function') and disp.JobColor(main) or nil;
         local subcol = (sub ~= nil) and (type(disp.JobColor) == 'function') and disp.JobColor(sub) or nil;
+        local half = math.ceil(#short / 2);
         local r = { lname = string.lower(row.Name), short = short, states = {}, on = {}, first = nil, jobcol = jobcol, subcol = subcol,
-            has = {}, dotIds = {} };
+            has = {}, dotIds = {}, left = string.sub(short, 1, half), right = string.sub(short, half + 1) };
+        r.leftW = textw(r.left);
         for _, st in ipairs(NAME_STATES) do
             local v = part(row, st[1]);
             r.has[st[1]] = (v ~= nil);
@@ -886,13 +891,18 @@ local function body(scale)
     local function u32(c) return imgui.GetColorU32(c) end
     local lh = (dl ~= nil) and imgui.GetTextLineHeight() or nil;
 
-    -- header (also over the owner's one-line view), on a soft blue fade from the window's top
-    do
+    -- header (also over the owner's one-line view), on a soft blue fade from the window's edge it sits on
+    local function header(atBottom)
     if (dl ~= nil) and (wx ~= nil) and (ww ~= nil) then
         local _, cy = pair(imgui.GetCursorScreenPos());
+        local _, wh = pair(win_size());
         if (cy ~= nil) then
             local top, bot = u32(COL_FADE_TOP), u32(COL_FADE_BOT);
-            dl:AddRectFilledMultiColor({ wx, wy }, { wx + ww, cy + lh + 2 }, top, top, bot, bot);
+            if not atBottom then
+                dl:AddRectFilledMultiColor({ wx, wy }, { wx + ww, cy + lh + 2 }, top, top, bot, bot);
+            elseif (wh ~= nil) then
+                dl:AddRectFilledMultiColor({ wx, cy - 2 }, { wx + ww, wy + wh }, bot, bot, top, top);
+            end
         end
     end
     if (dl ~= nil) and (wx ~= nil) and (#cols > 0) then
@@ -920,6 +930,8 @@ local function body(scale)
     end
     imgui.PopStyleColor();
     end
+    local headerLast = growUp and hideSelf;
+    if not headerLast then header(false) end
 
     -- rows
     local party = AshitaCore:GetMemoryManager():GetParty();
@@ -928,7 +940,7 @@ local function body(scale)
     for i, row in ipairs(view) do
       local ri = g.info[i];
       local own = (mine ~= nil) and (ri.lname == mine);
-      if not collapsedView or own then
+      if (not headerOnly) and (not collapsedView or own) then
         local open = (expanded[row.Name] == true);
         imgui.SetCursorPosX(x0);
         local states = ri.states;
@@ -963,10 +975,13 @@ local function body(scale)
         if (dl ~= nil) then -- the name pill: outlined main job | sub job, as the bar's job box
             local nx, ny = pair(imgui.GetCursorScreenPos());
             clicked = imgui.Button(g.nameIds[i], { g.nameW, lh });
-            if (nx ~= nil) and (ny ~= nil) then
+            if (nx ~= nil) and (ny ~= nil) then -- first half of the letters in the main job's colour, the rest the sub's
                 local mc = ri.jobcol or COL_NAME;
-                disp.SplitOutline(dl, nx, ny + 1, nx + g.nameW, ny + lh - 1, nx + g.nameW / 2, mc, ri.subcol or mc);
-                ptext(nx + PLAIN_LEAD, ny, ncol, ri.short);
+                local sc = ri.subcol or mc;
+                local split = nx + PLAIN_LEAD + ri.leftW;
+                disp.SplitOutline(dl, nx, ny + 1, nx + g.nameW, ny + lh - 1, split, mc, sc);
+                ptext(nx + PLAIN_LEAD, ny, mc, ri.left);
+                if (ri.right ~= '') then ptext(split, ny, sc, ri.right) end
             end
         else
             shadow(ri.short, (style().frame or { 0 })[1] or 0);
@@ -1029,6 +1044,7 @@ local function body(scale)
         if clicked then expanded[row.Name] = not open end
       end
     end
+    if headerLast then header(true) end
     track_drag();
 end
 
@@ -1137,7 +1153,23 @@ local function render()
         else
             view = rows;
         end
-        if collapsedView then
+        hideSelf, headerOnly = false, false;
+        if (inc.settings.DisplayBar == true) and (#rows > 1) then -- this box's bar shows its modes: leave its row out
+            if (selfSrc ~= view) then
+                selfSrc, selfView = view, nil;
+                local party = AshitaCore:GetMemoryManager():GetParty();
+                local mine = (party ~= nil) and string.lower(tostring(party:GetMemberName(0) or '')) or '';
+                local others, found = {}, false;
+                for _, r in ipairs(view) do
+                    if (string.lower(r.Name) == mine) then found = true else others[#others + 1] = r end
+                end
+                if found and (#others > 0) then selfView = others end
+            end
+            if (selfView ~= nil) then view, hideSelf = selfView, true end
+        end
+        if collapsedView and hideSelf then
+            headerOnly = true; -- just the header, in the other boxes' columns
+        elseif collapsedView then
             if (ownSrc ~= view) then
                 ownSrc, ownView = view, nil;
                 local party = AshitaCore:GetMemoryManager():GetParty();
