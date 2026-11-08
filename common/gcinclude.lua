@@ -355,6 +355,12 @@ end
 
 	function gcinclude.HandleCommands(args)
 		if (type(args[1]) == 'string') then args[1] = string.lower(args[1]) end -- //gs c MeleeSet works too
+		local clicked = false; -- gcclick <command>: a click on the bar or a dropped line; always says the new value in chat
+		if (args[1] == 'gcclick') then
+			table.remove(args, 1);
+			clicked = true;
+			if (type(args[1]) == 'string') then args[1] = string.lower(args[1]) end
+		end
 		if not gcinclude.AliasList:contains(args[1]) then return end
 
 		local player = gData.GetPlayer();
@@ -617,7 +623,7 @@ end
 			end
 		end
 
-		if gcinclude.settings.Messages then
+		if gcinclude.settings.Messages or clicked then
 			gcinclude.Message(toggle, status)
 		end
 	end
