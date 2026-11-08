@@ -171,7 +171,7 @@ THTracker loaded use `//subset` / `//gs c th`.
 | `/warpring` `/mea` `/holla` `/dem` `/ontic` `/shard` `/gctemps` | Warp/dim rings, exit items, Escha drinks |
 | `/capacity` `/jubilee` `/dynamisrp` | Hold cape / Jubilee Ring / Dynamis neck |
 | `/ejenter [chamber]` `/ejlamps` `/ejexit` | Einherjar (Ashita) |
-| `/tankset` `/proc` `/pupmode` | PLD RUN tank set / SAM NIN proc / PUP mode |
+| `/tankset` `/proc` `/pupmode` | PLD RUN tank set / `Proc` set, every job / PUP mode |
 | `/forcestring` `/songlock` `/cormsg` `/xiroll` `/siphon` | BRD / COR / SMN |
 | `/gchud` `/gcbar` | HUD / status bar (below) |
 | `/gcmodes [all]` | Modes in chat |
@@ -248,25 +248,28 @@ reads them twice a second (Ashita `luashitacast/hud/`, Windower IPC).
 
 ![The HUD, compact style](docs/hud.png)
 
-Alba: `/rangedset acc`. Bryn: `/sir`, `/wsset high`. Cora: you (band), `/th`. Dain: `/mset acc`, a slot pick (`+`),
-`/idleset refresh` (`MP`), DT. Elle: `/mset sb`, `/hoxne`, `/nukeset oa` + `/burst` (`OA*`). Names in job colour.
+Alba: `/mset acc`, `/wsset high`, `/rangedset acc`, `/th`, DT. Bryn: `/sir`, `/idleset refresh` (`mp`), `/nukeset oa`
++ `/burst` (`oa*`), Aminon. Cora: you (band), `/mset sb`. Dain: a slot pick (`+`), `/idleset regen`, `/nukeset macc`,
+`/kite`. Elle: `/hoxne`, `/idleset regain`, MDT, `/proc`.
+
+Every cell is a **pill**, as on the status bar: **set** = outlined and tinted in its colour, with a solid dot;
+**default** = dashed grey outline, a ring and `-`. Click any pill, name or state spot: it drives that box.
 
 **Schema**, left to right (no tooltips: this is the key):
 
 | Part | Shows | Click |
 |---|---|---|
-| Dots | SIR teal, TH gold ring, Kite green, PROC red; each always in its own spot. Faint in the header = the spot; empty on a row = off | |
-| Name | the box (4 letters in compact), in its main job's colour; your row on a faint band | detail line: job + the modes not shown |
-| `wpn` | weapon mode (main pick if the job has none). `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Text colour = `/mset`: grey-white Base, cyan Acc, magenta SB (own modes: lime, salmon, periwinkle). Dots after: purple `/wsset high`, bronze `/hoxne` | `/wm`; ctrl+click `/mset` |
-| `ra` | `/rangedset` (`Acc`) | `/rangedset` |
-| `idle` | `/idleset`: `MP` Refresh, `HP` Regen, `TP` Regain | `/idleset` |
-| `nuke` | `/nukeset` (`OA` = Occult Acumen); `*` after = `/burst` | `/nukeset` |
+| States | SIR teal, TH gold, Kite green, PROC red; each always in its own spot: dot = on, grey ring = off. Header dots = the colour key | toggles it |
+| Name | the box (4 letters in compact), outlined main job \| sub job in their colours; your row on a faint band | detail line: job + the modes and toggles not shown |
+| `wpn` | weapon mode (main pick if the job has none). `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Pill colour = `/mset`: grey Base, cyan acc, magenta sb (own modes: lime, salmon, periwinkle). Dots in it: purple `/wsset high`, bronze `/hoxne` | `/wm`; ctrl+click `/mset` |
+| `ra` | `/rangedset`: `acc` cyan | `/rangedset` |
+| `idle` | `/idleset`: `mp` blue (Refresh), `hp` green (Regen), `tp` yellow (Regain) | `/idleset` |
+| `nuke` | `/nukeset`: `macc` teal, `oa` salmon (Occult Acumen); `*` after = `/burst` | `/nukeset` |
 | `elem` `w` | BLM SCH element / weapon | `/elecycle` / `/weapon` |
-| `tank` `pup` | `/tankset` / `/pupmode` | same |
-| `def` | `DT` orange, `MDT` blue, `Amin` mauve; `+` = more than one | `/def` |
+| `tank` `pup` | `/tankset`: `main` periwinkle, `meva` lime / `/pupmode` | same |
+| `def` | `dt` orange, `mdt` blue, `amin` mauve; `+` = more than one | `/def` |
 
-**Values:** gold = changed since load, grey-white = its load default, faint `-` = none/off, blank = that job has no
-such mode. Thin lines split names | modes | `def`.
+Blank = that job has no such mode. Thin lines split names | modes | `def`.
 
 - **Open:** `/gchud`; `/gchud large|compact` (large: bigger text, full names); `/gchud pos X Y` or drag (kept on
   screen; within 8px of the top or bottom it snaps flush); `/gchud debug`. `HUDOwners` boxes open it with every
@@ -278,8 +281,8 @@ such mode. Thin lines split names | modes | `def`.
 - The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).
 - Settings: `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDX` `HUDY` `HUDStyle` `HUDScale` `HUDScaleLarge`
   `HUDAlpha` `HUDAbbr` `HUDLabels`.
-- Windower: no shapes. The name takes the first dot's colour, yours is gold, else the job's; `wpn` dots are a
-  coloured `o`.
+- Windower: no shapes. Values in their colours (`-` grey); the name takes the first state's colour, yours is gold,
+  else the job's; `wpn` dots are a coloured `o`.
 
 ## Status bar
 
@@ -287,17 +290,19 @@ This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `Displa
 
 ![The status bar](docs/gcbar.png)
 
-- **Job**, `Atk` and `Def` (Ashita) | **modes that are set** | **toggles that are on** as dots.
-- **Click** a value or a toggle's name: cycles it on this box, as the HUD's cells (ctrl+click `wpn`: `/mset`).
+- **Job**, `Atk` and `Def` (Ashita) | **weapon and modes** | **`def` and toggles**, every one a pill, as the HUD's:
+  set = its colour, tint and a solid dot, showing the value (`acc`, `high`, `mp`, `oa`, `dt`...); default or off =
+  dashed grey, a ring, showing its name (`melee`, `ws`, `idle`, `nuke`, `ranged`, `hoxne`, `def`, `sir`, `th`,
+  `kite`, `proc`, + `burst` `death` / `harp` `lock`). The weapon pill is plain (`+` = a slot pick changed).
+- **Fixed width:** each pill as wide as its widest value, `Atk`/`Def` as 4 digits: cycling never moves the bar.
+- **Click** a pill: cycles it on this box, as the HUD's cells (ctrl+click the weapon: `/mset`).
+- Colours as the HUD's: melee `acc` cyan / `sb` magenta, ws `high` purple, idle `mp` blue / `hp` green / `tp` yellow,
+  nuke `macc` teal / `oa` salmon, ranged `racc` cyan, `hoxne` bronze, `dt` orange / `mdt` blue / `amin` mauve, `sir`
+  teal, `th` gold, `kite` green, `proc` red, `burst` pink.
 - Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its.
 - Dropped within 8px of the screen's top, the bar snaps flush to it.
-- `wpn` as the HUD's: `+` slot pick, colour `/mset`, purple dot `/wsset high`, bronze `/hoxne`. `idle`: MP HP TP;
-  `nuke`: OA for Occult Acumen.
-- A job without weapon modes (WHM...) shows `melee` and `wsset` by name, only once changed.
-- Dots: DT orange, MDT blue, Aminon mauve, SIR teal, Kite green, Burst pink, PROC red. Rings: TH gold, Harp teal,
-  Song lock purple, Death red.
-- Grows with what it shows. Windower: `|` and coloured names, no capsule, outline or dots (`wpn`'s are a coloured
-  `o`).
+- A job without weapon modes (WHM...) shows `melee`, `ws` and `hoxne` only once changed.
+- Windower: `|` and the words in their colours (grey = default/off), no capsule, outline or pills.
 
 ## How sets stack
 
@@ -322,6 +327,7 @@ obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` 
 | `Dt` `mdt` `Aminon` `SIR` `TH` `Movement` | their toggles; `TH` until tagged |
 | `Idle_Refresh` `Idle_Regen` `Idle_Regain` | `/idleset`; low MP/HP |
 | `Midshot_Acc` | `/rangedset acc` |
+| `Proc` `Ws_Proc` | `/proc`: engaged over your sets (`Dt` stays on top); on WS `Ws_Proc`, else `Proc` |
 | `Incapacitated` `Sleeping` | disabled / asleep (weapons pass the TP hold) |
 | `Absorb` `Absorb_TP` `LightBonus` | Absorb spells / Healing Magic |
 | `Buffs` `Buffs_Ws` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while the buff is up |
