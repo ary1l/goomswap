@@ -8,7 +8,7 @@ TH, obi and more on top. **Ashita v4** (LuAshitacast) and **Windower 4** (GearSw
 - **Defense:** `/def` (DT, MDT, Aminon), idle Regen/Refresh/DT by HP/MP, sleep/stun/doom/weakness sets.
 - **Casting:** TH until tagged, SIR, obi/Orpheus/ring/back, Moonshade, Burst gear on nukes in a live skillchain.
 - **Items:** packer (items and food on every job change), enchanted items, warp/dim rings, Hoxne Ampulla.
-- **Multibox:** one HUD for every box (click to drive it), status bar, Einherjar entry (`/ejenter`, Ashita).
+- **Multibox:** status bar with every other box dropped under it (click to drive any), Einherjar entry (`/ejenter`, Ashita).
 - **Checks:** failing actions cancelled with the reason; `/checksets`; `/gctrace`.
 
 ## Install
@@ -115,7 +115,7 @@ Most changed:
 | Setting | Default | Does |
 |---|---|---|
 | `Messages` | `false` | chat line on every mode change (`/gcmessages`) |
-| `HUDOwners` | `T{}` | boxes that open the HUD with every box |
+| `HUDOwners` | `T{}` | boxes whose bar drops the others in (the HUD) |
 | `Keybinds` | F-key layout | your keys (Keys); `T{}` none |
 | `LockstyleSet` | `nil` | lockstyle set put on after load/job change |
 | `RegenGearHPP` `RefreshGearMPP` `DTGearHPP` | 60 60 50 | auto `Idle_Regen` / `Idle_Refresh` / `Dt` below this %; 0 never |
@@ -173,7 +173,7 @@ THTracker loaded use `//subset` / `//gs c th`.
 | `/ejenter [chamber]` `/ejlamps` `/ejexit` | Einherjar (Ashita) |
 | `/tankset` `/proc` `/pupmode` | PLD RUN tank set / `Proc` set, every job / PUP mode |
 | `/forcestring` `/songlock` `/cormsg` `/xiroll` `/siphon` | BRD / COR / SMN |
-| `/gchud` `/gcbar` | HUD / status bar (below) |
+| `/gcbar` `/gchud` | Status bar / the other boxes dropped under it (below) |
 | `/gcmodes [all]` | Modes in chat |
 | `/checksets` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2) |
 | `/gcgear [JOB]` | Everything you own the job can wear → `gear_<JOB>.txt` (Ashita) |
@@ -241,68 +241,32 @@ Cancelled before gear moves, reason in chat (`Validate = false` off): KO, sleep/
 Silence, Amnesia (JA/WS), recast (`m:ss`), already casting, MP short (arts-adjusted; `ValidateMP`), stratagems,
 Waltz TP. Nothing is queued.
 
-## HUD
+## Status bar and HUD
 
-Every box's modes in one window. Each box saves its modes when they change (checked 4x/s); the box with it open
-reads them twice a second (Ashita `luashitacast/hud/`, Windower IPC).
+One window: this box's **bar**, and (the HUD) every other box **dropped in under it** while the mouse is over it.
+`/gcbar` (or `DisplayBar = true`) shows the bar; drag it (saved per character; within 8px of the top it snaps
+flush). `/gchud` turns the drop on (`HUDOwners` boxes: on at load; it also turns the bar on). Each box shares its
+modes when they change (checked 4x/s); the box with the drop reads them twice a second (Ashita
+`luashitacast/hud/`, Windower IPC).
 
-![The HUD, compact style](docs/hud.png)
+![The status bar with the HUD dropped](docs/gcbar.png)
 
-Alba: `/mset acc`, `/wsset high`, `/rangedset acc`, `/th`, DT. Bryn: `/sir`, `/idleset refresh` (`mp`), `/nukeset oa`
-+ `/burst` (`oa*`), Aminon. Cora: you (band), `/mset sb`. Dain: a slot pick (`+`), `/idleset regen`, `/nukeset macc`,
-`/kite`. Elle: `/hoxne`, `/idleset regain`, MDT, `/proc`.
-
-Every cell is a **pill**, as on the status bar: **set** = outlined and tinted in its colour, with a solid dot;
-**default** = dashed grey outline, a ring and `-`. Click any pill, name or state spot: it drives that box.
-
-**Schema**, left to right (no tooltips: this is the key):
-
-| Part | Shows | Click |
-|---|---|---|
-| States | SIR teal, TH gold, Kite green, PROC red; each always in its own spot: dot = on, grey ring = off. Header dots = the colour key | toggles it |
-| Name | the box (4 letters in compact): first half of its letters in the main job's colour, the rest in the sub job's, outlined the same; your row on a faint band | detail line: job + the modes and toggles not shown |
-| `wpn` | weapon mode (main pick if the job has none). `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed. Pill colour = `/mset`: grey Base, cyan acc, magenta sb (own modes: lime, salmon, periwinkle). Dots in it: purple `/wsset high`, bronze `/hoxne` | `/wm`; ctrl+click `/mset` |
-| `ra` | `/rangedset`: `acc` cyan | `/rangedset` |
-| `idle` | `/idleset`: `mp` blue (Refresh), `hp` green (Regen), `tp` yellow (Regain) | `/idleset` |
-| `nuke` | `/nukeset`: `macc` teal, `oa` salmon (Occult Acumen); `*` after = `/burst` | `/nukeset` |
-| `elem` `w` | BLM SCH element / weapon | `/elecycle` / `/weapon` |
-| `tank` `pup` | `/tankset`: `main` periwinkle, `meva` lime / `/pupmode` | same |
-| `def` | `dt` orange, `mdt` blue, `amin` mauve; `+` = more than one | `/def` |
-
-Blank = that job has no such mode. Thin lines split names | modes | `def`.
-
-- **Open:** `/gchud`; `/gchud large|compact` (large: bigger text, full names); `/gchud pos X Y` or drag (kept on
-  screen; within 8px of the top or bottom it snaps flush); `/gchud debug`. `HUDOwners` boxes open it with every
-  box; other boxes see their own row (empty list: everyone sees all).
-- **Your own row** is left out while this box's `/gcbar` is on (the bar shows it) and other boxes report: mouse
-  away, just the header; over, the other boxes. Bar off or alone: mouse away, your row only; over, all
-  (`HUDHover`). Opens upward in the screen's bottom half, the header (or your row) staying at the bottom (`HUDGrow`).
-- Fixed width: every column a shown box's job has stays. Compact: names that fit show whole (wpn 6 letters, others
-  5), else `DP` `Max` `GH` `KC` or 4 letters (`HUDAbbr` to set your own).
-- The owner shows other boxes' chat lines as `[Name]` (`HUDMessages`).
-- Settings: `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDX` `HUDY` `HUDStyle` `HUDScale` `HUDScaleLarge`
-  `HUDAlpha` `HUDAbbr` `HUDLabels`.
-- Windower: no shapes. Values in their colours (`-` grey); the name takes the first state's colour, yours is gold,
-  else the job's; `wpn` dots are a coloured `o`.
-
-## Status bar
-
-This box only. `/gcbar`, `/gcbar pos X Y` or drag (saved per character); `DisplayBar = true` on load.
-
-![The status bar](docs/gcbar.png)
-
-- **Job**, `Atk` and `Def` (Ashita) | **weapon and modes** | **`def` and toggles**, every one a pill, as the HUD's:
-  set = its colour, tint and a solid dot, showing the value (`acc`, `high`, `mp`, `oa`, `dt`...); default or off =
-  dashed grey, a ring, showing its name (`melee`, `ws`, `idle`, `nuke`, `ranged`, `hoxne`, `def`, `sir`, `th`,
-  `kite`, `proc`, + `burst` `death` / `harp` `lock`). The weapon pill is plain (`+` = a slot pick changed).
-- **Fixed width:** each pill as wide as its widest value, `Atk`/`Def` as 4 digits: cycling never moves the bar.
-- **Click** a pill: cycles it on this box, as the HUD's cells (ctrl+click the weapon: `/mset`).
-- Colours as the HUD's: melee `acc` cyan / `sb` magenta, ws `high` purple, idle `mp` blue / `hp` green / `tp` yellow,
-  nuke `macc` teal / `oa` salmon, ranged `racc` cyan, `hoxne` bronze, `dt` orange / `mdt` blue / `amin` mauve, `sir`
-  teal, `th` gold, `kite` green, `proc` red, `burst` pink.
-- Each of the 22 jobs its own colour, outlined: main job's half in its colour, sub job's in its.
-- Dropped within 8px of the screen's top, the bar snaps flush to it.
+- **Lines:** yours = job box (main | sub outline), `Atk` `Def` (Ashita); each other box = its name (first half of
+  the letters in its main job's colour, the rest its sub job's) and job/levels. Then the same pills in the same
+  columns: weapon | modes | `def` and toggles; blank = that job has no such mode.
+- **Pills:** set or on = its colour, tint and a solid dot, showing the value; default or off = dashed grey and a
+  ring, showing its name. The weapon pill is plain (`+` = a slot pick `/mainset` `/subset` `/rangeset` `/ammoset`
+  changed). Each column as wide as its widest value, `Atk`/`Def` as 4 digits: cycling never moves anything.
+- **Click** a pill: cycles it on that box (ctrl+click the weapon: `/mset`).
+- **Colours:** melee `acc` cyan / `sb` magenta (own modes: lime, salmon, periwinkle), ws `high` purple, idle `mp`
+  blue / `hp` green / `tp` yellow, nuke `macc` teal / `oa` salmon, ranged `racc` cyan, `hoxne` bronze, tank `main`
+  periwinkle / `meva` lime, `dt` orange / `mdt` blue / `amin` mauve (`+` = more than one), `sir` teal, `th` gold,
+  `kite` green, `proc` red, `burst` pink. Each of the 22 jobs its own colour.
 - A job without weapon modes (WHM...) shows `melee`, `ws` and `hoxne` only once changed.
+- **Drop:** on hover (`HUDHover = false`: always); in the screen's bottom half the other boxes rise above the bar
+  instead (`HUDGrow`). The box with it on also prints the other boxes' chat lines as `[Name]` (`HUDMessages`).
+- Settings: `DisplayBar` `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDAlpha`; `/gchud debug` lists what it
+  reads.
 - Windower: `|` and the words in their colours (grey = default/off), no capsule, outline or pills.
 
 ## How sets stack
@@ -413,4 +377,4 @@ Each file ends its sets with a Templates block (one of each, blank) to copy from
 | TP-set weapon never shows | engaged the mode wins: `/wm none`, `/mainset none` |
 | Wrong gear | `/checksets`, spelling, `/gctrace` |
 | Action cancelled | chat says why |
-| HUD gone | `/gchud on`, `/gchud pos 500 120` |
+| HUD gone | `/gcbar on`, `/gchud on`, `/gcbar pos 500 0` |

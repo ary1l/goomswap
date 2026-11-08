@@ -71,7 +71,7 @@
 		MoonshadeTP = 1750; -- every WS, every job: Moonshade Earring below this TP, never at or above it; 0 = engine leaves Moonshade alone
 		MoonshadeSlot = 'Ear2'; -- the slot the engine puts it in; the other ear when the WS set has a Sortie (right-ear-only) earring there
 		MoonshadeSkip = T{}; -- WS names the engine never gives Moonshade, e.g. T{'Myrkr'}
-		DisplayBar = false; -- one-line status bar (job, atk/def, toggles, cycles), /gcbar to toggle
+		DisplayBar = false; -- the status bar (job, atk/def, modes and toggles as pills), /gcbar to toggle; the HUD drops under it
 		DisplayBarX = 300;
 		DisplayBarY = 0;
 		warp_Ring = 'Warp Ring'; -- /warpring, /mea, /holla, /dem: held in Ring2, used once its equip delay is up (as /gce), let go after the use (normal ring back)
@@ -152,18 +152,12 @@
 			{'F10','def'}, {'!F10','kite'}, {'@F10','hoxne'}, {'+F11','nukeset'}, {'!F11','burst'}, {'+F12','idleset'},
 			{'!F12','def off'}, {'^@!F12','/lac reload'} };
 		XIRollSet = T{ Ring2 = 'Roller\'s Ring' }; -- used when a job file has no XIRoll set of its own
-		HUDOwners = T{}; -- your main(s), e.g. T{'YourMain'}: open the HUD with every box on load; on other boxes /gchud shows only their own line; T{} = every box sees all
-		HUDMessages = true; -- the box with the HUD open also prints the other boxes' GoomSwap lines, as [Name]
-		HUDX = 2; -- HUD position (top left of your own line); drag it in game, saved per character
-		HUDY = 2;
-		HUDHover = true; -- the HUD owner sees its own line until the mouse is over the HUD, then every box; false = always every box
-		HUDGrow = 'auto'; -- which way the HUD opens on hover: 'up' (your line, or the header while your bar is on, stays at the bottom), 'down', or 'auto' = up in the bottom half of the screen
-		HUDAlpha = 0.70; -- HUD background opacity, 0 = none
-		HUDScale = 1.0; -- HUD text size (compact style)
-		HUDStyle = 'compact'; -- HUD look: 'compact' (tight) or 'large' (bigger text, more spacing, full names); /gchud large|compact, saved per character
-		HUDScaleLarge = 1.1; -- HUD text size in the large style
-		HUDAbbr = {}; -- HUD short value overrides, e.g. { ['Carnwenhan'] = 'Carn' }; auto-shortened otherwise
-		HUDLabels = {}; -- HUD column glyph overrides, e.g. { Main = 'mn', NukeSet = 'nk' }
+		HUDOwners = T{}; -- your main(s), e.g. T{'YourMain'}: the HUD (the other boxes, dropped under /gcbar on hover) on with every load; others: /gchud
+		HUDMessages = true; -- the box with the HUD on also prints the other boxes' GoomSwap lines, as [Name]
+		HUDHover = true; -- the other boxes drop in while the mouse is over the bar; false = always
+		HUDGrow = 'auto'; -- which way they drop: 'down', 'up' (your bar stays put, they rise above it), or 'auto' = up in the bottom half of the screen
+		HUDAlpha = 0.70; -- bar background opacity, 0 = none
+		HUDAbbr = {}; -- extra short names you can type for a value, e.g. { ['Carnwenhan'] = 'Carn' } (/wm carn)
 		Validate = true; -- cancel spells/abilities/WS that would fail: KO, sleep/stun/petrify/terror/charm, mute, silence, recast, MP, stratagems, Waltz TP, amnesia
 		ValidateMP = true; -- the MP part; gear "MP cost -%" isn't counted, so turn off if it stops casts that would go off
 		WaltzTPCut = 0; -- total "Waltz TP cost" reduction on your Waltz gear, in TP

@@ -356,12 +356,10 @@ local function bar_load()
 	barSavedX, barSavedY = cfg.DisplayBarX, cfg.DisplayBarY;
 end
 
-local function track_drag()
-	local x, y = imgui.GetWindowPos();
-	if (type(x) == 'table') then x, y = x[1] or x.x, x[2] or x.y end
-	x, y = tonumber(x), tonumber(y);
+local function track_drag(ownDy) -- ownDy: px from the window's top to this box's own line (the drop rising above it)
+	local x, y = xy(imgui.GetWindowPos());
 	if (x == nil) or (y == nil) or imgui.IsMouseDown(0) then return end
-	x, y = math.floor(x + 0.5), math.floor(y + 0.5);
+	x, y = math.floor(x + 0.5), math.floor(y + (ownDy or 0) + 0.5);
 	if (y > 0) and (y <= 8) then y = 0; barPlaced = false end -- dropped near the top: flush with it
 	if (x ~= barSavedX) or (y ~= barSavedY) then
 		cfg.DisplayBarX, cfg.DisplayBarY = x, y;
@@ -369,64 +367,92 @@ local function track_drag()
 	end
 end
 
--- The bar's pills: built when a toggle or cycle changes (gcdisplay's version), not every frame. Each entry: kind, text,
--- col, cmd (ctrl: ctrl+click), texts (every text it can show: its width).
-local modelVer, modelModes, modelOn = -1, nil, nil;
-local function bar_model()
-	if (modelVer == version) then return modelModes, modelOn end
-	local modes, on = {}, {};
-	local wk = wpn_key();
+-- Lines: this box's (the bar) and, hovered with /gchud on, one per other box dropped under it (gchud's rows), every
+-- pill in its column: as wide as its widest text so far, blank where a line's job has no such mode.
+local hud = nil; -- gchud: the other boxes' modes, and sending them a click
+local barH = nil; -- the bar's own height (its line alone), measured while the drop is shut
+function gcdisplay.SetHud(h) hud = h end
+local LINE_COLS = { 'wpn', 'Main', 'Sub', 'Range', 'Ammo', 'MeleeSet', 'WsSet', 'IdleSet', 'NukeSet', 'Element', 'Weapon',
+	'RangedSet', 'TankSet', 'PupMode', 'Hoxne', '|', 'Def', 'SIR', 'TH', 'Kite', 'PROC', 'Burst', 'Death', 'String', 'SongLock' };
+-- One line's pills by column. cyc(k): value, still at its load default; vals(k): every value (own box only, for widths);
+-- tog(k): true / false / nil (the job has none).
+local function build_line(cyc, vals, tog)
+	local map = {};
+	local wk = (cyc('Weapons') ~= nil) and 'Weapons' or ((cyc('Main') ~= nil) and 'Main' or nil);
 	if (wk ~= nil) then
 		local picked = false;
 		for _, k in ipairs(SLOT_PICKS) do
-			local c = Cycles[k];
+			local v, d = cyc(k);
 			-- set, and not the job's own default pick (PLD's Aegis): a + means you changed one
-			if (k ~= wk) and (c ~= nil) and (value_text(k, c.Array[c.Index]) ~= '-') and not gcdisplay.IsDefault('cycle', k) then picked = true end
+			if (k ~= wk) and (v ~= nil) and (value_text(k, v) ~= '-') and not d then picked = true end
 		end
-		local c = Cycles[wk];
 		local texts = {};
-		for _, v in ipairs(c.Array) do texts[#texts + 1] = value_text(wk, v) .. '+' end
-		modes[#modes + 1] = { key = wk, kind = 'plain', text = value_text(wk, c.Array[c.Index]) .. (picked and '+' or ''), texts = texts,
-			cmd = BAR_CMD[wk], ctrl = (Cycles.MeleeSet ~= nil) and 'mset' or nil };
+		for _, x in ipairs(vals(wk) or {}) do texts[#texts + 1] = value_text(wk, x) .. '+' end
+		map.wpn = { kind = 'plain', text = value_text(wk, (cyc(wk))) .. (picked and '+' or ''), texts = texts, cmd = BAR_CMD[wk],
+			ctrl = (cyc('MeleeSet') ~= nil) and 'mset' or nil };
 	else
 		for _, k in ipairs(SLOT_PICKS) do -- no weapon pill to carry them: each once changed
-			local c = Cycles[k];
-			if (c ~= nil) and not gcdisplay.IsDefault('cycle', k) then
-				modes[#modes + 1] = { key = k, kind = 'plain', text = value_text(k, c.Array[c.Index]), cmd = BAR_CMD[k] };
-			end
+			local v, d = cyc(k);
+			if (v ~= nil) and not d then map[k] = { kind = 'plain', text = value_text(k, v), cmd = BAR_CMD[k] } end
 		end
 	end
 	for _, k in ipairs(BAR_ORDER) do
-		local c = Cycles[k];
-		if (c ~= nil) then
-			local v = c.Array[c.Index];
+		local v = cyc(k);
+		if (v ~= nil) then
 			local kind, col = gcdisplay.ModeKind(k, v);
 			if (wk ~= nil) or not WEAPONLESS[k] or (kind ~= 'def') then
 				local texts = { BAR_LABEL[k] };
-				for _, x in ipairs(c.Array) do texts[#texts + 1] = gcdisplay.ModeText(k, x) end
-				modes[#modes + 1] = { key = k, kind = kind, col = col, text = (kind == 'def') and BAR_LABEL[k] or gcdisplay.ModeText(k, v),
-					texts = texts, cmd = BAR_CMD[k] };
+				for _, x in ipairs(vals(k) or {}) do texts[#texts + 1] = gcdisplay.ModeText(k, x) end
+				map[k] = { kind = kind, col = col, text = (kind == 'def') and BAR_LABEL[k] or gcdisplay.ModeText(k, v), texts = texts, cmd = BAR_CMD[k] };
 			end
 		end
 	end
-	-- def: DT, MDT, Aminon as one pill (/def), the first on (+ when more); then the toggles
+	-- def: DT, MDT, Aminon as one pill (/def), the first on (+ when more)
 	local parts, any = {}, false;
 	for _, p in ipairs(DEF_PARTS) do
-		if (Toggles[p[1]] ~= nil) then any = true end
-		if (Toggles[p[1]] == true) then parts[#parts + 1] = p end
+		local on = tog(p[1]);
+		if (on ~= nil) then any = true end
+		if (on == true) then parts[#parts + 1] = p end
 	end
 	if any then
 		local first = parts[1];
-		on[#on + 1] = { key = 'Def', kind = (first ~= nil) and 'set' or 'def', col = (first ~= nil) and TOGGLE_COL[first[1]] or nil,
+		map.Def = { kind = (first ~= nil) and 'set' or 'def', col = (first ~= nil) and TOGGLE_COL[first[1]] or nil,
 			text = (first ~= nil) and (first[2] .. ((#parts > 1) and '+' or '')) or 'def', texts = { 'def', 'dt+', 'mdt+', 'amin+' }, cmd = 'def' };
 	end
 	for _, k in ipairs(BAR_TOGGLES) do
-		if (Toggles[k] ~= nil) then
-			on[#on + 1] = { key = k, kind = (Toggles[k] == true) and 'set' or 'def', col = TOGGLE_COL[k], text = TOGGLE_LABEL[k], cmd = BAR_TCMD[k] };
-		end
+		local on = tog(k);
+		if (on ~= nil) then map[k] = { kind = (on == true) and 'set' or 'def', col = TOGGLE_COL[k], text = TOGGLE_LABEL[k], cmd = BAR_TCMD[k] } end
 	end
-	modelVer, modelModes, modelOn = version, modes, on;
-	return modes, on;
+	return map;
+end
+
+local modelVer, ownLine = -1, nil; -- this box's line: rebuilt when a toggle or cycle changes (gcdisplay's version)
+local function own_line()
+	if (modelVer ~= version) then
+		ownLine = build_line(
+			function(k) local c = Cycles[k]; if (c == nil) then return nil end; return c.Array[c.Index], gcdisplay.IsDefault('cycle', k) end,
+			function(k) local c = Cycles[k]; return (c ~= nil) and c.Array or nil end,
+			function(k) return Toggles[k] end);
+		modelVer = version;
+	end
+	return ownLine;
+end
+local function strip(raw) -- a shared value: '~' marks one still at its load default
+	raw = tostring(raw or '');
+	if (string.sub(raw, 1, 1) == '~') then return string.sub(raw, 2), true end
+	return raw, false;
+end
+local altLines = setmetatable({}, { __mode = 'k' }); -- per gchud row (kept while its content is unchanged)
+local function alt_line(row)
+	local l = altLines[row];
+	if (l == nil) then
+		l = build_line(
+			function(k) local raw = row.Cycles[k]; if (raw == nil) then return nil end; return strip(raw) end,
+			function() return nil end,
+			function(k) local raw = row.Toggles[k]; if (raw == nil) then return nil end; return (strip(raw) == 'true') end);
+		altLines[row] = l;
+	end
+	return l;
 end
 
 local function textw(t)
@@ -435,114 +461,224 @@ local function textw(t)
 	return tonumber(w) or 0;
 end
 
-local function bar_body()
+local colW, colUnit = {}, nil; -- each column's widest text so far (px), until the text size changes
+local leadW = {}; -- px from the window's left to the end of each line's name/job part, by line ('' = this box)
+local function columns(lines, dl)
+	local unit = textw('M');
+	if (unit ~= colUnit) then colUnit, colW, leadW = unit, {}, {} end
+	local cols = { { id = '|' } };
+	for _, id in ipairs(LINE_COLS) do
+		if (id == '|') then
+			if (cols[#cols].id ~= '|') then cols[#cols + 1] = { id = '|' } end
+		else
+			local w, any = colW[id] or 0, false;
+			for _, l in ipairs(lines) do
+				local e = l[id];
+				if (e ~= nil) then
+					any = true;
+					if (e.wu ~= unit) then
+						local tw = textw(e.text);
+						for _, t in ipairs(e.texts or {}) do tw = math.max(tw, textw(t)) end
+						e.w, e.wu = tw, unit;
+					end
+					w = math.max(w, e.w);
+				end
+			end
+			if any then
+				colW[id] = w;
+				local lead = (dl == nil) and 0 or (((id == 'wpn') or MODE_PLAIN[id]) and gcdisplay.PILL_PLAIN_LEAD or gcdisplay.PILL_LEAD);
+				cols[#cols + 1] = { id = id, lead = lead, pw = math.floor(lead + w + ((dl ~= nil) and gcdisplay.PILL_TAIL or 0) + 0.5) };
+			end
+		end
+	end
+	if (cols[#cols].id == '|') then cols[#cols] = nil end
+	return cols;
+end
+
+local function bar_body(drop, open, up) -- drop: the other boxes (their columns hold even while shut)
 	-- Pills, lines and outlines are drawn shapes (Ashita's window draw list); the Windower text box has none, so it shows
 	-- a | and the words in their colours.
 	local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil;
 	local lh = (imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or nil;
 	if (dl ~= nil) and ((lh == nil) or (imgui.GetColorU32 == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetItemRectMax == nil) or (imgui.GetItemRectMin == nil)) then dl = nil end
-	local ITEM, SEG, PGAP = 14, 9, 5; -- px: between items, each side of a divider, between pills
+	local SEG, PGAP = 9, 5; -- px: each side of a divider, between pills
+	if (dl == nil) then SEG, PGAP = textw(' '), textw(' ') end
+	local wx = xy(imgui.GetWindowPos());
 	local first, gapNext, extra = true, nil, 0; -- extra: px held after the last item (a number's spare width)
 	local function place(gap)
-		if first then first = false else imgui.SameLine(0, (gapNext or gap or ITEM) + extra) end
+		if first then first = false else imgui.SameLine(0, (gapNext or gap or 14) + extra) end
 		gapNext, extra = nil, 0;
 	end
-	local function run(cmd, ctrl)
+	local function run(name, cmd, ctrl) -- a click: this box runs it, or the other box (gchud)
 		local ok, held = pcall(function() return imgui.GetIO().KeyCtrl end);
-		AshitaCore:GetChatManager():QueueCommand(-1, '/lac fwd ' .. ((ok and held and ctrl) or cmd));
+		cmd = (ok and held and ctrl) or cmd;
+		if (name == nil) then AshitaCore:GetChatManager():QueueCommand(-1, '/lac fwd ' .. cmd)
+		elseif (hud ~= nil) then hud.Send(name, cmd) end
 	end
-	local function put(text, col, gap, cmd, ctrl) -- text, or a borderless button that runs cmd on this box
+	local function put(text, col, gap)
 		place(gap);
 		imgui.PushStyleColor(ImGuiCol_Text, col);
-		if (cmd == nil) or (imgui.SmallButton == nil) then
-			imgui.Text(text);
-		elseif imgui.SmallButton(text .. '##gcbar_' .. cmd) then
-			run(cmd, ctrl);
-		end
+		imgui.Text(text);
 		imgui.PopStyleColor();
 	end
 	local function hold(text, widest) -- keep a number's spot as wide as its widest
 		if (dl ~= nil) then extra = math.max(0, textw(widest) - textw(text)) end
 	end
-	local function divider()
-		if (dl ~= nil) then
-			local x2 = xy(imgui.GetItemRectMax());
-			local _, y1 = xy(imgui.GetItemRectMin());
-			if (x2 ~= nil) and (y1 ~= nil) then dl:AddLine({ x2 + extra + SEG, y1 + 1 }, { x2 + extra + SEG, y1 + lh - 1 }, imgui.GetColorU32(COL_DIV), 1) end
-			gapNext = SEG * 2;
-		else
-			put('|', COL_KEY);
-		end
+	local function lead_end() -- window x just past this line's last item
+		imgui.SameLine(0, 0);
+		local x = imgui.GetCursorPosX() + extra;
+		extra = 0;
+		return x;
 	end
-	local function pill(e)
-		if (dl == nil) then -- Windower: the word in its colour (grey at its default or off)
-			put(e.text, (e.kind == 'set') and e.col or ((e.kind == 'def') and COL_PILL_DIM or COL_HEAD), PGAP + 4, e.cmd, e.ctrl);
-			return;
-		end
-		place(PGAP);
-		if (e.w == nil) then
-			local w = textw(e.text);
-			for _, t in ipairs(e.texts or {}) do w = math.max(w, textw(t)) end
-			e.w = w;
-		end
-		local lead = (e.kind == 'plain') and gcdisplay.PILL_PLAIN_LEAD or gcdisplay.PILL_LEAD;
-		local pw = math.floor(lead + e.w + gcdisplay.PILL_TAIL + 0.5);
-		local x, y = xy(imgui.GetCursorScreenPos());
-		if imgui.Button('##gcbar_' .. e.key, { pw, lh }) and (e.cmd ~= nil) then run(e.cmd, e.ctrl) end
-		if (x ~= nil) and (y ~= nil) then
-			gcdisplay.Pill(dl, x, y + 1, x + pw, y + lh - 1, e.kind, e.col);
-			dl:AddText({ x + lead, y }, imgui.GetColorU32((e.kind == 'def') and COL_PILL_DIM or COL_PILL_TEXT), e.text);
-		end
-	end
-	if (headText ~= '') then -- set by Update
-		local mainT, subT = Main .. tostring(MainLV or ''), Sub .. tostring(SubLV or '');
+	-- the job box: two coloured texts, outlined main | sub (Ashita), the outline turning at split
+	local function job_box(a, aCol, mid, b, bCol)
 		local x, y, split = nil, nil, nil;
 		if (dl ~= nil) then x, y = xy(imgui.GetCursorScreenPos()) end
-		put(mainT, job_col(Main));
-		put('/', COL_KEY, 0);
+		put(a, aCol);
+		if (mid ~= nil) then put(mid, COL_KEY, 0) end
 		if (dl ~= nil) then
 			local s1, s2 = xy(imgui.GetItemRectMin()), xy(imgui.GetItemRectMax());
-			if (s1 ~= nil) and (s2 ~= nil) then split = (s1 + s2) / 2 end -- the outline changes colour at the '/'
+			if (s1 ~= nil) and (s2 ~= nil) then split = (mid ~= nil) and ((s1 + s2) / 2) or s2 end
 		end
-		put(subT, job_col(Sub), 0);
+		if (b ~= '') then put(b, bCol, 0) end
 		if (x ~= nil) and (y ~= nil) and (split ~= nil) then
 			local x2, y2 = xy(imgui.GetItemRectMax());
-			if (x2 ~= nil) and (y2 ~= nil) then -- 1px in from the bar's edge; left half the main job's colour, right half the sub's
-				gcdisplay.SplitOutline(dl, x - 5, y + 1, x2 + 5, y2 - 1, split, job_col(Main), job_col(Sub));
+			if (x2 ~= nil) and (y2 ~= nil) then gcdisplay.SplitOutline(dl, x - 5, y + 1, x2 + 5, y2 - 1, split, aCol, bCol) end -- 1px in from the edge
+		end
+	end
+	local function cells(line, cols, name, id)
+		local _, y = nil, nil;
+		if (dl ~= nil) then _, y = xy(imgui.GetCursorScreenPos()) end -- this line's top (after an item the cursor moves on)
+		for _, c in ipairs(cols) do
+			if (c.id == '|') then
+				if (dl ~= nil) then
+					if (wx ~= nil) and (y ~= nil) then dl:AddLine({ wx + c.x, y + 1 }, { wx + c.x, y + lh - 1 }, imgui.GetColorU32(COL_DIV), 1) end
+				else
+					imgui.SameLine(c.x);
+					imgui.PushStyleColor(ImGuiCol_Text, COL_KEY);
+					imgui.Text('|');
+					imgui.PopStyleColor();
+				end
+			else
+				local e = line[c.id];
+				if (e ~= nil) then
+					imgui.SameLine(c.x);
+					if (dl ~= nil) then
+						local x, y = xy(imgui.GetCursorScreenPos());
+						if imgui.Button('##gcl_' .. id .. c.id, { c.pw, lh }) and (e.cmd ~= nil) then run(name, e.cmd, e.ctrl) end
+						if (x ~= nil) and (y ~= nil) then
+							gcdisplay.Pill(dl, x, y + 1, x + c.pw, y + lh - 1, e.kind, e.col);
+							dl:AddText({ x + c.lead, y }, imgui.GetColorU32((e.kind == 'def') and COL_PILL_DIM or COL_PILL_TEXT), e.text);
+						end
+					else -- Windower: the word in its colour (grey at its default or off)
+						imgui.PushStyleColor(ImGuiCol_Text, (e.kind == 'set') and e.col or ((e.kind == 'def') and COL_PILL_DIM or COL_HEAD));
+						if ((e.cmd ~= nil) and (imgui.SmallButton ~= nil)) then
+							if imgui.SmallButton(e.text .. '##gcl_' .. id .. c.id) then run(name, e.cmd, e.ctrl) end
+						else
+							imgui.Text(e.text);
+						end
+						imgui.PopStyleColor();
+					end
+				end
 			end
 		end
+	end
+
+	local lines, names = { own_line() }, { '' };
+	for _, r in ipairs(drop or {}) do lines[#lines + 1] = alt_line(r); names[#names + 1] = r.Name end
+	local cols = columns(lines, dl);
+	local lead = 0;
+	for _, n in ipairs(names) do lead = math.max(lead, leadW[n] or 0) end
+	local x = lead;
+	local prevPill = false;
+	for _, c in ipairs(cols) do
+		if (c.id == '|') then c.x = x + SEG; x = c.x + ((dl == nil) and textw('|') or 0) + SEG; prevPill = false -- Windower: the | is text
+		else
+			if prevPill then x = x + PGAP end
+			c.x, x, prevPill = x, x + c.pw, true;
+		end
+	end
+
+	local function own()
+		first = true;
+		if (headText ~= '') then -- set by Update
+			job_box(Main .. tostring(MainLV or ''), job_col(Main), '/', Sub .. tostring(SubLV or ''), job_col(Sub));
+		else
+			put(headText, COL_HEAD);
+		end
+		if (windower == nil) then -- Windower's player table has no attack/defense (the shim returns 0)
+			put('Atk ', COL_KEY, (dl ~= nil) and 13 or 8); put(tostring(Attk), COL_HEAD, 0); hold(tostring(Attk), '0000'); -- labelled, so it doesn't read as HP
+			put('Def ', COL_KEY, 8); put(tostring(Def), COL_HEAD, 0); hold(tostring(Def), '0000');
+		end
+		leadW[''] = lead_end();
+		cells(lines[1], cols, nil, 'me');
+	end
+	local function alt(i)
+		local r = drop[i];
+		first = true;
+		local short = r.Name;
+		local mj, sj = string.match(tostring(r.Job or ''), '^(%a+)'), string.match(tostring(r.Job or ''), '/(%a+)');
+		local half = math.ceil(#short / 2);
+		if (dl ~= nil) then -- first half of the letters in the main job's colour, the rest the sub's, outlined the same
+			job_box(string.sub(short, 1, half), job_col(mj), nil, string.sub(short, half + 1), job_col(sj or mj));
+		else
+			put(short, job_col(mj));
+		end
+		put(tostring(r.Job or ''), COL_KEY, (dl ~= nil) and 13 or 8);
+		leadW[r.Name] = lead_end();
+		cells(lines[i + 1], cols, r.Name, r.Name);
+	end
+	local n = open and #(drop or {}) or 0;
+	local function rule() -- a thin line between the bar and the dropped boxes, across the window
+		local _, y = xy(imgui.GetCursorScreenPos());
+		local ww = xy(imgui.GetWindowSize());
+		if (dl ~= nil) and (wx ~= nil) and (y ~= nil) and (ww ~= nil) then dl:AddLine({ wx, y - 2 }, { wx + ww, y - 2 }, imgui.GetColorU32(COL_DIV), 1) end
+	end
+	if up then -- the drop rises above the bar: the other boxes first, this box's line last (at the bottom)
+		for i = 1, n do alt(i) end
+		if (n > 0) then rule() end
+		own();
 	else
-		put(headText, COL_HEAD);
+		own();
+		if (n > 0) then rule() end
+		for i = 1, n do alt(i) end
 	end
-	if (windower == nil) then -- Windower's player table has no attack/defense (the shim returns 0)
-		put('Atk ', COL_KEY, (dl ~= nil) and 13 or 8); put(tostring(Attk), COL_HEAD, 0); hold(tostring(Attk), '0000'); -- labelled, so it doesn't read as HP
-		put('Def ', COL_KEY, 8); put(tostring(Def), COL_HEAD, 0); hold(tostring(Def), '0000');
-	end
-	local modes, on = bar_model();
-	if (#modes > 0) then
-		divider();
-		for _, e in ipairs(modes) do pill(e) end
-	end
-	if (#on > 0) then
-		divider();
-		for _, e in ipairs(on) do pill(e) end
-	end
-	track_drag();
+	track_drag((up and (barH ~= nil)) and ((select(2, xy(imgui.GetWindowSize())) or barH) - barH) or 0);
 end
 
+-- Hovered with /gchud on: the other boxes drop in (HUDHover = false: always); in the screen's bottom half they rise
+-- above the bar instead (HUDGrow 'up' / 'down' / 'auto').
+local hoverUntil, closedFrames, dropUp = 0, 0, false;
+local function screen_h()
+	local ok, h = pcall(function() return imgui.GetMainViewport().Size.y end);
+	return ok and tonumber(h) or nil;
+end
 local function render_bar()
 	if (cfg == nil) or (cfg.DisplayBar ~= true) then return end
-	if (not barPlaced) then
+	local now = os.clock();
+	local drop = (hud ~= nil) and hud.DropRows() or nil;
+	local open = (drop ~= nil) and (#drop > 0) and ((cfg.HUDHover == false) or (now < hoverUntil));
+	local held = imgui.IsMouseDown(0);
+	if not held then
+		local g = string.lower(tostring(cfg.HUDGrow or 'auto'));
+		local sh = screen_h();
+		dropUp = (g == 'up') or ((g ~= 'down') and (sh ~= nil) and (((cfg.DisplayBarY or 0) + (barH or 0) / 2) > sh / 2));
+	end
+	local up = open and dropUp and (barH ~= nil);
+	if up and not held then -- pin this box's line (the bottom) where it is
+		imgui.SetNextWindowPos({ cfg.DisplayBarX or 300, (cfg.DisplayBarY or 0) + barH }, ImGuiCond_Always, { 0, 1 });
+		barPlaced = false;
+	elseif (not barPlaced) and not held then
 		imgui.SetNextWindowPos({ cfg.DisplayBarX or 300, cfg.DisplayBarY or 0 }, ImGuiCond_Always);
 		barPlaced = true;
 	end
 	local flags = bit.bor(ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoFocusOnAppearing,
 		ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
 	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 10, 1 }); -- 1px above and below the text: room for the job outline
-	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 5, 1 });
+	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 5, 3 }); -- 3px between dropped lines
 	imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 12); -- a capsule
 	imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
-	-- pills are borderless buttons under their drawn outline: hovered, a soft fill as round as the pill (as the HUD's cells)
+	-- pills are borderless buttons under their drawn outline: hovered, a soft fill as round as the pill
 	local styleVars = 4;
 	if (ImGuiStyleVar_FramePadding ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FramePadding, { 1, 0 }); styleVars = styleVars + 1 end
 	if (ImGuiStyleVar_FrameBorderSize ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0); styleVars = styleVars + 1 end
@@ -555,7 +691,13 @@ local function render_bar()
 	local ok, err = true, nil;
 	if imgui.Begin('GC##gcdisplay_bar', true, flags) then
 		-- an error here must not skip End/PopStyleVar, or ImGui asserts every frame after (as in gchud)
-		ok, err = pcall(bar_body);
+		ok, err = pcall(bar_body, drop, open, up);
+		if (imgui.IsWindowHovered ~= nil) and imgui.IsWindowHovered() then hoverUntil = now + 0.6 end
+		closedFrames = open and 0 or (closedFrames + 1);
+		if (closedFrames >= 3) then -- the bar's own height, once the window has fit it
+			local _, h = xy(imgui.GetWindowSize());
+			if (h ~= nil) and (h > 0) then barH = h end
+		end
 	end
 	imgui.End();
 	imgui.PopStyleColor(5);
