@@ -32,10 +32,12 @@ Windower/addons/GearSwap/data/
     └── <Name>/<JOB>.lua               <- examples/<JOB>.lua, your gear in it
 ```
 
-`//lua load gearswap`, change job: chat says `[GoomSwap] Loaded data/goomswap/<Name>/<JOB>.lua`. Red line = missing
-file, do what it says. No `[GoomSwap]` line = GearSwap found another file first (`data/<Name>/<JOB>.lua`,
-`data/<Name>_<JOB>.lua`, `data/<Name>.lua`, `data/<JOB>.lua` all beat `default.lua`). A job file in `goomswap/`
-itself serves every character.
+`//lua load gearswap`, then change job. Chat should say `[GoomSwap] Loaded data/goomswap/<Name>/<JOB>.lua`.
+
+- **Red line:** a missing file; do what it says.
+- **No `[GoomSwap]` line:** GearSwap found another file first (`data/<Name>/<JOB>.lua`, `data/<Name>_<JOB>.lua`,
+  `data/<Name>.lua` and `data/<JOB>.lua` all beat `default.lua`).
+- A job file in `goomswap/` itself serves every character.
 
 | | Ashita | Windower |
 |---|---|---|
@@ -79,10 +81,12 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 | `weapons.<Name>` + `state.Weapons` | `Weapon_<Name>` + `/wm` modes |
 | `buff.Doom` `.Sleep`, `Cure_Received`... | `Doomed` `Sleeping` `Cure_Received`... |
 
-No place (`.DT` hybrids, `Resistant`, latent sets...): kept as `['Sel_<path>']`. Binds become that job's `Keybinds`:
-chat commands as is, modes mapped (`Weapons`→`wm`, `OffenseMode`→`mset`, `IdleMode`→`idleset`, `HybridMode`→`tankset`,
-`RangedMode`→`rangedset`, `CastingMode`→`nukeset` or `sir`, `gs reload`→`/lac reload`). Defense keys and
-Selindrile automation (`AutoWSMode`, `SkillchainMode`...) are left out; the file's top comment lists what was.
+- **No GoomSwap place** (`.DT` hybrids, `Resistant`, latent sets...): kept as `['Sel_<path>']`.
+- **Binds** become that job's `Keybinds`: chat commands as is, modes mapped (`Weapons`→`wm`, `OffenseMode`→`mset`,
+  `IdleMode`→`idleset`, `HybridMode`→`tankset`, `RangedMode`→`rangedset`, `CastingMode`→`nukeset` or `sir`,
+  `gs reload`→`/lac reload`).
+- **Left out:** defense keys and Selindrile automation (`AutoWSMode`, `SkillchainMode`...); the file's top comment
+  lists what was.
 
 ## First steps
 
@@ -126,19 +130,28 @@ Most changed:
 | `Validate` `ValidateMP` | `true` | cancel actions that would fail |
 | `DisplayBar` | `false` | status bar on load |
 
-All: weapons `AftermathHold` `HoldExemptSkills` `HoldExemptAbilities` `SmartSwap` `SmartSwapTP` `NoWeaponSpells`
-`KeepWeaponsFor`; casting `SIRSkip` `THSkip` `ElementGear` `ElementSkills` `OrpheusPoints` `MBWindow` `MBSkills`;
-idle `AutoGear` `PetDTGearHPP`; WS `WScheck` `WSdistance` `MoonshadeSlot` `MoonshadeSkip` `ElementalWS`; items
-`PackerItems` `EnchantDelays` `EnchantWindow`; Hoxne `HoxneItem` `HoxneLockSlots` `HoxneAutoUse`; received
-`ReceivedSets` `ReceivedWindow` `MyBoxes`; checks `WaltzTPCut`; HUD/bar `HUD*` `DisplayBarX` `DisplayBarY`; other
-`Trace` `CombatWindow` `XIRollSet` `CapacityCapes` `JubileeSlot` `AmmoWarn` `NinjaToolWarn` `SleepCancelStoneskin`
-`ElementReport` `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring`.
+All settings, by area:
+
+| Area | Settings |
+|---|---|
+| Weapons | `AftermathHold` `HoldExemptSkills` `HoldExemptAbilities` `SmartSwap` `SmartSwapTP` `NoWeaponSpells` `KeepWeaponsFor` |
+| Casting | `SIRSkip` `THSkip` `ElementGear` `ElementSkills` `OrpheusPoints` `MBWindow` `MBSkills` |
+| Idle | `AutoGear` `PetDTGearHPP` |
+| Weapon skills | `WScheck` `WSdistance` `MoonshadeSlot` `MoonshadeSkip` `ElementalWS` |
+| Items | `PackerItems` `EnchantDelays` `EnchantWindow` `AmmoWarn` `NinjaToolWarn` |
+| Hoxne | `HoxneItem` `HoxneLockSlots` `HoxneAutoUse` |
+| Received sets | `ReceivedSets` `ReceivedWindow` `MyBoxes` |
+| Bar and HUD | `DisplayBar` `DisplayBarX` `DisplayBarY` `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDAlpha` `WeaponClass` |
+| Other | `WaltzTPCut` `Trace` `CombatWindow` `XIRollSet` `CapacityCapes` `JubileeSlot` `SleepCancelStoneskin` `ElementReport` `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
 
 ## Commands
 
-Ashita `/name`, Windower `//name` or `//gs c name`. Toggles take `on`/`off`, no word flips. Values, any case: no word =
-next; else name, start, initials, contains, or number (`/wm max`, `/mset sb`, `/wm 3`). Windower: with Stopwatch or
-THTracker loaded use `//subset` / `//gs c th`.
+Ashita `/name`; Windower `//name` or `//gs c name`.
+
+- **Toggles** take `on` / `off`; no word flips them.
+- **Modes** take a value in any case: no word = the next one; else its name, its start, its initials, part of it, or
+  its number (`/wm max`, `/mset sb`, `/wm 3`).
+- Windower with Stopwatch or THTracker loaded: `//subset` / `//gs c th`.
 
 | Command | Does |
 |---|---|
@@ -243,35 +256,51 @@ Waltz TP. Nothing is queued.
 
 ## Status bar and HUD
 
-One window: this box's **bar**, and (the HUD) every other box **dropped in under it** while the mouse is over it.
-`/gcbar` (or `DisplayBar = true`) shows the bar: centred at the top, or with the drop on flush right (room for the
-dropped lines, clear of status timers on the left). Drag it anywhere (saved per character; within 8px of the top it
-snaps flush); `/gcbar reset` puts it back. `/gchud` turns the drop on (`HUDOwners` boxes: on at load; it also turns the bar on). Each box shares its
-modes when they change (checked 4x/s); the box with the drop reads them twice a second (Ashita
-`luashitacast/hud/`, Windower IPC).
+One window. The **bar** shows this box; hover it and every other box **drops in under it**, one line each (the
+HUD): see them all at a glance, click to drive any.
+
+- **Show:** `/gcbar` (or `DisplayBar = true`). `/gchud` turns the drop on, and the bar with it; `HUDOwners` boxes
+  have it on at load.
+- **Place:** centred at the top; with the drop on, flush right (room for the lines, clear of status timers). Drag it
+  anywhere (saved per character; within 8px of the top it snaps flush); `/gcbar reset` puts it back.
+- **Sync:** each box shares its modes when they change (checked 4x/s); the box with the drop reads them twice a
+  second (Ashita `luashitacast/hud/`, Windower IPC).
 
 ![The status bar with the HUD dropped](docs/gcbar.png)
 
-- **Lines:** yours = job box (main | sub outline), `Atk` `Def` (Ashita); each other box = its name (first half of
-  the letters in its main job's colour, the rest its sub job's) and job/levels. Then the same pills in the same
-  columns: weapon | modes | `def` and toggles; blank = that job has no such mode.
-- **Pills:** set or on = its colour, tint and a solid dot, showing the value; default or off = dashed grey and a
-  ring, showing its name. The weapon pill is plain (`+` = a slot pick `/mainset` `/subset` `/rangeset` `/ammoset`
-  changed). Each column as wide as its widest value, `Atk`/`Def` as 4 digits: cycling never moves anything.
+**A line**, left to right:
+
+| Part | Shows |
+|---|---|
+| Job / name | Yours: job box (main \| sub outline), `Atk` `Def` (Ashita). Others: name (first half of the letters in the main job's colour, the rest the sub's) and job/levels |
+| Weapon | the weapon mode, coloured by its weapon (below); `+` = a slot pick (`/mainset` `/subset` `/rangeset` `/ammoset`) changed |
+| Modes | `melee` `ws` `idle` `nuke` `ranged` `tank` `pup` `hoxne`...; blank = that job has no such mode |
+| `def`, toggles | `def` (DT / MDT / Aminon), `sir` `th` `kite` `proc`, the job's own (`burst`, `harp`, `lock`...) |
+
+- **Pills:** set or on = coloured outline, tint and dot, showing the value (`acc`, `mp`, `dt`); default or off =
+  dashed grey and a ring, showing its name (`melee`, `idle`, `sir`).
 - **Click** a pill: cycles it on that box (ctrl+click the weapon: `/mset`).
-- **Colours:** melee `acc` cyan / `sb` magenta (own modes: lime, salmon, periwinkle), ws `high` purple, idle `mp`
-  blue / `hp` green / `tp` yellow, nuke `macc` teal / `oa` salmon, ranged `racc` cyan, `hoxne` bronze, tank `main`
-  periwinkle / `meva` lime, `dt` orange / `mdt` blue / `amin` mauve (`+` = more than one), `sir` teal, `th` gold,
-  `kite` green, `proc` red, `burst` pink. Each of the 22 jobs its own colour.
-- **Weapon colour** (the weapon pill, by its weapon: the mode's Main, else Range, else Sub): relic light blue, mythic
-  and ergon green, empyrean red, prime purple, aeonic orange, TP bonus (Sparrowhawk +2, Anarchy +2) dark blue, others
-  grey. Add your own: `WeaponClass = { ['Item Name'] = 'tpbonus' }`.
-- A job without weapon modes (WHM...) shows `melee`, `ws` and `hoxne` only once changed.
-- **Drop:** on hover (`HUDHover = false`: always); in the screen's bottom half the other boxes rise above the bar
-  instead (`HUDGrow`). The box with it on also prints the other boxes' chat lines as `[Name]` (`HUDMessages`).
-- Settings: `DisplayBar` `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDAlpha`; `/gchud debug` lists what it
-  reads.
-- Windower: `|` and the words in their colours (grey = default/off), no capsule, outline or pills.
+- **Fixed width:** each column as wide as its widest value, `Atk`/`Def` as 4 digits; cycling never moves anything.
+- A job without weapon modes (WHM...) shows `melee` `ws` `hoxne` only once changed.
+
+| Pill | Colours |
+|---|---|
+| melee | `acc` cyan, `sb` magenta (a job's own modes: lime, salmon, periwinkle) |
+| ws / idle | `high` purple / `mp` blue, `hp` green, `tp` yellow |
+| nuke / ranged | `macc` teal, `oa` salmon / `racc` cyan |
+| tank / hoxne | `main` periwinkle, `meva` lime / bronze |
+| def | `dt` orange, `mdt` blue, `amin` mauve (`+` = more than one) |
+| toggles | `sir` teal, `th` gold, `kite` green, `proc` red, `burst` pink |
+| weapon | relic light blue, mythic and ergon green, empyrean red, prime purple, aeonic orange, TP bonus (Sparrowhawk +2, Anarchy +2) dark blue, others grey |
+
+The weapon's class comes from the mode's Main, else Range, else Sub; add your own with
+`WeaponClass = { ['Item Name'] = 'tpbonus' }`. Each of the 22 jobs has its own colour.
+
+- **Drop:** opens on hover (`HUDHover = false`: always); in the screen's bottom half the lines rise above the bar
+  (`HUDGrow`). The box with it on also prints the other boxes' chat lines as `[Name]` (`HUDMessages`).
+- **Settings:** `DisplayBar` `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDAlpha` `WeaponClass`; `/gchud debug`
+  lists what it reads.
+- **Windower:** no shapes: `|` and the words in their colours (grey = default/off).
 
 ## How sets stack
 
@@ -381,4 +410,4 @@ Each file ends its sets with a Templates block (one of each, blank) to copy from
 | TP-set weapon never shows | engaged the mode wins: `/wm none`, `/mainset none` |
 | Wrong gear | `/checksets`, spelling, `/gctrace` |
 | Action cancelled | chat says why |
-| HUD gone | `/gcbar on`, `/gchud on`, `/gcbar pos 500 0` |
+| Bar or HUD gone | `/gcbar on`, `/gchud on`, `/gcbar reset` |
