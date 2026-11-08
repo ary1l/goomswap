@@ -563,7 +563,7 @@ local function bar_body(drop, open, up) -- drop: the other boxes (their columns 
 	end
 	local function run(name, cmd, ctrl) -- a click: this box runs it, or the other box (gchud)
 		local ok, held = pcall(function() return imgui.GetIO().KeyCtrl end);
-		cmd = (ok and held and ctrl) or cmd;
+		cmd = 'gcclick ' .. ((ok and held and ctrl) or cmd); -- gcclick: the new value is said in chat (an alt's comes back as [Name])
 		if (name == nil) then AshitaCore:GetChatManager():QueueCommand(-1, '/lac fwd ' .. cmd)
 		elseif (hud ~= nil) then hud.Send(name, cmd) end
 	end
