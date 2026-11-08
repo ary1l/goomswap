@@ -4,7 +4,7 @@ local imgui = require('imgui');
 local cfg = nil;
 local inc = nil; -- gcinclude: the bar's mode names and labels
 local barPlaced = false;
-local barSavedX, barSavedY = nil, nil;
+local placedX, placedY, heldSeen = nil, nil, false; -- where the bar's own line was put; a mouse press since (a drag)
 
 local Toggles = {};
 local DefToggles = {};
@@ -337,9 +337,9 @@ local function bar_save()
 	if not ashita.fs.exists(dir) then ashita.fs.create_directory(dir) end
 	local f = io.open(dir .. file, 'w');
 	if (f == nil) then return end
-	f:write(string.format('%d,%d,%s', cfg.DisplayBarX or 300, cfg.DisplayBarY or 0, (cfg.DisplayBar == true) and 'on' or 'off'));
+	local x = (tonumber(cfg.DisplayBarX) ~= nil) and string.format('%d', cfg.DisplayBarX) or 'auto';
+	f:write(string.format('%s,%d,%s', x, cfg.DisplayBarY or 0, (cfg.DisplayBar == true) and 'on' or 'off'));
 	f:close();
-	barSavedX, barSavedY = cfg.DisplayBarX, cfg.DisplayBarY;
 end
 
 local function bar_load()
@@ -349,22 +349,24 @@ local function bar_load()
 	if (f == nil) then return end
 	local text = f:read('*a') or '';
 	f:close();
-	local x, y, on = string.match(text, '^(%-?%d+),(%-?%d+),(%a+)');
+	local x, y, on = string.match(text, '^(%-?%w+),(%-?%d+),(%a+)');
 	if (x == nil) then return end
-	cfg.DisplayBarX, cfg.DisplayBarY = tonumber(x), tonumber(y);
+	if (x == '300') and (y == '0') then x = 'auto' end -- the old default, never dragged
+	cfg.DisplayBarX, cfg.DisplayBarY = tonumber(x), tonumber(y); -- 'auto': nil
 	cfg.DisplayBar = (on == 'on');
-	barSavedX, barSavedY = cfg.DisplayBarX, cfg.DisplayBarY;
 end
 
+-- Dragged (moved from where it was put, after a mouse press): that spot is saved and kept (no longer auto).
 local function track_drag(ownDy) -- ownDy: px from the window's top to this box's own line (the drop rising above it)
 	local x, y = xy(imgui.GetWindowPos());
-	if (x == nil) or (y == nil) or imgui.IsMouseDown(0) then return end
+	if (x == nil) or (y == nil) or imgui.IsMouseDown(0) or not heldSeen then return end
+	heldSeen = false;
 	x, y = math.floor(x + 0.5), math.floor(y + (ownDy or 0) + 0.5);
+	if (placedX ~= nil) and (math.abs(x - placedX) <= 1) and (math.abs(y - (placedY or 0)) <= 1) then return end -- a click, not a drag
 	if (y > 0) and (y <= 8) then y = 0; barPlaced = false end -- dropped near the top: flush with it
-	if (x ~= barSavedX) or (y ~= barSavedY) then
-		cfg.DisplayBarX, cfg.DisplayBarY = x, y;
-		bar_save();
-	end
+	cfg.DisplayBarX, cfg.DisplayBarY = x, y;
+	placedX, placedY = x, y;
+	bar_save();
 end
 
 -- Lines: this box's (the bar) and, hovered with /gchud on, one per other box dropped under it (gchud's rows), every
@@ -648,10 +650,14 @@ end
 
 -- Hovered with /gchud on: the other boxes drop in (HUDHover = false: always); in the screen's bottom half they rise
 -- above the bar instead (HUDGrow 'up' / 'down' / 'auto').
-local hoverUntil, closedFrames, dropUp = 0, 0, false;
+local hoverUntil, closedFrames, dropUp, barW = 0, 0, false, nil;
 local function screen_h()
 	local ok, h = pcall(function() return imgui.GetMainViewport().Size.y end);
 	return ok and tonumber(h) or nil;
+end
+local function screen_w()
+	local ok, w = pcall(function() return imgui.GetMainViewport().Size.x end);
+	return ok and tonumber(w) or nil;
 end
 local function render_bar()
 	if (cfg == nil) or (cfg.DisplayBar ~= true) then return end
@@ -659,18 +665,27 @@ local function render_bar()
 	local drop = (hud ~= nil) and hud.DropRows() or nil;
 	local open = (drop ~= nil) and (#drop > 0) and ((cfg.HUDHover == false) or (now < hoverUntil));
 	local held = imgui.IsMouseDown(0);
+	if held then heldSeen = true end
+	-- Not dragged yet (DisplayBarX unset, or /gcbar pos auto): centred at the top, or with the drop on (/gchud,
+	-- HUDOwners) flush right, its width counting the dropped lines; re-placed when the width changes.
+	local tx, ty = tonumber(cfg.DisplayBarX), cfg.DisplayBarY or 0;
+	if (tx == nil) then
+		local sw = screen_w();
+		tx = ((sw ~= nil) and (barW ~= nil)) and math.max(0, math.floor((drop ~= nil) and (sw - barW) or ((sw - barW) / 2))) or 300;
+		if (tx ~= placedX) and not held then barPlaced = false end
+	end
 	if not held then
 		local g = string.lower(tostring(cfg.HUDGrow or 'auto'));
 		local sh = screen_h();
-		dropUp = (g == 'up') or ((g ~= 'down') and (sh ~= nil) and (((cfg.DisplayBarY or 0) + (barH or 0) / 2) > sh / 2));
+		dropUp = (g == 'up') or ((g ~= 'down') and (sh ~= nil) and ((ty + (barH or 0) / 2) > sh / 2));
 	end
 	local up = open and dropUp and (barH ~= nil);
 	if up and not held then -- pin this box's line (the bottom) where it is
-		imgui.SetNextWindowPos({ cfg.DisplayBarX or 300, (cfg.DisplayBarY or 0) + barH }, ImGuiCond_Always, { 0, 1 });
-		barPlaced = false;
+		imgui.SetNextWindowPos({ tx, ty + barH }, ImGuiCond_Always, { 0, 1 });
+		placedX, placedY, barPlaced = tx, ty, false;
 	elseif (not barPlaced) and not held then
-		imgui.SetNextWindowPos({ cfg.DisplayBarX or 300, cfg.DisplayBarY or 0 }, ImGuiCond_Always);
-		barPlaced = true;
+		imgui.SetNextWindowPos({ tx, ty }, ImGuiCond_Always);
+		placedX, placedY, barPlaced = tx, ty, true;
 	end
 	local flags = bit.bor(ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoFocusOnAppearing,
 		ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
@@ -694,6 +709,8 @@ local function render_bar()
 		ok, err = pcall(bar_body, drop, open, up);
 		if (imgui.IsWindowHovered ~= nil) and imgui.IsWindowHovered() then hoverUntil = now + 0.6 end
 		closedFrames = open and 0 or (closedFrames + 1);
+		local w = xy(imgui.GetWindowSize());
+		if (w ~= nil) and (w > 0) then barW = math.floor(w + 0.5) end
 		if (closedFrames >= 3) then -- the bar's own height, once the window has fit it
 			local _, h = xy(imgui.GetWindowSize());
 			if (h ~= nil) and (h > 0) then barH = h end
@@ -710,6 +727,11 @@ function gcdisplay.BarCommand(args)
 	local arg = (args[2] ~= nil) and string.lower(args[2]) or nil;
 	if (arg == 'pos') and (tonumber(args[3]) ~= nil) and (tonumber(args[4]) ~= nil) then
 		cfg.DisplayBarX, cfg.DisplayBarY = tonumber(args[3]), tonumber(args[4]);
+		barPlaced = false;
+		bar_save();
+		return;
+	elseif (arg == 'reset') or ((arg == 'pos') and (string.lower(tostring(args[3])) == 'auto')) then -- back to the auto spot
+		cfg.DisplayBarX, cfg.DisplayBarY = nil, 0;
 		barPlaced = false;
 		bar_save();
 		return;

@@ -244,8 +244,9 @@ Waltz TP. Nothing is queued.
 ## Status bar and HUD
 
 One window: this box's **bar**, and (the HUD) every other box **dropped in under it** while the mouse is over it.
-`/gcbar` (or `DisplayBar = true`) shows the bar; drag it (saved per character; within 8px of the top it snaps
-flush). `/gchud` turns the drop on (`HUDOwners` boxes: on at load; it also turns the bar on). Each box shares its
+`/gcbar` (or `DisplayBar = true`) shows the bar: centred at the top, or with the drop on flush right (room for the
+dropped lines, clear of status timers on the left). Drag it anywhere (saved per character; within 8px of the top it
+snaps flush); `/gcbar reset` puts it back. `/gchud` turns the drop on (`HUDOwners` boxes: on at load; it also turns the bar on). Each box shares its
 modes when they change (checked 4x/s); the box with the drop reads them twice a second (Ashita
 `luashitacast/hud/`, Windower IPC).
 
