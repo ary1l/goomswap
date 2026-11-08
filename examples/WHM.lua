@@ -387,6 +387,8 @@ local sets = {
         Feet = 'Herald\'s Gaiters',
 	},
     -- Templates: fill the ones you use; an empty set changes nothing.
+    Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
+    Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
     Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
     Cataclysm_HighBuff = {}, -- /wsset high: this WS
     Benediction = {}, -- a job ability: worn as it goes off (ByName)

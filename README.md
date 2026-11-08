@@ -171,7 +171,7 @@ THTracker loaded use `//subset` / `//gs c th`.
 | `/warpring` `/mea` `/holla` `/dem` `/ontic` `/shard` `/gctemps` | Warp/dim rings, exit items, Escha drinks |
 | `/capacity` `/jubilee` `/dynamisrp` | Hold cape / Jubilee Ring / Dynamis neck |
 | `/ejenter [chamber]` `/ejlamps` `/ejexit` | Einherjar (Ashita) |
-| `/tankset` `/proc` `/pupmode` | PLD RUN tank set / SAM NIN proc / PUP mode |
+| `/tankset` `/proc` `/pupmode` | PLD RUN tank set / `Proc` set, every job / PUP mode |
 | `/forcestring` `/songlock` `/cormsg` `/xiroll` `/siphon` | BRD / COR / SMN |
 | `/gchud` `/gcbar` | HUD / status bar (below) |
 | `/gcmodes [all]` | Modes in chat |
@@ -322,6 +322,7 @@ obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` 
 | `Dt` `mdt` `Aminon` `SIR` `TH` `Movement` | their toggles; `TH` until tagged |
 | `Idle_Refresh` `Idle_Regen` `Idle_Regain` | `/idleset`; low MP/HP |
 | `Midshot_Acc` | `/rangedset acc` |
+| `Proc` `Ws_Proc` | `/proc`: engaged over your sets (`Dt` stays on top); on WS `Ws_Proc`, else `Proc` |
 | `Incapacitated` `Sleeping` | disabled / asleep (weapons pass the TP hold) |
 | `Absorb` `Absorb_TP` `LightBonus` | Absorb spells / Healing Magic |
 | `Buffs` `Buffs_Ws` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while the buff is up |

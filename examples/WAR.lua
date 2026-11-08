@@ -264,6 +264,8 @@ local sets = {
         Hands = 'Agoge Mufflers +1',
     },
     -- Templates: fill the ones you use; an empty set changes nothing.
+    Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
+    Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
     Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
     ['Savage Blade_Acc'] = {}, -- /mset acc: this WS, over Ws_Acc
     ['Savage Blade_HighBuff'] = {}, -- /wsset high: this WS

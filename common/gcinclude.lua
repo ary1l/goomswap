@@ -348,9 +348,7 @@ function gcinclude.SetVariables()
     if (mJob == 'PLD') or (mJob == 'RUN') then
         gcdisplay.CreateCycle('TankSet', {[1] = 'None', [2] = 'Main', [3] = 'MEVA'});
     end
-    if (mJob == 'SAM') or (mJob == 'NIN') then
-        gcdisplay.CreateToggle('PROC', false);
-    end
+    gcdisplay.CreateToggle('PROC', false); -- /proc: every job (Proc / Ws_Proc sets, worn by the engine)
     if (mJob == 'PUP') then
         gcdisplay.CreateCycle('PupMode', {[1] = 'Tank', [2] = 'Melee', [3] = 'Ranger', [4] = 'Mage'});
     end
@@ -575,8 +573,8 @@ end
 				status = gcdisplay.GetCycle('TankSet');
 			end
 		end
-		if (player.MainJob == 'SAM') or (player.MainJob == 'NIN') then
-			if (args[1] == 'proc') then
+		do
+			if (args[1] == 'proc') then -- every job
 				gcinclude.FlipToggle('PROC', args[2]);
 				toggle = 'Low Damage PROC Set';
 				status = gcdisplay.GetToggle('PROC');
@@ -2055,6 +2053,10 @@ end
 				local result, trail = gcinclude.TrackEars(function(...)
 					gcinclude.WornSets = {};
 					local r = ws(...);
+					if (gcdisplay.GetToggle('PROC') == true) then -- /proc: Ws_Proc (else Proc) over the job's WS sets
+						local proc = gcinclude.FindSet('Ws_Proc') or gcinclude.FindSet('Proc');
+						if (proc ~= nil) then gFunc.EquipSet(proc) end
+					end
 					local worn = gcinclude.WornSets;
 					gcinclude.WornSets = nil;
 					if (gcdisplay.GetCycle('WsSet') == 'High') then gcinclude.WearChildren(worn, {'HighBuff'}) end
@@ -4280,6 +4282,15 @@ checkDefault = function()
     -- so this handler's job-set weapon can't cost the TP (LAC checks gState.Disabled when the buffer goes out).
     if (next(gcinclude.SleepFreed) ~= nil) and (gcinclude.BuffCount('Sleep') == 0) then gcinclude.UpdateHold() end
     local me = gData.GetPlayer(); -- one read for the auto sets, the combat check and XIRoll
+    if (me ~= nil) and (me.Status == 'Engaged') and (gcdisplay.GetToggle('PROC') == true) then
+        -- /proc: Proc over the job's engaged layers, /dt's Dt still over it (where the job files used to put it)
+        local proc = gcinclude.FindSet('Proc');
+        if (proc ~= nil) then
+            gFunc.EquipSet(proc);
+            local dt = gcinclude.FindSet('Dt');
+            if (gcdisplay.GetToggle('DTset') == true) and (dt ~= nil) then gFunc.EquipSet(dt) end
+        end
+    end
     gcinclude.CheckHoxneSets(me);
     gcinclude.SetRegenRefreshGear(me);
     gcinclude.SetTownGear();

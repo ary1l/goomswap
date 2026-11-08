@@ -94,7 +94,7 @@ local sets = {
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Potency of "Cure" effect received+5%', [2] = 'Mag. Acc.+19', [3] = 'Accuracy+21', [4] = '"Mag. Atk. Bns."+19', [5] = '"Treasure Hunter"+2' } },
     },
 
-    Proc = { -- /proc: low-damage gear for proc windows, layered while engaged and on WS
+    Proc = { -- /proc: low-damage gear for proc windows, worn by the engine while engaged and on WS (Ws_Proc there if you have one)
         -- a set to force low dmg for things like Abyssea
         Ammo = { Name = 'Coiste Bodhar', AugPath='A' },
         Head = 'Rawhide Mask',
@@ -346,6 +346,7 @@ local sets = {
         },
     },
     -- Templates: fill the ones you use; an empty set changes nothing.
+    Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
     Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
     ['Blade: Hi_Acc'] = {}, -- /mset acc: this WS, over Ws_Acc
     ['Blade: Hi_HighBuff'] = {}, -- /wsset high: this WS
@@ -410,7 +411,6 @@ profile.HandleDefault = function()
         gcinclude.EquipMode('Tp');
         if (gcinclude.BuffCount('Yonin') > 0) then gFunc.EquipSet(sets.Yonin)
         elseif (gcinclude.BuffCount('Innin') > 0) then gFunc.EquipSet(sets.Innin) end
-        if (gcdisplay.GetToggle('PROC') == true) then gFunc.EquipSet(sets.Proc) end
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
@@ -467,7 +467,6 @@ profile.HandleWeaponskill = function()
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
     ByName(ws.Name);
-    if (gcdisplay.GetToggle('PROC') == true) then gFunc.EquipSet(sets.Proc) end
 end
 
 return profile;

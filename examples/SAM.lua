@@ -101,7 +101,7 @@ local sets = {
         Waist = 'Chaac Belt',
     },
 
-    Proc = { -- /proc: low-damage gear for proc windows, layered while engaged and on WS
+    Proc = { -- /proc: low-damage gear for proc windows, worn by the engine while engaged and on WS (Ws_Proc there if you have one)
         -- a set to force low dmg for things like Vagary
         Ammo = { Name = 'Coiste Bodhar', AugPath='A' },
         Head = 'Flam. Zucchetto +2',
@@ -340,7 +340,6 @@ profile.HandleDefault = function()
         if (gcinclude.BuffCount('Seigan') > 0) then -- Third Eye set instead when both are up
             gFunc.EquipSet((gcinclude.BuffCount('Third Eye') > 0) and sets['Third Eye'] or sets.Seigan);
         end
-        if (gcdisplay.GetToggle('PROC') == true) then gFunc.EquipSet(sets.Proc) end
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
@@ -393,7 +392,6 @@ profile.HandleWeaponskill = function()
     ByName(ws.Name);
     if (gcinclude.BuffCount('Meikyo Shisui') > 0) then gFunc.EquipSet(sets['Meikyo Shisui']) end
     if (gcinclude.BuffCount('Sekkanoki') > 0) then gFunc.EquipSet(sets.Sekkanoki) end
-    if (gcdisplay.GetToggle('PROC') == true) then gFunc.EquipSet(sets.Ws_Proc or sets.Proc) end
 end
 
 return profile;

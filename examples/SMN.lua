@@ -419,6 +419,8 @@ local sets = {
     ['Apogee'] = {},
     ['Avatar\'s Favor'] = {},
     -- Templates: fill the ones you use; an empty set changes nothing.
+    Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
+    Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
     Ws_HighBuff = {}, -- /wsset high: over Ws_Default (PDL)
     ['Garland of Bliss'] = {}, -- a weapon skill: worn by name (ByName)
     ['Garland of Bliss_Acc'] = {}, -- /mset acc: this WS, over Ws_Acc
