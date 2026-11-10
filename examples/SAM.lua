@@ -320,6 +320,7 @@ profile.OnLoad = function()
     gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None'}; -- e.g. {'None', 'Example'} with a Weapon_Example set
     gcinclude.DefaultWeapons = 'None';
+    gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
     gcinclude.Initialize();
 end
 

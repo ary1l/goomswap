@@ -380,6 +380,7 @@ profile.OnLoad = function()
     gcinclude.MainModes = {'None', 'Naegling'};
     gcinclude.SubModes = {'None', 'Kraken Club', 'Nusku Shield'};
     gcinclude.DefaultWeapons = 'Annihilator';
+    gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
     gcinclude.Initialize();
 end
 

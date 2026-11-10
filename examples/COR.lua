@@ -510,6 +510,7 @@ profile.OnLoad = function()
         RostamC = { Name = 'Rostam', AugPath = 'C' },
     };
     gcinclude.DefaultWeapons = 'Anarchy';
+    gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
     gcinclude.Initialize();
 
     gcinclude.CORmsg = true; -- set this to false if you do not want to see lucky/unlucky # messages, can also do /cormsg in game to change on the fly
