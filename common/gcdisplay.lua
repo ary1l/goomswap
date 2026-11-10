@@ -159,7 +159,6 @@ local JOB_COL = {
 	RUN = { 1.00, 0.45, 0.04, 1.0 }
 };
 local function job_col(j) return JOB_COL[string.upper(tostring(j or ''))] or COL_HEAD end
-function gcdisplay.JobColor(j) return JOB_COL[string.upper(tostring(j or ''))] end -- the HUD's names; nil if unknown
 local COL_DIV = { 1.0, 1.0, 1.0, 0.20 };
 local COL_EDGE = { 1.0, 1.0, 1.0, 0.10 };
 local COL_BAR_BG = { 0.04, 0.045, 0.06 };
@@ -254,7 +253,6 @@ function gcdisplay.WeaponClass() -- this box's, for the HUD line (the other boxe
 	local c = Cycles[wk];
 	return mode_class(wk, c.Array[c.Index]);
 end
-function gcdisplay.ToggleColor(k) return TOGGLE_COL[k] or { 0.35, 0.95, 0.45, 1.0 } end
 
 -- Pills. LEAD: px from the pill's left edge to its text (the dot before it); PLAIN_LEAD with no dot; TAIL after the text.
 local PILL_GREY = { 0.50, 0.50, 0.56 };
@@ -701,14 +699,21 @@ end
 -- Hovered with /gchud on: the other boxes drop in (HUDHover = false: always); in the screen's bottom half they rise
 -- above the bar instead (HUDGrow 'up' / 'down' / 'auto').
 local hoverUntil, closedFrames, dropUp, barW = 0, 0, false, nil;
+local function viewport_h() return imgui.GetMainViewport().Size.y end
+local function viewport_w() return imgui.GetMainViewport().Size.x end
 local function screen_h()
-	local ok, h = pcall(function() return imgui.GetMainViewport().Size.y end);
+	local ok, h = pcall(viewport_h);
 	return ok and tonumber(h) or nil;
 end
 local function screen_w()
-	local ok, w = pcall(function() return imgui.GetMainViewport().Size.x end);
+	local ok, w = pcall(viewport_w);
 	return ok and tonumber(w) or nil;
 end
+-- Made once, not every frame: imgui reads these when they are pushed and keeps none of them.
+local BAR_PAD, BAR_GAP, PILL_PAD, PIVOT_BOTTOM = { 10, 1 }, { 5, 3 }, { 1, 0 }, { 0, 1 };
+local COL_NONE, COL_PILL_HOVER = { 0, 0, 0, 0 }, { 1, 1, 1, 0.12 };
+local barBg, barPos, barFlags = { COL_BAR_BG[1], COL_BAR_BG[2], COL_BAR_BG[3], 0.70 }, { 0, 0 }, nil;
+local growRaw, grow = false, 'auto'; -- cfg.HUDGrow as last read, and its lower-case text
 local function render_bar()
 	if (cfg == nil) or (cfg.DisplayBar ~= true) then return end
 	local now = os.clock();
@@ -725,36 +730,41 @@ local function render_bar()
 		if (tx ~= placedX) and not held then barPlaced = false end
 	end
 	if not held then
-		local g = string.lower(tostring(cfg.HUDGrow or 'auto'));
+		if (cfg.HUDGrow ~= growRaw) then growRaw, grow = cfg.HUDGrow, string.lower(tostring(cfg.HUDGrow or 'auto')) end
 		local sh = screen_h();
-		dropUp = (g == 'up') or ((g ~= 'down') and (sh ~= nil) and ((ty + (barH or 0) / 2) > sh / 2));
+		dropUp = (grow == 'up') or ((grow ~= 'down') and (sh ~= nil) and ((ty + (barH or 0) / 2) > sh / 2));
 	end
 	local up = open and dropUp and (barH ~= nil);
 	if up and not held then -- pin this box's line (the bottom) where it is
-		imgui.SetNextWindowPos({ tx, ty + barH }, ImGuiCond_Always, { 0, 1 });
+		barPos[1], barPos[2] = tx, ty + barH;
+		imgui.SetNextWindowPos(barPos, ImGuiCond_Always, PIVOT_BOTTOM);
 		placedX, placedY, barPlaced = tx, ty, false;
 	elseif (not barPlaced) and not held then
-		imgui.SetNextWindowPos({ tx, ty }, ImGuiCond_Always);
+		barPos[1], barPos[2] = tx, ty;
+		imgui.SetNextWindowPos(barPos, ImGuiCond_Always);
 		placedX, placedY, barPlaced = tx, ty, true;
 	end
-	local flags = bit.bor(ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoFocusOnAppearing,
-		ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
-	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, { 10, 1 }); -- 1px above and below the text: room for the job outline
-	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, { 5, 3 }); -- 3px between dropped lines
+	if (barFlags == nil) then
+		barFlags = bit.bor(ImGuiWindowFlags_AlwaysAutoResize, ImGuiWindowFlags_NoFocusOnAppearing,
+			ImGuiWindowFlags_NoTitleBar, ImGuiWindowFlags_NoScrollbar, ImGuiWindowFlags_NoResize);
+	end
+	imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, BAR_PAD); -- 1px above and below the text: room for the job outline
+	imgui.PushStyleVar(ImGuiStyleVar_ItemSpacing, BAR_GAP); -- 3px between dropped lines
 	imgui.PushStyleVar(ImGuiStyleVar_WindowRounding, 12); -- a capsule
 	imgui.PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1);
 	-- pills are borderless buttons under their drawn outline: hovered, a soft fill as round as the pill
 	local styleVars = 4;
-	if (ImGuiStyleVar_FramePadding ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FramePadding, { 1, 0 }); styleVars = styleVars + 1 end
+	if (ImGuiStyleVar_FramePadding ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FramePadding, PILL_PAD); styleVars = styleVars + 1 end
 	if (ImGuiStyleVar_FrameBorderSize ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0); styleVars = styleVars + 1 end
 	if (ImGuiStyleVar_FrameRounding ~= nil) then imgui.PushStyleVar(ImGuiStyleVar_FrameRounding, 7); styleVars = styleVars + 1 end
-	imgui.PushStyleColor(ImGuiCol_WindowBg, { COL_BAR_BG[1], COL_BAR_BG[2], COL_BAR_BG[3], cfg.HUDAlpha or 0.70 }); -- as the HUD
+	barBg[4] = cfg.HUDAlpha or 0.70; -- as the HUD
+	imgui.PushStyleColor(ImGuiCol_WindowBg, barBg);
 	imgui.PushStyleColor(ImGuiCol_Border, COL_EDGE);
-	imgui.PushStyleColor(ImGuiCol_Button, { 0, 0, 0, 0 });
-	imgui.PushStyleColor(ImGuiCol_ButtonHovered, { 1, 1, 1, 0.12 });
-	imgui.PushStyleColor(ImGuiCol_ButtonActive, { 1, 1, 1, 0.12 });
+	imgui.PushStyleColor(ImGuiCol_Button, COL_NONE);
+	imgui.PushStyleColor(ImGuiCol_ButtonHovered, COL_PILL_HOVER);
+	imgui.PushStyleColor(ImGuiCol_ButtonActive, COL_PILL_HOVER);
 	local ok, err = true, nil;
-	if imgui.Begin('GC##gcdisplay_bar', true, flags) then
+	if imgui.Begin('GC##gcdisplay_bar', true, barFlags) then
 		-- an error here must not skip End/PopStyleVar, or ImGui asserts every frame after (as in gchud)
 		ok, err = pcall(bar_body, drop, open, up);
 		if (imgui.IsWindowHovered ~= nil) and imgui.IsWindowHovered() then hoverUntil = now + 0.6 end

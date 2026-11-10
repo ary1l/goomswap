@@ -2074,7 +2074,7 @@ end
 		end
 		for _, name in ipairs(T{'HandlePreshot', 'HandleMidshot', 'HandleItem'}) do
 			local original = gProfile[name];
-			if (type(original) == 'function') then
+			if (type(original) == 'function') or (name == 'HandleItem') then -- HandleItem: every job, the job file needs none
 				gProfile[name] = function(...)
 					-- /item or /ra while a spell is being cast: the game refuses it, and letting it through would
 					-- put its gear (or, once refused, idle gear) over the cast's midcast set.
@@ -2085,7 +2085,12 @@ end
 						return;
 					end
 					gcaction.TraceStart();
-					local result = original(...);
+					if (name == 'HandleItem') then -- gcinclude.sets.Holy_Water, under the job's own HandleItem
+						local a = gData.GetAction();
+						if (a ~= nil) and (type(a.Name) == 'string') and (string.find(a.Name, 'Holy Water', 1, true) ~= nil) then gFunc.EquipSet(gcinclude.sets.Holy_Water) end
+					end
+					local result;
+					if (type(original) == 'function') then result = original(...) end
 					if (name == 'HandlePreshot') then gcinclude.CheckSupplies('shot') end
 					gcaction.TraceEnd(gcinclude.TracePhase[name]);
 					return result;
