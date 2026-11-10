@@ -364,6 +364,7 @@ profile.OnLoad = function()
     gcinclude.DefaultWeapons = 'Mpu';
     gcinclude.MainModes = {'None', 'Mpu Gandring', 'Naegling'};
     gcinclude.SubModes = {'None', 'Gleti\'s Knife', 'Fusetto +2', 'Gandring'};
+    gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
     gcinclude.Initialize();
 end
 

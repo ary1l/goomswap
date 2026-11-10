@@ -122,7 +122,7 @@ Most changed:
 | `HUDOwners` | `T{}` | boxes whose bar drops the others in (the HUD) |
 | `Keybinds` | F-key layout | your keys (Keys); `T{}` none |
 | `LockstyleSet` | `nil` | lockstyle set put on after load/job change |
-| `RegenGearHPP` `RefreshGearMPP` `DTGearHPP` | 60 60 50 | auto `Idle_Regen` / `Idle_Refresh` / `Dt` below this %; 0 never |
+| `RegenGearHPP` `RefreshGearMPP` `DTGearHPP` | 60 60 50 | auto `Idle_Regen` / `Idle_Refresh` / `Dt` below this %; 0 never. Refresh is 0 in the WAR MNK THF SAM DRG DNC COR RNG NIN BST PUP BRD examples (`/autogear refresh 60` turns it on) |
 | `WeaponTPGuard` | 1000 | TP at which Main/Sub/Range stay on; 0 never hold |
 | `IdleWeapons` | `true` | idle sets' weapons beat the mode out of combat |
 | `Food` | Grape Daifuku +1 | food `/packer` keeps a stack of |
