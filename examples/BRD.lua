@@ -14,15 +14,15 @@ local sets = {
         Range = 'loughnashade',
         Head = 'fili calot +3',
         Neck = 'warder\'s charm +1',
-		Ear1 = 'hearty earring',
+        Ear1 = 'hearty earring',
         Ear2 = 'alabaster earring',
         Body = 'adamantite armor',
         Hands = 'Nyame Gauntlets',
         Ring1 = 'murky Ring',
         Ring2 = 'shadow ring',
         Back = 'shadow mantle',
-		Waist = 'carrier\'s sash',
-		Legs = 'fili rhingrave +3',
+        Waist = 'carrier\'s sash',
+        Legs = 'fili rhingrave +3',
         Feet = 'nyame sollerets',
     },
     Resting = {},
@@ -71,15 +71,15 @@ local sets = {
     SIR = {
         Head = 'fili calot +3',
         Neck = 'warder\'s charm +1',
-		Ear1 = 'hearty earring',
+        Ear1 = 'hearty earring',
         Ear2 = 'alabaster earring',
         Body = 'adamantite armor',
         Hands = 'Nyame Gauntlets',
         Ring1 = 'murky Ring',
         Ring2 = 'shadow ring',
         Back = 'shadow mantle',
-		Waist = 'carrier\'s sash',
-		Legs = 'fili rhingrave +3',
+        Waist = 'carrier\'s sash',
+        Legs = 'fili rhingrave +3',
         Feet = 'nyame sollerets',
     },
 
@@ -108,7 +108,7 @@ local sets = {
         Sub = 'Genmei Shield',
     },
     Tp_Default = {
-		Main = 'naegling',
+        Main = 'naegling',
         Sub = 'fusetto +2',
         Range = { Name = 'Linos', Augment = { [1] = 'Accuracy+13', [2] = '"Store TP"+4', [3] = 'Attack+13', [4] = 'Quadruple Attack +3' } },
         Head = 'perfection masque',
@@ -139,7 +139,7 @@ local sets = {
         Neck = 'voltsurge torque',
         Ear1 = 'Loquac. Earring',
         Ear2 = 'Etiolation Earring', --2
-		Body = 'Inyanga Jubbah +2', --14
+        Body = 'Inyanga Jubbah +2', --14
         Hands = 'leyline gloves', --6
         Ring1 = 'weather. Ring',
         Ring2 = 'Kishar Ring', --5
@@ -157,61 +157,61 @@ local sets = {
     },
     Stoneskin_Precast = {
         Head = 'Umuthi Hat',
-		Neck = 'stone gorget',
+        Neck = 'stone gorget',
         Waist = 'Siegel Sash',
-		Legs = 'haven hose',
+        Legs = 'haven hose',
     },
     Singing_Precast = { --87
-		Main = 'Carnwenhan',
-		Sub = 'Kali',
-		Range = 'loughnashade',
+        Main = 'Carnwenhan',
+        Sub = 'Kali',
+        Range = 'loughnashade',
         Head = 'Fili Calot +3', --14
         Neck = 'voltsurge torque',
         Ear1 = 'loquac. earring',
         Ear2 = 'Etiolation earring',
-		Body = 'Inyanga Jubbah +2', --14
-		Hands = 'Gende. Gages +1', --6
+        Body = 'Inyanga Jubbah +2', --14
+        Hands = 'Gende. Gages +1', --6
         Ring1 = 'weather. Ring',
         Ring2 = 'Kishar Ring', --5
         Back = 'fi follet cape +1',
         Waist = 'witful belt', --3
-		Legs = 'Kaykaus tights +1', --6
+        Legs = 'Kaykaus tights +1', --6
         Feet = 'Fili Cothurnes +3',
     },
 
-	['Honor March_Precast'] = { --87
+    ['Honor March_Precast'] = { --87
         Main = 'Carnwenhan',
-		Sub = 'Kali',
-		Range = 'Marsyas',
+        Sub = 'Kali',
+        Range = 'Marsyas',
         Head = 'Fili Calot +3', --14
         Neck = 'voltsurge torque',
         Ear1 = 'loquac. earring',
         Ear2 = 'Etiolation earring',
-		Body = 'Inyanga Jubbah +2', --14
-		Hands = 'Gende. Gages +1', --7
+        Body = 'Inyanga Jubbah +2', --14
+        Hands = 'Gende. Gages +1', --7
         Ring1 = 'weather. Ring',
         Ring2 = 'Kishar Ring', --5
         Back = 'fi follet cape +1',
         Waist = 'witful belt', --3
-		Legs = 'Kaykaus tights +1', --7
+        Legs = 'Kaykaus tights +1', --7
         Feet = 'Fili Cothurnes +3',
     },
 
-	['Aria of Passion_Precast'] = { --87
+    ['Aria of Passion_Precast'] = { --87
         Main = 'Carnwenhan',
-		Sub = 'Kali',
-		Range = 'Loughnashade',
+        Sub = 'Kali',
+        Range = 'Loughnashade',
         Head = 'Fili Calot +3', --14
         Neck = 'voltsurge torque',--4
         Ear1 = 'loquac. earring', --2
         Ear2 = 'etiolation Earring', --2
-		Body = 'Inyanga Jubbah +2', --14
-		Hands = 'Gende. Gages +1', --7
+        Body = 'Inyanga Jubbah +2', --14
+        Hands = 'Gende. Gages +1', --7
         Ring1 = 'weather. Ring',--2
         Ring2 = 'Kishar Ring', --5
         Back = 'fi follet cape +1',
         Waist = 'witful belt', --3
-		Legs = 'Kaykaus tights +1', --7
+        Legs = 'Kaykaus tights +1', --7
         Feet = 'Fili Cothurnes +3',--13
     },
 
@@ -227,7 +227,7 @@ local sets = {
         Ring2 = 'Metamor. Ring +1',
         Back = 'Solemnity Cape',
         Waist = 'Rumination Sash',
-		Legs = 'Kaykaus tights +1', --7
+        Legs = 'Kaykaus tights +1', --7
         Feet = 'Vanya Clogs',--I 10
     },
     Self_Cure = {--cap 30
@@ -243,7 +243,7 @@ local sets = {
     },
     Cursna = {
         Ring1 = 'Purity Ring',
-		Waist = 'Gishdubar Sash',
+        Waist = 'Gishdubar Sash',
         Feet = 'Vanya Clogs',
     },
 
@@ -267,7 +267,7 @@ local sets = {
     },
     Phalanx = {},
     Refresh = {
-		Waist = 'Gishdubar Sash',
+        Waist = 'Gishdubar Sash',
     },
 
     ['Enfeebling Magic'] = { --abs-tp
@@ -288,7 +288,7 @@ local sets = {
 
     Wind = {
         Main = 'Carnwenhan',
-		Sub = 'Ammurapi Shield',
+        Sub = 'Ammurapi Shield',
         Range = 'loughnashade',
         Head = 'Brioso Roundlet +2',
         Neck = 'Mnbw. Whistle +1',
@@ -303,9 +303,9 @@ local sets = {
         Legs = 'Fili Rhingrave +3',
         Feet = 'Brioso Slippers +4',
     },
-	Aria = {
+    Aria = {
         Main = 'Carnwenhan',
-		Sub = 'Kali',
+        Sub = 'Kali',
         Range = 'Loughnashade',
         Head = 'Fili Calot +3',
         Neck = 'Mnbw. Whistle +1',
@@ -320,9 +320,9 @@ local sets = {
         Legs = 'Inyanga Shalwar +2',
         Feet = 'Brioso Slippers +4',
     },
-	Honor = {
+    Honor = {
         Main = 'Carnwenhan',
-		Sub = 'kali',
+        Sub = 'kali',
         Range = 'Marsyas',
         Head = 'Fili Calot +3',
         Neck = 'Mnbw. Whistle +1',
@@ -339,13 +339,13 @@ local sets = {
     },
     Harp = {--use /forcestring in game to lock this on all songs, I personally just use Paeons
         Range = 'Daurdabla', -- This should be ur extra song harp, whichever you use
-	},
+    },
 
 
 
     Foe = {
         Main = 'Carnwenhan',
-		Sub = 'Ammurapi Shield',
+        Sub = 'Ammurapi Shield',
         Range = 'Marsyas',
         Head = 'Brioso Roundlet +2',
         Neck = 'Mnbw. Whistle +1',
@@ -353,7 +353,7 @@ local sets = {
         Ear2 = 'fili Earring +1',
         Body = 'Fili Hongreline +3',
         Hands = 'Brioso Cuffs +4',
-		Ring1 = 'stikini ring +1',
+        Ring1 = 'stikini ring +1',
         Ring2 = 'stikini ring +1',
         Back = 'null shawl',
         Waist = 'null belt',
@@ -367,10 +367,10 @@ local sets = {
         Head = 'Brioso Roundlet +2',
         Neck = 'Mnbw. Whistle +1',
         Ear1 = 'Regal Earring',
-		Ear2 = 'Gersemi Earring',
+        Ear2 = 'Gersemi Earring',
         Body = 'Brioso Justau. +2',
         Hands = 'Inyan. Dastanas +2',
-		Ring1 = 'stikini ring +1',
+        Ring1 = 'stikini ring +1',
         Ring2 = 'stikini ring +1',
         Back = 'null shawl',
         Waist = 'Harfner\'s Sash',
@@ -398,30 +398,30 @@ local sets = {
         Main = 'Carnwenhan',
         Sub = 'Kali',
         Range = 'loughnashade',
-		Ear1 = 'loquac. earring',
+        Ear1 = 'loquac. earring',
         Ear2 = 'Etiolation Earring',
         Ring1 = 'murky Ring',
-		Ring2 = 'kishar Ring',
+        Ring2 = 'kishar Ring',
         Back = 'fi follet cape +1',
         Waist = 'witful belt',
         Legs = 'Inyanga Shalwar +2',
         Feet = 'Fili Cothurnes +3',
     },
-	Dummy = {--you can also use /forcestring if you want
+    Dummy = {--you can also use /forcestring if you want
         Main = 'Carnwenhan',
-		Sub = 'Ammurapi Shield',
+        Sub = 'Ammurapi Shield',
         Range = 'Daurdabla',
         Ear1 = 'loquac. earring',
         Ear2 = 'Etiolation Earring',
         Ring1 = 'murky Ring',
-		Ring2 = 'kishar Ring',
+        Ring2 = 'kishar Ring',
         Back = 'fi follet cape +1',
         Waist = 'witful belt',
         Legs = 'Inyanga Shalwar +2',
         Feet = 'Fili Cothurnes +3',
     },
     March = {
-		Main = 'Carnwenhan',
+        Main = 'Carnwenhan',
         Sub = 'Kali',
         Range = 'loughnashade',
         Head = 'Fili Calot +3',
@@ -436,7 +436,7 @@ local sets = {
         Waist = 'witful belt',
         Legs = 'Inyanga Shalwar +2',
         Feet = 'Brioso Slippers +4',
-		},
+        },
 
     Madrigal = {
         Main = 'Carnwenhan',
@@ -456,7 +456,7 @@ local sets = {
         Feet = 'Brioso Slippers +4',
     },
     Ballad = {
-		Main = 'Carnwenhan',
+        Main = 'Carnwenhan',
         Sub = 'Kali',
         Range = 'loughnashade',
         Head = 'Fili Calot +3',
@@ -472,8 +472,8 @@ local sets = {
         Legs = 'Inyanga Shalwar +2',
         Feet = 'Brioso Slippers +4',
     },
-	Mambo = {
-		Main = 'Carnwenhan',
+    Mambo = {
+        Main = 'Carnwenhan',
         Sub = 'Kali',
         Range = 'loughnashade',
         Head = 'Fili Calot +3',
@@ -490,7 +490,7 @@ local sets = {
         Feet = 'Mou. Crackows +1',
     },
 
-	Etude = {
+    Etude = {
         Main = 'Carnwenhan',
         Sub = 'Kali',
         Range = 'loughnashade',
@@ -508,7 +508,7 @@ local sets = {
         Feet = 'Brioso Slippers +4',
     },
     Scherzo = {
-		Main = 'Carnwenhan',
+        Main = 'Carnwenhan',
         Sub = 'Kali',
         Range = 'loughnashade',
         Head = 'Fili Calot +3',
@@ -530,8 +530,8 @@ local sets = {
     Aspir = {},
 
     ['Elemental Magic'] = {
-	--main = '',
-	},
+    --main = '',
+    },
 
     Preshot = {
     },
@@ -556,52 +556,52 @@ local sets = {
 
     ['Mordant Rime'] = {
         Range = { Name = 'Linos', Augment = { [1] = 'Weapon skill damage +2%', [2] = 'Attack+13', [3] = 'STR+8' } },
-		Head = 'Nyame Helm',
+        Head = 'Nyame Helm',
         Neck = 'Bard\'s Charm +2',
-		Ear1 = 'regal earring',
-		Ear2 = 'ishvara earring',
+        Ear1 = 'regal earring',
+        Ear2 = 'ishvara earring',
         Body = 'Bihu Just. +4',
-		Hands = 'Nyame Gauntlets',
+        Hands = 'Nyame Gauntlets',
         Ring1 = 'Ephramad\'s Ring',
         Ring2 = 'metamor. Ring +1',
         Back = { Name = 'Intarabus\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'Sailfi Belt +1',
-		Legs = 'Nyame Flanchard',
+        Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
     ['Mordant Rime_Acc'] = {},
 
     ['Savage Blade'] = {
         Range = { Name = 'Linos', Augment = { [1] = 'Weapon skill damage +2%', [2] = 'Attack+13', [3] = 'STR+8' } },
-		Head = 'nyame helm',
+        Head = 'nyame helm',
         Neck = 'Bard\'s Charm +2',
-		Ear1 = 'regal earring',
-		Ear2 = 'telos earring',
-		Body = 'Bihu Just. +4',
-		Hands = 'nyame Gauntlets',
+        Ear1 = 'regal earring',
+        Ear2 = 'telos earring',
+        Body = 'Bihu Just. +4',
+        Hands = 'nyame Gauntlets',
         Ring1 = 'Ephramad\'s Ring',
         Ring2 = 'sroda ring',
         Back = { Name = 'Intarabus\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'Sailfi Belt +1',
-		Legs = 'Nyame Flanchard',
+        Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
     ['Savage Blade_Acc'] = {},
 
-	['Ruthless Stroke'] = { -- Ruthless Stroke (Mpu Gandring): guide Mid buff set with your gear. Moonshade: the engine's (Ear2 under 1750 TP);
-	                     -- Epaminondas's Ring -> Ephramad's Ring, Alabaster Mantle -> Intarabus's Cape (WSD)
+    ['Ruthless Stroke'] = { -- Ruthless Stroke (Mpu Gandring): guide Mid buff set with your gear. Moonshade: the engine's (Ear2 under 1750 TP);
+                         -- Epaminondas's Ring -> Ephramad's Ring, Alabaster Mantle -> Intarabus's Cape (WSD)
         Range = { Name = 'Linos', Augment = { [1] = 'Weapon skill damage +2%', [2] = 'Attack+13', [3] = 'STR+8' } },
-		Head = 'nyame helm',
+        Head = 'nyame helm',
         Neck = 'Bard\'s Charm +2',
-		Ear1 = 'Hoxne Earring',
-		Ear2 = 'Ishvara Earring',
-		Body = 'Bihu Just. +4',
-		Hands = 'nyame Gauntlets',
+        Ear1 = 'Hoxne Earring',
+        Ear2 = 'Ishvara Earring',
+        Body = 'Bihu Just. +4',
+        Hands = 'nyame Gauntlets',
         Ring1 = 'Ephramad\'s Ring',
         Ring2 = 'Ilabrat Ring',
         Back = { Name = 'Intarabus\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'Sailfi Belt +1',
-		Legs = 'Nyame Flanchard',
+        Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
     ['Ruthless Stroke_Acc'] = {},
@@ -623,12 +623,12 @@ local sets = {
     ['Hoxne_Savage Blade'] = {}, -- that WS, over Hoxne_Ws
 
     TH = {
-		Waist = 'Chaac Belt',
-		Feet = 'Volte Boots',
-	},
+        Waist = 'Chaac Belt',
+        Feet = 'Volte Boots',
+    },
     Movement = {
         Feet = 'Fili Cothurnes +3',
-	},
+    },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -691,7 +691,7 @@ end
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan'}; -- Weapon_CarnwenhanAcc goes on with /mset Acc; Hoxne is /hoxne
     gcinclude.DefaultWeapons = 'Naegling';
     gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
@@ -709,13 +709,13 @@ end
 profile.HandleDefault = function()
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
-	local player = gData.GetPlayer();
+    local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
-	elseif (player.Status == 'Resting') then
+    elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
-		gFunc.EquipSet(sets.Movement);
+        gFunc.EquipSet(sets.Movement);
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
@@ -759,21 +759,21 @@ profile.HandleMidcast = function()
             gFunc.EquipSet(sets.March);
         elseif (string.contains(spell.Name, 'Blade Madrigal')) or (string.contains(spell.Name, 'Sword Madrigal')) then
             gFunc.EquipSet(sets.Madrigal);
-		elseif (string.contains(spell.Name, 'Honor March')) then
+        elseif (string.contains(spell.Name, 'Honor March')) then
             gFunc.EquipSet(sets.Honor);
-		elseif (string.contains(spell.Name, 'Aria of Passion')) then
+        elseif (string.contains(spell.Name, 'Aria of Passion')) then
             gFunc.EquipSet(sets.Aria);
         elseif (string.contains(spell.Name, 'Sentinel\'s Scherzo')) then
             gFunc.EquipSet(sets.Scherzo);
-		elseif (string.contains(spell.Name, 'Dragonfoe Mambo')) or (string.contains(spell.Name, 'Sheepfoe Mambo')) then
+        elseif (string.contains(spell.Name, 'Dragonfoe Mambo')) or (string.contains(spell.Name, 'Sheepfoe Mambo')) then
             gFunc.EquipSet(sets.Mambo);
         elseif (string.contains(spell.Name, 'Ballad')) then
             gFunc.EquipSet(sets.Ballad);
-		elseif (string.contains(spell.Name, 'Etude')) then
+        elseif (string.contains(spell.Name, 'Etude')) then
             gFunc.EquipSet(sets.Etude);
-		elseif (string.match(spell.Name, 'Army\'s Paeon')) or (string.match(spell.Name, 'Goblin Gavotte')) then
+        elseif (string.match(spell.Name, 'Army\'s Paeon')) or (string.match(spell.Name, 'Goblin Gavotte')) then
             gFunc.EquipSet(sets.Dummy);
-		else
+        else
             gFunc.EquipSet(sets.Buff);
         end
         if (string.contains(spell.Name, 'Requiem')) or (string.contains(spell.Name, 'Elegy')) or (string.contains(spell.Name, 'Threnody')) or (string.contains(spell.Name, 'Finale')) or (string.contains(spell.Name, 'Lullaby')) then
@@ -800,7 +800,7 @@ end
 
 profile.HandleMidshot = function()
     gFunc.EquipSet(sets.Midshot);
-	gcinclude.CheckTH();
+    gcinclude.CheckTH();
 end
 
 profile.HandleWeaponskill = function()
@@ -811,4 +811,4 @@ profile.HandleWeaponskill = function()
     FixSub(gData.GetPlayer().Status == 'Engaged');
 end
 
-return profile;
+return profile;

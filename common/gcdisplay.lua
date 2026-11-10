@@ -60,19 +60,19 @@ end
 
 -- Only the bar shows these, so nothing is read while it is off (BarCommand reads them when it goes on).
 function gcdisplay.Update()
-    if (cfg == nil) or (cfg.DisplayBar ~= true) then return end
-    local player = AshitaCore:GetMemoryManager():GetPlayer();
-    if (player == nil) then return; end
+	if (cfg == nil) or (cfg.DisplayBar ~= true) then return end
+	local player = AshitaCore:GetMemoryManager():GetPlayer();
+	if (player == nil) then return; end
 
-    local MID, SID = player:GetMainJob(), player:GetSubJob();
-    local mlv, slv = player:GetMainJobLevel(), player:GetSubJobLevel();
-    Def = player:GetDefense();
-    Attk = player:GetAttack();
-    if (MID == headMID) and (SID == headSID) and (mlv == MainLV) and (slv == SubLV) and (headText ~= '') then return end -- job text unchanged
-    headMID, headSID, MainLV, SubLV = MID, SID, mlv, slv;
-    Main = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", MID) or 'NON';
-    Sub = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", SID) or 'NON';
-    headText = string.format('%s%d/%s%d', Main, MainLV, Sub, SubLV);
+	local MID, SID = player:GetMainJob(), player:GetSubJob();
+	local mlv, slv = player:GetMainJobLevel(), player:GetSubJobLevel();
+	Def = player:GetDefense();
+	Attk = player:GetAttack();
+	if (MID == headMID) and (SID == headSID) and (mlv == MainLV) and (slv == SubLV) and (headText ~= '') then return end -- job text unchanged
+	headMID, headSID, MainLV, SubLV = MID, SID, mlv, slv;
+	Main = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", MID) or 'NON';
+	Sub = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", SID) or 'NON';
+	headText = string.format('%s%d/%s%d', Main, MainLV, Sub, SubLV);
 end
 
 function gcdisplay.CreateToggle(name, default)

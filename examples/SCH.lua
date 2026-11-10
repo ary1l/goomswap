@@ -34,19 +34,19 @@ local sets = {
     Resting = {},
     Idle_Regen = {
         --Ear1 = 'Infused Earring',
-		Ring1 = 'chirich ring +1',
+        Ring1 = 'chirich ring +1',
         Ring2 = 'Chirich Ring +1',
-		Waist = 'null belt',
+        Waist = 'null belt',
     },
     Idle_Refresh = {
         Ammo = 'Homiliary',
         Head = 'Befouled Crown',
-		Hands = 'merlinic dastanas',
+        Hands = 'merlinic dastanas',
         Ring1 = 'Stikini Ring +1',
-		Ring2 = 'stikini ring +1',
+        Ring2 = 'stikini ring +1',
         Waist = 'Fucho-no-Obi',
         Legs = 'volte brais',
-		Feet = 'merlinic crackows',
+        Feet = 'merlinic crackows',
     },
     Idle_Regain = { -- /idleset regain: over Idle while idle
     },
@@ -56,14 +56,14 @@ local sets = {
         Ammo = 'staunch tathlum +1',
         Head = 'Arbatel Bonnet +3',
         Neck = 'argute stole +2',
-		Ear1 = 'alabaster earring',
-		Ear2 = 'etiolation earring',
+        Ear1 = 'alabaster earring',
+        Ear2 = 'etiolation earring',
         Body = 'adamantite armor',
         Hands = 'Acad. Bracers +4',
-		Ring1 = 'murky ring',
-		Ring2 = 'shadow ring',
+        Ring1 = 'murky ring',
+        Ring2 = 'shadow ring',
         Back = 'shadow mantle',
-		Waist = 'null belt',
+        Waist = 'null belt',
         Legs = 'nyame flanchard',
         Feet = 'acad. loafers +4',
     },
@@ -159,7 +159,7 @@ local sets = {
         Neck = 'loricate torque +1',
         Ear1 = 'Regal Earring',
         Ear2 = 'Mendi. Earring',--I 5
-		Body = 'arbatel gown +3',
+        Body = 'arbatel gown +3',
         Hands = 'peda. bracers +2',
         Ring1 = 'Stikini Ring +1',
         Ring2 = 'Metamor. Ring +1',
@@ -194,7 +194,7 @@ local sets = {
     },
     Cursna = {
         Ring1 = 'Purity Ring',
-		Waist = 'Gishdubar Sash',
+        Waist = 'Gishdubar Sash',
     },
 
     ['Enhancing Magic'] = {
@@ -222,7 +222,7 @@ local sets = {
     },
     Phalanx = {},
     Refresh = {
-		Waist = 'Gishdubar Sash',
+        Waist = 'Gishdubar Sash',
     },
     Self_Refresh = {},
 
@@ -421,17 +421,17 @@ local sets = {
     },
     Power = {--rapture/ebullience
         Head = 'Arbatel Bonnet +3',
-	},
+    },
     Klimaform = {--klimaform dmg boost
         Feet = 'Arbatel Loafers +3',
-	},
+    },
     TH = {
         Ammo = 'Per. Lucky Egg',
-		Waist = 'Chaac Belt',
-	},
+        Waist = 'Chaac Belt',
+    },
     Movement = {
         Feet = 'Herald\'s Gaiters',
-	},
+    },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -475,7 +475,7 @@ profile.Packer = {
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
     gcinclude.Initialize();
 
@@ -501,7 +501,7 @@ profile.HandleDefault = function()
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
-		gFunc.EquipSet(sets.Movement);
+        gFunc.EquipSet(sets.Movement);
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
@@ -586,7 +586,7 @@ end
 
 profile.HandleMidshot = function()
     gFunc.EquipSet(sets.Midshot);
-	gcinclude.CheckTH();
+    gcinclude.CheckTH();
 end
 
 profile.HandleWeaponskill = function()
@@ -596,4 +596,4 @@ profile.HandleWeaponskill = function()
     ByName(ws.Name); -- e.g. ['Myrkr'], then ['Myrkr_<mset>']
 end
 
-return profile;
+return profile;

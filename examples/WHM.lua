@@ -22,9 +22,9 @@ local sets = {
         Hands = 'nyame gauntlets',
         Ring1 = 'murky ring',
         Ring2 = 'stikini ring +1',
-		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
-		Waist = 'carrier\'s sash',
-		Legs = 'nyame flanchard',
+        Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
+        Waist = 'carrier\'s sash',
+        Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
     Resting = {},
@@ -32,40 +32,40 @@ local sets = {
         Neck = 'Sanctity necklace',
         --Ear1 = 'Infused Earring',
         --Ring1 = 'Chirich Ring +1',
-		Ring2 = 'gurebu\'s ring',
-		Waist = 'null belt',
+        Ring2 = 'gurebu\'s ring',
+        Waist = 'null belt',
     },
     Idle_Refresh = {
         --Ammo = 'Homiliary',
         --Head = 'volte beret',
-		--Neck = 'sibyl scarf',
-		Body = 'ebers bliaut +2',
+        --Neck = 'sibyl scarf',
+        Body = 'ebers bliaut +2',
         --Hands = 'volte gloves',
         Ring1 = 'Stikini Ring +1',
-		--Ring2 = 'gurebu\'s ring',
+        --Ring2 = 'gurebu\'s ring',
         Waist = 'Fucho-no-Obi',
         --Legs = 'volte brais',
-		--Feet = 'volte boots',
+        --Feet = 'volte boots',
     },
     Idle_Regain = { -- /idleset regain: over Idle while idle
     },
     Town = {
         Main = 'yagrush',
         Sub = 'chanter\'s shield',
-		--Ammo = 'Homiliary',
+        --Ammo = 'Homiliary',
         Head = 'theo. cap +4',
-		Neck = 'sibyl scarf',
-		Body = 'ebers bliaut +2',
+        Neck = 'sibyl scarf',
+        Body = 'ebers bliaut +2',
         Hands = 'sworn gauntlets',
         Ring1 = 'murky ring',
-		Ring2 = 'stikini ring +1',
+        Ring2 = 'stikini ring +1',
         Waist = 'null belt',
         Legs = 'sworn brais',
-		Feet = 'sworn sabatons',
+        Feet = 'sworn sabatons',
     },
 
     Dt = {
-		Sub = 'genmei shield',
+        Sub = 'genmei shield',
         Ammo = 'Staunch Tathlum +1',
         Head = 'nyame helm',
         Neck = 'loricate torque +1',
@@ -75,8 +75,8 @@ local sets = {
         Hands = 'nyame gauntlets',
         Ring1 = 'murky Ring',
         Ring2 = 'defending ring',
-		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
-		Waist = 'carrier\'s sash',
+        Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
+        Waist = 'carrier\'s sash',
         Legs = 'ebers pant. +3',
         Feet = 'nyame sollerets',
     },
@@ -93,9 +93,9 @@ local sets = {
         Hands = 'theo. mitts +4',
         Ring1 = 'murky ring',
         Ring2 = 'gurebu\'s ring',
-		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
-		Waist = 'carrier\'s sash',
-		Legs = 'ebers pant. +3',
+        Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
+        Waist = 'carrier\'s sash',
+        Legs = 'ebers pant. +3',
         Feet = 'theo. duckbills +4',
     },
     Tp_Default = {
@@ -103,14 +103,14 @@ local sets = {
         Sub = 'diamond aspis',
         Ammo = 'Staunch Tathlum +1',
         Head = 'Aya. Zucchetto +1',
-		Neck = 'Sanctity Necklace',
+        Neck = 'Sanctity Necklace',
         Ear1 = 'Brutal Earring',
         Ear2 = 'eabani Earring',
         Body = 'ayanmo corazza +1',
         Hands = 'sworn gauntlets',
         Ring1 = 'rajas ring',
         Ring2 = 'ayanmo ring',
-		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Dbl.Atk."+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Accuracy+30', [4] = 'Attack+20', [5] = 'DEX+20' } },
+        Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Dbl.Atk."+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Accuracy+30', [4] = 'Attack+20', [5] = 'DEX+20' } },
         Waist = 'Cornelia\'s Belt',
         Legs = 'sworn brais',
         Feet = 'sworn sabatons',
@@ -126,14 +126,14 @@ local sets = {
 
 
     Precast = {
-		Main = 'gada',--5
-		Sub = 'chanter\'s shield',--3
+        Main = 'gada',--5
+        Sub = 'chanter\'s shield',--3
         Ammo = 'Impatiens',
         Head = 'ebers cap +2',--10
-		Neck = 'Clr. Torque +2',--10
+        Neck = 'Clr. Torque +2',--10
         Ear1 = 'alabaster earring',
         Ear2 = 'Malignance Earring',
-		Body = 'inyanga jubbah +2',--14
+        Body = 'inyanga jubbah +2',--14
         Hands = 'sworn gauntlets', --5
         Ring1 = 'weather. Ring',--5
         Ring2 = 'lebeche Ring',
@@ -143,14 +143,14 @@ local sets = {
         Feet = 'sworn sabatons',--5
     },
     ['Healing Magic_Precast'] = {
-		Main = 'gada',--5
-		Sub = 'chanter\'s shield',--3
+        Main = 'gada',--5
+        Sub = 'chanter\'s shield',--3
         Ammo = 'Impatiens',
         Head = 'ebers cap +2',--10
-		Neck = 'Clr. Torque +2',--10
+        Neck = 'Clr. Torque +2',--10
         Ear1 = 'alabaster earring',
         Ear2 = 'malignance earring',
-		Body = 'inyanga jubbah +2',
+        Body = 'inyanga jubbah +2',
         Hands = 'sworn gauntlets', --6
         Ring1 = 'weather. Ring',--5
         Ring2 = 'lebeche Ring',--2
@@ -175,19 +175,19 @@ local sets = {
     -- MP above 50%: Cure's own Main/Sub stay (Raetic Rod +1 / Thuellaic Ecu +1).
     ['Healing Magic'] = {--I cap is 50, II cap is 30
         Main = 'raetic rod +1',
-		Sub = 'thuellaic ecu +1',
+        Sub = 'thuellaic ecu +1',
         Ammo = 'impatiens',
-		Head = 'theo. cap +4',
+        Head = 'theo. cap +4',
         Neck = 'Clr. Torque +2',
         Ear1 = 'mendi. earring',
         Ear2 = 'ebers earring +1',
-		Body = 'ebers bliaut +2',
+        Body = 'ebers bliaut +2',
         Hands = 'theo. mitts +4',
         Ring1 = 'weather. ring',
-		Ring2 = 'lebeche ring',
-		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
+        Ring2 = 'lebeche ring',
+        Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
         Waist = 'witful belt',
-		Legs = 'ebers pant. +3',--I 11
+        Legs = 'ebers pant. +3',--I 11
         Feet = 'sworn sabatons',
     },
     Self_Cure = {--cap 30
@@ -209,39 +209,39 @@ local sets = {
     ['Regen IV'] = {
         Main = 'Bolelabunga',
         Sub = 'Ammurapi Shield',
-		Head = 'inyanga tiara +2',
-		Body = 'Piety Bliaut +3',
-		Hands = 'ebers mitts +2',
+        Head = 'inyanga tiara +2',
+        Body = 'Piety Bliaut +3',
+        Hands = 'ebers mitts +2',
         Waist = 'embla sash',
         Legs = 'theo. pant. +4',
-		Feet = 'theo. duckbills +4',
+        Feet = 'theo. duckbills +4',
     },
-	erase = {
-		Main = 'yagrush',
+    erase = {
+        Main = 'yagrush',
         Sub = 'Ammurapi Shield',
-		Ammo = 'impatiens',
-		Neck = 'Clr. Torque +2',
-		Ear1 = 'alabaster earring',
-		Ear2 = 'malignance earring',
-		Hands = 'ebers mitts +2',
+        Ammo = 'impatiens',
+        Neck = 'Clr. Torque +2',
+        Ear1 = 'alabaster earring',
+        Ear2 = 'malignance earring',
+        Hands = 'ebers mitts +2',
         Ring1 = 'kishar Ring',
-		Ring2 = 'weather. Ring',
-		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
-		Waist = 'witful belt',
-		Legs = 'sworn brais',
+        Ring2 = 'weather. Ring',
+        Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
+        Waist = 'witful belt',
+        Legs = 'sworn brais',
         Feet = 'theo. duckbills +4',
     },
     Cursna = {
-		Main = 'yagrush',
+        Main = 'yagrush',
         Sub = 'Ammurapi Shield',
-		Head = 'vanya hood',
-		Neck = 'debilis medallion',
-		Hands = 'fanatic gloves',
+        Head = 'vanya hood',
+        Neck = 'debilis medallion',
+        Hands = 'fanatic gloves',
         Ring1 = 'Haoma\'s Ring',
-		Ring2 = 'Menelaus\'s Ring',
-		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
-		Waist = 'bishop\'s Sash',
-		Legs = 'theo. pant. +4',
+        Ring2 = 'Menelaus\'s Ring',
+        Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
+        Waist = 'bishop\'s Sash',
+        Legs = 'theo. pant. +4',
         Feet = 'Vanya Clogs',
     },
 
@@ -268,7 +268,7 @@ local sets = {
     },
     Phalanx = {},
     Refresh = {
-		Waist = 'Gishdubar Sash',
+        Waist = 'Gishdubar Sash',
     },
     Self_Refresh = {},
 
@@ -281,13 +281,13 @@ local sets = {
         Neck = 'Erra Pendant',
         Ear1 = 'Regal Earring',
         Ear2 = 'Malignance Earring',
-		Body = 'theo. bliaut +4',
+        Body = 'theo. bliaut +4',
         Ring1 = 'Stikini Ring +1',
         Ring2 = 'Metamor. Ring +1',
         Back = 'Aurist\'s Cape +1',
         Waist = 'Acuity Belt +1',
-		Legs = 'chironic hose',
-		Feet = 'theo. duckbills +4',
+        Legs = 'chironic hose',
+        Feet = 'theo. duckbills +4',
     },
 
     Drain = {
@@ -301,8 +301,8 @@ local sets = {
         Ring2 = 'Metamor. Ring +1',
         Back = 'Aurist\'s Cape +1',
         Waist = 'Fucho-no-Obi',
-		Legs = 'chironic hose',
-		Feet = 'theo. duckbills +4',
+        Legs = 'chironic hose',
+        Feet = 'theo. duckbills +4',
     },
 
     Aspir = {
@@ -316,8 +316,8 @@ local sets = {
         Ring2 = 'Metamor. Ring +1',
         Back = 'Aurist\'s Cape +1',
         Waist = 'Fucho-no-Obi',
-		Legs = 'chironic hose',
-		Feet = 'theo. duckbills +4',
+        Legs = 'chironic hose',
+        Feet = 'theo. duckbills +4',
     },
 
     ['Elemental Magic'] = {
@@ -329,7 +329,7 @@ local sets = {
         Ear2 = 'Malignance Earring',
         Ring1 = 'Shiva Ring +1',
         Ring2 = 'Metamor. Ring +1',
-		Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
+        Back = { Name = 'Alaunus\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+20', [4] = 'MND+30', [5] = 'Evasion+20' } },
         Waist = 'Eschan Stone',
         Feet = 'Volte Gaiters',
     },
@@ -381,11 +381,11 @@ local sets = {
 
     TH = {
         Ammo = 'Per. Lucky Egg',
-		Waist = 'Chaac Belt',
-	},
+        Waist = 'Chaac Belt',
+    },
     Movement = {
         Feet = 'Herald\'s Gaiters',
-	},
+    },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -424,7 +424,7 @@ profile.Sets = sets;
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.settings.KeepWeaponsFor = T{}; -- cures pick Main/Sub by MP (HandleMidcast), so a worn Daybreak must not be kept
     gcinclude.Initialize();
 end
@@ -447,7 +447,7 @@ profile.HandleDefault = function()
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
-		gFunc.EquipSet(sets.Movement);
+        gFunc.EquipSet(sets.Movement);
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
@@ -513,7 +513,7 @@ end
 
 profile.HandleMidshot = function()
     gFunc.EquipSet(sets.Midshot);
-	gcinclude.CheckTH();
+    gcinclude.CheckTH();
 end
 
 profile.HandleWeaponskill = function()
@@ -523,4 +523,4 @@ profile.HandleWeaponskill = function()
     ByName(ws.Name); -- e.g. ['Cataclysm'], then ['Cataclysm_<mset>']
 end
 
-return profile;
+return profile;

@@ -10,15 +10,15 @@ local sets = {
     Incapacitated = { -- slept, petrified, stunned or terrorized: worn over your /def set (else Dt) minus Main/Sub/Range/Ammo; add extra pieces here
     },
     Idle = {
-		Main = 'excalibur',
-		Sub = 'diamond aspis',
-		Range = 'displaced',
-		Ammo = 'staunch tathlum',
+        Main = 'excalibur',
+        Sub = 'diamond aspis',
+        Range = 'displaced',
+        Ammo = 'staunch tathlum',
         Head = 'leth. chappel +3',
         Neck = 'Warder\'s Charm +1',
         Ear1 = 'alabaster Earring',
         Ear2 = 'eabani earring',
-		Body = 'adamantite armor',
+        Body = 'adamantite armor',
         Hands = 'leth. ganth. +3',
         Ring1 = 'murky ring',
         Ring2 = 'Stikini Ring +1',
@@ -35,9 +35,9 @@ local sets = {
     },
     Idle_Refresh = {
         Head = 'Viti. Chapeau +4',
-		Body = 'lethargy sayon +3',
-		Hands = 'merlinic dastanas',
-		Feet = 'merlinic crackows',
+        Body = 'lethargy sayon +3',
+        Hands = 'merlinic dastanas',
+        Feet = 'merlinic crackows',
     },
     Idle_Regain = { -- /idleset regain: over Idle while idle
     },
@@ -46,7 +46,7 @@ local sets = {
         Main = 'Excalibur',
         Sub = 'diamond aspis',
         Range = 'Ullr',
-		Ammo = 'chapuli arrow',
+        Ammo = 'chapuli arrow',
         Head = 'Viti. Chapeau +4',
         Neck = 'warder\'s charm +1',
         Ear1 = 'alabaster earring',
@@ -77,12 +77,12 @@ local sets = {
         Feet = 'leth. houseaux +3',
     },
     SIR = {
-		Ammo = 'staunch tathlum',
+        Ammo = 'staunch tathlum',
         Head = 'leth. chappel +3',
         Neck = 'Warder\'s Charm +1',
         Ear1 = 'alabaster Earring',
         Ear2 = 'eabani earring',
-		Body = 'adamantite armor',
+        Body = 'adamantite armor',
         Hands = 'leth. ganth. +3',
         Ring1 = 'murky ring',
         Ring2 = 'Stikini Ring +1',
@@ -125,8 +125,8 @@ local sets = {
         Sub = 'Genmei Shield',
     },
     Tp_Default = {
-		Main = 'excalibur',
-		Sub = 'thibron',
+        Main = 'excalibur',
+        Sub = 'thibron',
         Ammo = 'Coiste Bodhar',
         Head = 'Malignance Chapeau',
         Neck = 'Anu Torque',
@@ -152,53 +152,53 @@ local sets = {
 
 
     Precast = {--30 from traits, 80 from gear
-		Main = 'Sakpata\'s sword',--10
-		Sub = 'diamond aspis',
+        Main = 'Sakpata\'s sword',--10
+        Sub = 'diamond aspis',
         Head = 'Atro. Chapeau +2',--14
         Neck = 'voltsurge torque',--4
         Ear1 = 'leth. earring +2',--8
         Ear2 = 'malignance Earring',--4
         Body = 'Viti. Tabard +4',--15
-		Hands = 'leyline gloves',--6
+        Hands = 'leyline gloves',--6
         Ring1 = 'prolix Ring',
         Ring2 = 'kishar ring',--4
-		Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
         Waist = 'Embla Sash',--5
         Legs = 'chironic hose',--5
         Feet = 'amalric nails +1',--6
     },
     ['Healing Magic_Precast'] = {
         Ear2 = 'Mendi. Earring',
-		Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
         Feet = 'Vanya Clogs',
     },
     ['Enhancing Magic_Precast'] = {
-		Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
         Waist = 'Siegel Sash',
     },
     Stoneskin_Precast = {
         Head = 'Umuthi Hat',
-		Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
-		Waist = 'Siegel Sash',
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
+        Waist = 'Siegel Sash',
     },
-	Dispelga_Precast = {
-		Main = 'daybreak',
-		Sub = 'ammurapi shield',
-		Range = 'ullr',
-		Ammo = 'displaced',
-		Head = 'Atro. Chapeau +2',--12
+    Dispelga_Precast = {
+        Main = 'daybreak',
+        Sub = 'ammurapi shield',
+        Range = 'ullr',
+        Ammo = 'displaced',
+        Head = 'Atro. Chapeau +2',--12
         Neck = 'voltsurge torque',--4
         Ear1 = 'leth. earring +2',--8
         Ear2 = 'malignance Earring',--4
         Body = 'Viti. Tabard +4',--15
-		Hands = 'leyline gloves',--6
+        Hands = 'leyline gloves',--6
         Ring1 = 'Prolix Ring',--2
         Ring2 = 'kishar ring',--4
-		Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
         Waist = 'Embla Sash',--5
         Legs = 'chironic hose',--5
         Feet = 'amalric nails +1',--6
-	},
+    },
 
 
     ['Healing Magic'] = {--I cap is 50, II cap is 30
@@ -208,13 +208,13 @@ local sets = {
         Neck = 'loricate torque +1',
         Ear1 = 'gwati earring',
         Ear2 = 'Mendi. Earring',--I 5
-		Body = 'Bunzi\'s robe', --I 15
+        Body = 'Bunzi\'s robe', --I 15
         Ring1 = 'murky ring',
         Ring2 = 'Stikini Ring +1',
         Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
         Waist = 'Rumination Sash',
         Legs = 'Atrophy Tights +2',--I 10 and skill
-		Feet = 'leth. houseaux +3',
+        Feet = 'leth. houseaux +3',
     },
     Self_Cure = {--cap 30
         Waist = 'Gishdubar Sash',
@@ -233,11 +233,11 @@ local sets = {
         Main = 'Bolelabunga',
         Sub = 'Ammurapi Shield',
         Body = 'Viti. Tabard +4',
-		Back = 'ghostfyre cape',
+        Back = 'ghostfyre cape',
     },
     Cursna = {
         --Ring1 = 'Purity Ring',
-		Waist = 'Gishdubar Sash',
+        Waist = 'Gishdubar Sash',
     },
 
     ['Enhancing Magic'] = {
@@ -259,37 +259,37 @@ local sets = {
     },
     Self_Enhancing = {},
     Skill_Enhancing = {
-		Head = 'befouled crown',
-		Ear1 = 'andoaa earring',
-		Waist = 'olympus sash',
-		Legs = 'atrophy tights +2',
-	},
+        Head = 'befouled crown',
+        Ear1 = 'andoaa earring',
+        Waist = 'olympus sash',
+        Legs = 'atrophy tights +2',
+    },
     Stoneskin = {
-		Neck = 'Nodens Gorget',--I 5
-		Hands = 'stone mufflers',
+        Neck = 'Nodens Gorget',--I 5
+        Hands = 'stone mufflers',
         Waist = 'Siegel Sash',
-		Legs = 'haven hose',
+        Legs = 'haven hose',
     },
     Phalanx = {},
     Refresh = {
-		Sub = 'ammurapi shield',
-		Ammo = 'hydrocera',
-		Head = 'amalric coif +1',
-		Neck = 'Dls. Torque +2',
-		Ear1 = 'leth. earring +2',
-		Ear2 = 'Malignance Earring',
+        Sub = 'ammurapi shield',
+        Ammo = 'hydrocera',
+        Head = 'amalric coif +1',
+        Neck = 'Dls. Torque +2',
+        Ear1 = 'leth. earring +2',
+        Ear2 = 'Malignance Earring',
         Body = 'Atrophy Tabard +2',
-		Hands = 'atrophy gloves +2',
-		Ring1 = 'murky ring',
-		Ring2 = 'stikini ring +1',
-		Back = 'ghostfyre cape',
-		Waist = 'Gishdubar Sash',
-		Legs = 'leth. fuseau +3',
-		Feet = 'Leth. Houseaux +3',
+        Hands = 'atrophy gloves +2',
+        Ring1 = 'murky ring',
+        Ring2 = 'stikini ring +1',
+        Back = 'ghostfyre cape',
+        Waist = 'Gishdubar Sash',
+        Legs = 'leth. fuseau +3',
+        Feet = 'Leth. Houseaux +3',
     },
     Self_Refresh = {},
 
-	Gain = {
+    Gain = {
         Sub = 'Ammurapi Shield',
         Ammo = 'hydrocera',
         Head = 'telchine cap',
@@ -304,10 +304,10 @@ local sets = {
         Waist = 'Embla Sash',
         Legs = 'Telchine Braconi',
         Feet = 'Leth. Houseaux +3',
-	},
+    },
 
-	Aquaveil = {
-		Sub = 'Ammurapi Shield',
+    Aquaveil = {
+        Sub = 'Ammurapi Shield',
         Ammo = 'hydrocera',
         Head = 'amalric coif +1',
         Neck = 'Dls. Torque +2',
@@ -321,15 +321,15 @@ local sets = {
         Waist = 'Embla Sash',
         Legs = 'Telchine Braconi',
         Feet = 'Leth. Houseaux +3',
-	},
+    },
 
     ['Enfeebling Magic'] = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
         Range = 'Ullr',
-		Ammo = 'chapuli arrow',
+        Ammo = 'chapuli arrow',
         Head = 'viti. chapeau +4',
-		Neck = 'Dls. Torque +2',
+        Neck = 'Dls. Torque +2',
         Ear1 = 'Snotra Earring',
         Ear2 = 'Malignance Earring',
         Body = 'Lethargy Sayon +3',
@@ -347,13 +347,13 @@ local sets = {
         Body = 'Atrophy Tabard +2',
         Hands = 'Atrophy Gloves +2',
     },
-	Dispelga = {
+    Dispelga = {
         Main = 'Daybreak',
         Sub = 'Ammurapi Shield',
         Range = 'Ullr',
-		Ammo = 'displaced',
+        Ammo = 'displaced',
         Head = 'viti. chapeau +4',
-		Neck = 'Dls. Torque +2',
+        Neck = 'Dls. Torque +2',
         Ear1 = 'Snotra Earring',
         Ear2 = 'Malignance Earring',
         Body = 'Lethargy Sayon +3',
@@ -366,7 +366,7 @@ local sets = {
         Feet = 'Viti. Boots +4',
     },
     Mind_Enfeebling = {
-		Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+30', [3] = 'Magic Damage+20', [4] = 'MND+20', [5] = 'Haste+10' } },
     },
     Int_Enfeebling = {},
     Potency_Enfeebling = {},
@@ -375,7 +375,7 @@ local sets = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
         Range = 'Ullr',
-		Ammo = 'chapuli arrow',
+        Ammo = 'chapuli arrow',
         Head = 'Viti. Chapeau +4',
         Neck = 'Erra Pendant',
         Ear1 = 'Regal Earring',
@@ -394,7 +394,7 @@ local sets = {
         Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
         Range = 'Ullr',
-		Ammo = 'chapuli arrow',
+        Ammo = 'chapuli arrow',
         Head = 'Viti. Chapeau +4',
         Neck = 'Erra Pendant',
         Ear1 = 'Regal Earring',
@@ -451,7 +451,7 @@ local sets = {
     Ws_Default = {
         Ammo = 'coiste bodhar',
         Head = 'Viti. Chapeau +4',
-		Neck = 'rep. plat. medal',
+        Neck = 'rep. plat. medal',
         Ear2 = 'ishvara Earring',
         Body = 'Nyame Mail',
         Hands = 'Nyame Gauntlets',
@@ -514,7 +514,7 @@ local sets = {
     },
     ['Chant du Cygne_Acc'] = {},
 
-	['Black Halo'] = {
+    ['Black Halo'] = {
         Ammo = 'coiste bodhar',
         Head = 'Viti. Chapeau +4',
         Neck = 'rep. plat. medal',
@@ -530,7 +530,7 @@ local sets = {
     },
     ['Black Halo_Acc'] = {},
 
-	['Shining Blade'] = {
+    ['Shining Blade'] = {
         Ammo = 'Voluspa Tathlum',
         Head = 'leth. chappel +3',
         Neck = 'Fotia Gorget',
@@ -545,7 +545,7 @@ local sets = {
         Feet = 'leth. houseaux +3',
     },
 
-	['Shining Strike'] = {
+    ['Shining Strike'] = {
         Ammo = 'Voluspa Tathlum',
         Head = 'leth. chappel +3',
         Neck = 'Fotia Gorget',
@@ -560,7 +560,7 @@ local sets = {
         Feet = 'leth. houseaux +3',
     },
 
-	['Seraph Blade'] = {
+    ['Seraph Blade'] = {
         Ammo = 'Voluspa Tathlum',
         Head = 'leth. chappel +3',
         Neck = 'Fotia Gorget',
@@ -578,7 +578,7 @@ local sets = {
     ['Shining Strike_Acc'] = {},
     ['Seraph Blade_Acc'] = {},
 
-	['Sanguine Blade'] = {
+    ['Sanguine Blade'] = {
         Ammo = 'oshasha\'s treatise',
         Head = 'pixie hairpin +1',
         Neck = 'sibyl scarf',
@@ -595,7 +595,7 @@ local sets = {
     },
     ['Sanguine Blade_Acc'] = {},
 
-	['Knights of Round'] = {
+    ['Knights of Round'] = {
         Ammo = 'coiste bodhar',
         Head = 'viti. chapeau +4',
         Neck = 'rep. plat. medal',
@@ -613,12 +613,12 @@ local sets = {
     ['Knights of Round_Acc'] = {},
 
     Chainspell = {
-		Body = 'Viti. Tabard +4',
-	},
+        Body = 'Viti. Tabard +4',
+    },
 
-	Saboteur = {
-		Sub = 'diamond aspis',
-	},
+    Saboteur = {
+        Sub = 'diamond aspis',
+    },
 
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
     -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
@@ -632,11 +632,11 @@ local sets = {
 
     TH = {
         Ammo = 'Per. Lucky Egg',
-		Waist = 'Chaac Belt',
-	},
+        Waist = 'Chaac Belt',
+    },
     Movement = {
         Ring1 = 'shneddick ring',
-	},
+    },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -673,7 +673,7 @@ profile.Sets = sets;
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None', 'Naegling', 'Maxentius', 'Crocea', 'Caliburnus'};
     gcinclude.DefaultWeapons = 'Maxentius';
     gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
@@ -691,13 +691,13 @@ end
 profile.HandleDefault = function()
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
-	local player = gData.GetPlayer();
+    local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
-		gFunc.EquipSet(sets.Movement);
+        gFunc.EquipSet(sets.Movement);
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
@@ -781,7 +781,7 @@ end
 
 profile.HandleMidshot = function()
     gFunc.EquipSet(sets.Midshot);
-	gcinclude.CheckTH();
+    gcinclude.CheckTH();
 end
 
 profile.HandleWeaponskill = function()

@@ -9,9 +9,9 @@ local sets = {
     Incapacitated = { -- slept, petrified, stunned or terrorized: worn over your /def set (else Dt) minus Main/Sub/Range/Ammo; add extra pieces here
     },
     Idle = {
-		--Main = { Name = 'Rostam', AugPath='B'},
-		--Sub = { Name = 'Rostam', AugPath='C'},
-		--Range = 'Death Penalty',
+        --Main = { Name = 'Rostam', AugPath='B'},
+        --Sub = { Name = 'Rostam', AugPath='C'},
+        --Range = 'Death Penalty',
         Ammo = 'Living Bullet',
         Head = 'Malignance Chapeau',
         Neck = 'Rep. Plat. Medal',
@@ -85,7 +85,7 @@ local sets = {
     Idle_Regain = { -- /idleset regain: over Idle while idle
     },
     Town = {
-		Sub = 'leafkin shield',
+        Sub = 'leafkin shield',
         Range = 'Death Penalty',
         Ammo = 'Living Bullet',
         Head = 'laksa. tricorne +4',
@@ -94,14 +94,14 @@ local sets = {
         Hands = 'Lanun Gants +4',
         Ring1 = 'shneddick ring',
         Ring2 = 'Stikini Ring +1',
-		Waist = 'k. kachina belt +1',
+        Waist = 'k. kachina belt +1',
         Legs = 'Osh. trousers +1',
         Feet = 'Lanun Bottes +4',
     },
-	Dt = {
+    Dt = {
         Head = 'Nyame Helm',
         Neck = 'Null Loop',
-		Ear1 = 'Eabani Earring',
+        Ear1 = 'Eabani Earring',
         Ear2 = 'alabaster Earring',
         Body = 'adamantite armor',
         Hands = 'Nyame Gauntlets',
@@ -114,9 +114,9 @@ local sets = {
     },
 
     Tp_Default = {
-		Main = { Name = 'Rostam', AugPath='B'},
-		Sub = 'Gleti\'s Knife',
-		Range = 'Death Penalty',
+        Main = { Name = 'Rostam', AugPath='B'},
+        Sub = 'Gleti\'s Knife',
+        Range = 'Death Penalty',
         Ammo = 'Chrono Bullet',
         Head = 'Malignance Chapeau',
         Neck = 'Iskur Gorget',
@@ -126,7 +126,7 @@ local sets = {
         Hands = 'Malignance gloves',
         Ring1 = 'Chirich Ring +1',
         Ring2 = 'Epona\'s Ring',
-		Back = 'null shawl',
+        Back = 'null shawl',
         Waist = 'sailfi belt +1',
         Legs = 'Chas. Culottes +3',
         Feet = 'malignance boots',
@@ -141,7 +141,7 @@ local sets = {
 
     Precast = {
         --Neck = 'Baetyl Pendant',
-		Ear1 = 'loquac. earring',
+        Ear1 = 'loquac. earring',
         Ear2 = 'Etiolation Earring',
         Body = 'Adhemar Jacket',
         Hands = 'Leyline Gloves',
@@ -236,11 +236,11 @@ local sets = {
     },
     TripleShot = {
         Ammo = 'Chrono Bullet',
-		--Head = 'Oshosi Mask +1',
+        --Head = 'Oshosi Mask +1',
         Body = 'Chasseur\'s Frac +3',
-		Hands = 'Lanun Gants +4',
-		Legs = 'Osh. Trousers +1',
-		--feet = 'Osh. Leggings +1',
+        Hands = 'Lanun Gants +4',
+        Legs = 'Osh. Trousers +1',
+        --feet = 'Osh. Leggings +1',
     },
 
     Ws_Default = {
@@ -259,10 +259,10 @@ local sets = {
     },
 
     ['Savage Blade'] = {
-		Head = 'Nyame Helm',
+        Head = 'Nyame Helm',
         Neck = 'Rep. Plat. Medal',
         Ear1 = 'Ishvara Earring',
-		Body = 'Nyame Mail',
+        Body = 'Nyame Mail',
         Hands = 'nyame gauntlets',
         Ring1 = 'sroda Ring',
         Ring2 = 'Ephramad\'s Ring',
@@ -284,7 +284,7 @@ local sets = {
         Hands = 'Adhemar Wrist. +1',
         Ring1 = 'Ilabrat Ring',
         Ring2 = 'Ephramad\'s Ring',
-		Back = { Name = 'Camulus\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = '"Store TP"+10', [5] = 'DEX+20' } },
+        Back = { Name = 'Camulus\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = '"Store TP"+10', [5] = 'DEX+20' } },
         Waist = 'Fotia Belt',
         -- Legs = 'Mummu Kecks +2',
         -- Feet = 'Mummu Gamash. +2',
@@ -311,7 +311,7 @@ local sets = {
     },
 
     ['Last Stand'] = {
-		Ammo = 'chrono bullet',
+        Ammo = 'chrono bullet',
         Head = 'Lanun Tricorne +4',
         Neck = 'Iskur Gorget',
         Ear1 = 'Ishvara Earring',
@@ -319,13 +319,13 @@ local sets = {
         Hands = 'nyame gauntlets',
         Ring1 = 'dingir Ring',
         Ring2 = 'Ephramad\'s Ring',
-		Back = { Name = 'Camulus\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
+        Back = { Name = 'Camulus\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
         Waist = 'Fotia Belt',
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
     },
     ['Last Stand_Acc'] = {
-	Neck = 'null loop',
+    Neck = 'null loop',
     },
 
     Wildfire = {
@@ -345,7 +345,7 @@ local sets = {
     Wildfire_Acc = {
         --Ear2 = 'Digni. Earring',
     },
-	['Hot Shot'] = {
+    ['Hot Shot'] = {
         Ammo = 'Living Bullet',
         Head = 'Nyame Helm',
         Neck = 'Fotia Gorget',
@@ -354,7 +354,7 @@ local sets = {
         Hands = 'nyame gauntlets',
         Ring1 = 'dingir Ring',
         Ring2 = 'Ephramad\'s Ring',
-		Back = { Name = 'Camulus\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
+        Back = { Name = 'Camulus\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
         Waist = 'Fotia Belt',
         Legs = 'Nyame Flanchard',
         Feet = 'Lanun Bottes +4',
@@ -401,37 +401,37 @@ local sets = {
         Ammo = 'Animikii Bullet',
         Head = 'laksa. tricorne +4',
         Neck = 'Comm. Charm +2',
-		Ear1 = 'Gwati Earring',
+        Ear1 = 'Gwati Earring',
         Ear2 = 'Digni. Earring',
         Body = 'Ikenga\'s Vest',
         Hands = 'Malignance Gloves',
         Ring1 = 'regal Ring',
         Ring2 = 'Stikini Ring +1',
-		Back = { Name = 'Camulus\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
-		Waist = 'k. kachina belt +1',
+        Back = { Name = 'Camulus\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
+        Waist = 'k. kachina belt +1',
         Legs = 'Ikenga\'s Trousers',
         Feet = 'Laksa. Bottes +2',
     },
     ['Double-Up'] = { -- layered on the DT set; roll+ gear set on the initial roll carries over, Luzaf keeps the 16' range
-		Ring1 = 'Luzaf\'s Ring',
+        Ring1 = 'Luzaf\'s Ring',
     },
     ['Phantom Roll'] = { -- it will put on ur DT gear set first then layer this set on for phantom roll (not dbl up), use /dt if you think you need to lock dt set while rolling
         Main = { Name = 'Rostam', AugPath='C'},
         Range = 'Compensator',
         Head = 'Lanun Tricorne +4',
-		Neck = 'Regal Necklace',
+        Neck = 'Regal Necklace',
         Hands = 'Chasseur\'s Gants +3',
-		Ring1 = 'Luzaf\'s Ring',
-		Ring2 = 'Defending Ring',
+        Ring1 = 'Luzaf\'s Ring',
+        Ring2 = 'Defending Ring',
         Back = { Name = 'Camulus\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'HP+60', [3] = '"Snapshot"+10', [4] = 'Mag. Evasion+20', [5] = 'Evasion+20' } },
-		Legs = 'desultor tassets',
+        Legs = 'desultor tassets',
     },
 
-	['Bolter\'s Roll'] = { -- it will put on ur DT gear set first then layer this set on for phantom roll (not dbl up), use /dt if you think you need to lock dt set while rolling
+    ['Bolter\'s Roll'] = { -- it will put on ur DT gear set first then layer this set on for phantom roll (not dbl up), use /dt if you think you need to lock dt set while rolling
         Main = { Name = 'Rostam', AugPath='C' },
-		Neck = 'null loop',
-		Ring1 = 'Luzaf\'s Ring',
-		Ring2 = 'Defending Ring',
+        Neck = 'null loop',
+        Ring1 = 'Luzaf\'s Ring',
+        Ring2 = 'Defending Ring',
         Back = 'null shawl',
     },
 
@@ -441,21 +441,21 @@ local sets = {
     ['Snake Eye'] = {Legs = 'Lanun Trews +2'},
     TH = {
         Head = { Name = 'Herculean Helm', Augment = { [1] = 'Accuracy+30', [2] = 'Attack+18', [3] = '"Fast Cast"+3', [4] = '"Treasure Hunter"+2' } },
-		Waist = 'Chaac Belt',
-	},
+        Waist = 'Chaac Belt',
+    },
     Movement = {
-		Head = 'nyame helm',
+        Head = 'nyame helm',
         Neck = 'loricate torque +1',
         Ear1 = 'Eabani Earring',
         Ear2 = 'Etiolation Earring',
         Body = 'nyame mail',
         Hands = 'nyame gauntlets',
-		Ring1 = 'shneddick ring',
+        Ring1 = 'shneddick ring',
         Back = 'null shawl',
         Waist = 'Null Belt',
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
-		},
+        },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -492,13 +492,13 @@ profile.Sets = sets;
 
 profile.Packer = {
     {Name = 'trump card', Quantity = 'all'},
-	{Name = 'trump card case', Quantity = 'all'}
+    {Name = 'trump card case', Quantity = 'all'}
 };
 
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.SafeAmmo = 'Chrono Bullet';
     gcinclude.RangeModes = {'None', 'Anarchy +2', 'Armageddon', 'Death Penalty', 'Fomalhaut'};
     gcinclude.WeaponModes = {'None', 'Anarchy', 'DeathPenalty', 'Fomalhaut', 'Rostam', 'Armageddon'};
@@ -527,13 +527,13 @@ end
 profile.HandleDefault = function()
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
-	local player = gData.GetPlayer();
+    local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
-		gFunc.EquipSet(sets.Movement);
+        gFunc.EquipSet(sets.Movement);
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
@@ -597,7 +597,7 @@ profile.HandleMidshot = function()
     if gcinclude.RangedAcc() then -- /rangedset acc
         gFunc.EquipSet(sets.Midshot_Acc);
     end
-	gcinclude.CheckTH();
+    gcinclude.CheckTH();
 end
 
 profile.HandleWeaponskill = function()
