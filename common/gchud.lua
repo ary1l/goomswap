@@ -56,6 +56,7 @@ local function dir()
     return string.format('%sconfig\\addons\\luashitacast\\hud\\', AshitaCore:GetInstallPath());
 end
 
+local listTry = nil; -- the path/mask form that listed files last time: tried first (read_all runs twice a second)
 local function listing()
     local base = dir();
     local trimmed = string.sub(base, 1, string.len(base) - 1);
@@ -63,12 +64,20 @@ local function listing()
         { base, '.*%.txt' }, { base, '.*' }, { base },
         { trimmed, '.*%.txt' }, { trimmed, '.*' }, { trimmed },
     };
-    for _, t in ipairs(tries) do
+    local function try(i)
+        local t = tries[i];
         local ok, files = pcall(ashita.fs.get_directory, t[1], t[2]);
-        if (ok == true) and (type(files) == 'table') then
-            local n = 0;
-            for _, _ in pairs(files) do n = n + 1 end
-            if (n > 0) then return files, t[1], (t[2] or 'nil') end
+        if (ok == true) and (type(files) == 'table') and (next(files) ~= nil) then return files end
+        return nil;
+    end
+    if (listTry ~= nil) then
+        local files = try(listTry);
+        if (files ~= nil) then return files, tries[listTry][1], (tries[listTry][2] or 'nil') end
+    end
+    for i = 1, #tries do
+        if (i ~= listTry) then
+            local files = try(i);
+            if (files ~= nil) then listTry = i; return files, tries[i][1], (tries[i][2] or 'nil') end
         end
     end
     return nil, base, 'none matched';

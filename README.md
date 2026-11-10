@@ -60,7 +60,8 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 **Windower augments:** wear the gear, `//gs export` (or `//gs export copy`), paste into the set, capitalize the slot
 (`back=` → `Back =`).
 
-### From Selindrile (Windower)
+<details>
+<summary><b>From Selindrile (Windower)</b></summary>
 
 1. Install as above, plus `goomswap_migrate.lua` next to `default.lua` and `examples/` as `data/goomswap/examples/`.
 2. On the character: `//gs load goomswap_migrate`. Each `data/<Name>/<Name>_<Job>_Gear.lua` becomes
@@ -88,11 +89,13 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 - **Left out:** defense keys and Selindrile automation (`AutoWSMode`, `SkillchainMode`...); the file's top comment
   lists what was.
 
+</details>
+
 ## First steps
 
 1. Fill `Idle`, `Tp_Default`, `Ws_Default`.
 2. `/checksets` (empty sets, misspellings), `/gctrace` (what each action wore).
-3. Leave `gSettings.FastCast` at 0.
+3. Leave `gSettings.FastCast` at 0: cast times are learned, and idle gear returns on the finish packet.
 
 Every example names sets after the action (`['Savage Blade']`); a spell without one uses its family's (`['Cure']` for
 Cure IV). Worth copying: `WHM.lua` cures, `MNK.lua` Hoxne, `PLD.lua` `/subset`.
@@ -102,8 +105,8 @@ Cure IV). Worth copying: `WHM.lua` cures, `MNK.lua` Hoxne, `PLD.lua` `/subset`.
 Edit two blocks at the top of `common/gcinclude.lua` (the rest is engine). A newer `common/` overwrites them: keep
 yours in `char.lua` (per character, survives updates) or the job file.
 
-- **`gcinclude.sets`**, every job: `Doomed`, `Holy_Water`, `Sleeping` (a job's own wins), `Reraise` (Weakened),
-  `Crafting` `Zeni` `Fishing` (`/craftset` `/zeniset` `/fishset`).
+- **`gcinclude.sets`**, every job: `Doomed`, `Sleeping` (a job's own wins), `Holy_Water` (on using one), `Reraise`
+  (Weakened), `Crafting` `Zeni` `Fishing` (`/craftset` `/zeniset` `/fishset`).
 - **`gcinclude.settings`**, one commented option per line.
 
 | Where | Example |
@@ -122,7 +125,7 @@ Most changed:
 | `HUDOwners` | `T{}` | boxes whose bar drops the others in (the HUD) |
 | `Keybinds` | F-key layout | your keys (Keys); `T{}` none |
 | `LockstyleSet` | `nil` | lockstyle set put on after load/job change |
-| `RegenGearHPP` `RefreshGearMPP` `DTGearHPP` | 60 60 50 | auto `Idle_Regen` / `Idle_Refresh` / `Dt` below this %; 0 never. Refresh is 0 in the WAR MNK THF SAM DRG DNC COR RNG NIN BST PUP BRD examples (`/autogear refresh 60` turns it on) |
+| `RegenGearHPP` `RefreshGearMPP` `DTGearHPP` | 60 60 50 | auto `Idle_Regen` / `Idle_Refresh` / `Dt` below this %; 0 never |
 | `WeaponTPGuard` | 1000 | TP at which Main/Sub/Range stay on; 0 never hold |
 | `IdleWeapons` | `true` | idle sets' weapons beat the mode out of combat |
 | `Food` | Grape Daifuku +1 | food `/packer` keeps a stack of |
@@ -130,7 +133,10 @@ Most changed:
 | `Validate` `ValidateMP` | `true` | cancel actions that would fail |
 | `DisplayBar` | `false` | status bar on load |
 
-All settings, by area:
+`RefreshGearMPP` is 0 in the WAR MNK THF SAM DRG DNC COR RNG NIN BST PUP BRD examples; `/autogear refresh 60` turns
+it on.
+
+More, by area:
 
 | Area | Settings |
 |---|---|
@@ -141,7 +147,7 @@ All settings, by area:
 | Items | `PackerItems` `EnchantDelays` `EnchantWindow` `AmmoWarn` `NinjaToolWarn` |
 | Hoxne | `HoxneItem` `HoxneLockSlots` `HoxneAutoUse` |
 | Received sets | `ReceivedSets` `ReceivedWindow` `MyBoxes` |
-| Bar and HUD | `DisplayBar` `DisplayBarX` `DisplayBarY` `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDAlpha` `WeaponClass` |
+| Bar and HUD | `DisplayBar` `DisplayBarX` `DisplayBarY` `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDAlpha` `HUDAbbr` `WeaponClass` |
 | Other | `WaltzTPCut` `Trace` `CombatWindow` `XIRollSet` `CapacityCapes` `JubileeSlot` `SleepCancelStoneskin` `ElementReport` `warp_Ring` `mea_Ring` `dem_Ring` `holla_Ring` |
 
 ## Commands
@@ -149,9 +155,9 @@ All settings, by area:
 Ashita `/name`; Windower `//name` or `//gs c name`.
 
 - **Toggles** take `on` / `off`; no word flips them.
-- **Modes** take a value in any case: no word = the next one; else its name, its start, its initials, part of it, or
-  its number (`/wm max`, `/mset sb`, `/wm 3`).
-- Windower with Stopwatch or THTracker loaded: `//subset` / `//gs c th`.
+- **Modes** take a value in any case: no word = the next one; else its name, its start, its initials, part of it,
+  its number, or your own short name in `HUDAbbr` (`/wm max`, `/mset sb`, `/wm 3`).
+- Windower: `//sw` and `//th` also belong to Stopwatch and THTracker; with one loaded use `//subset` / `//gs c th`.
 
 | Command | Does |
 |---|---|
@@ -257,7 +263,7 @@ Waltz TP. Nothing is queued.
 ## Status bar and HUD
 
 One window. The **bar** shows this box; hover it and every other box **drops in under it**, one line each (the
-HUD): see them all at a glance, click to drive any.
+HUD). Click a line to drive that box.
 
 - **Show:** `/gcbar` (or `DisplayBar = true`). `/gchud` turns the drop on, and the bar with it; `HUDOwners` boxes
   have it on at load.
@@ -283,6 +289,9 @@ HUD): see them all at a glance, click to drive any.
 - **Fixed width:** each column as wide as its widest value, `Atk`/`Def` as 4 digits; cycling never moves anything.
 - A job without weapon modes (WHM...) shows `melee` `ws` `hoxne` only once changed.
 
+<details>
+<summary><b>Pill colours</b></summary>
+
 | Pill | Colours |
 |---|---|
 | melee | `acc` cyan, `sb` magenta (a job's own modes: lime, salmon, periwinkle) |
@@ -296,10 +305,11 @@ HUD): see them all at a glance, click to drive any.
 The weapon's class comes from the mode's Main, else Range, else Sub; add your own with
 `WeaponClass = { ['Item Name'] = 'tpbonus' }`. Each of the 22 jobs has its own colour.
 
+</details>
+
 - **Drop:** opens on hover (`HUDHover = false`: always); in the screen's bottom half the lines rise above the bar
   (`HUDGrow`). The box with it on also prints the other boxes' chat lines as `[Name]` (`HUDMessages`).
-- **Settings:** `DisplayBar` `HUDOwners` `HUDHover` `HUDGrow` `HUDMessages` `HUDAlpha` `WeaponClass`; `/gchud debug`
-  lists what it reads.
+- `/gchud debug` lists what it reads.
 - **Windower:** no shapes: `|` and the words in their colours (grey = default/off).
 
 ## How sets stack
@@ -344,9 +354,8 @@ obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` 
   Obi: day +10, weather +10/+25, opposite subtracts; Orpheus by distance (`OrpheusPoints`); higher wins. Helixes no obi;
   cures obi only (`gcinclude.CureObi`).
 
-**SIRSkip / THSkip** (default `'Absorb-TP', 'Stun'`): spells `/sir` / `/th` leave alone. Exact names. Add per job at
-the top: `gcinclude.SIRSkip = T{'Phalanx'};`; replace in `OnLoad`: `gcinclude.settings.SIRSkip = T{...};`. `/gchelp`
-lists them.
+**SIRSkip / THSkip** (default `'Absorb-TP', 'Stun'`): spells `/sir` / `/th` leave alone, exact names; `/gchelp` lists
+them. Add per job as in Job file below; replace in `OnLoad`: `gcinclude.settings.SIRSkip = T{...};`.
 
 ## Job file
 
@@ -378,6 +387,8 @@ end
 | `gcinclude.CheckWsBailout()` | false if the WS would fail |
 | `gcinclude.BuffCount(x)` | buff count |
 
+No `HandleItem` needed: the engine wears `Holy_Water` itself; add one only for your own item sets.
+
 **Set names** (every example, same handlers): the game's own name, worn by `ByName`; empty sets do nothing.
 
 | Set | Worn |
@@ -388,14 +399,12 @@ end
 | `['Enhancing Magic']` `['Cure']` `['Phalanx']` | skill, then spell or family (`Cure IV` → `Cure`) |
 | `['Healing Magic_Precast']` `['Stoneskin_Precast']` | over `Precast` |
 | `Tp_Default` `Tp_SubtleBlow` `Tp_Acc` | engaged, `/mset` |
-| `Buffs` `Buffs_Ws` `Buffs_Midcast` `{ ['Aftermath: Lv.3'] = {...} }` | while that buff is up |
 
 Each file ends its sets with a Templates block (one of each, blank) to copy from. Groups keep a plain name
 (`Phantom Roll` for every roll, `Quick Draw`, `Nitro`, `Enmity`, BRD song groups).
 
 ## Tips
 
-- `gSettings.FastCast` 0: idle gear returns on the finish packet.
 - Slot words: `'remove'` empty, `'displaced'` empty without a packet, `'ignore'` leave alone.
 - `Priority = <HP>` keeps max HP up mid-swap.
 
