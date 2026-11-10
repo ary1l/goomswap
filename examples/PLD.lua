@@ -12,13 +12,13 @@ local sets = {
     Incapacitated = { -- slept, petrified, stunned or terrorized: worn over your /def set (else Dt) minus Main/Sub/Range/Ammo; add extra pieces here
     },
     Idle = {
-		Main = 'burtgang',
-		Sub = 'aegis',
+        Main = 'burtgang',
+        Sub = 'aegis',
         Ammo = 'Staunch Tathlum +1',
         Head = { Name = 'chev. armet +3', Priority = 145 },
         Neck = 'unmoving collar +1',
         Ear1 = 'spellbr. earring',
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'chev. cuirass +3', Priority = 151 },
         Hands = { Name = 'chev. gauntlets +3', Priority = 64 },
         Ring1 = 'shadow ring',
@@ -33,39 +33,39 @@ local sets = {
         --Head = 'volte salade',
         Neck = 'Coatl Gorget +1',
         --Ear1 = 'Infused Earring',
-		Hands = { Name = 'regal gauntlets', Priority = 205 },
+        Hands = { Name = 'regal gauntlets', Priority = 205 },
         Ring1 = 'Chirich Ring +1',
-		Waist = 'null belt',
+        Waist = 'null belt',
     },
     Idle_Refresh = {
         --Ammo = 'Homiliary',
         --Head = 'Jumalik Helm',
         Ring1 = 'Stikini Ring +1',
-		Ring2 = 'stikini ring +1',
+        Ring2 = 'stikini ring +1',
     },
     Idle_Regain = { -- /idleset regain: over Idle while idle
     },
     Town = {
         Main = 'burtgang',
         Sub = 'duban',
-		Range = 'ullr',
+        Range = 'ullr',
         Ammo = 'chapuli arrow',
-		Head = { Name = 'chev. armet +3', Priority = 145 },
-		Neck = 'coatl gorget +1',
+        Head = { Name = 'chev. armet +3', Priority = 145 },
+        Neck = 'coatl gorget +1',
         Ear1 = 'hearty earring',
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
-		Body = { Name = 'adamantite armor', Priority = 182 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Body = { Name = 'adamantite armor', Priority = 182 },
         Hands = { Name = 'regal gauntlets', Priority = 205 },
-		Ring1 = 'shneddick ring',
-		Ring2 = 'stikini ring +1',
-		Waist = 'plat. mog. belt',
+        Ring1 = 'shneddick ring',
+        Ring2 = 'stikini ring +1',
+        Waist = 'plat. mog. belt',
         Legs = { Name = 'cab. breeches +4', Priority = 82 },
         Feet = { Name = 'Rev. Leggings +4', Priority = 92 },
     },
 
     mdt = {
-		Main = 'burtgang',
-		Sub = 'aegis',
+        Main = 'burtgang',
+        Sub = 'aegis',
         Head = { Name = 'nyame helm', Priority = 91 },
         Neck = 'coatl gorget +1',
         Ear1 = 'Spellbr. Earring',
@@ -73,15 +73,15 @@ local sets = {
         Body = { Name = 'adamantite armor', Priority = 182 },
         Hands = { Name = 'nyame gauntlets', Priority = 91 },
         Ring1 = 'shadow ring',
-		Ring2 = { Name = 'vexer ring +1', Priority = 55 },
+        Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
         Waist = { Name = 'carrier\'s sash', Priority = 20 },
         Legs = { Name = 'nyame flanchard', Priority = 114 },
         Feet = { Name = 'nyame sollerets', Priority = 68 },
     },
     Aminon = {
-		Main = 'caliburnus',
-		Sub = 'aegis',
+        Main = 'caliburnus',
+        Sub = 'aegis',
         Head = { Name = 'nyame helm', Priority = 91 },
         Neck = 'coatl gorget +1',
         Ear1 = 'Spellbr. Earring',
@@ -89,7 +89,7 @@ local sets = {
         Body = { Name = 'adamantite armor', Priority = 182 },
         Hands = { Name = 'nyame gauntlets', Priority = 91 },
         Ring1 = 'shadow ring',
-		Ring2 = { Name = 'vexer ring +1', Priority = 55 },
+        Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
         Waist = { Name = 'carrier\'s sash', Priority = 20 },
         Legs = { Name = 'nyame flanchard', Priority = 114 },
@@ -97,9 +97,9 @@ local sets = {
     },
 
     Dt = {
-		Main = 'burtgang',
-		Sub = 'duban',
-		Ammo = 'staunch tathlum +1',
+        Main = 'burtgang',
+        Sub = 'duban',
+        Ammo = 'staunch tathlum +1',
         Head = { Name = 'chev. armet +3', Priority = 145 },
         Neck = 'warder\'s charm +1',
         Ear1 = 'hearty earring',
@@ -107,7 +107,7 @@ local sets = {
         Body = { Name = 'adamantite armor', Priority = 182 },
         Hands = { Name = 'chev. gauntlets +3', Priority = 64 },
         Ring1 = 'shadow ring',
-		Ring2 = 'fortified ring',
+        Ring2 = 'fortified ring',
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
         Waist = { Name = 'carrier\'s sash', Priority = 20 },
         Legs = { Name = 'chev. cuisses +3', Priority = 127 },
@@ -144,7 +144,7 @@ local sets = {
         Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'nyame mail', Priority = 136 },
         Hands = { Name = 'nyame gauntlets', Priority = 91 },
-		Ring1 = 'petrov ring',
+        Ring1 = 'petrov ring',
         Ring2 = { Name = 'Moonlight Ring', Priority = 110 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
         Waist = 'sailfi belt +1',
@@ -160,7 +160,7 @@ local sets = {
         Ear2 = 'chev. earring +1',
         Body = { Name = 'nyame mail', Priority = 136 },
         Hands = { Name = 'nyame gauntlets', Priority = 91 },
-		Ring1 = { Name = 'vexer ring +1', Priority = 55 },
+        Ring1 = { Name = 'vexer ring +1', Priority = 55 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
         Waist = { Name = 'carrier\'s sash', Priority = 20 },
@@ -177,33 +177,33 @@ local sets = {
         Ear2 = { Name = 'alabaster Earring', Priority = 100 },
         Body = { Name = 'Rev. Surcoat +4', Priority = 264 },--10
         Hands = { Name = 'Leyline Gloves', Priority = 25 },--6
-		Ring1 = 'murky ring',
-		Ring2 = 'kishar ring',
-		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+30', [4] = 'HP+60', [5] = 'Evasion+20' }, Priority = 60 },
-		Waist = 'plat. mog. belt',
+        Ring1 = 'murky ring',
+        Ring2 = 'kishar ring',
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = '"Fast Cast"+10', [2] = 'Phys. dmg. taken -10%', [3] = 'Mag. Evasion+30', [4] = 'HP+60', [5] = 'Evasion+20' }, Priority = 60 },
+        Waist = 'plat. mog. belt',
         Legs = { Name = 'odyssean cuisses', Priority = 54 },--6
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--7
     },
     ['Healing Magic_Precast'] = {
-	    --Ear1 = 'Nourish. Earring +1',
+        --Ear1 = 'Nourish. Earring +1',
         Ear2 = 'Mendi. Earring',
     },
     ['Enhancing Magic_Precast'] = {
-		Body = { Name = 'shab. cuirass +1', Priority = 115 },
-		Hands = { Name = 'regal gauntlets', Priority = 205 },
+        Body = { Name = 'shab. cuirass +1', Priority = 115 },
+        Hands = { Name = 'regal gauntlets', Priority = 205 },
         Waist = 'Siegel Sash',
     },
     SIR = {
         Ammo = 'Staunch Tathlum +1',--11
         Head = { Name = 'Souv. Schaller +1', Priority = 175 },
         Neck = 'Moonlight Necklace',--15
-	    Ear1 = 'Tuisto Earring',
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear1 = 'Tuisto Earring',
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'chev. cuirass +3', Priority = 151 },--20
-		Hands = { Name = 'regal gauntlets', Priority = 205 }, --10
-		Ring1 = 'murky ring',--3
-		Ring2 = { Name = 'moonlight ring', Priority = 110 },
-		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
+        Hands = { Name = 'regal gauntlets', Priority = 205 }, --10
+        Ring1 = 'murky ring',--3
+        Ring2 = { Name = 'moonlight ring', Priority = 110 },
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
         Waist = 'audumbla sash',--10
         Legs = { Name = 'cab. breeches +4', Priority = 82 },--10
         Feet = { Name = 'Odyssean Greaves', Priority = 20 },
@@ -213,10 +213,10 @@ local sets = {
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },
-		Ear2 = 'friomisi earring',
+        Ear2 = 'friomisi earring',
         Body = { Name = 'souv. cuirass +1', Priority = 66 },--20
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
-		Ring1 = { Name = 'eihwaz Ring', Priority = 70 },--5
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Ring1 = { Name = 'eihwaz Ring', Priority = 70 },--5
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },--4
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
         Waist = 'plat. mog. belt',
@@ -241,9 +241,9 @@ local sets = {
     },
 
     Phalanx = { -- +36phalanx received
-		Main = { Name = 'Sakpata\'s sword', Priority = 100 }, --5
-		Sub = { Name = 'priwen', Priority = 30 }, --3
-		Ammo = 'staunch tathlum +1',
+        Main = { Name = 'Sakpata\'s sword', Priority = 100 }, --5
+        Sub = { Name = 'priwen', Priority = 30 }, --3
+        Ammo = 'staunch tathlum +1',
         Head = { Name = 'valorous mask', Priority = 38 },--4
         Neck = 'moonlight necklace',
         Ear1 = 'tuisto Earring',
@@ -256,10 +256,10 @@ local sets = {
         Waist = 'audumbla sash',
         Legs = { Name = 'sakpata\'s cuisses', Priority = 114 }, --5
         Feet = { Name = 'souveran schuhs +1', Priority = 122 }, --5
-	},
+    },
 
-	Stoneskin = {
-		Ammo = 'staunch tathlum +1',
+    Stoneskin = {
+        Ammo = 'staunch tathlum +1',
         Head = { Name = 'chev. armet +3', Priority = 145 },
         Neck = 'stone gorget',
         Ear1 = 'earthcry earring',
@@ -267,7 +267,7 @@ local sets = {
         Body = { Name = 'rev. surcoat +4', Priority = 264 },
         Hands = { Name = 'stone mufflers', Priority = 10 },
         Ring1 = { Name = 'Moonlight Ring', Priority = 110 },
-		Ring2 = 'defending ring',
+        Ring2 = 'defending ring',
         Back = { Name = 'moonbeam cape', Priority = 250 },
         Waist = 'siegel sash',
         Legs = 'haven hose',
@@ -281,8 +281,8 @@ local sets = {
         Ear1 = 'Tuisto Earring',
         Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'Shab. Cuirass +1', Priority = 115 },
-		Hands = { Name = 'regal gauntlets', Priority = 205 },--20
-		Ring1 = { Name = 'eihwaz ring', Priority = 70 },
+        Hands = { Name = 'regal gauntlets', Priority = 205 },--20
+        Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'Moonlight Ring', Priority = 110 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
         Waist = 'audumbla sash',--10
@@ -297,8 +297,8 @@ local sets = {
         Ear1 = 'Tuisto Earring',
         Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'Shab. Cuirass +1', Priority = 115 },
-		Hands = { Name = 'regal gauntlets', Priority = 205 },--20
-		Ring1 = { Name = 'eihwaz ring', Priority = 70 },
+        Hands = { Name = 'regal gauntlets', Priority = 205 },--20
+        Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'Moonlight Ring', Priority = 110 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
         Waist = 'audumbla sash',--10
@@ -309,8 +309,8 @@ local sets = {
     Absorb_TP = { -- /sir never goes over this (settings.SIRSkip); /aminon's weapons stay
         Head = { Name = 'Chev. Armet +3', Priority = 145 },
         Neck = { Name = 'Null Loop', Priority = 50 },
-		Ear1 = { Name = 'alabaster earring', Priority = 100 },
-		Ear2 = 'chev. earring +1',
+        Ear1 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = 'chev. earring +1',
         Body = { Name = 'Chev. Cuirass +3', Priority = 151 },
         Hands = { Name = 'Chev. Gauntlets +3', Priority = 64 },
         Ring1 = 'Stikini Ring +1',
@@ -327,33 +327,33 @@ local sets = {
         Ear1 = { Name = 'cryptic Earring', Priority = 40 },
         Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'Rev. Surcoat +4', Priority = 264 },
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 },
         Waist = { Name = 'creed baudrier', Priority = 40 },
-		Legs = { Name = 'cab. breeches +4', Priority = 82 },
+        Legs = { Name = 'cab. breeches +4', Priority = 82 },
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
     },
 
     Preshot = {
-		Range = 'ullr',
-		Ammo = 'chapuli arrow',
-		},
+        Range = 'ullr',
+        Ammo = 'chapuli arrow',
+        },
 
     Midshot = {
-		Head = { Name = 'nyame helm', Priority = 91 },
-		Neck = { Name = 'sanctity necklace', Priority = 35 },
+        Head = { Name = 'nyame helm', Priority = 91 },
+        Neck = { Name = 'sanctity necklace', Priority = 35 },
         Ear1 = 'Telos Earring',
         Ear2 = 'Enervating Earring',
-		Body = { Name = 'nyame mail', Priority = 136 },
-		Hands = { Name = 'nyame gauntlets', Priority = 91 },
-		Ring1 = { Name = 'regal ring', Priority = 50 },
-		Ring2 = 'petrov ring',
-		Back = 'null shawl',
-		Waist = 'null belt',
-		Legs = { Name = 'nyame flanchard', Priority = 114 },
-		Feet = { Name = 'nyame sollerets', Priority = 68 },
+        Body = { Name = 'nyame mail', Priority = 136 },
+        Hands = { Name = 'nyame gauntlets', Priority = 91 },
+        Ring1 = { Name = 'regal ring', Priority = 50 },
+        Ring2 = 'petrov ring',
+        Back = 'null shawl',
+        Waist = 'null belt',
+        Legs = { Name = 'nyame flanchard', Priority = 114 },
+        Feet = { Name = 'nyame sollerets', Priority = 68 },
     },
     Midshot_Acc = { -- /rangedset acc: over Midshot
     },
@@ -384,7 +384,7 @@ local sets = {
         Hands = { Name = 'nyame Gauntlets', Priority = 91 },
         Ring1 = { Name = 'regal Ring', Priority = 50 },
         Ring2 = 'ephramad\'s ring',
-		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'Sailfi Belt +1',
         Legs = { Name = 'nyame flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
@@ -392,7 +392,7 @@ local sets = {
     ['Chant du Cygne_Acc'] = {
     },
     ['Savage Blade'] = {
-		Ammo = 'coiste bodhar',
+        Ammo = 'coiste bodhar',
         Head = { Name = 'Nyame Helm', Priority = 91 },
         Neck = 'rep. plat. medal',
         Ear1 = 'thrud Earring',
@@ -400,7 +400,7 @@ local sets = {
         Hands = { Name = 'nyame Gauntlets', Priority = 91 },
         Ring1 = { Name = 'regal Ring', Priority = 50 },
         Ring2 = 'ephramad\'s ring',
-		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'Sailfi Belt +1',
         Legs = { Name = 'nyame flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
@@ -434,7 +434,7 @@ local sets = {
         Hands = { Name = 'Nyame Gauntlets', Priority = 91 },
         Ring1 = { Name = 'regal ring', Priority = 50 },
         Ring2 = 'metamor. ring +1',
-		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'orpheus\'s sash',
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
@@ -451,14 +451,14 @@ local sets = {
         Hands = { Name = 'Nyame Gauntlets', Priority = 91 },
         Ring1 = 'archon Ring',
         Ring2 = 'metamor. ring +1',
-		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'orpheus\'s sash',
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
     ['Sanguine Blade_Acc'] = {},
 
-	['Shining Blade'] = {
+    ['Shining Blade'] = {
         Ammo = 'Pemphredo Tathlum',
         Head = { Name = 'Nyame Helm', Priority = 91 },
         Neck = 'sibyl scarf',
@@ -468,13 +468,13 @@ local sets = {
         Hands = { Name = 'Nyame Gauntlets', Priority = 91 },
         Ring1 = { Name = 'regal ring', Priority = 50 },
         Ring2 = 'metamor. ring +1',
-		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'orpheus\'s sash',
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
 
-	['Shining Strike'] = {
+    ['Shining Strike'] = {
         Ammo = 'Pemphredo Tathlum',
         Head = { Name = 'Nyame Helm', Priority = 91 },
         Neck = 'sibyl scarf',
@@ -484,13 +484,13 @@ local sets = {
         Hands = { Name = 'Nyame Gauntlets', Priority = 91 },
         Ring1 = { Name = 'regal ring', Priority = 50 },
         Ring2 = 'metamor. ring +1',
-		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'orpheus\'s sash',
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
     },
 
-	['Seraph Blade'] = {
+    ['Seraph Blade'] = {
         Ammo = 'Pemphredo Tathlum',
         Head = { Name = 'Nyame Helm', Priority = 91 },
         Neck = 'sibyl scarf',
@@ -500,7 +500,7 @@ local sets = {
         Hands = { Name = 'Nyame Gauntlets', Priority = 91 },
         Ring1 = { Name = 'regal ring', Priority = 50 },
         Ring2 = 'metamor. ring +1',
-		Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'orpheus\'s sash',
         Legs = { Name = 'Nyame Flanchard', Priority = 114 },
         Feet = { Name = 'Nyame Sollerets', Priority = 68 },
@@ -509,7 +509,7 @@ local sets = {
     ['Shining Strike_Acc'] = {},
     ['Seraph Blade_Acc'] = {},
 
-	['Knights of Round'] = {
+    ['Knights of Round'] = {
         Ammo = 'crepuscular pebble',
         Head = { Name = 'nyame helm', Priority = 91 },
         Neck = 'fotia gorget',
@@ -526,7 +526,7 @@ local sets = {
     },
     ['Knights of Round_Acc'] = {},
 
-	Imperator = {
+    Imperator = {
         Ammo = 'coiste bodhar',
         Head = { Name = 'nyame helm', Priority = 91 },
         Neck = 'rep. plat. medal',
@@ -543,14 +543,14 @@ local sets = {
     Imperator_Acc = {},
 
     Fealty = {
-		Sub = 'diamond aspis',
+        Sub = 'diamond aspis',
         Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'Cab. Surcoat +4', Priority = 148 },
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
@@ -559,14 +559,14 @@ local sets = {
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
     },
     Sentinel = {
-		Sub = 'diamond aspis',
-		Ammo = 'Sapience Orb',--2
+        Sub = 'diamond aspis',
+        Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2
-		Ear2 = 'friomisi earring',
+        Ear2 = 'friomisi earring',
         Body = { Name = 'Cab. Surcoat +4', Priority = 148 },
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
@@ -575,14 +575,14 @@ local sets = {
         Feet = { Name = 'Cab. Leggings +2', Priority = 53 },
     },
     ['Shield Bash'] = {
-		Sub = 'aegis',
-		Ammo = 'Sapience Orb',--2
+        Sub = 'aegis',
+        Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'Cab. Surcoat +4', Priority = 148 },
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
@@ -591,14 +591,14 @@ local sets = {
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
     },
     Majesty = {
-		Sub = 'aegis',
-		Ammo = 'Sapience Orb',--2
+        Sub = 'aegis',
+        Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'Cab. Surcoat +4', Priority = 148 },
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
@@ -607,45 +607,45 @@ local sets = {
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
     },
     Invincible = {
-		Ammo = 'Sapience Orb',--2
+        Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--9
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },
         Ear2 = 'friomisi earring',--2
         Body = { Name = 'souv. cuirass +1', Priority = 66 },--20
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
         Waist = { Name = 'Creed Baudrier', Priority = 40 },--5
         Legs = { Name = 'Cab. Breeches +4', Priority = 82 },
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
-		},
-	['Divine Emblem'] = {
-		Ammo = 'Sapience Orb',--2
+        },
+    ['Divine Emblem'] = {
+        Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--9
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'alabaster earring', Priority = 100 },
         Ear2 = 'friomisi earring',--2
         Body = { Name = 'souv. cuirass +1', Priority = 66 },--20
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
         Waist = { Name = 'Creed Baudrier', Priority = 40 },--5
         Legs = { Name = 'Cab. Breeches +4', Priority = 82 },
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
-		},
+        },
 
     Cover = {
         --Head = 'Rev. Coronet +1',
-		Ammo = 'Sapience Orb',--2
+        Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'Cab. Surcoat +4', Priority = 148 },
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
@@ -654,14 +654,14 @@ local sets = {
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
     },
     Rampart = {
-		Sub = 'diamond aspis',
-		Ammo = 'Sapience Orb',--2
+        Sub = 'diamond aspis',
+        Ammo = 'Sapience Orb',--2
         Head = { Name = 'Cab. Coronet +2', Priority = 106 },
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'Cab. Surcoat +4', Priority = 148 },
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
@@ -669,71 +669,71 @@ local sets = {
         Legs = { Name = 'cab. breeches +4', Priority = 82 },--9
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
     },
-	['Holy Circle'] = {
-		Sub = 'diamond aspis',
-		Ammo = 'Sapience Orb',--2
+    ['Holy Circle'] = {
+        Sub = 'diamond aspis',
+        Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'souv. cuirass +1', Priority = 66 },--20
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
         Waist = { Name = 'Creed Baudrier', Priority = 40 },--5
         Legs = { Name = 'cab. breeches +4', Priority = 82 },--9
-		Feet = { Name = 'rev. leggings +4', Priority = 92 },
-		},
+        Feet = { Name = 'rev. leggings +4', Priority = 92 },
+        },
 
-	Palisade = {
-		Sub = 'diamond aspis',
-		Ammo = 'Sapience Orb',--2
+    Palisade = {
+        Sub = 'diamond aspis',
+        Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'souv. cuirass +1', Priority = 66 },--20
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
         Waist = { Name = 'Creed Baudrier', Priority = 40 },--5
         Legs = { Name = 'cab. breeches +4', Priority = 82 },--9
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
-		},
+        },
 
-	Chivalry = {
+    Chivalry = {
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2',
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'souv. cuirass +1', Priority = 66 },--20
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
         Waist = { Name = 'Creed Baudrier', Priority = 40 },--5
         Legs = { Name = 'cab. breeches +4', Priority = 82 },--9
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
-		},
+        },
 
     Intervene = {
-		Sub = 'duban',
-		Ammo = 'Sapience Orb',--2
+        Sub = 'duban',
+        Ammo = 'Sapience Orb',--2
         Head = { Name = 'loess barbuta +1', Priority = 105 },--19
         Neck = 'Moonlight Necklace', -- 15
         Ear1 = { Name = 'cryptic earring', Priority = 40 },--2
-		Ear2 = { Name = 'alabaster earring', Priority = 100 },
+        Ear2 = { Name = 'alabaster earring', Priority = 100 },
         Body = { Name = 'souv. cuirass +1', Priority = 66 },--20
-		Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
+        Hands = { Name = 'cab. gauntlets +4', Priority = 134 },--9
         Ring1 = { Name = 'eihwaz ring', Priority = 70 },
         Ring2 = { Name = 'vexer ring +1', Priority = 55 },
         Back = { Name = 'Rudianos\'s Mantle', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'Evasion+20', [3] = 'HP+60', [4] = 'Mag. Evasion+30', [5] = 'Enmity+10' }, Priority = 60 }, --10
         Waist = { Name = 'Creed Baudrier', Priority = 40 },--5
         Legs = { Name = 'cab. breeches +4', Priority = 82 },--9
         Feet = { Name = 'chev. sabatons +3', Priority = 52 },--15
-		},
+        },
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
     -- Idle/TP: job sets (Tp, buff sets, Dt) -> Hoxne_Tp|Idle|Dt -> its _SubtleBlow/_Acc -> its _<buff> combos -> engine layers.
     -- WS: job WS sets -> Hoxne_Ws -> Hoxne_<ws> -> Hoxne_Ws_<buff> -> Hoxne_<ws>_<buff> -> Buffs_Ws, Moonshade, obi.
@@ -746,8 +746,8 @@ local sets = {
 
     TH = {
         Ammo = 'Per. Lucky Egg',
-		Waist = 'Chaac Belt',
-	},
+        Waist = 'Chaac Belt',
+    },
 
     Movement = {
         Ammo = 'Staunch Tathlum +1',
@@ -763,11 +763,11 @@ local sets = {
         Waist = { Name = 'carrier\'s sash', Priority = 20 },
         Legs = { Name = 'chev. cuisses +3', Priority = 127 },
         Feet = { Name = 'nyame sollerets', Priority = 68 },
-	},
+    },
 
-	kite = {
-		Main = 'burtgang',
-		Sub = 'aegis',
+    kite = {
+        Main = 'burtgang',
+        Sub = 'aegis',
         Ammo = 'Staunch Tathlum +1',
         Head = { Name = 'chev. armet +3', Priority = 145 },
         Neck = 'unmoving collar +1',
@@ -781,7 +781,7 @@ local sets = {
         Waist = { Name = 'carrier\'s sash', Priority = 20 },
         Legs = { Name = 'chev. cuisses +3', Priority = 127 },
         Feet = { Name = 'nyame sollerets', Priority = 68 },
-	},
+    },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -812,13 +812,13 @@ local sets = {
     },
     Waltz_Received = {
     },
-	};
+    };
 profile.Sets = sets;
 
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.MainModes = {'None', 'Burtgang', 'Caliburnus'};
     gcinclude.SubModes = {'None', 'Aegis', 'Duban'}; -- shields: /subset cycles them, /subset duban picks one (add force at 1000+ TP)
     gcinclude.DefaultWeapons = { Main = 'Burtgang', Sub = 'Aegis' };
@@ -836,7 +836,7 @@ end
 profile.HandleDefault = function()
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
-	local player = gData.GetPlayer();
+    local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
         local tank = gcdisplay.GetCycle('TankSet');
@@ -844,13 +844,13 @@ profile.HandleDefault = function()
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
-		gFunc.EquipSet(sets.Movement);
+        gFunc.EquipSet(sets.Movement);
     end
 
     local cover = gcinclude.BuffCount('Cover');
-	if (cover >= 1) then
-		gFunc.EquipSet(sets.Fealty); -- same set as fealty
-	end
+    if (cover >= 1) then
+        gFunc.EquipSet(sets.Fealty); -- same set as fealty
+    end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
     if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Dt) end;
@@ -863,12 +863,6 @@ profile.HandleAbility = function()
     gFunc.EquipSet(sets.Enmity); -- PLD: enmity under every ability
     ByName(ability.Name); -- a set named after the ability, e.g. ['Sentinel']
     gcinclude.CheckCancels();
-end
-
-profile.HandleItem = function()
-    local item = gData.GetAction();
-
-	if string.match(item.Name, 'Holy Water') then gFunc.EquipSet(gcinclude.sets.Holy_Water) end
 end
 
 profile.HandlePrecast = function()
@@ -895,7 +889,7 @@ end
 profile.HandleMidshot = function()
     gFunc.EquipSet(sets.Midshot);
     if gcinclude.RangedAcc() then gFunc.EquipSet(sets.Midshot_Acc) end -- /rangedset acc
-	gcinclude.CheckTH();
+    gcinclude.CheckTH();
 end
 
 profile.HandleWeaponskill = function()

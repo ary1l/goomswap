@@ -282,75 +282,75 @@
 	end
 
 function gcinclude.SetVariables()
-    local player = AshitaCore:GetMemoryManager():GetPlayer();
-    local mJob = 'NON';
-    gcinclude.ActiveJobId = nil;
-    if (player ~= nil) then
-        local mainJobId = player:GetMainJob();
-        gcinclude.ActiveJobId = mainJobId;
-        mJob = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", mainJobId) or 'NON';
-    end
+	local player = AshitaCore:GetMemoryManager():GetPlayer();
+	local mJob = 'NON';
+	gcinclude.ActiveJobId = nil;
+	if (player ~= nil) then
+		local mainJobId = player:GetMainJob();
+		gcinclude.ActiveJobId = mainJobId;
+		mJob = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", mainJobId) or 'NON';
+	end
 
-    gcinclude.UnlockSlots(nil);
-    gcinclude.UnlockWeapons();
-    gcinclude.Holds, gcinclude.Strip = {}, nil;
-    gcinclude.Enchants = {};
-    gcdisplay.ClearAll();
-    gcdisplay.CreateToggle('DTset', false);
-    gcdisplay.CreateToggle('MDTset', false);
-    gcdisplay.CreateToggle('Aminon', false);
-    gcdisplay.CreateToggle('SIR', false);
-    gcdisplay.CreateCycle('Hoxne', {[1] = 'Off', [2] = 'Locked'});
-    gcdisplay.CreateToggle('Kite', false);
-    gcdisplay.CreateToggle('TH', false);
-    -- /mset modes: <set>_<mode> over <set>_Default (shown and typed as Base). A job file can set its own list (gcinclude.MeleeModes = {...} in
-    -- OnLoad, before Initialize). DT is not a mode: /dt layers the Dt set over any of them.
-    local melee = (type(gcinclude.MeleeModes) == 'table') and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or {'Default', 'SubtleBlow', 'Acc'};
-    gcdisplay.CreateCycle('MeleeSet', melee);
-    -- /wsset: how buffed you are, for weapon skills only. High wears <WS set>_HighBuff over each WS set.
-    gcdisplay.CreateCycle('WsSet', {'Mid', 'High'});
-    -- /idleset: Idle_<mode> over Idle while idle (gcinclude.EquipIdle); /rangedset: Midshot_Acc on COR RNG PLD.
-    gcdisplay.CreateCycle('IdleSet', {'Default', 'Refresh', 'Regen', 'Regain'});
-    if (mJob == 'COR') or (mJob == 'RNG') or (mJob == 'PLD') then
-        gcdisplay.CreateCycle('RangedSet', {'Default', 'Acc'});
-    end
-    gcinclude.BuildWeaponCycles(mJob);
-    if (type(gcinclude.DefaultWeapons) == 'string') then
-        gcinclude.SetWeaponCycle('Weapons', gcinclude.DefaultWeapons, true);
-    elseif (type(gcinclude.DefaultWeapons) == 'table') then
-        for cname, val in pairs(gcinclude.DefaultWeapons) do
-            gcinclude.SetWeaponCycle(cname, val, true);
-        end
-    end
-    if (gchud ~= nil) then gchud.Bind(gcinclude, gcdisplay) end
-    if (mJob == 'RDM') or (mJob == 'BLM') or (mJob == 'SCH') or (mJob == 'GEO') then
-        gcdisplay.CreateToggle('Burst', false); -- /burst: Burst set on every nuke, not only on live skillchains
-        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM GEO BLM SCH: 'OccultAcumen')
-        if (mJob == 'BLM') or (mJob == 'SCH') then
-            gcdisplay.CreateCycle('Weapon', {[1] = 'Club', [2] = 'Staff'});
-            gcdisplay.CreateCycle('Element', {[1] = 'Thunder', [2] = 'Blizzard', [3] = 'Fire', [4] = 'Stone', [5] = 'Aero', [6] = 'Water', [7] = 'Light', [8] = 'Dark'});
-            if (mJob == 'BLM') then
-                gcdisplay.CreateToggle('Death', false);
-            end
-        end
-    end
-    if (mJob == 'WHM') then
-        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM GEO BLM SCH: 'OccultAcumen')
-    elseif (mJob == 'DRK') then
-        gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'OccultAcumen'}); -- /nukeset oa: OccultAcumen set on nukes
-    end
-    if (mJob == 'PLD') or (mJob == 'RUN') then
-        gcdisplay.CreateCycle('TankSet', {[1] = 'None', [2] = 'Main', [3] = 'MEVA'});
-    end
-    gcdisplay.CreateToggle('PROC', false); -- /proc: every job (Proc / Ws_Proc sets, worn by the engine)
-    if (mJob == 'PUP') then
-        gcdisplay.CreateCycle('PupMode', {[1] = 'Tank', [2] = 'Melee', [3] = 'Ranger', [4] = 'Mage'});
-    end
-    if (mJob == 'BRD') then
-        gcdisplay.CreateToggle('String', false);
-        gcdisplay.CreateToggle('SongLock', false);
-    end
-    gcdisplay.MarkDefaults();
+	gcinclude.UnlockSlots(nil);
+	gcinclude.UnlockWeapons();
+	gcinclude.Holds, gcinclude.Strip = {}, nil;
+	gcinclude.Enchants = {};
+	gcdisplay.ClearAll();
+	gcdisplay.CreateToggle('DTset', false);
+	gcdisplay.CreateToggle('MDTset', false);
+	gcdisplay.CreateToggle('Aminon', false);
+	gcdisplay.CreateToggle('SIR', false);
+	gcdisplay.CreateCycle('Hoxne', {[1] = 'Off', [2] = 'Locked'});
+	gcdisplay.CreateToggle('Kite', false);
+	gcdisplay.CreateToggle('TH', false);
+	-- /mset modes: <set>_<mode> over <set>_Default (shown and typed as Base). A job file can set its own list (gcinclude.MeleeModes = {...} in
+	-- OnLoad, before Initialize). DT is not a mode: /dt layers the Dt set over any of them.
+	local melee = (type(gcinclude.MeleeModes) == 'table') and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or {'Default', 'SubtleBlow', 'Acc'};
+	gcdisplay.CreateCycle('MeleeSet', melee);
+	-- /wsset: how buffed you are, for weapon skills only. High wears <WS set>_HighBuff over each WS set.
+	gcdisplay.CreateCycle('WsSet', {'Mid', 'High'});
+	-- /idleset: Idle_<mode> over Idle while idle (gcinclude.EquipIdle); /rangedset: Midshot_Acc on COR RNG PLD.
+	gcdisplay.CreateCycle('IdleSet', {'Default', 'Refresh', 'Regen', 'Regain'});
+	if (mJob == 'COR') or (mJob == 'RNG') or (mJob == 'PLD') then
+		gcdisplay.CreateCycle('RangedSet', {'Default', 'Acc'});
+	end
+	gcinclude.BuildWeaponCycles(mJob);
+	if (type(gcinclude.DefaultWeapons) == 'string') then
+		gcinclude.SetWeaponCycle('Weapons', gcinclude.DefaultWeapons, true);
+	elseif (type(gcinclude.DefaultWeapons) == 'table') then
+		for cname, val in pairs(gcinclude.DefaultWeapons) do
+			gcinclude.SetWeaponCycle(cname, val, true);
+		end
+	end
+	if (gchud ~= nil) then gchud.Bind(gcinclude, gcdisplay) end
+	if (mJob == 'RDM') or (mJob == 'BLM') or (mJob == 'SCH') or (mJob == 'GEO') then
+		gcdisplay.CreateToggle('Burst', false); -- /burst: Burst set on every nuke, not only on live skillchains
+		gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM GEO BLM SCH: 'OccultAcumen')
+		if (mJob == 'BLM') or (mJob == 'SCH') then
+			gcdisplay.CreateCycle('Weapon', {[1] = 'Club', [2] = 'Staff'});
+			gcdisplay.CreateCycle('Element', {[1] = 'Thunder', [2] = 'Blizzard', [3] = 'Fire', [4] = 'Stone', [5] = 'Aero', [6] = 'Water', [7] = 'Light', [8] = 'Dark'});
+			if (mJob == 'BLM') then
+				gcdisplay.CreateToggle('Death', false);
+			end
+		end
+	end
+	if (mJob == 'WHM') then
+		gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'Macc'}); -- a job can add modes (RDM GEO BLM SCH: 'OccultAcumen')
+	elseif (mJob == 'DRK') then
+		gcdisplay.CreateCycle('NukeSet', gcinclude.NukeModes or {'Power', 'OccultAcumen'}); -- /nukeset oa: OccultAcumen set on nukes
+	end
+	if (mJob == 'PLD') or (mJob == 'RUN') then
+		gcdisplay.CreateCycle('TankSet', {[1] = 'None', [2] = 'Main', [3] = 'MEVA'});
+	end
+	gcdisplay.CreateToggle('PROC', false); -- /proc: every job (Proc / Ws_Proc sets, worn by the engine)
+	if (mJob == 'PUP') then
+		gcdisplay.CreateCycle('PupMode', {[1] = 'Tank', [2] = 'Melee', [3] = 'Ranger', [4] = 'Mage'});
+	end
+	if (mJob == 'BRD') then
+		gcdisplay.CreateToggle('String', false);
+		gcdisplay.CreateToggle('SongLock', false);
+	end
+	gcdisplay.MarkDefaults();
 end
 
 	function gcinclude.HandleCommands(args)
@@ -2074,7 +2074,7 @@ end
 		end
 		for _, name in ipairs(T{'HandlePreshot', 'HandleMidshot', 'HandleItem'}) do
 			local original = gProfile[name];
-			if (type(original) == 'function') then
+			if (type(original) == 'function') or (name == 'HandleItem') then -- HandleItem: every job, the job file needs none
 				gProfile[name] = function(...)
 					-- /item or /ra while a spell is being cast: the game refuses it, and letting it through would
 					-- put its gear (or, once refused, idle gear) over the cast's midcast set.
@@ -2085,7 +2085,12 @@ end
 						return;
 					end
 					gcaction.TraceStart();
-					local result = original(...);
+					if (name == 'HandleItem') then -- gcinclude.sets.Holy_Water, under the job's own HandleItem
+						local a = gData.GetAction();
+						if (a ~= nil) and (type(a.Name) == 'string') and (string.find(a.Name, 'Holy Water', 1, true) ~= nil) then gFunc.EquipSet(gcinclude.sets.Holy_Water) end
+					end
+					local result;
+					if (type(original) == 'function') then result = original(...) end
 					if (name == 'HandlePreshot') then gcinclude.CheckSupplies('shot') end
 					gcaction.TraceEnd(gcinclude.TracePhase[name]);
 					return result;
@@ -4268,39 +4273,39 @@ local UTIL_ORDER = {'craftset', 'zeniset', 'fishset', 'rrset'};
 local checkDefault;
 function gcinclude.CheckDefault() gcinclude.WithBuffs(checkDefault) end
 checkDefault = function()
-    -- Self-healing check: Rebuild toggles if the memory manager updates to a new job
-    local player = AshitaCore:GetMemoryManager():GetPlayer();
-    if (player ~= nil) and (gcinclude.ActiveJobId ~= nil) then
-        local mainJobId = player:GetMainJob();
-        if (mainJobId ~= 0) and (mainJobId ~= gcinclude.ActiveJobId) then gcinclude.SetVariables() end
-    end
+	-- Self-healing check: Rebuild toggles if the memory manager updates to a new job
+	local player = AshitaCore:GetMemoryManager():GetPlayer();
+	if (player ~= nil) and (gcinclude.ActiveJobId ~= nil) then
+		local mainJobId = player:GetMainJob();
+		if (mainJobId ~= 0) and (mainJobId ~= gcinclude.ActiveJobId) then gcinclude.SetVariables() end
+	end
 
-    -- Auto Regen/Refresh/DT/Pet_Dt and Town sets count as "your sets", so they go under the engine layers
-    -- (README layer order: your sets -> Hoxne sets -> weapons (+ TH weapons while /th is on) -> mdt/Aminon -> Hoxne -> TH -> received -> buffs -> XIRoll).
-    -- Hoxne sets go first: over the job layers (Tp, Impetus...), under auto Dt and every engine layer.
-    -- Awake again with a slot still let go for the Sleeping set: hold it now, not at the next 0.1s HoldTick,
-    -- so this handler's job-set weapon can't cost the TP (LAC checks gState.Disabled when the buffer goes out).
-    if (next(gcinclude.SleepFreed) ~= nil) and (gcinclude.BuffCount('Sleep') == 0) then gcinclude.UpdateHold() end
-    local me = gData.GetPlayer(); -- one read for the auto sets, the combat check and XIRoll
-    if (me ~= nil) and (me.Status == 'Engaged') and (gcdisplay.GetToggle('PROC') == true) then
-        -- /proc: Proc over the job's engaged layers, /dt's Dt still over it (where the job files used to put it)
-        local proc = gcinclude.FindSet('Proc');
-        if (proc ~= nil) then
-            gFunc.EquipSet(proc);
-            local dt = gcinclude.FindSet('Dt');
-            if (gcdisplay.GetToggle('DTset') == true) and (dt ~= nil) then gFunc.EquipSet(dt) end
-        end
-    end
-    gcinclude.CheckHoxneSets(me);
-    gcinclude.SetRegenRefreshGear(me);
-    gcinclude.SetTownGear();
-    gcinclude.CheckWeapons(me);
-    gcinclude.CheckCommonDebuffs();
-    gcinclude.CheckLockingRings();
-    for _, cmd in ipairs(UTIL_ORDER) do
-        if gcinclude.UtilOn[cmd] then gFunc.EquipSet(gcinclude.sets[gcinclude.UtilSets[cmd]]) end
-    end
-    gcdisplay.Update();
+	-- Auto Regen/Refresh/DT/Pet_Dt and Town sets count as "your sets", so they go under the engine layers
+	-- (README layer order: your sets -> Hoxne sets -> weapons (+ TH weapons while /th is on) -> mdt/Aminon -> Hoxne -> TH -> received -> buffs -> XIRoll).
+	-- Hoxne sets go first: over the job layers (Tp, Impetus...), under auto Dt and every engine layer.
+	-- Awake again with a slot still let go for the Sleeping set: hold it now, not at the next 0.1s HoldTick,
+	-- so this handler's job-set weapon can't cost the TP (LAC checks gState.Disabled when the buffer goes out).
+	if (next(gcinclude.SleepFreed) ~= nil) and (gcinclude.BuffCount('Sleep') == 0) then gcinclude.UpdateHold() end
+	local me = gData.GetPlayer(); -- one read for the auto sets, the combat check and XIRoll
+	if (me ~= nil) and (me.Status == 'Engaged') and (gcdisplay.GetToggle('PROC') == true) then
+		-- /proc: Proc over the job's engaged layers, /dt's Dt still over it (where the job files used to put it)
+		local proc = gcinclude.FindSet('Proc');
+		if (proc ~= nil) then
+			gFunc.EquipSet(proc);
+			local dt = gcinclude.FindSet('Dt');
+			if (gcdisplay.GetToggle('DTset') == true) and (dt ~= nil) then gFunc.EquipSet(dt) end
+		end
+	end
+	gcinclude.CheckHoxneSets(me);
+	gcinclude.SetRegenRefreshGear(me);
+	gcinclude.SetTownGear();
+	gcinclude.CheckWeapons(me);
+	gcinclude.CheckCommonDebuffs();
+	gcinclude.CheckLockingRings();
+	for _, cmd in ipairs(UTIL_ORDER) do
+		if gcinclude.UtilOn[cmd] then gFunc.EquipSet(gcinclude.sets[gcinclude.UtilSets[cmd]]) end
+	end
+	gcdisplay.Update();
 end
 
 	function gcinclude.Unload()
@@ -4330,31 +4335,31 @@ end
 	end
 
 function gcinclude.PlayerReady()
-    local mm = AshitaCore:GetMemoryManager();
-    if (mm == nil) then return false; end
+	local mm = AshitaCore:GetMemoryManager();
+	if (mm == nil) then return false; end
 
-    local p = mm:GetPlayer();
-    local party = mm:GetParty();
-    if (p == nil) or (party == nil) then return false; end
+	local p = mm:GetPlayer();
+	local party = mm:GetParty();
+	if (p == nil) or (party == nil) then return false; end
 
-    local mainJobId = p:GetMainJob();
-    if (mainJobId == nil) or (mainJobId == 0) then return false; end
-    if (p:GetMainJobLevel() == nil) or (p:GetMainJobLevel() == 0) then return false; end
-    if (party:GetMemberIsActive(0) ~= 1) then return false; end
+	local mainJobId = p:GetMainJob();
+	if (mainJobId == nil) or (mainJobId == 0) then return false; end
+	if (p:GetMainJobLevel() == nil) or (p:GetMainJobLevel() == 0) then return false; end
+	if (party:GetMemberIsActive(0) ~= 1) then return false; end
 
-    local name = party:GetMemberName(0);
-    if (name == nil) or (name == '') then return false; end
+	local name = party:GetMemberName(0);
+	if (name == nil) or (name == '') then return false; end
 
-    -- Fetch expected job abbreviation directly from memory
-    local mainJobStr = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", mainJobId);
+	-- Fetch expected job abbreviation directly from memory
+	local mainJobStr = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", mainJobId);
 
-    -- Gate until gData exists AND has synced to match the current memory state
-    local gp = gData.GetPlayer();
-    if (gp == nil) or (gp.MainJob == nil) or (gp.MainJob == 'NON') or (gp.MainJob ~= mainJobStr) then
-        return false;
-    end
+	-- Gate until gData exists AND has synced to match the current memory state
+	local gp = gData.GetPlayer();
+	if (gp == nil) or (gp.MainJob == nil) or (gp.MainJob == 'NON') or (gp.MainJob ~= mainJobStr) then
+		return false;
+	end
 
-    return true;
+	return true;
 end
 
 	function gcinclude.InitStep(tries)

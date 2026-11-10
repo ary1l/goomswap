@@ -16,7 +16,7 @@ local sets = {
         Hands = 'Malignance Gloves',
         Ring1 = 'Chirich Ring +1',
         Ring2 = 'defending ring',
-		Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
+        Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
         Waist = 'Carrier\'s Sash',
         Legs = 'Ikenga\'s Trousers',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Accuracy+7', [2] = 'Attack+18', [3] = 'Spell interruption rate down -8%', [4] = 'Quadruple Attack +2' } },
@@ -49,7 +49,7 @@ local sets = {
         Ring2 = 'Defending Ring',
         Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
         Waist = 'Sailfi Belt +1',
-		Legs = 'Samnuha Tights',
+        Legs = 'Samnuha Tights',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Accuracy+7', [2] = 'Attack+18', [3] = 'Spell interruption rate down -8%', [4] = 'Quadruple Attack +2' } },
     },
 
@@ -106,7 +106,7 @@ local sets = {
         Hands = 'Adhemar Wrist. +1',
         Ring1 = 'Petrov Ring',
         Ring2 = 'Epona\'s Ring',
-		Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'Accuracy+20', [3] = 'DEX+30', [4] = 'Attack+20', [5] = '"Dual Wield"+10' } },
+        Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'Accuracy+20', [3] = 'DEX+30', [4] = 'Attack+20', [5] = '"Dual Wield"+10' } },
         Waist = 'Sailfi Belt +1',
         Legs = 'Samnuha Tights',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Accuracy+7', [2] = 'Attack+18', [3] = 'Spell interruption rate down -8%', [4] = 'Quadruple Attack +2' } },
@@ -206,7 +206,7 @@ local sets = {
         Hands = 'Malignance Gloves',
         Ring1 = 'Dingir Ring',
         Ring2 = 'Ilabrat Ring',
-		Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
+        Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
         Waist = 'Eschan Stone',
         Legs = 'Ikenga\'s Trousers',
         Feet = 'Nyame Sollerets',
@@ -252,8 +252,8 @@ local sets = {
         Hands = 'nyame gauntlets',
         Ring1 = 'Regal Ring',
         Ring2 = 'Ephramad\'s Ring',
-		Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
-		Waist = 'Sailfi Belt +1',
+        Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'Sailfi Belt +1',
         Legs = 'Nyame Flanchard',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Accuracy+14', [3] = 'Attack+26', [4] = 'DEX+8' } },
     },
@@ -268,7 +268,7 @@ local sets = {
         Hands = 'Nyame Gauntlets',
         Ring1 = 'Dingir Ring',
         Ring2 = 'Ephramad\'s Ring',
-		Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
+        Back = { Name = 'Belenus\'s Cape', Augment = { [1] = 'Damage taken-5%', [2] = 'Mag. Acc.+20', [3] = 'Weapon skill damage +10%', [4] = 'AGI+30', [5] = 'Magic Damage+20' } },
         Waist = 'orpheus\'s sash',
         Legs = 'Nyame Flanchard',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Weapon skill damage +4%', [2] = 'Mag. Acc.+17', [3] = 'MND+8', [4] = '"Mag. Atk. Bns."+29' } },
@@ -332,11 +332,11 @@ local sets = {
     },
     TH = {
         Head = { Name = 'Herculean Helm', Augment = { [1] = 'Accuracy+30', [2] = 'Attack+18', [3] = '"Fast Cast"+3', [4] = '"Treasure Hunter"+2' } },
-		Waist = 'Chaac Belt',
-	},
+        Waist = 'Chaac Belt',
+    },
     Movement = {
         Ring1 = 'shneddick ring',
-	},
+    },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -373,7 +373,7 @@ profile.Sets = sets;
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.SafeAmmo = { Bullet = 'Chrono Bullet', Arrow = 'Chrono Arrow' }; -- keyed by the blocked ammo's last word; add Bolt if you use one
     gcinclude.RangeModes = {'None', 'Annihilator', 'Armageddon', 'Fomalhaut', 'Gastraphetes', 'Sparrowhawk +2'};
     gcinclude.WeaponModes = {'None', 'Annihilator', 'Sparrowhawk', 'Gastraphetes', 'Fomalhaut', 'Armageddon'};
@@ -395,13 +395,13 @@ end
 profile.HandleDefault = function()
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
-	local player = gData.GetPlayer();
+    local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
-		gFunc.EquipSet(sets.Movement);
+        gFunc.EquipSet(sets.Movement);
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
@@ -414,12 +414,6 @@ profile.HandleAbility = function()
     local ability = gData.GetAction();
     ByName(ability.Name); -- a set named after the ability, e.g. ['Scavenge']
     gcinclude.CheckCancels();
-end
-
-profile.HandleItem = function()
-    local item = gData.GetAction();
-
-	if string.match(item.Name, 'Holy Water') then gFunc.EquipSet(gcinclude.sets.Holy_Water) end
 end
 
 profile.HandlePrecast = function()
@@ -469,7 +463,7 @@ profile.HandleMidshot = function()
         gFunc.EquipSet(sets.Midshot_Acc);
         gFunc.EquipSet(sets.Barrage);
     end
-	gcinclude.CheckTH();
+    gcinclude.CheckTH();
 end
 
 profile.HandleWeaponskill = function()

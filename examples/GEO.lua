@@ -43,14 +43,14 @@ local sets = {
         Legs = 'nyame flanchard',
         Feet = 'bagua sandals +3',
     },
-	    Pet_Dt = {
+        Pet_Dt = {
         Main = 'idris',
         Sub = 'Genmei Shield',
         Range = 'Dunna',
         Head = 'Azimuth Hood +3',
         Neck = 'bagua charm +2',
         Ear1 = 'alabaster earring',
-		Ear2 = 'lugalbanda earring',
+        Ear2 = 'lugalbanda earring',
         Body = 'shamash robe',
         Hands = 'Geo. Mitaines +4',
         Ring1 = 'murky ring',
@@ -63,31 +63,31 @@ local sets = {
     Resting = {},
     Idle_Regen = {
         Ring2 = 'Chirich Ring +1',
-		Waist = 'null belt',
+        Waist = 'null belt',
     },
     Idle_Refresh = {
         Main = 'Bolelabunga',
-		Head = 'volte beret',
-		Neck = 'sibyl scarf',
+        Head = 'volte beret',
+        Neck = 'sibyl scarf',
         Body = 'shamash robe',
         Hands = 'bagua mitaines +3',
-		Ring1 = 'gurebu\'s ring',
-		Ring2 = 'stikini ring +1',
+        Ring1 = 'gurebu\'s ring',
+        Ring2 = 'stikini ring +1',
         Waist = 'Fucho-no-Obi',
         Legs = 'volte brais',
     },
     Idle_Regain = { -- /idleset regain: over Idle while idle
     },
     Town = {
-		Main = 'idris',
-		Sub = 'chanter\'s shield',
-		Range = 'dunna',
-		Head = 'azimuth hood +3',
-		Neck = 'sibyl scarf',
+        Main = 'idris',
+        Sub = 'chanter\'s shield',
+        Range = 'dunna',
+        Head = 'azimuth hood +3',
+        Neck = 'sibyl scarf',
         Body = 'shamash robe',
         Hands = 'Geo. Mitaines +4',
-		Ring2 = 'gurebu\'s ring',
-		Waist = 'carrier\'s sash',
+        Ring2 = 'gurebu\'s ring',
+        Waist = 'carrier\'s sash',
         Legs = 'geo. pants +4',
         Feet = 'geo. sandals +4',
     },
@@ -96,7 +96,7 @@ local sets = {
         Head = 'azimuth hood +3',
         Neck = 'loricate torque +1',
         Ear1 = 'alabaster earring',
-		Ear2 = 'lugalbanda earring',
+        Ear2 = 'lugalbanda earring',
         Body = 'shamash robe',
         Hands = 'azimuth gloves +2',
         Ring1 = 'murky Ring',
@@ -157,7 +157,7 @@ local sets = {
         Main = 'idris',
         Sub = 'Ammurapi Shield',
         Range = 'Dunna',
-		Ammo = 'displaced',
+        Ammo = 'displaced',
         Head = 'nyame helm',
         Neck = 'Sanctity Necklace',
         Ear1 = 'alabaster Earring',
@@ -185,9 +185,9 @@ local sets = {
 
     Precast = {
         Main = 'idris',
-		Sub = 'chanter\'s shield',--3
+        Sub = 'chanter\'s shield',--3
         Range = 'Dunna',--3
-		Ammo = 'displaced',
+        Ammo = 'displaced',
         Head = 'volte beret',--6
         Neck = 'voltsurge torque',--4
         Ear1 = 'loquac. Earring',--2
@@ -202,7 +202,7 @@ local sets = {
         Feet = 'indom. sabots',--4
     },
     ['Healing Magic_Precast'] = {
-		Ear2 = 'Mendi. Earring',
+        Ear2 = 'Mendi. Earring',
     },
     ['Enhancing Magic_Precast'] = {
         Waist = 'Siegel Sash',
@@ -217,17 +217,17 @@ local sets = {
     ['Healing Magic'] = {--I cap is 50, II cap is 30
         Main = 'bunzi\'s rod',--30
         Sub = 'genmei Shield',
-		Head = 'nyame helm',
+        Head = 'nyame helm',
         Neck = 'loricate torque +1',
         Ear1 = 'alabaster earring',
         Ear2 = 'mendi. Earring',--5
-		Body = 'annoint. kalasiris',--10
+        Body = 'annoint. kalasiris',--10
         Hands = 'nyame gauntlets',
         Ring1 = 'murky ring',
         Ring2 = 'gurebu\'s ring',
         Back = 'Solemnity cape',--7
         Waist = 'witful belt',
-		Legs = 'geo. pants +4',
+        Legs = 'geo. pants +4',
         Feet = 'nyame sollerets',
     },
     Self_Cure = {--cap 30
@@ -252,9 +252,9 @@ local sets = {
         Feet = 'Telchine Pigaches',
     },
     Cursna = {
-		Neck = 'debilis medallion',
+        Neck = 'debilis medallion',
         Ring1 = 'haoma\'s Ring',
-		Waist = 'Gishdubar Sash',
+        Waist = 'Gishdubar Sash',
         Feet = 'Vanya Clogs',
     },
 
@@ -281,22 +281,22 @@ local sets = {
     },
     Phalanx = {},
     Refresh = {
-		Waist = 'Gishdubar Sash',
+        Waist = 'Gishdubar Sash',
     },
     Geomancy = { --900 skill, then indi duration, then CMP
         Main = 'idris',
         Range = 'Dunna',
-		Ammo = 'displaced',
+        Ammo = 'displaced',
         Head = 'azimuth hood +3',
         Neck = 'Bagua Charm +2',
-		Ear1 = 'alabaster earring',
+        Ear1 = 'alabaster earring',
         Ear2 = 'Mendi. Earring',
         Body = 'bagua tunic +3',
         Hands = 'Geo. Mitaines +4',--15
         Ring1 = 'weather. Ring',
         Ring2 = 'Stikini Ring +1',--8
-		Back = 'lifestream cape',
-		Waist = 'embla sash',
+        Back = 'lifestream cape',
+        Waist = 'embla sash',
         --Waist = 'Hachirin-no-Obi',
         Legs = 'geo. pants +4',
         Feet = 'azimuth gaiters +3',
@@ -304,17 +304,17 @@ local sets = {
     Indi = { --900 skill, then indi duration, then CMP
         Main = 'idris',
         Range = 'Dunna',
-		Ammo = 'displaced',
+        Ammo = 'displaced',
         Head = 'azimuth hood +3',
         Neck = 'Bagua Charm +2',
-		Ear1 = 'alabaster earring',
+        Ear1 = 'alabaster earring',
         Ear2 = 'Mendi. Earring',
         Body = 'bagua tunic +3',
         Hands = 'Geo. Mitaines +4',--15
         Ring1 = 'weather. Ring',
         Ring2 = 'Stikini Ring +1',--8
-		Back = 'lifestream cape',
-		Waist = 'embla sash',
+        Back = 'lifestream cape',
+        Waist = 'embla sash',
         --Waist = 'Hachirin-no-Obi',
         Legs = 'bagua pants +4',
         Feet = 'azimuth gaiters +3',
@@ -451,11 +451,11 @@ local sets = {
     Ws_Acc = {
     },
 
-	['Black Halo'] = {
+    ['Black Halo'] = {
         Ammo = 'Oshasha\'s Treatise',
         Head = 'Nyame Helm',
         Neck = 'rep. plat. medal',
-		Ear1 = 'alabaster earring',
+        Ear1 = 'alabaster earring',
         Ear2 = 'ishvara Earring',
         Body = 'egbesu frock',
         Hands = 'jhakri cuffs +2',
@@ -533,7 +533,7 @@ local sets = {
         Hands = 'Jhakri Cuffs +2',
         Ring1 = 'weather. ring',
         Ring2 = 'gurebu\'s Ring',
-		Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Pet: Damage taken -5%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = 'MND+20', [5] = 'Weapon skill damage +10%' } },
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Pet: Damage taken -5%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = 'MND+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'Eschan Stone',
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
@@ -548,7 +548,7 @@ local sets = {
         Hands = 'Jhakri Cuffs +2',
         Ring1 = 'weather. ring',
         Ring2 = 'gurebu\'s Ring',
-		Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Pet: Damage taken -5%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = 'MND+20', [5] = 'Weapon skill damage +10%' } },
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Pet: Damage taken -5%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = 'MND+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'Eschan Stone',
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
@@ -559,15 +559,15 @@ local sets = {
     },
 
     Bolster = {Body = 'Bagua Tunic +3'},
-	['Full Circle'] = {Head = 'Azimuth Hood +3',
-		  Body = 'geo. tunic +4',},
+    ['Full Circle'] = {Head = 'Azimuth Hood +3',
+          Body = 'geo. tunic +4',},
     TH = {
         Ammo = 'Per. Lucky Egg',
-		Waist = 'Chaac Belt',
-	},
+        Waist = 'Chaac Belt',
+    },
     Movement = {
         Feet = 'Geo. Sandals +4',
-	},
+    },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -584,7 +584,7 @@ local sets = {
     -- Weapon_Idris_Acc = { Main = 'Item Name' }, -- /mset acc: a whole weapon set in place of Weapon_Idris
     Absorb = {}, -- every Absorb- spell (land rate: Dark Magic skill, macc; potency is not skill)
     Absorb_TP = {
-		Main = 'Bunzi\'s Rod',
+        Main = 'Bunzi\'s Rod',
         Sub = 'Ammurapi Shield',
         Ammo = 'Pemphredo Tathlum',
         Head = 'azimuth hood +3',
@@ -599,7 +599,7 @@ local sets = {
         Waist = 'null belt',
         Legs = 'geo. pants +4',
         Feet = 'geo. sandals +4',
-	}, -- Absorb-TP on top of Absorb
+    }, -- Absorb-TP on top of Absorb
     Cure_Received = {
     },
     Cursna_Received = {
@@ -625,7 +625,7 @@ profile.Packer = {
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None', 'Idris', 'Maxentius', 'Tishtrya'};
     gcinclude.DefaultWeapons = 'Idris';
     gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
@@ -664,12 +664,6 @@ profile.HandleAbility = function()
     local ability = gData.GetAction();
     ByName(ability.Name); -- a set named after the ability, e.g. ['Bolster']
     gcinclude.CheckCancels();
-end
-
-profile.HandleItem = function()
-    local item = gData.GetAction();
-
-	if string.match(item.Name, 'Holy Water') then gFunc.EquipSet(gcinclude.sets.Holy_Water) end
 end
 
 profile.HandlePrecast = function()
@@ -725,7 +719,7 @@ end
 
 profile.HandleMidshot = function()
     gFunc.EquipSet(sets.Midshot);
-	gcinclude.CheckTH();
+    gcinclude.CheckTH();
 end
 
 profile.HandleWeaponskill = function()

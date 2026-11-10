@@ -513,11 +513,6 @@ profile.HandleAbility = function()
     gcinclude.CheckCancels();
 end
 
-profile.HandleItem = function()
-    local item = gData.GetAction();
-    if string.match(item.Name, 'Holy Water') then gFunc.EquipSet(gcinclude.sets.Holy_Water) end
-end
-
 profile.HandlePrecast = function()
     local spell = gData.GetAction();
     gFunc.EquipSet(sets.Precast);

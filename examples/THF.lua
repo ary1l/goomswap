@@ -78,7 +78,7 @@ local sets = {
         Sub = 'Fusetto +2',
     },
     Tp_Default = {
-		Ammo = 'coiste bodhar',
+        Ammo = 'coiste bodhar',
         Head = 'gleti\'s mask',
         Neck = { Name = 'Asn. Gorget +2', AugPath='A' },
         Ear1 = 'Sherida Earring',
@@ -95,7 +95,7 @@ local sets = {
     Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
     },
     Tp_Acc = {
-		--Ammo = "Ginsen",
+        --Ammo = "Ginsen",
         Head = 'Malignance Chapeau',
         --Neck = 'Sanctity Necklace',
         --Ear1 = 'Mache Earring +1',
@@ -111,7 +111,7 @@ local sets = {
     Precast = {
         Head = 'Haruspex Hat',
         Neck = 'voltsurge torque',
-		Ear1 = 'alabaster earring',
+        Ear1 = 'alabaster earring',
         Ear2 = 'Etiolation Earring',
         Body = 'Taeon Tabard',
         Hands = 'Leyline Gloves',
@@ -133,7 +133,7 @@ local sets = {
     },
 
     Ws_Default = {
-		Ammo = "Yetshila +1",
+        Ammo = "Yetshila +1",
         Head = 'Pill. Bonnet +3',
         Neck = 'Fotia Gorget',
         Ear1 = 'Odr Earring',
@@ -192,14 +192,14 @@ local sets = {
     Evisceration_Acc_TA = {},
     Evisceration_Acc_SATA = {},
 
-	['Rudra\'s Storm'] = {
+    ['Rudra\'s Storm'] = {
         Head = 'Nyame Helm',
         Neck = 'Asn. Gorget +2',
         Ear1 = 'Sherida Earring',
         Body = 'Plunderer\'s Vest +3',
         Hands = 'Nyame Gauntlets',
         Ring1 = 'Regal Ring',
-		Ring2 = 'ephramad\'s Ring',
+        Ring2 = 'ephramad\'s Ring',
         Back = { Name = 'Toutatis\'s Cape', Augment = { [1] = 'Accuracy+20', [2] = 'Weapon skill damage +10%', [3] = 'Attack+20', [4] = 'DEX+30' } },
         Waist = 'Kentarch Belt +1',
         Legs = 'Nyame Flanchard',
@@ -221,8 +221,8 @@ local sets = {
     ['Rudra\'s Storm_Acc_TA'] = {},
     ['Rudra\'s Storm_Acc_SATA'] = {},
 
-	['Savage Blade'] = {
-		Ammo = 'coiste bodhar',
+    ['Savage Blade'] = {
+        Ammo = 'coiste bodhar',
         Head = 'Nyame Helm',
         Neck = { Name = 'Asn. Gorget +2', AugPath='A' },
         Ear1 = 'Telos Earring',
@@ -251,8 +251,8 @@ local sets = {
     ['Savage Blade_Acc_TA'] = {},
     ['Savage Blade_Acc_SATA'] = {},
 
-	['Aeolian Edge'] = {
-		Ammo = "C. Palug Stone",
+    ['Aeolian Edge'] = {
+        Ammo = "C. Palug Stone",
         Head = 'Nyame Helm',
         Neck = 'Sanctity Necklace',
         Ear1 = 'Friomisi Earring',
@@ -269,7 +269,7 @@ local sets = {
     ['Aeolian Edge_SA'] = {
     },
 
-	['Aeolian Edge_TA'] = {
+    ['Aeolian Edge_TA'] = {
     },
     ['Aeolian Edge_SATA'] = {
     },
@@ -293,8 +293,8 @@ local sets = {
     },
     ['TH'] = {
         Sub = 'Gandring', -- held while /th is on, even after the tag (a Sub swap resets TP)
-		Head = 'herculean helm',
-		Hands = 'Plun. Armlets +3',
+        Head = 'herculean helm',
+        Hands = 'Plun. Armlets +3',
     },
     Flee = {
         Feet = 'Pill. Poulaines +2',
@@ -318,7 +318,7 @@ local sets = {
 
     Movement = {
         Feet = 'Pill. Poulaines +2',
-	},
+    },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -358,7 +358,7 @@ profile.Sets = sets;
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.AlwaysDualWield = true;
     gcinclude.WeaponModes = {'None', 'Mpu', 'Naegling'}; -- Weapon_MpuAcc goes on with /mset Acc
     gcinclude.DefaultWeapons = 'Mpu';
@@ -381,13 +381,13 @@ profile.HandleDefault = function()
     local sa = gcinclude.BuffCount('Sneak Attack');
     local ta = gcinclude.BuffCount('Trick Attack');
 
-	local player = gData.GetPlayer();
+    local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
-		gFunc.EquipSet(sets.Movement);
+        gFunc.EquipSet(sets.Movement);
     end
 
     if (sa == 1) and (ta == 1) then
@@ -408,12 +408,6 @@ profile.HandleAbility = function()
     local ability = gData.GetAction();
     ByName(ability.Name); -- a set named after the ability, e.g. ['Flee']
     gcinclude.CheckCancels();
-end
-
-profile.HandleItem = function()
-    local item = gData.GetAction();
-
-	if string.match(item.Name, 'Holy Water') then gFunc.EquipSet(gcinclude.sets.Holy_Water) end
 end
 
 profile.HandlePrecast = function()

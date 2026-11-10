@@ -18,12 +18,12 @@ local sets = {
         Hands = 'hashi. bazu. +3',
         Ring1 = 'murky ring',
         Ring2 = 'shadow ring',
-		Back = 'shadow mantle',
+        Back = 'shadow mantle',
         Waist = 'carrier\'s sash',
         Legs = 'hashishin tayt +3',
         Feet = 'nyame sollerets',
     },
-	Resting = {
+    Resting = {
         Body = 'Hashishin Mintan +3',
         Waist = 'Fucho-no-Obi',
     },
@@ -31,18 +31,18 @@ local sets = {
         Neck = 'Sanctity Necklace',
         --Ear1 = 'Infused Earring',
         Ring1 = 'Chirich Ring +1',
-		Waist = 'null belt',
+        Waist = 'null belt',
     },
     Idle_Refresh = {
         --Head = 'Rawhide Mask',
         Body = 'Hashishin Mintan +3',
         Ring1 = 'Stikini Ring +1',
-		Ring2 = 'stikini ring +1',
+        Ring2 = 'stikini ring +1',
         Waist = 'Fucho-no-Obi',
     },
     Idle_Regain = { -- /idleset regain: over Idle while idle
     },
-	['Town'] = {
+    ['Town'] = {
         Ammo = 'Staunch Tathlum +1',
         Head = 'Hashishin Kavuk +3',
         Neck = 'mirage stole +2',
@@ -68,27 +68,27 @@ local sets = {
         Hands = 'nyame gauntlets',
         Ring1 = 'murky ring',
         Ring2 = 'shadow ring',
-		Back = 'null shawl',
+        Back = 'null shawl',
         Waist = 'null belt',
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
     },
 
-	Dt = {
-		Ammo = 'Staunch Tathlum +1',
+    Dt = {
+        Ammo = 'Staunch Tathlum +1',
         Head = 'Nyame Helm',
-		Neck = 'warder\'s charm +1',
-		Ear1 = 'hearty earring',
-		Ear2 = 'Eabani Earring',
-		Body = 'adamantite armor',
+        Neck = 'warder\'s charm +1',
+        Ear1 = 'hearty earring',
+        Ear2 = 'Eabani Earring',
+        Body = 'adamantite armor',
         Hands = 'nyame gauntlets',
         Ring1 = 'stikini ring +1',
         Ring2 = 'stikini ring +1',
         Back = 'null shawl',
-		Waist = 'carrier\'s sash',
-		Legs = 'Nyame Flanchard',
+        Waist = 'carrier\'s sash',
+        Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
-	},
+    },
     SIR = {
         Ammo = 'Staunch Tathlum +1',
         Head = 'Hashishin Kavuk +3',
@@ -99,7 +99,7 @@ local sets = {
         Hands = 'hashi. bazu. +3',
         Ring1 = 'murky ring',
         Ring2 = 'shadow ring',
-		Back = 'shadow mantle',
+        Back = 'shadow mantle',
         Waist = 'carrier\'s sash',
         Legs = 'hashishin tayt +3',
         Feet = 'nyame sollerets',
@@ -121,8 +121,8 @@ local sets = {
         Main = 'Caliburnus',
         Sub = 'Genmei Shield',
     },
-	Tp_Default = {
-		--sub = 'thibron',
+    Tp_Default = {
+        --sub = 'thibron',
         Ammo = 'coiste bodhar',
         Head = 'Malignance Chapeau',
         Neck = 'Mirage Stole +2',
@@ -135,16 +135,16 @@ local sets = {
         Back = 'null shawl',
         Waist = 'sailfi belt +1',
         Legs = 'malignance tights',
-		Feet = 'malignance boots',
+        Feet = 'malignance boots',
     },
-	Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
-	    Body = 'volte harness', -- Subtle Blow+10
-	},
-	Tp_Acc = {
+    Tp_SubtleBlow = { -- /mset subtleblow: Subtle Blow pieces over Tp_Default
+        Body = 'volte harness', -- Subtle Blow+10
+    },
+    Tp_Acc = {
         },
     Midcast = {},
 
-	Precast = {--64
+    Precast = {--64
         Ammo = 'Sapience Orb',--2
         Head = 'Carmine Mask +1', --14
         Neck = 'voltsurge torque',--4
@@ -160,13 +160,13 @@ local sets = {
         Feet = 'Carmine Greaves +1',--7
     },
     ['Blue Magic_Precast'] = {
-		Ammo = 'Sapience Orb',--2
+        Ammo = 'Sapience Orb',--2
         Head = 'Carmine Mask +1',--14
         Neck = 'voltsurge torque',--4
         Ear1 = 'Loquac. Earring',--2
         Ear2 = 'Etiolation Earring',--1
         Body = 'Hashishin Mintan +3',
-		Hands = 'Leyline Gloves',--6
+        Hands = 'Leyline Gloves',--6
         Ring1 = 'Prolix Ring',--2
         Ring2 = 'Kishar Ring',--4
         Back = { Name = 'Rosmerta\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Mag. Evasion+20', [3] = 'AGI+20', [4] = 'Evasion+45' } },
@@ -175,18 +175,18 @@ local sets = {
         Feet = 'Carmine Greaves +1',--7
     },
     Stoneskin_Precast = {
-		Ammo = 'Sapience Orb',--2
+        Ammo = 'Sapience Orb',--2
         Head = 'Carmine Mask +1',--14
         Neck = 'voltsurge torque',--4
         Ear1 = 'Loquac. Earring',--2
         Ear2 = 'Etiolation Earring',--1
         Body = 'Hashishin Mintan +3',
-		Hands = 'Leyline Gloves',--6
+        Hands = 'Leyline Gloves',--6
         Ring1 = 'Prolix Ring',--2
         Ring2 = 'Kishar Ring',--4
         Back = { Name = 'Rosmerta\'s Cape', Augment = { [1] = '"Fast Cast"+10', [2] = 'Mag. Evasion+20', [3] = 'AGI+20', [4] = 'Evasion+45' } },
         Waist = 'Siegel Sash',
-		Legs = 'Pinga Pants +1',--11
+        Legs = 'Pinga Pants +1',--11
         Feet = 'Carmine Greaves +1',--7
     },
 
@@ -206,7 +206,7 @@ local sets = {
         Feet = 'Medium\'s Sabots',--10 atm
     },
     ['White Wind'] = {--HP+ go!
-		--sub = 'sakpata\'s sword',
+        --sub = 'sakpata\'s sword',
         Ammo = 'egoist\'s Tathlum',
         Head = 'nyame helm',
         Neck = 'unmoving collar +1',
@@ -222,8 +222,8 @@ local sets = {
         Feet = 'Carmine Greaves +1',
     },
     BluSkill = {
-		Ear1 = 'Njordr earring',
-		Ear2 = 'Hashi. earring +1',
+        Ear1 = 'Njordr earring',
+        Ear2 = 'Hashi. earring +1',
         Body = 'Assim. Jubbah +4',
         Back = 'Cornflower Cape',
         Legs = 'Hashishin Tayt +3',
@@ -232,7 +232,7 @@ local sets = {
         Ammo = 'Ghastly Tathlum',
         Head = 'Hashishin Kavuk +3',
         Neck = 'Mirage Stole +2',
-		Ear1 = 'Regal Earring',
+        Ear1 = 'Regal Earring',
         Ear2 = 'Hashi. Earring +1',
         Body = 'Hashishin Mintan +3',
         Hands = 'hashi. bazu. +3',
@@ -306,12 +306,12 @@ local sets = {
     },
 
     Preshot = {
-		Range = 'aliyat chakram',
-		Ammo = 'displaced',
+        Range = 'aliyat chakram',
+        Ammo = 'displaced',
     },
     Midshot = {
-		Range = 'aliyat chakram',
-		Ammo = 'displaced',
+        Range = 'aliyat chakram',
+        Ammo = 'displaced',
         Ear1 = 'Telos Earring',
         Ear2 = 'Crep. Earring',
     },
@@ -336,7 +336,7 @@ local sets = {
     ['Chant du Cygne'] = {
         Ammo = 'Jukukik Feather',
         Head = 'Adhemar Bonnet +1',
-		Neck = 'Mirage Stole +2',
+        Neck = 'Mirage Stole +2',
         Ear1 = 'Telos Earring',
         Ear2 = 'Digni. Earring',
         Body = 'Gleti\'s Cuirass',
@@ -350,9 +350,9 @@ local sets = {
     ['Chant du Cygne_Acc'] = {
     },
     ['Savage Blade'] = {
-	    Ammo = 'coiste bodhar',
+        Ammo = 'coiste bodhar',
         Head = 'Hashishin Kavuk +3',
-		Neck = 'Mirage Stole +2',
+        Neck = 'Mirage Stole +2',
         Ear1 = 'alabaster Earring',
         Body = 'Assim. Jubbah +4',
         Hands = 'nyame gauntlets',
@@ -360,7 +360,7 @@ local sets = {
         Ring2 = 'Ephramad\'s Ring',
         Back = { Name = 'Rosmerta\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
         Waist = 'sailfi belt +1',
-		Legs = 'nyame flanchard',
+        Legs = 'nyame flanchard',
         Feet = 'nyame sollerets',
     },
     ['Savage Blade_Acc'] = {
@@ -413,7 +413,7 @@ local sets = {
     },
     Requiescat_Acc = {
     },
-	['Sanguine Blade'] = {
+    ['Sanguine Blade'] = {
         Ammo = 'ghastly tathlum',
         Head = 'Hashishin kavuk +3',
         Neck = 'sibyl scarf',
@@ -431,7 +431,7 @@ local sets = {
     ['Sanguine Blade_Acc'] = {},
     Ca = {
         Head = 'Hashishin Kavuk +3',
-		Feet = 'Hashi. Basmak +3',
+        Feet = 'Hashi. Basmak +3',
         --Feet = 'Assim. Charuqs +1',
     },
     Ba = {
@@ -461,16 +461,16 @@ local sets = {
     ['Hoxne_Savage Blade'] = {}, -- that WS, over Hoxne_Ws
 
     TH = {
-	    Head = { Name = 'Herculean Helm', Augment = { [1] = 'Accuracy+30', [2] = 'Attack+18', [3] = '"Fast Cast"+3', [4] = '"Treasure Hunter"+2' } },
-		Waist = 'Chaac Belt',
-	},
+        Head = { Name = 'Herculean Helm', Augment = { [1] = 'Accuracy+30', [2] = 'Attack+18', [3] = '"Fast Cast"+3', [4] = '"Treasure Hunter"+2' } },
+        Waist = 'Chaac Belt',
+    },
     Salvage = {
-		Main = 'Tizona',
+        Main = 'Tizona',
         Sub = 'Bunzi\'s Rod',
-	},
-	Movement = {
-		Ring1 = 'shneddick ring',
-	},
+    },
+    Movement = {
+        Ring1 = 'shneddick ring',
+    },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -509,7 +509,7 @@ profile.Sets = sets;
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.AlwaysDualWield = true;
     gcinclude.WeaponModes = {'None', 'Tizona', 'Caliburnus'};
     gcinclude.DefaultWeapons = 'Tizona';
@@ -523,19 +523,19 @@ profile.OnUnload = function()
 end
 
 profile.HandleCommand = function(args)
-	gcinclude.HandleCommands(args);
+    gcinclude.HandleCommands(args);
 end
 
 profile.HandleDefault = function()
-	gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
-	local player = gData.GetPlayer();
+    local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
-		gFunc.EquipSet(sets.Movement);
+        gFunc.EquipSet(sets.Movement);
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
@@ -554,12 +554,6 @@ profile.HandleAbility = function()
     if (ability.Name == 'Provoke') then gFunc.EquipSet(sets.Enmity) end
     ByName(ability.Name); -- a set named after the ability, e.g. ['Azure Lore']
     gcinclude.CheckCancels();
-end
-
-profile.HandleItem = function()
-    local item = gData.GetAction();
-
-	if string.match(item.Name, 'Holy Water') then gFunc.EquipSet(gcinclude.sets.Holy_Water) end
 end
 
 profile.HandlePrecast = function()

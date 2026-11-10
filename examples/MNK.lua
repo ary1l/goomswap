@@ -50,7 +50,7 @@ local sets = {
         Hands = 'Nyame Gauntlets',
         Ring1 = 'murky Ring',
         Ring2 = 'defending ring',
-		Back = 'moonbeam cape',
+        Back = 'moonbeam cape',
         Waist = 'plat. mog. belt',
         Legs = 'Nyame Flanchard',
         Feet = 'Nyame Sollerets',
@@ -134,7 +134,7 @@ local sets = {
     },
     ['Shijin Spiral_Acc'] = {},
 
-	['Howling Fist'] = {
+    ['Howling Fist'] = {
         Ammo = 'Knobkierrie',
         Head = 'Mpaca\'s Cap',
         Neck = 'Mnk. Nodowa +2',
@@ -151,7 +151,7 @@ local sets = {
     ['Howling Fist_Acc'] = {},
 
 
-	['Dragon Kick'] = {
+    ['Dragon Kick'] = {
         Ammo = 'Knobkierrie',
         Head = 'Mpaca\'s Cap',
         Neck = 'Mnk. Nodowa +2',
@@ -167,7 +167,7 @@ local sets = {
     },
 
 
-	['Tornado Kick'] = {
+    ['Tornado Kick'] = {
         Ammo = 'Knobkierrie',
         Head = 'Mpaca\'s Cap',
         Neck = 'Mnk. Nodowa +2',
@@ -190,7 +190,7 @@ local sets = {
 
 
     Tp_Impetus = {--over rides your TP set if impetus is up
-		Ear1 = 'dedition earring',
+        Ear1 = 'dedition earring',
         Body = 'Bhikku Cyclas +3',
     },
     -- Hoxne: /hoxne Locked + Enchantment up (Double Attack +100%). Per slot, later wins; leave a slot out to keep the one under.
@@ -239,13 +239,13 @@ local sets = {
     },
 
     TH = {
-		Ammo = 'Per. Lucky Egg',
-		Waist = 'Chaac Belt',
+        Ammo = 'Per. Lucky Egg',
+        Waist = 'Chaac Belt',
         Feet = { Name = 'Herculean Boots', Augment = { [1] = 'Potency of "Cure" effect received+5%', [2] = 'Mag. Acc.+19', [3] = 'Accuracy+21', [4] = '"Mag. Atk. Bns."+19', [5] = '"Treasure Hunter"+2' } },
-	},
+    },
     Movement = {
         Feet = 'Herald\'s Gaiters',
-	},
+    },
     -- Templates: fill the ones you use; an empty set changes nothing.
     Proc = {}, -- /proc: low-damage gear for proc windows (Abyssea, Vagary...), over the engaged sets
     Ws_Proc = {}, -- /proc on weapon skills (empty: Proc)
@@ -283,7 +283,7 @@ profile.Packer = {
 local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
-	gSettings.AllowAddSet = true;
+    gSettings.AllowAddSet = true;
     gcinclude.WeaponModes = {'None', 'Godhands'};
     gcinclude.DefaultWeapons = 'Godhands';
     gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
@@ -300,7 +300,7 @@ end
 
 profile.HandleDefault = function()
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
-	local player = gData.GetPlayer();
+    local player = gData.GetPlayer();
 
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
@@ -309,7 +309,7 @@ profile.HandleDefault = function()
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
-		gFunc.EquipSet(sets.Movement);
+        gFunc.EquipSet(sets.Movement);
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
@@ -323,12 +323,6 @@ profile.HandleAbility = function()
     ByName(ability.Name); -- a set named after the ability, e.g. ['Focus'], ['Hundred Fists']
     if (ability.Name == 'Boost') then gFunc.EquipSet(sets.Buffs.Boost) end -- sash on from the start
     gcinclude.CheckCancels();
-end
-
-profile.HandleItem = function()
-    local item = gData.GetAction();
-
-	if string.match(item.Name, 'Holy Water') then gFunc.EquipSet(gcinclude.sets.Holy_Water) end
 end
 
 profile.HandlePrecast = function()
@@ -353,7 +347,7 @@ end
 
 profile.HandleMidshot = function()
     gFunc.EquipSet(sets.Midshot);
-	gcinclude.CheckTH();
+    gcinclude.CheckTH();
 end
 
 profile.HandleWeaponskill = function()
@@ -364,4 +358,4 @@ profile.HandleWeaponskill = function()
     if (ws.Name == 'Victory Smite') and (gcinclude.BuffCount('Impetus') > 0) then ByName('Victory Smite_Impetus') end
 end
 
-return profile;
+return profile;
