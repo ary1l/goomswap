@@ -178,6 +178,8 @@
 	gcdisplay = gFunc.LoadFile('common\\gcdisplay.lua');
 	gcauto = gFunc.LoadFile('common\\gcauto.lua');
 	gcaction = gFunc.LoadFile('common\\gcaction.lua');
+	gcauto.Bind(gcinclude, gcdisplay); -- bound now, not in SetVariables: the handlers are wrapped at
+	gcaction.Bind(gcinclude);         -- Initialize, before InitStep's player wait ends (/item then hit a nil 'inc')
 	local hudOk, hudModule = pcall(gFunc.LoadFile, 'common\\gchud.lua');
 	if (hudOk == true) and (type(hudModule) == 'table') then
 		gchud = hudModule;
@@ -320,8 +322,6 @@ function gcinclude.SetVariables()
             gcinclude.SetWeaponCycle(cname, val, true);
         end
     end
-    gcauto.Bind(gcinclude, gcdisplay);
-    gcaction.Bind(gcinclude);
     if (gchud ~= nil) then gchud.Bind(gcinclude, gcdisplay) end
     if (mJob == 'RDM') or (mJob == 'BLM') or (mJob == 'SCH') or (mJob == 'GEO') then
         gcdisplay.CreateToggle('Burst', false); -- /burst: Burst set on every nuke, not only on live skillchains
