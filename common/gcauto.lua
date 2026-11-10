@@ -422,7 +422,7 @@ local function roll_packet(P)
     if (category == 8) then return end
     local tagcat = TAGCAT[category];
     -- A THSkip spell (Absorb-TP, Stun) is cast without the TH set, so it doesn't count as the tag.
-    if (tagcat ~= nil) and (category == 4) and (inc ~= nil) and (inc.Skipped ~= nil) then
+    if (tagcat ~= nil) and (category == 4) and (actor == me) and (inc ~= nil) and (inc.Skipped ~= nil) then -- only my casts tag
         local res = AshitaCore:GetResourceManager():GetSpellById(param);
         if (res ~= nil) and (res.Name ~= nil) and inc.Skipped('THSkip', res.Name[1]) then tagcat = nil end
     end
