@@ -169,6 +169,7 @@ end
 -- GoomSwap item: 'Name' or { name=, augments=, priority=, bag= } (GearSwap's format, matched as is on Windower).
 local function item_of(v)
     if (v == EMPTY) then return 'remove' end
+    if (v == '') then return nil end -- legs="": GearSwap finds no such item and leaves the slot alone, as a set without the line does
     if (type(v) == 'string') then return (v == 'empty') and 'remove' or v end
     if (type(v) == 'table') and (getmetatable(v) ~= stubmt) and (type(v.name or v.Name) == 'string') and ((v.name or v.Name) ~= '') then
         local o = { name = v.name or v.Name };
@@ -190,10 +191,38 @@ local function gear_of(t, bad)
         if (it ~= nil) then
             if (from[slot] ~= nil) then bad.twice = bad.twice or {}; bad.twice[#bad.twice + 1] = slot .. ' (' .. from[slot] .. ' and ' .. k .. ': ' .. k .. ' kept)' end
             o[slot], from[slot] = it, k;
+        elseif (v == '') then -- nothing to carry over, nothing to report
         elseif (v == PLACEHOLDER) or ((type(v) == 'table') and (v.name == '')) then bad.placeholders = (bad.placeholders or 0) + 1
         else bad[#bad + 1] = slot end
     end
     return o;
+end
+
+-- Moonshade Earring in a weapon skill set. GoomSwap wears it by itself on every weapon skill under MoonshadeTP, in
+-- Ear2 (gcinclude.CheckMoonshade), and takes it back off an ear a set left it on. A Selindrile set with Moonshade
+-- in one ear and, say, Ishvara in the other would lose the Ishvara: Moonshade goes to Ear2 over it and Ear1 is let
+-- go. So the Moonshade line comes out and the set's other earring sits in Ear1, leaving Ear2 for the engine. An
+-- earring that only works in the right ear (Sortie job earrings; keep in step with gcinclude.SortieEarrings) stays
+-- in Ear2: the engine then uses Ear1.
+local RIGHT_EAR = {};
+for _, stem in ipairs({ 'chev.', 'hashi.', 'lethargy', 'leth.', 'ebers', 'wicce', 'arbatel', 'azimuth', 'fili', 'chas.', 'bhikku', 'heath.',
+    'peltast', 'skulk.', 'kasuga', 'hattori', 'nukumi', 'karagoz', 'maculele', 'macu.', 'erilaz', 'boii', 'amini', 'beck.' }) do RIGHT_EAR[stem] = true end
+local function item_name(v) return (type(v) == 'table') and v.name or v end
+local function is_moonshade(v) return (type(item_name(v)) == 'string') and (string.lower(item_name(v)) == 'moonshade earring') end
+local function moonshade_out(gear)
+    local m1, m2 = is_moonshade(gear.Ear1), is_moonshade(gear.Ear2);
+    if not (m1 or m2) then return false end
+    if m1 and m2 then
+        gear.Ear1, gear.Ear2 = nil, nil;
+    elseif m2 then
+        gear.Ear2 = nil;
+    else
+        local other = gear.Ear2;
+        local stem = (type(item_name(other)) == 'string') and string.match(string.lower(item_name(other)), '^(%S+) earring') or nil;
+        gear.Ear1 = nil;
+        if (other ~= nil) and not ((stem ~= nil) and RIGHT_EAR[stem]) then gear.Ear1, gear.Ear2 = other, nil end
+    end
+    return true;
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -537,7 +566,7 @@ function S2G.Convert(opts)
     local io_ = opts.io_;
     local sent = {};
     local env = new_env(opts.name, opts.job, opts.sub, sent);
-    local report = { loaded = {}, failed = {}, unmapped = {}, unresolved = {}, mapped = 0, notes = {}, shared = {}, placeholders = 0 };
+    local report = { loaded = {}, failed = {}, unmapped = {}, unresolved = {}, mapped = 0, notes = {}, shared = {}, placeholders = 0, moonshade = 0 };
     if (opts.mappings_file ~= nil) then
         local ok = run_file(io_, opts.mappings_file, env);
         if ok then report.loaded[#report.loaded + 1] = 'Sel-Mappings' end
@@ -678,6 +707,7 @@ function S2G.Convert(opts)
         local gear = gear_of(f.set, bad);
         if (#bad > 0) then report.unresolved[#report.unresolved + 1] = path_name(f.path) .. ' (' .. table.concat(bad, ', ') .. ')' end
         report.placeholders = report.placeholders + (bad.placeholders or 0);
+        if (f.path[1] == 'precast') and (f.path[2] == 'WS') and moonshade_out(gear) then report.moonshade = report.moonshade + 1 end
         for _, tw in ipairs(bad.twice or {}) do report.notes[#report.notes + 1] = 'sets.' .. path_name(f.path) .. ' names ' .. tw end
         local name = map(f.path);
         local refused = (name == nil); -- the mapper turned it down: no name the template would look up
@@ -846,6 +876,10 @@ function S2G.Convert(opts)
         table.sort(report.shared);
         h[#h + 1] = '-- From your Globals/Items files, no GoomSwap place, not copied here (' .. #report.shared .. '): '
             .. table.concat(report.shared, ', ', 1, math.min(#report.shared, 12)) .. ((#report.shared > 12) and ', ...' or '') .. '.';
+    end
+    if (report.moonshade > 0) then
+        h[#h + 1] = '-- ' .. report.moonshade .. ' weapon skill sets named Moonshade Earring: taken out, GoomSwap wears it itself under MoonshadeTP (Ear2). Each';
+        h[#h + 1] = '--   set\'s other earring is in Ear1 so both are worn (a right-ear-only earring stays in Ear2, Moonshade then goes to Ear1).';
     end
     if (report.placeholders > 0) then
         h[#h + 1] = '-- ' .. report.placeholders .. ' slots named gear.ElementalObi/Cape/Belt/Gorget (Selindrile placeholders): left out; the obi is the ElementGear setting.';

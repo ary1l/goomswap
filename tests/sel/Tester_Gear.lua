@@ -47,6 +47,9 @@ function init_gear_sets()
     sets.precast.WS['Requiescat'] = set_combine(sets.precast.WS, {neck="Fotia Gorget"})
     sets.precast.WS['Evisceration'] = sets.precast.WS['Requiescat']
     sets.MaxTP = {ear1="Ishvara Earring"}
+    sets.precast.WS['Chant du Cygne'] = {ear1="Moonshade Earring",ear2="Sherida Earring",neck="Fotia Gorget"}
+    sets.precast.WS['Seraph Blade'] = {ear1="Moonshade Earring",ear2="Leth. Earring +1"}
+    sets.precast.WS['Sanguine Blade'] = {ear1="Regal Earring",ear2="Moonshade Earring"}
     sets.midcast.FastRecast = {head="Atrophy Chapeau +3"}
     sets.midcast.Cure = {main="Daybreak",sub="Sors Shield",back=gear.obi_cure_back}
     sets.midcast.Curaga = sets.midcast.Cure
@@ -93,7 +96,7 @@ function init_gear_sets()
     sets.buff.Doom = set_combine(sets.buff.Doom, {waist="Gishdubar Sash"})
     sets.buff.Sleep = {neck="Vim Torque +1"}
     sets.buff['Sneak Attack'] = {hands="Skulk. Armlets +1"}
-    sets.HPDown = {head={name="Pixie Hairpin +1",priority=1}}
+    sets.HPDown = {head={name="Pixie Hairpin +1",priority=1},legs=""}
 end
 
 function select_default_macro_book() set_macro_page(1, 4) end

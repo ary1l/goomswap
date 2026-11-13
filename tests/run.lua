@@ -202,6 +202,67 @@ for _, job in ipairs(JOBS) do
         out[job] = text;
     end
 end
+-- Each converted file loaded the way the game would (stand-ins for the engine): it runs, OnLoad runs, every set
+-- holds slots with item names, no set name appears twice, every weapon mode has its set.
+local SLOTS = { Main = 1, Sub = 1, Range = 1, Ammo = 1, Head = 1, Neck = 1, Ear1 = 1, Ear2 = 1, Body = 1, Hands = 1, Ring1 = 1, Ring2 = 1,
+    Back = 1, Waist = 1, Legs = 1, Feet = 1 };
+local function loads_like_a_job_file(text, name)
+    local block, seen = string.sub(text, (string.find(text, 'local sets = {', 1, true)), (string.find(text, '\nprofile.Sets', 1, true))), {};
+    for _, pat in ipairs({ '\n    ([%a_][%w_]*) = {', '\n    %["(.-)"%] = {', "\n    %['(.-)'%] = {" }) do
+        for key in string.gmatch(block, pat) do
+            if seen[string.lower(key)] then return check(false, name .. ': set ' .. key .. ' is there twice') end
+            seen[string.lower(key)] = true;
+        end
+    end
+    local stubmt = {};
+    local function stub() return setmetatable({}, stubmt) end
+    stubmt.__index = function() return stub() end
+    stubmt.__call = function() return stub() end
+    local inc = setmetatable({ settings = { Keybinds = {} } }, { __index = function() return stub() end });
+    local env = setmetatable({ gFunc = { LoadFile = function() return inc end }, gcinclude = inc, gSettings = {}, T = function(t) return t end,
+        ipairs = ipairs, pairs = pairs, table = table, string = string, type = type, error = error, tostring = tostring },
+        { __index = function() return stub() end });
+    local fn = loadstring(text, name);
+    if (fn == nil) then return check(false, name .. ' compiles') end
+    setfenv(fn, env);
+    local ok, profile = pcall(fn);
+    if not (ok and (type(profile) == 'table') and (type(profile.Sets) == 'table')) then return check(false, name .. ' loads: ' .. tostring(profile)) end
+    local okl, e = pcall(profile.OnLoad);
+    if not okl then return check(false, name .. ': OnLoad runs: ' .. tostring(e)) end
+    local function bad_set(set, depth)
+        for k, v in pairs(set) do
+            if SLOTS[k] then
+                local nm = (type(v) == 'table') and (v.name or v.Name) or v;
+                if (type(nm) ~= 'string') or (nm == '') then return tostring(k) .. ' has no item name' end
+            elseif (type(v) == 'table') and (depth < 2) then
+                local why = bad_set(v, depth + 1);
+                if (why ~= nil) then return why end
+            else
+                return 'odd key ' .. tostring(k);
+            end
+        end
+        return nil;
+    end
+    local lower = {};
+    for sname, set in pairs(profile.Sets) do
+        lower[string.lower(tostring(sname))] = true;
+        local why = (type(set) ~= 'table') and 'not a table' or bad_set(set, 0);
+        if (why ~= nil) then return check(false, name .. ': set ' .. tostring(sname) .. ': ' .. why) end
+    end
+    local modes, isMode = rawget(inc, 'WeaponModes'), {};
+    for _, m in ipairs((type(modes) == 'table') and modes or {}) do
+        isMode[m] = true;
+        if (m ~= 'None') and not lower['weapon_' .. string.lower(m)] then return check(false, name .. ': weapon mode ' .. m .. ' has no Weapon_ set') end
+    end
+    local d = rawget(inc, 'DefaultWeapons');
+    if (type(d) == 'string') and (type(modes) == 'table') and not isMode[d] then return check(false, name .. ': DefaultWeapons ' .. d .. ' is no weapon mode') end
+    return check(true, name);
+end
+for _, job in ipairs(JOBS) do
+    if (out[job] ~= nil) then loads_like_a_job_file(out[job], 'sel2goom ' .. job .. ' as a job file') end
+    loads_like_a_job_file(read(root .. '/examples/' .. job .. '.lua'), 'examples/' .. job .. '.lua as a job file');
+end
+
 local function placed(job, from, as) return has(out[job] or '', '    -- from sets.' .. from .. '\n    ' .. as .. ' = {') end
 local function unused(job, path) return has(out[job] or '', 'Sel_' .. path) end
 check(placed('RDM', 'idle', 'Idle') and placed('RDM', 'engaged', 'Tp_Default') and placed('RDM', 'engaged.Acc', 'Tp_Acc'), 'sel2goom: idle, engaged, engaged.Acc');
@@ -229,6 +290,15 @@ check(has(out.RDM or '', 'gcinclude.WeaponModes = {"None", "Naegling", "Maxentiu
 check(has(out.RDM or '', 'sets["Erase"] = sets["StatusRemoval"];'), 'sel2goom: a spell group becomes one alias per spell');
 check(has(out.RDM or '', 'not copied here (1): Capacity.') and not unused('RDM', 'Capacity') and placed('RDM', 'Kiting', 'Movement'), 'sel2goom: Globals sets are named once, mapped ones still placed');
 check(has(out.RDM or '', '1 slots named gear.ElementalObi'), 'sel2goom: elemental placeholders are not unreadable slots');
+do -- Moonshade leaves weapon skill sets; the other earring ends where the engine won't cover it
+    local function set(name) return string.match(out.RDM or '', '\n    %["' .. name .. '"%] = {\n(.-)\n    },') or '' end
+    check(not has(out.RDM or '', 'Moonshade Earring",'), 'sel2goom: no Moonshade line left in a weapon skill set');
+    check(has(set('Chant du Cygne'), 'Ear1 = "Sherida Earring"') and not has(set('Chant du Cygne'), 'Ear2'), 'sel2goom: Moonshade in Ear1: the other earring moves to Ear1');
+    check(has(set('Seraph Blade'), 'Ear2 = "Leth. Earring +1"') and not has(set('Seraph Blade'), 'Ear1'), 'sel2goom: a right-ear-only earring stays in Ear2');
+    check(has(set('Sanguine Blade'), 'Ear1 = "Regal Earring"') and not has(set('Sanguine Blade'), 'Ear2'), 'sel2goom: Moonshade in Ear2 is just taken out');
+    check(has(out.RDM or '', '3 weapon skill sets named Moonshade Earring'), 'sel2goom: the header says so');
+end
+check(not has(out.RDM or '', ' = "",') and not has(out.RDM or '', 'HPDown (Legs)'), 'sel2goom: a slot given as "" is left out, not written or reported');
 check(has(out.RDM or '', '{ "^f7", "wm Naegling" }') and has(out.RDM or '', '{ "!q", "/ma \\"Temper II\\" <me>" }'), 'sel2goom: binds become Keybinds');
 
 for _, l in ipairs(log) do print(l) end

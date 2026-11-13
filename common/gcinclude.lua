@@ -3328,7 +3328,7 @@ end
 	-- Ear1/Ring1 are the left ear/ring, Ear2/Ring2 the right. Some items' bonus works in one only: their game text says
 	-- 'Right ear:' (Chev. Earring +1: Right ear: DEF:+22 Shield skill +11 "Cure" potency +11%). The slot that text names.
 	-- Sortie job earrings (and +1/+2) are right ear (Ear2) only, whatever their text says.
-	gcinclude.SortieEarrings = T{'chev.', 'hashi.', 'lethargy', 'ebers', 'wicce', 'arbatel', 'azimuth', 'fili', 'chas.', 'bhikku',
+	gcinclude.SortieEarrings = T{'chev.', 'hashi.', 'lethargy', 'leth.', 'ebers', 'wicce', 'arbatel', 'azimuth', 'fili', 'chas.', 'bhikku',
 		'heath.', 'peltast', 'skulk.', 'kasuga', 'hattori', 'nukumi', 'karagoz', 'maculele', 'macu.', 'erilaz', 'boii', 'amini', 'beck.'};
 	local sideCache = {};
 	function gcinclude.ItemSide(name)
