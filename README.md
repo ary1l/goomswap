@@ -90,4 +90,5 @@ Windower: `//wm` or `//gs c wm`. Every box at once: `/mss /wm` (Multisend). [All
 
 ## Tests
 
-`luajit tests/run.lua` from the repo root, no game needed. Runs on every pull request.
+`luajit tests/run.lua` from the repo root, no game needed: the engine is loaded with stand-ins for the game, and
+`/gcbuild` and the Selindrile converter run against every example. Runs on every pull request.

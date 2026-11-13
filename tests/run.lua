@@ -324,6 +324,93 @@ end
 check(not has(out.RDM or '', ' = "",') and not has(out.RDM or '', 'HPDown (Legs)'), 'sel2goom: a slot given as "" is left out, not written or reported');
 check(has(out.RDM or '', '{ "^f7", "wm Naegling" }') and has(out.RDM or '', '{ "!q", "/ma \\"Temper II\\" <me>" }'), 'sel2goom: binds become Keybinds');
 
+---------------------------------------------------------------------------------------------------
+-- 4. The engine (common/gcinclude.lua and what it loads) with stand-ins for Ashita and LuAshitacast
+---------------------------------------------------------------------------------------------------
+do
+    local stubmt = {};
+    local function stub() return setmetatable({}, stubmt) end
+    stubmt.__index = function() return stub() end
+    stubmt.__call = function() return stub() end
+    stubmt.__concat = function() return '' end
+    stubmt.__len = function() return 0 end
+    local Tmt = { __index = {
+        contains = function(t, v) for _, x in pairs(t) do if (x == v) then return true end end return false end,
+        append = function(t, v) t[#t + 1] = v; return t end,
+    } };
+    local env, loaded, worn = nil, {}, {};
+    local function LoadFile(path)
+        local p = string.gsub(path, '\\', '/');
+        local text = read(root .. '/' .. p);
+        if (text == nil) then return nil end
+        local fn = assert(loadstring(text, '@' .. p));
+        setfenv(fn, env);
+        loaded[#loaded + 1] = p;
+        return fn();
+    end
+    local STUBS = { AshitaCore = 1, ashita = 1, gState = 1, gData = 1, gEquip = 1, gPacketHandlers = 1, chat = 1, struct = 1 };
+    env = setmetatable({ T = function(t) return setmetatable(t or {}, Tmt) end, gSettings = {},
+        gFunc = setmetatable({ LoadFile = LoadFile, EquipSet = function(set) worn[#worn + 1] = set end }, { __index = function() return function() end end }),
+        pairs = pairs, ipairs = ipairs, next = next, type = type, tostring = tostring, tonumber = tonumber, select = select, unpack = unpack,
+        pcall = pcall, error = error, setmetatable = setmetatable, getmetatable = getmetatable, rawget = rawget, rawset = rawset,
+        string = string, table = table, math = math, os = os, io = io, bit = bit, print = function() end,
+        require = function() return stub() end },
+        { __index = function(t, k) if STUBS[k] then local v = stub(); rawset(t, k, v); return v end return nil end });
+    env._G = env;
+    local ok, inc = pcall(LoadFile, 'common/gcinclude.lua');
+    if check(ok and (type(inc) == 'table'), 'engine: gcinclude.lua loads' .. ((not ok) and (': ' .. tostring(inc)) or '')) then
+        check(#loaded == 6, 'engine: gcinclude loads gcdisplay, gcauto, scdata, gcaction, gchud (' .. #loaded .. ' files)');
+        check(inc.Family('Drain III') == 'Drain' and inc.Family('Utsusemi: Ichi') == 'Utsusemi' and inc.Family('Cure') == 'Cure', 'engine: Family');
+
+        -- IdleWeaponDrop: slots the idle sets named in this handler (Main+Sub and Range+Ammo go as pairs)
+        local named = {};
+        inc.BufferedItem = function(n) return named[n] end
+        local idle = { Status = 'Idle' };
+        local function drop(list)
+            named = {};
+            for _, n in ipairs(list) do named[n] = { Name = 'x' } end
+            local d, out = inc.IdleWeaponDrop({ Main = 'x' }, idle), {};
+            for n = 1, 4 do out[#out + 1] = (d ~= nil and d[n]) and '1' or '0' end
+            return table.concat(out);
+        end
+        check(drop({}) == '0000' and inc.IdleWeaponDrop({ Main = 'x' }, idle) == nil, 'engine: IdleWeaponDrop: nothing named, nothing dropped');
+        check(drop({ 1 }) == '1100' and drop({ 2 }) == '1100', 'engine: IdleWeaponDrop: Main or Sub drops both');
+        check(drop({ 3 }) == '0011' and drop({ 4 }) == '0001', 'engine: IdleWeaponDrop: Range drops Range and Ammo, Ammo alone only itself');
+        check(drop({ 1, 4 }) == '1101' and drop({ 2, 3, 4 }) == '1111', 'engine: IdleWeaponDrop: both groups');
+        named = { [1] = { Name = 'x' } };
+        check(inc.IdleWeaponDrop({ Main = 'x' }, { Status = 'Engaged' }) == nil and inc.IdleWeaponDrop(nil, idle) == nil, 'engine: IdleWeaponDrop: not engaged, not without a weapon layer');
+
+        -- CanDualWield: worked out once per WithBuffs call, every time outside one
+        local asked, answer = 0, true;
+        inc.DualWieldState = function() asked = asked + 1; return answer, 'test' end
+        inc.WithBuffs(function()
+            check(inc.CanDualWield() == true and inc.CanDualWield() == true and inc.CanDualWield() == true, 'engine: CanDualWield inside WithBuffs');
+        end);
+        check(asked == 1, 'engine: CanDualWield asks DualWieldState once per WithBuffs call (' .. asked .. ')');
+        answer = false;
+        inc.WithBuffs(function() check(inc.CanDualWield() == false, 'engine: the next call works it out again') end);
+        asked = 0;
+        inc.CanDualWield(); inc.CanDualWield();
+        check(asked == 2, 'engine: outside WithBuffs nothing is kept (' .. asked .. ')');
+
+        -- SetRegenRefreshGear: Idle_Regen / Idle_Refresh / Dt under their thresholds (60 / 60 / 50 by default)
+        env.gData.GetPet = function() return nil end
+        inc.FindSet = function(name) return name end
+        local function auto(hpp, mpp)
+            worn = {};
+            inc.SetRegenRefreshGear({ HPP = hpp, MPP = mpp, Status = 'Idle' });
+            return table.concat(worn, ',');
+        end
+        check(auto(100, 100) == '', 'engine: auto gear: full HP and MP wears nothing');
+        check(auto(55, 100) == 'Idle_Regen' and auto(100, 30) == 'Idle_Refresh', 'engine: auto gear: regen and refresh under 60%');
+        check(auto(40, 40) == 'Idle_Regen,Idle_Refresh,Dt', 'engine: auto gear: Dt under 50%, over the other two');
+        inc.settings.RefreshGearMPP = 0;
+        check(auto(100, 10) == '', 'engine: auto gear: 0 turns one off');
+        inc.settings.AutoGear = false;
+        check(auto(10, 10) == '', 'engine: auto gear: AutoGear = false turns all off');
+    end
+end
+
 for _, l in ipairs(log) do print(l) end
 print(string.format('%d checks, %d failed', checks, fails));
 if (os.exit ~= nil) and (arg ~= nil) then os.exit((fails == 0) and 0 or 1) end
