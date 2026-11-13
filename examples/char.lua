@@ -11,5 +11,6 @@ return {
     },
     settings = { -- any gcinclude setting, this character only
         HUDOwners = T{'YourMain'}, -- the box whose bar drops the other boxes in on hover (the HUD)
+        --HUDHover = false, -- the other boxes always shown under the bar, not only on hover
     },
 };
