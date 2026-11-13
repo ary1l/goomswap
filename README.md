@@ -10,6 +10,7 @@ TH, obi and more on top. **Ashita v4** (LuAshitacast) and **Windower 4** (GearSw
 - **Items:** packer (items and food on every job change), enchanted items, warp/dim rings, Hoxne Ampulla.
 - **Multibox:** status bar with every other box dropped under it (click to drive any), Einherjar entry (`/ejenter`, Ashita).
 - **Checks:** failing actions cancelled with the reason; `/checksets`; `/gctrace`.
+- **Getting started:** `/gcbuild` drafts a job file from an example with only the gear your character owns.
 
 ## Install
 
@@ -94,12 +95,69 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 
 ## First steps
 
-1. Fill `Idle`, `Tp_Default`, `Ws_Default`.
+1. Fill `Idle`, `Tp_Default`, `Ws_Default` — or let `/gcbuild` write a first draft from the gear you own (next
+   section).
 2. `/checksets` (empty sets, misspellings), `/gctrace` (what each action wore).
 3. Leave `gSettings.FastCast` at 0: cast times are learned, and idle gear returns on the finish packet.
 
 Every example names sets after the action (`['Savage Blade']`); a spell without one uses its family's (`['Cure']` for
 Cure IV). Worth copying: `WHM.lua` cures, `MNK.lua` Hoxne, `PLD.lua` `/subset`.
+
+## A job file from the gear you own (`/gcbuild`)
+
+Ashita only. `/gcbuild` takes the job's example file and keeps only the gear your character actually has, so you
+start from sets that work instead of someone else's gear list.
+
+**Run it**
+
+1. `examples/` must be in `Ashita/config/addons/luashitacast/` (Install, step 1).
+2. Log in on the character and type `/gcbuild` (your current job) or `/gcbuild RDM` (any job).
+3. Open `luashitacast/<Name>_<id>/<JOB>.proposed.lua`. Read it, then save it as `<JOB>.lua` and `/lac reload`.
+
+Your existing `<JOB>.lua` is **never changed**. Running `/gcbuild` again only replaces the `.proposed.lua` file.
+
+**What it does to each line of each set**
+
+It looks through every bag (Inventory, Wardrobes 1-8, Safe, Safe 2, Storage, Locker, Satchel, Sack, Case) and
+compares by item name:
+
+| Your character | The line in the proposed file |
+|---|---|
+| has the item, as the example names it | unchanged |
+| has it, but with different augments | name only, your copies' augments in a comment — so it still equips |
+| has it, but only in a bag gear can't be equipped from | unchanged, marked `move it to a wardrobe` |
+| doesn't have it | commented out, marked `not owned` |
+| has one, and the set wears two (same ring in `Ring1` and `Ring2`) | the second is commented out, marked `only 1 owned` |
+
+```lua
+    ['Savage Blade'] = {
+        Head = 'Nyame Helm',
+        Back = 'Sucellos\'s Cape', -- your augments differ from the example's: MND+20, Haste+10
+        Ring1 = 'Chirich Ring +1',
+        --Ring2 = 'Chirich Ring +1', -- only 1 owned
+        --Ear1 = 'Ishvara Earring', -- not owned
+        Feet = 'Leth. Houseaux +3', -- in Safe: move it to a wardrobe
+    },
+```
+
+A commented-out slot simply shows whatever the set underneath puts there (`Ws_Default` under a weapon skill's own
+set, `Idle` under `Idle_Refresh`...), so the file works as it is.
+
+The top of the file is a summary: how many set slots were kept, how many left out, every item left out (with the
+number of slots it filled — your shopping list), and every item to move to a wardrobe.
+
+**What it does not do**
+
+- It **never picks a replacement**. If you don't own the example's item, the slot is left out; it won't guess that
+  another piece of yours is "close enough". Fill those in yourself.
+- It only changes the sets. The rest of the file (`OnLoad`, the handlers) is the example's, untouched — including
+  any item names written there: weapon lists (`gcinclude.MainModes`), `gFunc.Equip('Sub', '...')`, settings.
+  Check those by hand; `/checksets` afterwards names anything misspelled or missing.
+- It doesn't check job or level: the examples are level 99 sets.
+- Windower: not available (use `//gs export` for what you're wearing).
+
+`/gcgear [JOB]` is the companion: it lists everything you own that the job can wear, by slot, into
+`gear_<JOB>.txt` — what to pick from when you fill the slots `/gcbuild` left out.
 
 ## Settings
 
@@ -197,6 +255,7 @@ Ashita `/name`; Windower `//name` or `//gs c name`.
 | `/gcmodes [all]` | Modes in chat |
 | `/checksets` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2) |
 | `/gcgear [JOB]` | Everything you own the job can wear → `gear_<JOB>.txt` (Ashita) |
+| `/gcbuild [JOB]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua` (Ashita; see above) |
 | `/gctrace` `/gcstyle [N]` `/gcmessages` `/gchelp` | Trace / lockstyle / chat lines / help |
 | `/gckey <key> <cmd>` | Bind a key |
 
