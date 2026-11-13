@@ -105,14 +105,16 @@ Cure IV). Worth copying: `WHM.lua` cures, `MNK.lua` Hoxne, `PLD.lua` `/subset`.
 
 ## A job file from the gear you own (`/gcbuild`)
 
-Ashita only. `/gcbuild` takes the job's example file and keeps only the gear your character actually has, so you
-start from sets that work instead of someone else's gear list.
+`/gcbuild` takes the job's example file and keeps only the gear your character actually has, so you start from sets
+that work instead of someone else's gear list. Ashita and Windower.
 
 **Run it**
 
-1. `examples/` must be in `Ashita/config/addons/luashitacast/` (Install, step 1).
+1. The examples must be installed: Ashita `luashitacast/examples/` (Install, step 1), Windower
+   `data/goomswap/examples/`.
 2. Log in on the character and type `/gcbuild` (your current job) or `/gcbuild RDM` (any job).
-3. Open `luashitacast/<Name>_<id>/<JOB>.proposed.lua`. Read it, then save it as `<JOB>.lua` and `/lac reload`.
+3. Open `<JOB>.proposed.lua` in the character's folder (Ashita `luashitacast/<Name>_<id>/`, Windower
+   `data/goomswap/<Name>/`). Read it, then save it as `<JOB>.lua` and reload.
 
 Your existing `<JOB>.lua` is **never changed**. Running `/gcbuild` again only replaces the `.proposed.lua` file.
 
@@ -143,20 +145,44 @@ compares by item name:
 A commented-out slot simply shows whatever the set underneath puts there (`Ws_Default` under a weapon skill's own
 set, `Idle` under `Idle_Refresh`...), so the file works as it is.
 
-The top of the file is a summary: how many set slots were kept, how many left out, every item left out (with the
-number of slots it filled — your shopping list), and every item to move to a wardrobe.
+**`/gcbuild RDM family`: your own version of the same item**
+
+Off unless you add the word `family`. Then a piece you lack is swapped for the version of *the same item* you do
+own, the highest you have: `Leth. Chappel +2` for `+3`, plain `Chirich Ring` for `Chirich Ring +1` (also for the
+second ring of a pair). Each swapped line says what the example named:
+
+```lua
+        Head = 'Leth. Chappel +2', -- example: Leth. Chappel +3
+        Ring2 = 'Chirich Ring', -- example: Chirich Ring +1
+```
+
+Only the `+N` at the end of the name may differ. It never reaches for a different item.
+
+**Weapon modes**
+
+A `/wm` mode whose `Weapon_<mode>` set lost its weapon (its `Main`, or every slot of a set without one) has nothing
+to put on, so it is taken out of `gcinclude.WeaponModes`; if it was the `DefaultWeapons`, the first mode left
+becomes the default. Both lines say what was changed.
+
+**The top of the file** is a summary:
+
+- how many set slots were kept and how many left out
+- every item left out, with the number of slots it filled — your shopping list
+- every item to move to a wardrobe
+- weapon modes taken out
+- item names *outside* the sets that you don't own: `gFunc.Equip('Sub', '...')` in the handlers and the slot-pick
+  lists (`gcinclude.MainModes` `SubModes` `RangeModes` `AmmoModes`, `WeaponItemMap`). These are listed, not changed:
+  fix them by hand.
 
 **What it does not do**
 
-- It **never picks a replacement**. If you don't own the example's item, the slot is left out; it won't guess that
-  another piece of yours is "close enough". Fill those in yourself.
-- It only changes the sets. The rest of the file (`OnLoad`, the handlers) is the example's, untouched — including
-  any item names written there: weapon lists (`gcinclude.MainModes`), `gFunc.Equip('Sub', '...')`, settings.
-  Check those by hand; `/checksets` afterwards names anything misspelled or missing.
+- It **never picks a different item**. Without `family` a slot you lack is left out; with it, only another version
+  of the same item is used. It won't guess that another piece of yours is "close enough". Fill those in yourself.
+- Apart from the two weapon-mode lines, `OnLoad` and the handlers are the example's, untouched.
 - It doesn't check job or level: the examples are level 99 sets.
-- Windower: not available (use `//gs export` for what you're wearing).
+- `/checksets` afterwards names anything misspelled or missing.
 
-`/gcgear [JOB]` is the companion: it lists everything you own that the job can wear, by slot, into
+`/gcgear [JOB]` (Ashita) is the companion: it lists everything you own that the job can wear, by slot, into
 `gear_<JOB>.txt` — what to pick from when you fill the slots `/gcbuild` left out.
 
 ## Settings
@@ -255,7 +281,7 @@ Ashita `/name`; Windower `//name` or `//gs c name`.
 | `/gcmodes [all]` | Modes in chat |
 | `/checksets` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2) |
 | `/gcgear [JOB]` | Everything you own the job can wear → `gear_<JOB>.txt` (Ashita) |
-| `/gcbuild [JOB]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua` (Ashita; see above) |
+| `/gcbuild [JOB] [family]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua` (see above) |
 | `/gctrace` `/gcstyle [N]` `/gcmessages` `/gchelp` | Trace / lockstyle / chat lines / help |
 | `/gckey <key> <cmd>` | Bind a key |
 
@@ -480,3 +506,8 @@ Each file ends its sets with a Templates block (one of each, blank) to copy from
 | Wrong gear | `/checksets`, spelling, `/gctrace` |
 | Action cancelled | chat says why |
 | Bar or HUD gone | `/gcbar on`, `/gchud on`, `/gcbar reset` |
+
+## Tests
+
+`luajit tests/run.lua` from the repo root, no game needed: every `.lua` file compiles, and `/gcbuild` and the
+Selindrile migration are run against all 22 examples. Run on every pull request (`.github/workflows/tests.yml`).
