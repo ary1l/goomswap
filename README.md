@@ -94,7 +94,10 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 
 ## First steps
 
-1. Fill `Idle`, `Tp_Default`, `Ws_Default`.
+1. Fill `Idle`, `Tp_Default`, `Ws_Default`. Or start from `/gcbuild` (Ashita): it writes `<JOB>.proposed.lua` next to
+   your job files, the job's example with only the gear you own. A piece you lack is commented out where it stood
+   (nothing is picked in its place), one with other augments keeps its name, one in a bag sets can't use is marked.
+   Your `<JOB>.lua` is never touched: review the proposal, then save it as `<JOB>.lua`.
 2. `/checksets` (empty sets, misspellings), `/gctrace` (what each action wore).
 3. Leave `gSettings.FastCast` at 0: cast times are learned, and idle gear returns on the finish packet.
 
@@ -197,6 +200,7 @@ Ashita `/name`; Windower `//name` or `//gs c name`.
 | `/gcmodes [all]` | Modes in chat |
 | `/checksets` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2) |
 | `/gcgear [JOB]` | Everything you own the job can wear → `gear_<JOB>.txt` (Ashita) |
+| `/gcbuild [JOB]` | The job's example with the gear you own → `<JOB>.proposed.lua` (Ashita; below) |
 | `/gctrace` `/gcstyle [N]` `/gcmessages` `/gchelp` | Trace / lockstyle / chat lines / help |
 | `/gckey <key> <cmd>` | Bind a key |
 
