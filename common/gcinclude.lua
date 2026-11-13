@@ -451,7 +451,7 @@ end
 			gcinclude.GearDump(args[2]);
 		elseif (args[1] == 'gcbuild') then -- <JOB>.proposed.lua: the job's example with the gear you own (common/gcbuild.lua, loaded on use)
 			local ok, mod = pcall(gFunc.LoadFile, 'common\\gcbuild.lua');
-			if ok and (type(mod) == 'table') then mod.Run({ args[2], args[3], args[4] }, gcinclude.Say, gcinclude.Err) else gcinclude.Err('/gcbuild: common\\gcbuild.lua failed to load') end
+			if ok and (type(mod) == 'table') then mod.Run({ args[2], args[3] }, gcinclude.Say, gcinclude.Err) else gcinclude.Err('/gcbuild: common\\gcbuild.lua failed to load') end
 		elseif (args[1] == 'gce') then
 			gcinclude.EnchantCommand(args);
 		elseif (args[1] == 'gchelp') then
@@ -3081,7 +3081,7 @@ end
 			'holds  : /naked /weaponsonly /abysseaproc [on|off] (one at a time), /capacity /jubilee /dynamisrp [on|off]',
 			'items  : /gce <item> | cancel, /gctemps (Escha drinks), /warpring /mea /holla /dem, /ejenter [chamber] /ejlamps /ejexit (Einherjar)',
 			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat',
-			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcgear [JOB] (what you own, to a file), /gcbuild [JOB] [family] [guide] (the example with your gear, as <JOB>.proposed.lua)',
+			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcgear [JOB] (what you own, to a file), /gcbuild [JOB] [family] (the example with your gear, as <JOB>.proposed.lua)',
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
 			'nuke   : Burst set is automatic on a nuke landing in a live skillchain; /burst = Burst set on every nuke (HUD: * on the nuke cell)',

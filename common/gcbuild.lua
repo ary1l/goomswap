@@ -1,4 +1,4 @@
--- /gcbuild [JOB] [family] [guide]: a proposed job file for this character. Takes the job's example (examples/<JOB>.lua)
+-- /gcbuild [JOB] [family]: a proposed job file for this character. Takes the job's example (examples/<JOB>.lua)
 -- and keeps, set by set, the gear the character owns:
 --   owned as the example names it            the line stays
 --   owned, but with other augments           the name alone stays (LAC needs every listed augment on the item)
@@ -6,9 +6,6 @@
 --   not owned (or one copy for two slots)    the line is commented out where it stands, so the set under it shows through
 -- `family` (off unless asked for): a piece you lack is swapped for the version of the same item you do own
 -- (Leth. Chappel +2 for +3, Chirich Ring for Chirich Ring +1), the highest you have. Nothing else is ever picked.
--- `guide` (off unless asked for): examples/guides/<JOB>.lua lists, per set and slot, items best first, written down
--- from a gear guide. The first one the character owns goes in that slot, also in a slot the example's set leaves
--- empty. The tool ranks nothing itself: it follows the list.
 -- Outside the sets only two things change: weapon modes whose Weapon_<mode> set lost its weapon leave the
 -- WeaponModes list, and a DefaultWeapons that was one of them moves to the first mode left. Other item names in
 -- OnLoad and the handlers (gFunc.Equip, slot-pick lists) are checked and listed, not changed.
@@ -19,7 +16,6 @@ local gcbuild = {};
 local SLOTS = { Main = true, Sub = true, Range = true, Ammo = true, Head = true, Neck = true, Ear1 = true, Ear2 = true,
     Body = true, Hands = true, Ring1 = true, Ring2 = true, Back = true, Waist = true, Legs = true, Feet = true };
 local KEYWORDS = { remove = true, displaced = true, ignore = true }; -- LAC slot words, not items
-local ORDER = { 'Main', 'Sub', 'Range', 'Ammo', 'Head', 'Neck', 'Ear1', 'Ear2', 'Body', 'Hands', 'Ring1', 'Ring2', 'Back', 'Waist', 'Legs', 'Feet' };
 
 -- A quoted string starting at `at`: its text (escapes undone) and the index after its closing quote.
 local function read_string(s, at)
@@ -238,7 +234,7 @@ function gcbuild.Build(templateText, owned, info)
     end
     if (first == nil) or (last == nil) then return nil, 'the example has no `local sets = {` ... `profile.Sets = sets` block' end
 
-    local rep = { slots = 0, kept = 0, dropped = 0, renamed = 0, moved = 0, family = 0, guide = 0, missing = {}, move = {}, modes = {}, outside = {} };
+    local rep = { slots = 0, kept = 0, dropped = 0, renamed = 0, moved = 0, family = 0, missing = {}, move = {}, modes = {}, outside = {} };
     local missN, moveSeen = {}, {};
     local sets, cur = {}, nil; -- [lower set name] = { [slot] = verdict }, for the weapon modes below
     local function to_move(name, bag)
@@ -262,43 +258,8 @@ function gcbuild.Build(templateText, owned, info)
                 rep.family = rep.family + 1;
                 if (bag ~= nil) then to_move(extra, bag) end
             end
-            if (verdict == 'guide') then
-                rep.guide = rep.guide + 1;
-                if (bag ~= nil) then to_move(extra, bag) end
-            end
         end
     end
-    -- guide: { [set name] = { Slot = { 'best', 'next', ... } } }, set names in any case
-    local guide = nil;
-    if (type(info.guide) == 'table') then
-        guide = {};
-        for name, slots in pairs(info.guide) do
-            if (type(name) == 'string') and (type(slots) == 'table') then guide[string.lower(name)] = slots end
-        end
-    end
-    -- The first item of a guide list the character still has a copy of for this set: name, rank, bag to move it from.
-    local function guide_pick(list, used)
-        if (type(list) ~= 'table') then return nil end
-        for rank, name in ipairs(list) do
-            if (type(name) == 'string') then
-                local have = owned[string.lower(name)];
-                if (have ~= nil) and ((used[string.lower(name)] or 0) < #have.copies) then
-                    local bag = nil;
-                    for _, copy in ipairs(have.copies) do
-                        if copy.equippable then bag = nil; break end
-                        bag = bag or copy.bag;
-                    end
-                    return have.name, rank, bag;
-                end
-            end
-        end
-        return nil;
-    end
-    local function guide_note(rank, list, what, bag)
-        return 'guide: #' .. rank .. ' of ' .. #list .. ' (' .. what .. ')' .. ((bag ~= nil) and ('; yours is in ' .. tostring(bag) .. ': move it to a wardrobe') or '');
-    end
-    local inserts = {}; -- [line index] = lines to put in front of it (guide slots the example's set doesn't have)
-    local curGuide, curOpen = nil, nil; -- the open set's guide lists, and the line it opened on
     local function family_note(item, alt, bag)
         return 'example: ' .. item.name .. ((bag ~= nil) and ('; yours is in ' .. tostring(bag) .. ': move it to a wardrobe') or '');
     end
@@ -315,17 +276,7 @@ function gcbuild.Build(templateText, owned, info)
             if (item ~= nil) and (string.match(string.sub(line, nxt), '^%s*,?%s*$') == nil)
                 and (string.match(string.sub(line, nxt), '^%s*,?%s*%-%-') == nil) then item = nil end
         end
-        local picked, rank, pbag = nil, nil, nil;
-        if (item ~= nil) and (curGuide ~= nil) and (baseIndent ~= nil) and (#indent == #baseIndent + 4) then
-            picked, rank, pbag = guide_pick(curGuide[key], used);
-            if (picked ~= nil) and (string.lower(picked) == string.lower(item.name)) then picked = nil end -- the example's own item: judged as usual
-        end
-        if (picked ~= nil) then
-            -- the guide's best owned item for this slot, in place of the example's
-            used[string.lower(picked)] = (used[string.lower(picked)] or 0) + 1;
-            note(key, 'guide', item, picked, pbag);
-            lines[i] = indent .. key .. eq .. q(picked) .. string.sub(line, nxt) .. ' -- ' .. guide_note(rank, curGuide[key], 'example: ' .. item.name, pbag);
-        elseif (item ~= nil) then
+        if (item ~= nil) then
             -- one slot on its own line: Head = 'Nyame Helm',
             local verdict, extra, bag = judge(item, owned, used, info.family);
             note(key, verdict, item, extra, bag);
@@ -344,28 +295,7 @@ function gcbuild.Build(templateText, owned, info)
             if (name == nil) then ind, name = string.match(line, '^(%s*)%[%s*[\'"](.-)[\'"]%s*%]%s*=%s*{') end
             if (name ~= nil) then
                 baseIndent = baseIndent or ind;
-                if (ind == baseIndent) then
-                    cur = {};
-                    sets[string.lower(name)] = cur;
-                    curGuide, curOpen = (guide ~= nil) and guide[string.lower(name)] or nil, i;
-                end
-            end
-            -- the set closes on a line of its own: guide slots the example's set has no line for go in here
-            if (curGuide ~= nil) and (baseIndent ~= nil) and (i ~= curOpen) and (string.match(line, '^(%s*)}') == baseIndent) then
-                local add = {};
-                for _, slot in ipairs(ORDER) do
-                    if (cur[slot] == nil) and (curGuide[slot] ~= nil) then
-                        local name2, rank2, bag2 = guide_pick(curGuide[slot], used);
-                        if (name2 ~= nil) then
-                            used[string.lower(name2)] = (used[string.lower(name2)] or 0) + 1;
-                            note(slot, 'guide', { name = name2 }, name2, bag2);
-                            add[#add + 1] = baseIndent .. '    ' .. slot .. ' = ' .. q(name2) .. ', -- '
-                                .. guide_note(rank2, curGuide[slot], 'not in the example\'s set', bag2);
-                        end
-                    end
-                end
-                if (#add > 0) then inserts[i] = add end
-                curGuide = nil;
+                if (ind == baseIndent) then cur = {}; sets[string.lower(name)] = cur end
             end
             -- slots sharing a line with braces: Mp_Body = {Body = 'Seidr Cotehardie',},
             local open, close = string.find(line, '{', 1, true), string.find(line, '}', 1, true);
@@ -532,22 +462,12 @@ function gcbuild.Build(templateText, owned, info)
     else
         h[#h + 1] = '-- Nothing was picked for the slots left out (/gcbuild ' .. job .. ' family: your own version of the same item, e.g. +2 for +3).';
     end
-    if (guide ~= nil) then
-        h[#h + 1] = string.format('-- guide: %d slots follow examples/guides/%s.lua (the first listed item you own; each line says its rank).', rep.guide, job);
-    end
     if (#rep.modes > 0) then h[#h + 1] = '-- Weapon modes taken out of /wm (their weapon is not owned): ' .. table.concat(rep.modes, ', ') .. '.' end
     h[#h + 1] = '-- Handlers and OnLoad are otherwise the example\'s. Review, then save as ' .. job .. '.lua; /checksets after.';
     for _, l in ipairs(wrap('-- Named outside the sets and not owned (change these by hand):', rep.outside, function(v) return v[1] .. ' (' .. v[2] .. ')' end)) do h[#h + 1] = l end
     for _, l in ipairs(wrap('-- Move to a wardrobe:', rep.move, function(v) return v[1] .. ' (' .. tostring(v[2]) .. ')' end)) do h[#h + 1] = l end
     for _, l in ipairs(wrap('-- Left out (slots):', rep.missing, function(v) return v[1] .. ' (' .. v[2] .. ')' end)) do h[#h + 1] = l end
-    local body = {};
-    for i, line in ipairs(lines) do
-        if (inserts[i] ~= nil) then
-            for _, l in ipairs(inserts[i]) do body[#body + 1] = l end
-        end
-        body[#body + 1] = line;
-    end
-    return table.concat(h, '\n') .. '\n' .. table.concat(body, '\n') .. '\n', rep;
+    return table.concat(h, '\n') .. '\n' .. table.concat(lines, '\n') .. '\n', rep;
 end
 
 local JOBS = { 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG',
@@ -623,19 +543,17 @@ end
 
 -- args: the command's words after /gcbuild, in any order: a job, `family`. say / err: gcinclude's chat lines.
 function gcbuild.Run(args, say, err)
-    local job, family, useGuide = nil, false, false;
+    local job, family = nil, false;
     for _, a in ipairs(args or {}) do
         local word = string.upper(tostring(a));
         if (word == 'FAMILY') then
             family = true;
-        elseif (word == 'GUIDE') then
-            useGuide = true;
         else
             local found = nil;
             for _, j in ipairs(JOBS) do
                 if (j == word) then found = j end
             end
-            if (found == nil) then err('/gcbuild: no job ' .. tostring(a) .. ' (usage: /gcbuild [JOB] [family] [guide])'); return end
+            if (found == nil) then err('/gcbuild: no job ' .. tostring(a) .. ' (usage: /gcbuild [JOB] [family])'); return end
             job = found;
         end
     end
@@ -649,19 +567,7 @@ function gcbuild.Run(args, say, err)
     end
     local template = f:read('*a');
     f:close();
-    local guide = nil;
-    if useGuide then
-        -- a plain data file: return { ['Set name'] = { Head = { 'best', 'next' }, ... }, ... }
-        local load = ((gearswap ~= nil) and gearswap.loadfile) or loadfile;
-        local fn = load(examples .. ((windower ~= nil) and 'guides/' or 'guides\\') .. job .. '.lua');
-        local ok, data = pcall(function() return fn() end);
-        if (fn == nil) or (not ok) or (type(data) ~= 'table') then
-            err('/gcbuild: no guide lists for ' .. job .. ' (' .. shown .. 'guides' .. ((windower ~= nil) and '/' or '\\') .. job .. '.lua). Without `guide` it still works.');
-            return;
-        end
-        guide = data;
-    end
-    local text, rep = gcbuild.Build(template, owned_gear(), { name = name, job = job, date = os.date('%Y-%m-%d'), family = family, guide = guide });
+    local text, rep = gcbuild.Build(template, owned_gear(), { name = name, job = job, date = os.date('%Y-%m-%d'), family = family });
     if (text == nil) then err('/gcbuild: ' .. tostring(rep)); return end
     local file = job .. '.proposed.lua';
     local out = io.open(dir .. file, 'wb');
@@ -670,7 +576,7 @@ function gcbuild.Run(args, say, err)
     out:close();
     say(string.format('%s written to your character folder: %d of %d set slots kept, %d left out, %d by name only, %d to move to a wardrobe%s%s.',
         file, rep.kept, rep.slots, rep.dropped, rep.renamed, rep.moved,
-        (family and string.format(', %d by family', rep.family) or '') .. ((guide ~= nil) and string.format(', %d from the guide', rep.guide) or ''),
+        family and string.format(', %d by family', rep.family) or '',
         (#rep.modes > 0) and (', weapon modes out: ' .. table.concat(rep.modes, ' ')) or ''));
 end
 
