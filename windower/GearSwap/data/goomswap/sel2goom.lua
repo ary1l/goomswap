@@ -24,6 +24,10 @@ S2G.JOBS = { 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD
 -- Sandbox
 ---------------------------------------------------------------------------------------------------
 local EMPTY = { name = 'empty' }; -- GearSwap's `empty` (slot left bare) -> GoomSwap 'remove'
+-- gear.ElementalObi / Cape / Belt / Gorget: placeholders Sel-Include sets to {name=""}. No item to carry over (the
+-- obi is GoomSwap's ElementGear setting), so the slot is left out without being reported as unreadable.
+local PLACEHOLDER = { name = '' };
+local PLACEHOLDERS = { 'ElementalObi', 'ElementalCape', 'ElementalBelt', 'ElementalGorget' };
 
 local stubmt = {};
 local function stub() return setmetatable({}, stubmt) end
@@ -127,6 +131,7 @@ local function new_env(name, job, sub, sent)
         item_available = function() return true end, -- the file asked for it: assume it's owned
         send_command = send_command, -- kept: the binds become Keybinds
     };
+    for _, n in ipairs(PLACEHOLDERS) do rawset(base.gear, n, PLACEHOLDER) end
     return setmetatable(base, { __index = function(_, k) return stub() end });
 end
 
@@ -157,7 +162,7 @@ end
 local function item_of(v)
     if (v == EMPTY) then return 'remove' end
     if (type(v) == 'string') then return (v == 'empty') and 'remove' or v end
-    if (type(v) == 'table') and (getmetatable(v) ~= stubmt) and (type(v.name or v.Name) == 'string') then
+    if (type(v) == 'table') and (getmetatable(v) ~= stubmt) and (type(v.name or v.Name) == 'string') and ((v.name or v.Name) ~= '') then
         local o = { name = v.name or v.Name };
         if (type(v.augments) == 'table') then o.augments = {}; for _, a in ipairs(v.augments) do o.augments[#o.augments + 1] = tostring(a) end
         elseif (type(v.augments) == 'string') then o.augments = { v.augments } end
@@ -175,7 +180,9 @@ local function gear_of(t, bad)
         local slot = (type(k) == 'string') and SLOT[string.lower(k)] or nil;
         if (slot ~= nil) then
             local it = item_of(v);
-            if (it ~= nil) then o[slot] = it else bad[#bad + 1] = slot end
+            if (it ~= nil) then o[slot] = it
+            elseif (v == PLACEHOLDER) or ((type(v) == 'table') and (v.name == '')) then bad.placeholders = (bad.placeholders or 0) + 1
+            else bad[#bad + 1] = slot end
         end
     end
     return o;
@@ -324,6 +331,15 @@ local function mapper(ctx)
             end
             if (b == 'WS') and (n == 2) then return 'Ws_Default' end
             if (b == 'WS') and (n == 3) and modes[c] then return 'Ws_' .. c end
+            if (b == 'WS') and (n == 3) and ctx.wsModes[c] then
+                if (c == 'Proc') then return first({ 'Ws_Proc' }) end
+                if (c == 'PDL') then return 'Ws_HighBuff' end
+                return nil;
+            end
+            if (b == 'WS') and (n == 4) and ctx.wsModes[d] then
+                if (d == 'PDL') and (generic or has(c)) then return c .. '_HighBuff' end
+                return nil;
+            end
             if (b == 'WS') and (n == 3) and ((c == 'SA') or (c == 'TA') or (c == 'SATA')) then return first({ 'Ws_Default_' .. c }) end
             if (b == 'WS') and (n >= 3) then
                 local mode = (n == 4) and d or nil;
@@ -555,7 +571,7 @@ function S2G.Convert(opts)
     local io_ = opts.io_;
     local sent = {};
     local env = new_env(opts.name, opts.job, opts.sub, sent);
-    local report = { loaded = {}, failed = {}, unmapped = {}, unresolved = {}, mapped = 0, notes = {} };
+    local report = { loaded = {}, failed = {}, unmapped = {}, unresolved = {}, mapped = 0, notes = {}, shared = {}, placeholders = 0 };
     if (opts.mappings_file ~= nil) then
         local ok = run_file(io_, opts.mappings_file, env);
         if ok then report.loaded[#report.loaded + 1] = 'Sel-Mappings' end
@@ -563,6 +579,21 @@ function S2G.Convert(opts)
     for _, f in ipairs(opts.pre_files or {}) do
         local ok, err = run_file(io_, f, env);
         if ok then report.loaded[#report.loaded + 1] = f elseif (err ~= 'missing') then report.failed[#report.failed + 1] = f .. ': ' .. err end
+    end
+    -- Sets the Globals / Items files made (sets.Capacity, sets.BehemothSuit...): the same in every job of the character,
+    -- so one with no GoomSwap place is named in the header once, not copied into every job file as Sel_*.
+    local preSets = {};
+    do
+        local seen = {};
+        local function mark(t, depth)
+            if (type(t) ~= 'table') or seen[t] or (getmetatable(t) == stubmt) or (depth > 6) then return end
+            seen[t] = true;
+            preSets[t] = true;
+            for k, v in pairs(t) do
+                if (type(k) == 'string') and (SLOT[string.lower(k)] == nil) then mark(v, depth + 1) end
+            end
+        end
+        mark(rawget(env, 'sets'), 0);
     end
     local ok, err = run_file(io_, opts.gear_file, env);
     if not ok then return nil, 'cannot run ' .. opts.gear_file .. ': ' .. tostring(err) end
@@ -588,8 +619,19 @@ function S2G.Convert(opts)
     for _, m in ipairs(opts_of('OffenseMode')) do
         if (type(m) == 'string') and (m ~= 'Normal') then melee[#melee + 1] = m; modes[m] = true end
     end
+    -- WeaponskillMode options that are no /mset mode. Two have a GoomSwap place: Proc (/proc: Ws_Proc) and PDL
+    -- (/wsset high: <set>_HighBuff); the rest stay Sel_*. Without this, sets.precast.WS.Proc read as a weapon skill
+    -- named Proc and landed in the Proc set, which /proc wears while engaged.
+    local wsModes = {};
+    -- mode words Selindrile's files use under sets.precast.WS even where the job doesn't list them: none is a weapon skill
+    for _, m in ipairs({ 'Acc', 'SomeAcc', 'FullAcc', 'HighAcc', 'Fodder', 'Proc', 'PDL', 'UncappedAtt', 'Uncapped', 'AttUnCap', 'DT', 'Mod', 'TH' }) do
+        if not modes[m] then wsModes[m] = true end
+    end
     for _, m in ipairs(opts_of('WeaponskillMode')) do
-        if (type(m) == 'string') and (m ~= 'Normal') and (m ~= 'Match') and not modes[m] then report.notes[#report.notes + 1] = 'WS mode ' .. m .. ' (no /mset of that name: its WS sets are kept as Sel_*)' end
+        if (type(m) == 'string') and (m ~= 'Normal') and (m ~= 'Match') and not modes[m] then wsModes[m] = true end
+    end
+    for _, m in ipairs(opts_of('WeaponskillMode')) do
+        if (type(m) == 'string') and (m ~= 'Normal') and (m ~= 'Match') and not modes[m] and (m ~= 'Proc') and (m ~= 'PDL') then report.notes[#report.notes + 1] = 'WS mode ' .. m .. ' (no /mset of that name: its WS sets are kept as Sel_*)' end
     end
 
     -- template
@@ -633,7 +675,7 @@ function S2G.Convert(opts)
         preSkill = (string.find(tt, "ByName(spell.Skill .. '_Precast')", 1, true) ~= nil),
         preFamily = (string.find(tt, "ByName(Family(spell.Name) .. '_Precast')", 1, true) ~= nil), family = family,
         midSkill = (string.find(tt, 'ByName(spell.Skill)', 1, true) ~= nil),
-        midName = (string.find(tt, 'ByName(spell.Name)', 1, true) ~= nil) });
+        midName = (string.find(tt, 'ByName(spell.Name)', 1, true) ~= nil), wsModes = wsModes });
     local found = {};
     local onPath = {};
     local function walk(t, path)
@@ -669,6 +711,7 @@ function S2G.Convert(opts)
         local bad = {};
         local gear = gear_of(f.set, bad);
         if (#bad > 0) then report.unresolved[#report.unresolved + 1] = path_name(f.path) .. ' (' .. table.concat(bad, ', ') .. ')' end
+        report.placeholders = report.placeholders + (bad.placeholders or 0);
         local name = map(f.path);
         local refused = generic and (name == nil);
         if (name ~= nil) then
@@ -689,7 +732,7 @@ function S2G.Convert(opts)
             local nk = #k;
             if (nk == 2) and (k[1] == 'midcast') and (k[2] ~= 'FastRecast') and (k[2] ~= 'RA') then name, kind = k[2], 'mid'
             elseif (nk == 3) and (k[1] == 'precast') and (k[2] == 'JA') then name, kind = k[3], 'ja'
-            elseif (nk == 3) and (k[1] == 'precast') and (k[2] == 'WS') and not modes[k[3]] then name, kind = k[3], 'ws'
+            elseif (nk == 3) and (k[1] == 'precast') and (k[2] == 'WS') and not modes[k[3]] and not wsModes[k[3]] then name, kind = k[3], 'ws'
             elseif (nk == 4) and (k[1] == 'precast') and (k[2] == 'WS') and modes[k[4]] then name, kind = k[3] .. '_' .. k[4], 'ws' end
             if (name ~= nil) and (out[string.lower(name)] == nil) and (tset[string.lower(name)] == nil) then
                 placedTable[f.set] = true;
@@ -703,7 +746,11 @@ function S2G.Convert(opts)
         end
         if (name == nil) and (next(gear) ~= nil) and not placedTable[f.set] then
             placedTable[f.set] = true;
-            report.unmapped[#report.unmapped + 1] = { name = 'Sel_' .. path_name(f.path), gear = gear };
+            if preSets[f.set] then
+                report.shared[#report.shared + 1] = path_name(f.path);
+            else
+                report.unmapped[#report.unmapped + 1] = { name = 'Sel_' .. path_name(f.path), gear = gear };
+            end
         end
     end
     -- ability-family aliases (Curing Waltz III -> Waltz) where the template has no set of that family
@@ -854,6 +901,14 @@ function S2G.Convert(opts)
     if (#keys.dropped > 40) then h[#h + 1] = '--   ... and ' .. (#keys.dropped - 40) .. ' more' end
     h[#h + 1] = '-- Not carried over: Selindrile automation (AutoDefense, AutoRune, AutoTank, AutoWS...), Day/Night idles.';
     for _, nt in ipairs(report.notes) do h[#h + 1] = '-- ' .. nt end
+    if (#report.shared > 0) then
+        table.sort(report.shared);
+        h[#h + 1] = '-- From your Globals/Items files, no GoomSwap place, not copied here (' .. #report.shared .. '): '
+            .. table.concat(report.shared, ', ', 1, math.min(#report.shared, 12)) .. ((#report.shared > 12) and ', ...' or '') .. '.';
+    end
+    if (report.placeholders > 0) then
+        h[#h + 1] = '-- ' .. report.placeholders .. ' slots named gear.ElementalObi/Cape/Belt/Gorget (Selindrile placeholders): left out; the obi is the ElementGear setting.';
+    end
     if (#report.unresolved > 0) then
         h[#h + 1] = '-- Slots left out (a value the migration could not read, e.g. a global from your own code):';
         for i = 1, math.min(#report.unresolved, 20) do h[#h + 1] = '--   ' .. report.unresolved[i] end
