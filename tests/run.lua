@@ -32,6 +32,7 @@ local files = { 'common/gcaction.lua', 'common/gcauto.lua', 'common/gcbuild.lua'
     'windower/GearSwap/data/goomswap/core.lua', 'windower/GearSwap/data/goomswap/imgui.lua',
     'windower/GearSwap/data/goomswap/sel2goom.lua' };
 for _, job in ipairs(JOBS) do files[#files + 1] = 'examples/' .. job .. '.lua' end
+files[#files + 1] = 'examples/guides/RDM.lua';
 for _, f in ipairs(files) do
     local text = read(root .. '/' .. f);
     if check(text ~= nil, f .. ' exists') then compiles(text, f) end
@@ -164,6 +165,41 @@ do
     check(has(f, "        Hands = 'Leth. Ganth. +2', -- example: Leth. Ganth. +3; yours is in Locker: move it to a wardrobe"), 'gcbuild family: the highest version owned, and its bag');
     check(rf.family == 2, 'gcbuild family: two slots (' .. rf.family .. ')');
     check(has(f, "        --Ear1 = 'Not Owned Earring', -- not owned"), 'gcbuild family: nothing else is picked');
+
+    -- guide lists: the first listed item owned, also in a slot the example's set has no line for
+    local guide = { a = { Head = { 'Best Helm', 'Nyame Helm' }, Hands = { 'Leth. Ganth. +1', 'Missing Gloves' }, Ear1 = { 'Missing Earring' },
+        Neck = { 'Missing Torque', 'Old Belt' }, Ring1 = { 'Chirich Ring +1' }, Ring2 = { 'Chirich Ring +1', 'Chirich Ring' } },
+        Mp_Body = { Body = { 'Old Belt' } }, NoSuchSet = { Head = { 'Nyame Helm' } } };
+    local g, rg = B.Build(TPL, owned_unit(), { name = 'Unit', job = 'XXX', guide = guide });
+    compiles(g, 'gcbuild unit (guide)');
+    check(has(g, "        Head = 'Nyame Helm', -- keep me\n"), 'gcbuild guide: the first owned item is the example\'s own: its line stays');
+    check(has(g, "        Hands = 'Leth. Ganth. +1', -- guide: #1 of 2 (example: Leth. Ganth. +3)"), 'gcbuild guide: the first listed item owned replaces the example\'s');
+    check(has(g, "        --Ear1 = 'Not Owned Earring', -- not owned"), 'gcbuild guide: nothing owned from the list leaves the slot to the usual rules');
+    check(has(g, "        Ring2 = 'Chirich Ring', -- guide: #2 of 2 (example: Chirich Ring +1)"), 'gcbuild guide: a copy already worn in the set is not picked twice');
+    check(has(g, "        Neck = 'Old Belt', -- guide: #2 of 2 (not in the example's set)\n    },\n    Mp_Body"), 'gcbuild guide: a slot the example\'s set lacks is added before the set closes');
+    check(has(g, "    Mp_Body = {}, -- not owned: Seidr Cotehardie"), 'gcbuild guide: a one-line set is not extended');
+    check(rg.guide == 3, 'gcbuild guide: three slots (' .. rg.guide .. ')');
+    check(rg.kept + rg.dropped == rg.slots, 'gcbuild guide: counts add up');
+    -- the shipped guide files are data in the documented shape, and name sets their example has
+    for _, job in ipairs(JOBS) do
+        local text = read(root .. '/examples/guides/' .. job .. '.lua');
+        if (text ~= nil) then
+            local fn = loadstring(text, 'guides/' .. job);
+            local data = (fn ~= nil) and fn() or nil;
+            if check(type(data) == 'table', 'guides/' .. job .. '.lua returns a table') then
+                local tpl = read(root .. '/examples/' .. job .. '.lua');
+                for set, slots in pairs(data) do
+                    check(has(tpl, '\n    ' .. set .. ' = {') or has(tpl, "\n    ['" .. set .. "'] = {"), 'guides/' .. job .. ': the example has a set ' .. tostring(set));
+                    for slot, list in pairs(slots) do
+                        local ok = (type(list) == 'table') and (#list > 0);
+                        for _, n in ipairs(ok and list or {}) do ok = ok and (type(n) == 'string') and (n ~= '') end
+                        check(ok and (({ Main = 1, Sub = 1, Range = 1, Ammo = 1, Head = 1, Neck = 1, Ear1 = 1, Ear2 = 1, Body = 1, Hands = 1, Ring1 = 1,
+                            Ring2 = 1, Back = 1, Waist = 1, Legs = 1, Feet = 1 })[slot] ~= nil), 'guides/' .. job .. ': ' .. tostring(set) .. '.' .. tostring(slot) .. ' is a list of item names');
+                    end
+                end
+            end
+        end
+    end
 
     -- Windower: augment strings are compared loosely (one string per augment slot, other spelling)
     local w = owned_unit(true);

@@ -110,8 +110,8 @@ that work instead of someone else's gear list. Ashita and Windower.
 
 **Run it**
 
-1. The examples must be installed: Ashita `luashitacast/examples/` (Install, step 1), Windower
-   `data/goomswap/examples/`.
+1. The examples must be installed, with their `guides/` folder: Ashita `luashitacast/examples/` (Install, step 1),
+   Windower `data/goomswap/examples/`.
 2. Log in on the character and type `/gcbuild` (your current job) or `/gcbuild RDM` (any job).
 3. Open `<JOB>.proposed.lua` in the character's folder (Ashita `luashitacast/<Name>_<id>/`, Windower
    `data/goomswap/<Name>/`). Read it, then save it as `<JOB>.lua` and reload.
@@ -158,6 +158,40 @@ second ring of a pair). Each swapped line says what the example named:
 
 Only the `+N` at the end of the name may differ. It never reaches for a different item.
 
+**`/gcbuild RDM guide`: follow a gear guide's list**
+
+Off unless you add the word `guide`. `examples/guides/<JOB>.lua` holds, for a set and a slot, items **best first**,
+written down by hand from a gear guide (each set names its source). `/gcbuild` puts the first item on the list
+that you own into that slot — instead of the example's item, and also into a slot the example's set leaves empty.
+Each such line says its rank:
+
+```lua
+    Tp_Enspell = {
+        Waist = 'Orpheus\'s Sash',
+        Head = 'Sworn Crown', -- guide: #1 of 1 (not in the example's set)
+        Hands = 'Leth. Ganth. +2', -- guide: #2 of 3 (example: Aya. Manopolas +2)
+    },
+```
+
+The tool still ranks nothing itself: the order in the file is the whole answer, so a list is only as good as the
+guide it was copied from. Where a set or slot has no list, or you own nothing on it, the usual rules above apply.
+`family` and `guide` can be used together.
+
+A guide file is plain data:
+
+```lua
+return {
+    ['Savage Blade'] = { -- source: <guide name, set name>
+        Head = { 'Nyame Helm', 'Viti. Chapeau +4' },   -- best first
+        Ring1 = { 'Ephramad\'s Ring', 'Sroda Ring' },
+    },
+};
+```
+
+Set names are the example's; slots are `Main` ... `Feet`. So far only `examples/guides/RDM.lua` exists, with one
+set (`Tp_Enspell`, from BG-Wiki's Red Mage guide). The lists are not fetched from anywhere: add to them as you
+read guides.
+
 **Weapon modes**
 
 A `/wm` mode whose `Weapon_<mode>` set lost its weapon (its `Main`, or every slot of a set without one) has nothing
@@ -176,8 +210,9 @@ becomes the default. Both lines say what was changed.
 
 **What it does not do**
 
-- It **never picks a different item**. Without `family` a slot you lack is left out; with it, only another version
-  of the same item is used. It won't guess that another piece of yours is "close enough". Fill those in yourself.
+- It **never chooses an item by itself**. Without `family` or `guide` a slot you lack is left out; `family` only
+  takes another version of the same item; `guide` only follows a list someone wrote down. It won't guess that
+  another piece of yours is "close enough". Fill those in yourself.
 - Apart from the two weapon-mode lines, `OnLoad` and the handlers are the example's, untouched.
 - It doesn't check job or level: the examples are level 99 sets.
 - `/checksets` afterwards names anything misspelled or missing.
@@ -281,7 +316,7 @@ Ashita `/name`; Windower `//name` or `//gs c name`.
 | `/gcmodes [all]` | Modes in chat |
 | `/checksets` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2) |
 | `/gcgear [JOB]` | Everything you own the job can wear → `gear_<JOB>.txt` (Ashita) |
-| `/gcbuild [JOB] [family]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua` (see above) |
+| `/gcbuild [JOB] [family] [guide]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua` (see above) |
 | `/gctrace` `/gcstyle [N]` `/gcmessages` `/gchelp` | Trace / lockstyle / chat lines / help |
 | `/gckey <key> <cmd>` | Bind a key |
 
