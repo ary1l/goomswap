@@ -190,7 +190,7 @@
 
 	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','mset','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
 	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset',
-	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','gctemps','gcgear','gcbuild','idleset','rangedset'};
+	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','gctemps','gcgear','gcbuild','gcaudit','idleset','rangedset'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
 		ontic = 'ontic extremity',
@@ -451,7 +451,10 @@ end
 			gcinclude.GearDump(args[2]);
 		elseif (args[1] == 'gcbuild') then -- <JOB>.proposed.lua: the job's example with the gear you own (common/gcbuild.lua, loaded on use)
 			local ok, mod = pcall(gFunc.LoadFile, 'common\\gcbuild.lua');
-			if ok and (type(mod) == 'table') then mod.Run(args[2], gcinclude.Say, gcinclude.Err) else gcinclude.Err('/gcbuild: common\\gcbuild.lua failed to load') end
+			if ok and (type(mod) == 'table') then mod.Run({ args[2], args[3] }, gcinclude.Say, gcinclude.Err) else gcinclude.Err('/gcbuild: common\\gcbuild.lua failed to load') end
+		elseif (args[1] == 'gcaudit') then -- the same checks over your own <JOB>.lua, report only (<JOB>.audit.txt)
+			local ok, mod = pcall(gFunc.LoadFile, 'common\\gcbuild.lua');
+			if ok and (type(mod) == 'table') then mod.RunAudit({ args[2] }, gcinclude.Say, gcinclude.Err) else gcinclude.Err('/gcaudit: common\\gcbuild.lua failed to load') end
 		elseif (args[1] == 'gce') then
 			gcinclude.EnchantCommand(args);
 		elseif (args[1] == 'gchelp') then
@@ -3081,7 +3084,7 @@ end
 			'holds  : /naked /weaponsonly /abysseaproc [on|off] (one at a time), /capacity /jubilee /dynamisrp [on|off]',
 			'items  : /gce <item> | cancel, /gctemps (Escha drinks), /warpring /mea /holla /dem, /ejenter [chamber] /ejlamps /ejexit (Einherjar)',
 			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat',
-			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcgear [JOB] (what you own, to a file), /gcbuild [JOB] (the example with your gear, as <JOB>.proposed.lua)',
+			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcgear [JOB] (what you own, to a file), /gcbuild [JOB] [family] (the example with your gear, as <JOB>.proposed.lua), /gcaudit [JOB] (your job file against your bags)',
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
 			'nuke   : Burst set is automatic on a nuke landing in a live skillchain; /burst = Burst set on every nuke (HUD: * on the nuke cell)',
@@ -3325,7 +3328,7 @@ end
 	-- Ear1/Ring1 are the left ear/ring, Ear2/Ring2 the right. Some items' bonus works in one only: their game text says
 	-- 'Right ear:' (Chev. Earring +1: Right ear: DEF:+22 Shield skill +11 "Cure" potency +11%). The slot that text names.
 	-- Sortie job earrings (and +1/+2) are right ear (Ear2) only, whatever their text says.
-	gcinclude.SortieEarrings = T{'chev.', 'hashi.', 'lethargy', 'ebers', 'wicce', 'arbatel', 'azimuth', 'fili', 'chas.', 'bhikku',
+	gcinclude.SortieEarrings = T{'chev.', 'hashi.', 'lethargy', 'leth.', 'ebers', 'wicce', 'arbatel', 'azimuth', 'fili', 'chas.', 'bhikku',
 		'heath.', 'peltast', 'skulk.', 'kasuga', 'hattori', 'nukumi', 'karagoz', 'maculele', 'macu.', 'erilaz', 'boii', 'amini', 'beck.'};
 	local sideCache = {};
 	function gcinclude.ItemSide(name)
@@ -3404,7 +3407,7 @@ end
 		for _, v in ipairs(unknown) do gcinclude.Err('unknown item ' .. v) end
 		if (#moon > 0) and ((gcinclude.settings.MoonshadeTP or 0) > 0) then
 			table.sort(moon);
-			gcinclude.Say('Moonshade Earring in: ' .. table.concat(moon, ', ') .. ' - not needed, the engine adds it below MoonshadeTP on every WS (see README, Moonshade)');
+			gcinclude.Say('Moonshade Earring in: ' .. table.concat(moon, ', ') .. ' - not needed, the engine adds it below MoonshadeTP on every WS (see docs/sets.md, Moonshade)');
 		end
 		if (#drift > 0) then
 			gcinclude.Say('in both ear/ring slots across sets (swaps it out and back): ' .. table.concat(drift, ', '));
@@ -4284,7 +4287,7 @@ checkDefault = function()
 	end
 
 	-- Auto Regen/Refresh/DT/Pet_Dt and Town sets count as "your sets", so they go under the engine layers
-	-- (README layer order: your sets -> Hoxne sets -> weapons (+ TH weapons while /th is on) -> mdt/Aminon -> Hoxne -> TH -> received -> buffs -> XIRoll).
+	-- (docs/sets.md layer order: your sets -> Hoxne sets -> weapons (+ TH weapons while /th is on) -> mdt/Aminon -> Hoxne -> TH -> received -> buffs -> XIRoll).
 	-- Hoxne sets go first: over the job layers (Tp, Impetus...), under auto Dt and every engine layer.
 	-- Awake again with a slot still let go for the Sleeping set: hold it now, not at the next 0.1s HoldTick,
 	-- so this handler's job-set weapon can't cost the TP (LAC checks gState.Disabled when the buffer goes out).
