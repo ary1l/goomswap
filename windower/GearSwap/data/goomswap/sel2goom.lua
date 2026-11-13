@@ -228,7 +228,7 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Set paths -> GoomSwap names
 ---------------------------------------------------------------------------------------------------
--- Job abilities a template wears under a group set of another name (README Job file: groups keep a plain name).
+-- Job abilities a template wears under a group set of another name (docs/sets.md: groups keep a plain name).
 local JA_GROUP = {
     BRD = { ['Troubadour'] = 'Nitro', ['Nightingale'] = 'Nitro', ['Soul Voice'] = 'Nitro' },
     BLU = { ['Chain Affinity'] = 'Ca', ['Burst Affinity'] = 'Ba' },
@@ -821,7 +821,7 @@ function S2G.Convert(opts)
     local keys = convert_binds(sent, opts.job, sird);
     report.keys = keys;
     if (#keys.added > 0) then
-        local kl = { '%1for _, b in ipairs({ -- your Selindrile keys (goomswap_migrate), added to GoomSwap\'s; README Keys' };
+        local kl = { '%1for _, b in ipairs({ -- your Selindrile keys (goomswap_migrate), added to GoomSwap\'s; docs/commands.md (Keys)' };
         for _, b in ipairs(keys.added) do
             kl[#kl + 1] = '%1    { ' .. string.gsub(q(b[1]), '%%', '%%%%') .. ', ' .. string.gsub(q(b[2]), '%%', '%%%%') .. ' },';
         end

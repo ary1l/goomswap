@@ -3407,7 +3407,7 @@ end
 		for _, v in ipairs(unknown) do gcinclude.Err('unknown item ' .. v) end
 		if (#moon > 0) and ((gcinclude.settings.MoonshadeTP or 0) > 0) then
 			table.sort(moon);
-			gcinclude.Say('Moonshade Earring in: ' .. table.concat(moon, ', ') .. ' - not needed, the engine adds it below MoonshadeTP on every WS (see README, Moonshade)');
+			gcinclude.Say('Moonshade Earring in: ' .. table.concat(moon, ', ') .. ' - not needed, the engine adds it below MoonshadeTP on every WS (see docs/sets.md, Moonshade)');
 		end
 		if (#drift > 0) then
 			gcinclude.Say('in both ear/ring slots across sets (swaps it out and back): ' .. table.concat(drift, ', '));
@@ -4287,7 +4287,7 @@ checkDefault = function()
 	end
 
 	-- Auto Regen/Refresh/DT/Pet_Dt and Town sets count as "your sets", so they go under the engine layers
-	-- (README layer order: your sets -> Hoxne sets -> weapons (+ TH weapons while /th is on) -> mdt/Aminon -> Hoxne -> TH -> received -> buffs -> XIRoll).
+	-- (docs/sets.md layer order: your sets -> Hoxne sets -> weapons (+ TH weapons while /th is on) -> mdt/Aminon -> Hoxne -> TH -> received -> buffs -> XIRoll).
 	-- Hoxne sets go first: over the job layers (Tp, Impetus...), under auto Dt and every engine layer.
 	-- Awake again with a slot still let go for the Sleeping set: hold it now, not at the next 0.1s HoldTick,
 	-- so this handler's job-set weapon can't cost the TP (LAC checks gState.Disabled when the buffer goes out).

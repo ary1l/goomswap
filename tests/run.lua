@@ -37,6 +37,22 @@ for _, f in ipairs(files) do
     if check(text ~= nil, f .. ' exists') then compiles(text, f) end
 end
 
+-- The README and docs pages: every relative link points at a file that is there
+local pages = { 'README.md', 'docs/bar.md', 'docs/commands.md', 'docs/features.md', 'docs/gcbuild.md', 'docs/sets.md', 'docs/settings.md', 'docs/windower.md' };
+for _, page in ipairs(pages) do
+    local text = read(root .. '/' .. page);
+    if check(text ~= nil, page .. ' exists') then
+        local dir = string.match(page, '^(.*/)') or '';
+        for target in string.gmatch(text, '%]%(([^)#]+)[^)]*%)') do
+            if (string.sub(target, 1, 4) ~= 'http') then
+                local path = dir .. target;
+                while string.find(path, '[^/]+/%.%./') do path = string.gsub(path, '[^/]+/%.%./', '', 1) end
+                check(read(root .. '/' .. path) ~= nil, page .. ' links to ' .. target);
+            end
+        end
+    end
+end
+
 -- The part of a job file after its sets: what a converter must leave alone.
 local function tail(text) return string.sub(text, (string.find(text, '\nprofile.Sets', 1, true))) end
 -- Every sets.<name> the handlers use is a set of the file.

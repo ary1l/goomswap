@@ -1,5 +1,5 @@
 local profile = {};
-if (gFunc == nil) then error('GoomSwap: GearSwap loaded this job file directly. Windower: move it to data/goomswap/<Name>/<JOB>.lua and delete it from data/<Name>/ (see README Install)', 0) end
+if (gFunc == nil) then error('GoomSwap: GearSwap loaded this job file directly. Windower: move it to data/goomswap/<Name>/<JOB>.lua and delete it from data/<Name>/ (see docs/windower.md)', 0) end
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
 -- gcinclude.Food = {'Grape Daifuku +1'}; -- this job's food: /packer keeps a stack of each (replaces the Food setting / char.lua's)
 -- gcinclude.Packer = { ['Trump Card'] = 99, ['Trump Card Case'] = 1 }; -- COR: kept in inventory on job change, on top of char.lua's (/packer, Bellhop plugin)
