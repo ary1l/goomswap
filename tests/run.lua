@@ -165,6 +165,19 @@ do
     check(rf.family == 2, 'gcbuild family: two slots (' .. rf.family .. ')');
     check(has(f, "        --Ear1 = 'Not Owned Earring', -- not owned"), 'gcbuild family: nothing else is picked');
 
+    -- /gcaudit: the same findings as a report, the file itself untouched
+    local at, ar = B.Audit(TPL, owned_unit(), { name = 'Unit', job = 'XXX' });
+    check(has(at, '19 set slots name an item: 7 fine, 8 not owned, 1 need a second copy, 1 with other augments, 2 in a bag'), 'gcaudit: the counts line');
+    check(has(at, "Not owned (these lines do nothing):\n  Not Owned Earring (1)\n      A Ear1"), 'gcaudit: not owned, with where');
+    check(has(at, "  Chirich Ring +1: only 1 owned\n      A Ring2"), 'gcaudit: one copy for two slots');
+    check(has(at, "  Rostam - yours: Path A\n      A Main"), 'gcaudit: other augments');
+    check(has(at, "  Viti. Boots +4 [Locker]\n      A Feet"), 'gcaudit: wrong bag');
+    check(has(at, 'Weapon modes whose Weapon_<mode> set has no weapon you own: Naegling, Bow'), 'gcaudit: weapon modes');
+    check(has(at, "Named outside the sets and not owned:\n  Missing Shield (SubModes)"), 'gcaudit: names outside the sets');
+    check(ar.audit.missing == 8 and ar.audit.short == 1 and ar.audit.name == 1 and ar.audit.move == 2, 'gcaudit: report numbers');
+    local clean = B.Audit("local sets = {\n    A = {\n        Head = 'Nyame Helm',\n    },\n};\nprofile.Sets = sets;\n", owned_unit(), { job = 'XXX' });
+    check(has(clean, '1 set slots name an item: 1 fine, 0 not owned') and not has(clean, 'Not owned ('), 'gcaudit: a clean file has no sections');
+
     -- Windower: augment strings are compared loosely (one string per augment slot, other spelling)
     local w = owned_unit(true);
     w["sucellos's cape"].copies[2].augs = { 'STR+30', '"Weapon skill damage "+10%', 'Accuracy+20 Attack+20' };

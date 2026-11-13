@@ -103,7 +103,7 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 Every example names sets after the action (`['Savage Blade']`); a spell without one uses its family's (`['Cure']` for
 Cure IV). Worth copying: `WHM.lua` cures, `MNK.lua` Hoxne, `PLD.lua` `/subset`.
 
-## A job file from the gear you own (`/gcbuild`)
+## A job file from the gear you own (`/gcbuild`, `/gcaudit`)
 
 `/gcbuild` takes the job's example file and keeps only the gear your character actually has, so you start from sets
 that work instead of someone else's gear list. Ashita and Windower.
@@ -181,6 +181,20 @@ becomes the default. Both lines say what was changed.
 - Apart from the two weapon-mode lines, `OnLoad` and the handlers are the example's, untouched.
 - It doesn't check job or level: the examples are level 99 sets.
 - `/checksets` afterwards names anything misspelled or missing.
+
+**Checking a job file you already use: `/gcaudit`**
+
+`/gcaudit` (or `/gcaudit RDM`) runs the same checks over your own `<JOB>.lua` and changes nothing. Chat gets one
+line of counts; `<JOB>.audit.txt` in the character's folder has the details, each with the set and slot it is in:
+
+- items the sets name that you don't own (those lines do nothing)
+- the same item in two slots of a set with one copy owned
+- augments a set lists that no copy of yours has
+- items that are only in a bag gear can't be equipped from
+- weapon modes whose `Weapon_<mode>` set has no weapon you own
+- item names outside the sets (`gFunc.Equip`, slot-pick lists) that you don't own
+
+Useful after selling or storing gear, or after copying a job file from someone else.
 
 `/gcgear [JOB]` (Ashita) is the companion: it lists everything you own that the job can wear, by slot, into
 `gear_<JOB>.txt` — what to pick from when you fill the slots `/gcbuild` left out.
@@ -282,6 +296,7 @@ Ashita `/name`; Windower `//name` or `//gs c name`.
 | `/checksets` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2) |
 | `/gcgear [JOB]` | Everything you own the job can wear → `gear_<JOB>.txt` (Ashita) |
 | `/gcbuild [JOB] [family]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua` (see above) |
+| `/gcaudit [JOB]` | Your own job file checked against your bags, nothing changed → `<JOB>.audit.txt` (see above) |
 | `/gctrace` `/gcstyle [N]` `/gcmessages` `/gchelp` | Trace / lockstyle / chat lines / help |
 | `/gckey <key> <cmd>` | Bind a key |
 
