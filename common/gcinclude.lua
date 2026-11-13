@@ -190,7 +190,7 @@
 
 	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','mset','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
 	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset',
-	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','gctemps','gcgear','gcbuild','gcaudit','idleset','rangedset'};
+	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','gctemps','gcgear','gcbuild','idleset','rangedset'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
 		ontic = 'ontic extremity',
@@ -452,9 +452,6 @@ end
 		elseif (args[1] == 'gcbuild') then -- <JOB>.proposed.lua: the job's example with the gear you own (common/gcbuild.lua, loaded on use)
 			local ok, mod = pcall(gFunc.LoadFile, 'common\\gcbuild.lua');
 			if ok and (type(mod) == 'table') then mod.Run({ args[2], args[3] }, gcinclude.Say, gcinclude.Err) else gcinclude.Err('/gcbuild: common\\gcbuild.lua failed to load') end
-		elseif (args[1] == 'gcaudit') then -- the same checks over your own <JOB>.lua, report only (<JOB>.audit.txt)
-			local ok, mod = pcall(gFunc.LoadFile, 'common\\gcbuild.lua');
-			if ok and (type(mod) == 'table') then mod.RunAudit({ args[2] }, gcinclude.Say, gcinclude.Err) else gcinclude.Err('/gcaudit: common\\gcbuild.lua failed to load') end
 		elseif (args[1] == 'gce') then
 			gcinclude.EnchantCommand(args);
 		elseif (args[1] == 'gchelp') then
@@ -3084,7 +3081,7 @@ end
 			'holds  : /naked /weaponsonly /abysseaproc [on|off] (one at a time), /capacity /jubilee /dynamisrp [on|off]',
 			'items  : /gce <item> | cancel, /gctemps (Escha drinks), /warpring /mea /holla /dem, /ejenter [chamber] /ejlamps /ejexit (Einherjar)',
 			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat',
-			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcgear [JOB] (what you own, to a file), /gcbuild [JOB] [family] (the example with your gear, as <JOB>.proposed.lua), /gcaudit [JOB] (your job file against your bags)',
+			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcgear [JOB] (what you own, to a file), /gcbuild [JOB] [family] (the example with your gear, as <JOB>.proposed.lua)',
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
 			'nuke   : Burst set is automatic on a nuke landing in a live skillchain; /burst = Burst set on every nuke (HUD: * on the nuke cell)',
@@ -3414,6 +3411,12 @@ end
 		end
 		if (#empty > 0) then
 			gcinclude.Say('empty: ' .. table.concat(empty, ', '));
+		end
+		-- the same sets against your bags: not owned, one copy worn twice, other augments, wrong bag (common/gcbuild.lua)
+		local ok, build = pcall(gFunc.LoadFile, 'common\\gcbuild.lua');
+		if ok and (type(build) == 'table') and (build.CheckSets ~= nil) then
+			local okc, e = pcall(build.CheckSets, gProfile.Sets, gcinclude.WeaponModes, gcinclude.Say, gcinclude.Err);
+			if not okc then gcinclude.Err('checksets: the bag check failed: ' .. tostring(e)) end
 		end
 	end
 

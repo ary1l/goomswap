@@ -181,18 +181,25 @@ do
     check(rf.family == 2, 'gcbuild family: two slots (' .. rf.family .. ')');
     check(has(f, "        --Ear1 = 'Not Owned Earring', -- not owned"), 'gcbuild family: nothing else is picked');
 
-    -- /gcaudit: the same findings as a report, the file itself untouched
-    local at, ar = B.Audit(TPL, owned_unit(), { name = 'Unit', job = 'XXX' });
-    check(has(at, '19 set slots name an item: 7 fine, 8 not owned, 1 need a second copy, 1 with other augments, 2 in a bag'), 'gcaudit: the counts line');
-    check(has(at, "Not owned (these lines do nothing):\n  Not Owned Earring (1)\n      A Ear1"), 'gcaudit: not owned, with where');
-    check(has(at, "  Chirich Ring +1: only 1 owned\n      A Ring2"), 'gcaudit: one copy for two slots');
-    check(has(at, "  Rostam - yours: Path A\n      A Main"), 'gcaudit: other augments');
-    check(has(at, "  Viti. Boots +4 [Locker]\n      A Feet"), 'gcaudit: wrong bag');
-    check(has(at, 'Weapon modes whose Weapon_<mode> set has no weapon you own: Naegling, Bow'), 'gcaudit: weapon modes');
-    check(has(at, "Named outside the sets and not owned:\n  Missing Shield (SubModes)"), 'gcaudit: names outside the sets');
-    check(ar.audit.missing == 8 and ar.audit.short == 1 and ar.audit.name == 1 and ar.audit.move == 2, 'gcaudit: report numbers');
-    local clean = B.Audit("local sets = {\n    A = {\n        Head = 'Nyame Helm',\n    },\n};\nprofile.Sets = sets;\n", owned_unit(), { job = 'XXX' });
-    check(has(clean, '1 set slots name an item: 1 fine, 0 not owned') and not has(clean, 'Not owned ('), 'gcaudit: a clean file has no sections');
+    -- /checksets: the same rules over loaded sets (tables, as LuAshitacast holds them)
+    local loaded = {
+        A = { Head = 'Nyame Helm', Back = { Name = "Sucellos's Cape", Augment = { 'STR+30', 'Weapon skill damage +10%' } },
+            Main = { Name = 'Rostam', AugPath = 'B' }, Ring1 = 'Chirich Ring +1', Ring2 = 'Chirich Ring +1', Range = 'displaced',
+            Ear1 = 'Not Owned Earring', Feet = 'Viti. Boots +4' },
+        B = { Ear1 = 'Not Owned Earring', neck = 'Old Belt' },
+        Buffs = { ['Aftermath: Lv.3'] = { Hands = 'Missing Gloves' } },
+        Weapon_Naegling = { Main = 'Naegling', Sub = 'Old Belt' },
+        Weapon_Kept = { main = 'Nyame Helm' },
+    };
+    local co = B.CheckOwned(loaded, { 'None', 'Naegling', 'Kept', 'NoSet' }, owned_unit());
+    check(co.slots == 14, 'checksets: every slot counted (' .. co.slots .. ')');
+    check(#co.missing == 3 and co.missing[1].name == 'Not Owned Earring' and #co.missing[1].where == 2 and co.missing[1].where[1] == 'A Ear1',
+        'checksets: not owned, grouped by item, most used first');
+    check(#co.short == 1 and co.short[1].name == 'Chirich Ring +1' and co.short[1].where[1] == 'A Ring2', 'checksets: one copy for two slots');
+    check(#co.augs == 1 and co.augs[1].name == 'Rostam' and co.augs[1].detail == 'Path A', 'checksets: other augments');
+    check(#co.bag == 2 and co.bag[1].name == "Sucellos's Cape" and co.bag[1].detail == 'Safe', 'checksets: the fitting copy is in a bag sets can\'t use');
+    check(#co.modes == 1 and co.modes[1] == 'Naegling', 'checksets: weapon modes without their weapon');
+    check(B.CheckOwned({}, nil, owned_unit()).slots == 0, 'checksets: no sets, nothing found');
 
     -- Windower: augment strings are compared loosely (one string per augment slot, other spelling)
     local w = owned_unit(true);

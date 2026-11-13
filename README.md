@@ -40,7 +40,8 @@ Selindrile.
 1. **Get a job file with your gear.** Either fill `Idle`, `Tp_Default` and `Ws_Default` in your copy of the example,
    or type `/gcbuild`: it writes `<JOB>.proposed.lua`, the example with only the gear you own
    ([how it works](docs/gcbuild.md)).
-2. **Check it.** `/checksets` names empty sets and misspellings; `/gctrace` shows what each action wore.
+2. **Check it.** `/checksets` names empty sets, misspellings and gear you don't own; `/gctrace` shows what each
+   action wore.
 3. Leave `gSettings.FastCast` at 0: cast times are learned.
 
 Sets are named after the action: `['Savage Blade']`, `['Cure']` (also used for Cure IV), `['Berserk']`.
@@ -56,8 +57,8 @@ Sets are named after the action: `['Savage Blade']`, `['Cure']` (also used for C
 | `/idleset [refresh\|regen]` | idle set |
 | `/lock [slots]` `/unlock` | freeze slots |
 | `/gcbar` `/gchud` | the status bar, and the other boxes under it |
-| `/checksets` `/gctrace` | check your sets, see what an action wore |
-| `/gcbuild` `/gcaudit` | draft a job file from your gear; check your job file against your bags |
+| `/checksets` `/gctrace` | check your sets (names, and against your bags); see what an action wore |
+| `/gcbuild` | draft a job file from the gear you own |
 | `/gchelp` | everything else, in game |
 
 Windower: `//wm` or `//gs c wm`. Every box at once: `/mss /wm` (Multisend). [All commands and keys](docs/commands.md).
@@ -71,7 +72,7 @@ Windower: `//wm` or `//gs c wm`. Every box at once: `/mss /wm` (Multisend). [All
 | [Settings](docs/settings.md) | where settings go, the ones most changed, the full list |
 | [What the engine does](docs/features.md) | weapons, defense and locks, Hoxne, magic burst, items, action checks |
 | [Status bar and HUD](docs/bar.md) | reading the bar, clicking it, colours |
-| [`/gcbuild` and `/gcaudit`](docs/gcbuild.md) | a job file from the gear you own; your job file checked against your bags |
+| [`/gcbuild`](docs/gcbuild.md) | a job file from the gear you own; checking a job file against your bags |
 | [Windower](docs/windower.md) | install, differences, augments, coming from Selindrile |
 
 ## Something wrong

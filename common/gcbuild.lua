@@ -10,7 +10,7 @@
 -- WeaponModes list, and a DefaultWeapons that was one of them moves to the first mode left. Other item names in
 -- OnLoad and the handlers (gFunc.Equip, slot-pick lists) are checked and listed, not changed.
 -- Written next to the job files as <JOB>.proposed.lua: your <JOB>.lua is never touched.
--- /gcaudit [JOB] runs the same checks over the character's own <JOB>.lua and only reports (<JOB>.audit.txt).
+-- /checksets uses the same bag scan and rules on the sets you have loaded (CheckSets below).
 -- Loaded by gcinclude when the command is used. Build() is plain text in, text out, so it runs outside the game too.
 local gcbuild = {};
 
@@ -237,8 +237,7 @@ function gcbuild.Build(templateText, owned, info)
 
     local rep = { slots = 0, kept = 0, dropped = 0, renamed = 0, moved = 0, family = 0, missing = {}, move = {}, modes = {}, outside = {} };
     local missN, moveSeen = {}, {};
-    local sets, cur, curName = {}, nil, nil; -- [lower set name] = { [slot] = verdict }, for the weapon modes below
-    rep.findings = {}; -- every slot that isn't simply fine: { set, slot, item, verdict, detail } (/gcaudit)
+    local sets, cur = {}, nil; -- [lower set name] = { [slot] = verdict }, for the weapon modes below
     local function to_move(name, bag)
         rep.moved = rep.moved + 1;
         local key = string.lower(name);
@@ -247,7 +246,6 @@ function gcbuild.Build(templateText, owned, info)
     local function note(slot, verdict, item, extra, bag)
         rep.slots = rep.slots + 1;
         if (cur ~= nil) then cur[slot] = verdict end
-        if (verdict ~= 'keep') then rep.findings[#rep.findings + 1] = { set = curName or '?', slot = slot, item = item.name, verdict = verdict, detail = extra } end
         if (verdict == 'drop') then
             rep.dropped = rep.dropped + 1;
             local key = string.lower(item.name);
@@ -263,7 +261,7 @@ function gcbuild.Build(templateText, owned, info)
             end
         end
     end
-    local function family_note(item, alt, bag)
+    local function family_note(item, bag)
         return 'example: ' .. item.name .. ((bag ~= nil) and ('; yours is in ' .. tostring(bag) .. ': move it to a wardrobe') or '');
     end
 
@@ -290,7 +288,7 @@ function gcbuild.Build(templateText, owned, info)
             elseif (verdict == 'name') then
                 lines[i] = indent .. key .. eq .. q(item.name) .. string.sub(line, nxt) .. ' -- your augments differ from the example\'s: ' .. extra;
             elseif (verdict == 'family') then
-                lines[i] = indent .. key .. eq .. q(extra) .. string.sub(line, nxt) .. ' -- ' .. family_note(item, extra, bag);
+                lines[i] = indent .. key .. eq .. q(extra) .. string.sub(line, nxt) .. ' -- ' .. family_note(item, bag);
             end
         elseif (string.match(line, '^%s*%-%-') == nil) then
             -- a set's name: Idle = {  /  ['Savage Blade'] = {
@@ -298,7 +296,7 @@ function gcbuild.Build(templateText, owned, info)
             if (name == nil) then ind, name = string.match(line, '^(%s*)%[%s*[\'"](.-)[\'"]%s*%]%s*=%s*{') end
             if (name ~= nil) then
                 baseIndent = baseIndent or ind;
-                if (ind == baseIndent) then cur = {}; curName = name; sets[string.lower(name)] = cur end
+                if (ind == baseIndent) then cur = {}; sets[string.lower(name)] = cur end
             end
             -- slots sharing a line with braces: Mp_Body = {Body = 'Seidr Cotehardie',},
             local open, close = string.find(line, '{', 1, true), string.find(line, '}', 1, true);
@@ -327,7 +325,7 @@ function gcbuild.Build(templateText, owned, info)
                         notes[#notes + 1] = it.name .. ': your augments differ from the example\'s: ' .. extra;
                     elseif (verdict == 'family') then
                         out[#out + 1] = k .. ' = ' .. q(extra);
-                        notes[#notes + 1] = extra .. ': ' .. family_note(it, extra, bag);
+                        notes[#notes + 1] = extra .. ': ' .. family_note(it, bag);
                     else
                         out[#out + 1] = string.sub(line, s1, after - 1);
                         if (verdict == 'move') then notes[#notes + 1] = it.name .. ' is in ' .. tostring(extra) .. ': move it to a wardrobe' end
@@ -473,67 +471,6 @@ function gcbuild.Build(templateText, owned, info)
     return table.concat(h, '\n') .. '\n' .. table.concat(lines, '\n') .. '\n', rep;
 end
 
--- /gcaudit: the same checks over a job file as it is, nothing changed. Returns the report's text and Build's report.
-function gcbuild.Audit(jobText, owned, info)
-    info = info or {};
-    local _, rep = gcbuild.Build(jobText, owned, { name = info.name, job = info.job });
-    if (type(rep) ~= 'table') then return nil, rep end
-    local groups = { drop = {}, name = {}, move = {} };
-    local order = { drop = {}, name = {}, move = {} };
-    local n = { missing = 0, short = 0, name = 0, move = 0 };
-    for _, f in ipairs(rep.findings) do
-        local g = groups[f.verdict];
-        if (g ~= nil) then
-            local key = f.item .. '|' .. tostring(f.detail);
-            if (g[key] == nil) then g[key] = { item = f.item, detail = f.detail, where = {} }; table.insert(order[f.verdict], key) end
-            table.insert(g[key].where, f.set .. ' ' .. f.slot);
-            if (f.verdict == 'drop') then
-                if (f.detail == 'not owned') then n.missing = n.missing + 1 else n.short = n.short + 1 end
-            else
-                n[f.verdict] = n[f.verdict] + 1;
-            end
-        end
-    end
-    rep.audit = n;
-    local out = {
-        string.format('GoomSwap /gcaudit: %s %s.lua%s', tostring(info.name or ''), tostring(info.job or '?'), (info.date ~= nil) and (' (' .. info.date .. ')') or ''),
-        string.format('%d set slots name an item: %d fine, %d not owned, %d need a second copy, %d with other augments, %d in a bag sets can\'t equip from.',
-            rep.slots, rep.slots - n.missing - n.short - n.name - n.move, n.missing, n.short, n.name, n.move),
-        'Nothing was changed.',
-    };
-    local function section(title, verdict, filter, line)
-        local rows = {};
-        for _, key in ipairs(order[verdict]) do
-            local e = groups[verdict][key];
-            if filter(e) then rows[#rows + 1] = '  ' .. line(e) .. '\n      ' .. table.concat(e.where, ', ') end
-        end
-        if (#rows > 0) then
-            out[#out + 1] = '';
-            out[#out + 1] = title;
-            for _, r in ipairs(rows) do out[#out + 1] = r end
-        end
-    end
-    section('Not owned (these lines do nothing):', 'drop', function(e) return e.detail == 'not owned' end,
-        function(e) return e.item .. ' (' .. #e.where .. ')' end);
-    section('Worn twice in one set, one copy owned (the second slot stays as it was):', 'drop', function(e) return e.detail ~= 'not owned' end,
-        function(e) return e.item .. ': ' .. tostring(e.detail) end);
-    section((windower ~= nil) and 'Augments listed that no copy of yours has in full (the closest copy is worn):'
-        or 'Augments listed that no copy of yours has (LuAshitacast skips the line):', 'name', function() return true end,
-        function(e) return e.item .. ' - yours: ' .. tostring(e.detail) end);
-    section('Only in a bag sets can\'t equip from (move to a wardrobe or inventory):', 'move', function() return true end,
-        function(e) return e.item .. ' [' .. tostring(e.detail) .. ']' end);
-    if (#rep.modes > 0) then
-        out[#out + 1] = '';
-        out[#out + 1] = 'Weapon modes whose Weapon_<mode> set has no weapon you own: ' .. table.concat(rep.modes, ', ');
-    end
-    if (#rep.outside > 0) then
-        out[#out + 1] = '';
-        out[#out + 1] = 'Named outside the sets and not owned:';
-        for _, v in ipairs(rep.outside) do out[#out + 1] = '  ' .. v[1] .. ' (' .. v[2] .. ')' end
-    end
-    return table.concat(out, '\n') .. '\n', rep;
-end
-
 local JOBS = { 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG',
     'SMN', 'BLU', 'COR', 'PUP', 'DNC', 'SCH', 'GEO', 'RUN' };
 local BAGS = { [0] = 'Inventory', 'Safe', 'Storage', 'Temporary', 'Locker', 'Satchel', 'Sack', 'Case',
@@ -644,38 +581,112 @@ function gcbuild.Run(args, say, err)
         (#rep.modes > 0) and (', weapon modes out: ' .. table.concat(rep.modes, ' ')) or ''));
 end
 
--- args: an optional job. Reads the character's <JOB>.lua, writes <JOB>.audit.txt next to it.
-function gcbuild.RunAudit(args, say, err)
-    local job = nil;
-    for _, a in ipairs(args or {}) do
-        for _, j in ipairs(JOBS) do
-            if (j == string.upper(tostring(a))) then job = j end
+-- /checksets: the loaded sets (profile.Sets, as LuAshitacast holds them) against the bags. An item is 'Name' or
+-- { Name = , Augment = , AugPath = }; a table of sets inside a set (Buffs) is walked too. modes: the /wm list.
+-- Returns { slots, missing, short, augs, bag = { { name, detail, where = { 'Set Slot'... } }... }, modes = { names } }.
+local SLOT_OF = {};
+for slot, _ in pairs(SLOTS) do SLOT_OF[string.lower(slot)] = slot end
+function gcbuild.CheckOwned(sets, modes, owned)
+    owned = owned or owned_gear();
+    local res = { slots = 0, missing = {}, short = {}, augs = {}, bag = {}, modes = {} };
+    local index = { missing = {}, short = {}, augs = {}, bag = {} };
+    local function add(kind, name, where, detail)
+        local key = string.lower(name) .. '|' .. tostring(detail or '');
+        local e = index[kind][key];
+        if (e == nil) then
+            e = { name = name, detail = detail, where = {} };
+            index[kind][key] = e;
+            table.insert(res[kind], e);
         end
-        if (job == nil) then err('/gcaudit: no job ' .. tostring(a) .. ' (usage: /gcaudit [JOB])'); return end
+        table.insert(e.where, where);
     end
-    job = job or JOBS[AshitaCore:GetMemoryManager():GetPlayer():GetMainJob()];
-    if (job == nil) then err('/gcaudit: no job yet'); return end
-    local _, dir, name = folders();
-    local f = io.open(dir .. job .. '.lua', 'rb');
-    if (f == nil) and (windower ~= nil) then f = io.open(windower.addon_path .. 'data/goomswap/' .. job .. '.lua', 'rb') end -- a job file every character shares
-    if (f == nil) then err('/gcaudit: no ' .. job .. '.lua in your character folder'); return end
-    local text = f:read('*a');
-    f:close();
-    local report, rep = gcbuild.Audit(text, owned_gear(), { name = name, job = job, date = os.date('%Y-%m-%d') });
-    if (report == nil) then err('/gcaudit: ' .. tostring(rep)); return end
-    local file = job .. '.audit.txt';
-    local out = io.open(dir .. file, 'wb');
-    if (out ~= nil) then out:write(report); out:close() end
-    local n = rep.audit;
-    if (n.missing + n.short + n.name + n.move + #rep.modes + #rep.outside == 0) then
-        say(string.format('%s.lua: all %d set slots are gear you own, in bags sets equip from.', job, rep.slots));
-    else
-        say(string.format('%s.lua: %d set slots, %d not owned, %d need a second copy, %d with other augments, %d in the wrong bag%s%s.%s',
-            job, rep.slots, n.missing, n.short, n.name, n.move,
-            (#rep.modes > 0) and (', weapon modes without their weapon: ' .. table.concat(rep.modes, ' ')) or '',
-            (#rep.outside > 0) and (', ' .. #rep.outside .. ' names outside the sets') or '',
-            (out ~= nil) and (' Details: ' .. file .. ' in your character folder.') or ' (could not write the details file)'));
+    local function sorted_keys(t)
+        local keys = {};
+        for k, _ in pairs(t) do keys[#keys + 1] = k end
+        table.sort(keys, function(a, b) return string.lower(tostring(a)) < string.lower(tostring(b)) end);
+        return keys;
     end
+    local function walk(setName, set, depth)
+        local used = {};
+        for _, k in ipairs(sorted_keys(set)) do -- A-Z: Ring1 is judged before Ring2
+            local v = set[k];
+            local slot = (type(k) == 'string') and SLOT_OF[string.lower(k)] or nil;
+            if (slot ~= nil) then
+                local name = (type(v) == 'table') and (v.Name or v.name) or v;
+                if (type(name) == 'string') then
+                    res.slots = res.slots + 1;
+                    local item = { name = name, augs = {}, path = (type(v) == 'table') and v.AugPath or nil };
+                    local a = (type(v) == 'table') and (v.Augment or v.augments) or nil;
+                    if (type(a) == 'string') then
+                        item.augs[1] = a;
+                    elseif (type(a) == 'table') then
+                        for _, str in pairs(a) do
+                            if (type(str) == 'string') then item.augs[#item.augs + 1] = str end
+                        end
+                    end
+                    local verdict, extra = judge(item, owned, used, false);
+                    local where = setName .. ' ' .. slot;
+                    if (verdict == 'drop') then add((extra == 'not owned') and 'missing' or 'short', name, where, extra)
+                    elseif (verdict == 'name') then add('augs', name, where, extra)
+                    elseif (verdict == 'move') then add('bag', name, where, extra) end
+                end
+            elseif (type(v) == 'table') and (depth < 2) then
+                walk(setName .. '.' .. tostring(k), v, depth + 1);
+            end
+        end
+    end
+    local byLower = {};
+    for _, name in ipairs(sorted_keys(sets)) do
+        if (type(sets[name]) == 'table') then
+            byLower[string.lower(tostring(name))] = sets[name];
+            walk(tostring(name), sets[name], 0);
+        end
+    end
+    for _, m in ipairs((type(modes) == 'table') and modes or {}) do
+        local set = (type(m) == 'string') and byLower['weapon_' .. string.lower(m)] or nil;
+        if (set ~= nil) then
+            for k, v in pairs(set) do
+                local name = (type(v) == 'table') and (v.Name or v.name) or v;
+                if (type(k) == 'string') and (string.lower(k) == 'main') and (type(name) == 'string')
+                    and (not KEYWORDS[string.lower(name)]) and (owned[string.lower(name)] == nil) then res.modes[#res.modes + 1] = m end
+            end
+        end
+    end
+    for _, kind in ipairs({ 'missing', 'short', 'augs', 'bag' }) do
+        table.sort(res[kind], function(x, y)
+            if (#x.where ~= #y.where) then return #x.where > #y.where end
+            return x.name < y.name;
+        end);
+    end
+    return res;
+end
+
+-- The lines /checksets adds about ownership. say / err: gcinclude's chat lines. At most `most` items per kind.
+function gcbuild.CheckSets(sets, modes, say, err, most)
+    local res = gcbuild.CheckOwned(sets, modes);
+    most = most or 8;
+    local n = { missing = 0, short = 0, augs = 0, bag = 0 };
+    for kind, _ in pairs(n) do
+        for _, e in ipairs(res[kind]) do n[kind] = n[kind] + #e.where end
+    end
+    say(string.format('checksets, your bags: %d set slots, %d not owned, %d need a second copy, %d with other augments, %d in a bag sets can\'t equip from',
+        res.slots, n.missing, n.short, n.augs, n.bag));
+    local function lines(kind, label, text)
+        for i, e in ipairs(res[kind]) do
+            if (i > most) then
+                say('... and ' .. (#res[kind] - most) .. ' more ' .. label .. ' (/gcbuild marks every line)');
+                break;
+            end
+            local where = table.concat(e.where, ', ', 1, math.min(#e.where, 3)) .. ((#e.where > 3) and (' +' .. (#e.where - 3)) or '');
+            err(label .. ': ' .. text(e) .. ' (' .. where .. ')');
+        end
+    end
+    lines('missing', 'not owned', function(e) return e.name end);
+    lines('short', 'worn twice, one copy', function(e) return e.name end);
+    lines('augs', (windower ~= nil) and 'augments no copy has in full' or 'augments no copy has', function(e) return e.name .. ' - yours: ' .. tostring(e.detail) end);
+    lines('bag', 'move to a wardrobe', function(e) return e.name .. ' [' .. tostring(e.detail) .. ']' end);
+    if (#res.modes > 0) then err('weapon modes whose weapon you don\'t own: ' .. table.concat(res.modes, ', ')) end
+    return res;
 end
 
 return gcbuild;
