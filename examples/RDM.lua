@@ -124,6 +124,22 @@ local sets = {
         Main = 'Caliburnus',
         Sub = 'Genmei Shield',
     },
+    Weapon_Mpu = { -- /wm mpu
+        Main = 'Mpu Gandring',
+        Sub = 'Thibron',
+    },
+    Weapon_Mpu_1h = {
+        Main = 'Mpu Gandring',
+        Sub = 'Genmei Shield',
+    },
+    Weapon_Enspell = { -- /wm enspell: these weapons, and Tp_Enspell over the TP sets while engaged (HandleDefault)
+        Main = 'Crocea Mors',
+        Sub = 'Gleti\'s Knife',
+    },
+    Weapon_Enspell_1h = {
+        Main = 'Crocea Mors',
+        Sub = 'Genmei Shield',
+    },
     Tp_Default = {
         Main = 'excalibur',
         Sub = 'thibron',
@@ -147,6 +163,12 @@ local sets = {
 
     Tp_Acc = {
         Ring2 = 'Cacoethic Ring +1',
+    },
+
+    Tp_Enspell = { -- /wm enspell, engaged: over Tp_Default and its /mset set. Enspell damage: Enhancing skill + "Sword enhancement spell damage" gear, day/weather; not MAB or Magic Damage
+        Hands = 'Aya. Manopolas +2', -- Sword enhancement spell damage +17
+        Waist = 'Orpheus\'s Sash',
+        -- rest of BG-Wiki's EnSpell: Crocea set: Sroda Tathlum, Sworn Crown, Sworn Platemail, Sworn Brais, Sworn Sabatons
     },
     Midcast = {},
 
@@ -426,7 +448,7 @@ local sets = {
         Legs = 'leth. fuseau +3',
         Feet = 'Leth. Houseaux +3',
     },
-    NukeACC = {};
+    NukeACC = {},
     OccultAcumen = { -- /nukeset oa: Occult Acumen / Store TP pieces, over Nuke and Burst (TP from nukes)
     },
     Burst = {
@@ -496,6 +518,22 @@ local sets = {
         Feet = 'leth. houseaux +3',
     },
     Imperator_Acc = {},
+
+    ['Ruthless Stroke'] = { -- Mpu Gandring: 4 hits, DEX 25% / AGI 25%, fTP 5.375 / 14 / 23 (BG-Wiki). The Imperator set's pieces; not simulated
+        Ammo = 'coiste bodhar',
+        Head = 'Viti. Chapeau +4',
+        Neck = 'rep. plat. medal',
+        Ear2 = 'ishvara earring',
+        Body = 'Nyame Mail',
+        Hands = 'nyame gauntlets',
+        Ring1 = 'ephramad\'s ring',
+        Ring2 = 'ilabrat ring',
+        Back = { Name = 'Sucellos\'s Cape', Augment = { [1] = 'Phys. dmg. taken -10%', [2] = 'STR+30', [3] = 'Accuracy+20', [4] = 'Attack+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'Sailfi Belt +1',
+        Legs = 'Nyame Flanchard',
+        Feet = 'leth. houseaux +3',
+    },
+    ['Ruthless Stroke_Acc'] = {},
 
     ['Chant du Cygne'] = {
         Ammo = 'Voluspa Tathlum',
@@ -674,7 +712,7 @@ local ByName, Family = gcinclude.ByName, gcinclude.Family;
 
 profile.OnLoad = function()
     gSettings.AllowAddSet = true;
-    gcinclude.WeaponModes = {'None', 'Naegling', 'Maxentius', 'Crocea', 'Caliburnus'};
+    gcinclude.WeaponModes = {'None', 'Naegling', 'Maxentius', 'Crocea', 'Caliburnus', 'Mpu', 'Enspell'};
     gcinclude.DefaultWeapons = 'Maxentius';
     gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
     gcinclude.Initialize();
@@ -694,6 +732,7 @@ profile.HandleDefault = function()
     local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
+        if (gcdisplay.GetCycle('Weapons') == 'Enspell') then gFunc.EquipSet(sets.Tp_Enspell) end -- /wm enspell: enspell pieces over the TP set
     elseif (player.Status == 'Resting') then
         gFunc.EquipSet(sets.Resting);
     elseif (player.IsMoving == true) then
