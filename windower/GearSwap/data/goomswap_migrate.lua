@@ -75,8 +75,14 @@ local function migrate()
             if (tpl == nil) then
                 say(167, job .. ': no template data/goomswap/examples/' .. job .. '.lua, skipped.');
             else
+                local jobPre = {};
+                for _, f in ipairs(pre) do jobPre[#jobPre + 1] = f end
+                -- Sel-Include loads User-<JOB>.lua after the Globals/Items files and before the gear file
+                for _, f in ipairs({ charDir .. 'User-' .. job .. '.lua', DATA .. 'User/User-' .. job .. '.lua', DATA .. 'User-' .. job .. '.lua' }) do
+                    if exists(f) then jobPre[#jobPre + 1] = f end
+                end
                 local text, rep = S2G.Convert({ io_ = io_, name = name, job = job, sub = p.sub_job, gear_file = gearFile,
-                    pre_files = pre, mappings_file = mappings, template_text = tpl,
+                    pre_files = jobPre, mappings_file = mappings, template_text = tpl,
                     source_label = 'data/' .. name .. '/' .. string.match(gearFile, '[^/\\]+$') });
                 if (text == nil) then
                     say(167, job .. ': ' .. tostring(rep));

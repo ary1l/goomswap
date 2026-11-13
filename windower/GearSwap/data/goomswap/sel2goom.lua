@@ -249,6 +249,13 @@ local GROUPS = {
     Flourish2 = { set = 'Flourish2', names = { 'Reverse Flourish', 'Building Flourish', 'Wild Flourish' } },
     Flourish3 = { set = 'Flourish3', names = { 'Climactic Flourish', 'Striking Flourish', 'Ternary Flourish' } },
 };
+-- BUFF_SET names the engine reads on every job (gcinclude.CheckCommonDebuffs); the rest only where the template has them.
+local ENGINE_BUFF = { Doomed = true, Sleeping = true };
+-- spell.Skill values: sets named after one are worn by a template's ByName(spell.Skill).
+local function is_skill(n) return (string.match(n, ' Magic$') ~= nil) or (n == 'Ninjutsu') or (n == 'Singing') or (n == 'Geomancy') end
+-- GearSwap spell.type values: Selindrile reads sets.precast.FC[spell.type] (Mote-Include select_specific_set), GoomSwap's
+-- templates don't, so these are no spell family. Ninjutsu and Geomancy are skills as well.
+local SPELL_TYPE = { whitemagic = true, blackmagic = true, bardsong = true, summonerpact = true, bluemagic = true, trust = true };
 local RECEIVED = { Cure_Received = true, Cursna_Received = true, Phalanx_Received = true, Protect_Shell_Received = true,
     Regen_Received = true, Refresh_Received = true, Waltz_Received = true };
 
@@ -263,16 +270,17 @@ local function mapper(ctx)
             if (a == 'resting') then return 'Resting' end
             if (a == 'Kiting') then return 'Movement' end
             if (a == 'TreasureHunter') then return 'TH' end
-            if (a == 'Enmity') then return 'Enmity' end
+            if (a == 'Enmity') then return first({ 'Enmity' }) end -- only where the template's handlers wear it
             if (a == 'engaged') then return 'Tp_Default' end
-            if (a == 'MagicBurst') then return 'Burst' end
+            if (a == 'MagicBurst') then return first({ 'Burst' }) end
             if (a == 'Self_Healing') then return has('Self_Cure') and 'Self_Cure' or 'Cure_Self' end
             if (a == 'Self_Refresh') then return has('Self_Refresh') and 'Self_Refresh' or 'Refresh_Self' end
             if RECEIVED[a] then return a end
             return nil;
         end
         if (a == 'idle') and (n == 2) then
-            return ({ Refresh = 'Idle_Refresh', Regen = 'Idle_Regen', Regain = 'Idle_Regain', Town = 'Town', Pet = 'Idle_Pet' })[b];
+            if (b == 'Pet') then return first({ 'Idle_Pet' }) end
+            return ({ Refresh = 'Idle_Refresh', Regen = 'Idle_Regen', Regain = 'Idle_Regain', Town = 'Town' })[b];
         end
         if (a == 'engaged') and (n == 2) and modes[b] then return 'Tp_' .. b end
         if (a == 'engaged') and (n == 2) and ctx.hybrid[b] and has('Tank_Main') then -- PLD/RUN: HybridMode tank sets -> /tankset
@@ -285,11 +293,22 @@ local function mapper(ctx)
             if (b == 'MDT') or (b == 'MEVA') then return 'mdt' end -- /mdt reads it on any job; MDT first (paths sort alphabetically)
             return nil;
         end
-        if (a == 'buff') and (n == 2) then return BUFF_SET[b] end
+        if (a == 'buff') and (n == 2) then
+            local t = BUFF_SET[b];
+            if (t ~= nil) and (ENGINE_BUFF[t] or has(t)) then return t end -- e.g. SA on a job whose template has no SA set: Sel_*
+            return nil;
+        end
         if (a == 'weapons') and (n == 2) then return 'Weapon_' .. b end
         if (a == 'precast') then
             if (b == 'FC') and (n == 2) then return 'Precast' end
-            if (b == 'FC') and (n == 3) then return first(PRECAST_FC[c]) end
+            if (b == 'FC') and (n == 3) then
+                local m = first(PRECAST_FC[c]);
+                if (m ~= nil) then return m end
+                -- ByName(spell.Skill .. '_Precast') / ByName(Family(spell.Name) .. '_Precast') in the template: a skill or
+                -- a spell family gets its own set; a Selindrile group that is neither (BardSong...) has no name to go by
+                if (is_skill(c) and ctx.preSkill) or ((not is_skill(c)) and ctx.preFamily and ctx.family(c)) then return c .. '_Precast' end
+                return nil;
+            end
             if (b == 'RA') and (n == 2) then return 'Preshot' end
             if (b == 'RA') and (n == 3) then return first(({ Flurry = { 'Preshot_FlurryI' }, Flurry2 = { 'Preshot_FlurryII' } })[c]) end
             if (n == 2) and (GROUPS[b] ~= nil) then return GROUPS[b].set end
@@ -331,7 +350,7 @@ local function mapper(ctx)
                 if has(b) then return b end
                 local m = first(MID_TRY[b]);
                 if (m ~= nil) then return m end
-                if generic then return b end
+                if generic and ((is_skill(b) and ctx.midSkill) or ((not is_skill(b)) and ctx.midName)) then return b end
                 return nil;
             end
             if (n == 3) and (c == 'OccultAcumen') and (b == 'Elemental Magic') and has('OccultAcumen') then return 'OccultAcumen' end -- /nukeset oa
@@ -547,7 +566,8 @@ function S2G.Convert(opts)
     end
     local ok, err = run_file(io_, opts.gear_file, env);
     if not ok then return nil, 'cannot run ' .. opts.gear_file .. ': ' .. tostring(err) end
-    for _, fname in ipairs({ 'user_job_setup', 'user_setup', 'character_user_job_setup' }) do
+    -- Sel-Include's order: the job's own setup runs after the global one, so its state options are the ones kept
+    for _, fname in ipairs({ 'user_setup', 'character_setup', 'user_job_setup', 'character_user_job_setup', 'extra_user_setup' }) do
         local f = rawget(env, fname);
         if (type(f) == 'function') then
             local okf, e = pcall(f);
@@ -591,7 +611,29 @@ function S2G.Convert(opts)
             if (tankMain == nil) and (m ~= 'MEVA') then tankMain = m end
         end
     end
-    local map = mapper({ job = opts.job, generic = generic, modes = modes, tset = tset, hybrid = hybrid, tankMain = tankMain });
+    -- Spell families (Family(): 'Cure IV' -> 'Cure', 'Utsusemi: Ichi' -> 'Utsusemi') and group names from Selindrile's
+    -- spell_maps. A precast.FC.<name> that is a group and no family (BardSong, StatusRemoval) can't be looked up by name;
+    -- one in neither list (Impact, Dispelga: no group) is a spell, unless it is a spell.type. No spell_maps loaded: skills only.
+    local smaps0 = rawget(env, 'spell_maps');
+    local families, groups = nil, {};
+    if (type(smaps0) == 'table') and (getmetatable(smaps0) ~= stubmt) then
+        families = {};
+        for sp, grp in pairs(smaps0) do
+            if (type(sp) == 'string') then families[string.lower((string.gsub(string.match(sp, '^(.-):') or sp, ' [IVX]+$', '')))] = true end
+            if (type(grp) == 'string') then groups[string.lower(grp)] = true end
+        end
+    end
+    local function family(c)
+        if (families == nil) then return false end
+        local lc = string.lower(c);
+        if SPELL_TYPE[lc] then return false end
+        return families[lc] or not groups[lc];
+    end
+    local map = mapper({ job = opts.job, generic = generic, modes = modes, tset = tset, hybrid = hybrid, tankMain = tankMain,
+        preSkill = (string.find(tt, "ByName(spell.Skill .. '_Precast')", 1, true) ~= nil),
+        preFamily = (string.find(tt, "ByName(Family(spell.Name) .. '_Precast')", 1, true) ~= nil), family = family,
+        midSkill = (string.find(tt, 'ByName(spell.Skill)', 1, true) ~= nil),
+        midName = (string.find(tt, 'ByName(spell.Name)', 1, true) ~= nil) });
     local found = {};
     local onPath = {};
     local function walk(t, path)
@@ -628,6 +670,7 @@ function S2G.Convert(opts)
         local gear = gear_of(f.set, bad);
         if (#bad > 0) then report.unresolved[#report.unresolved + 1] = path_name(f.path) .. ' (' .. table.concat(bad, ', ') .. ')' end
         local name = map(f.path);
+        local refused = generic and (name == nil);
         if (name ~= nil) then
             local tkey = tset[string.lower(name)] or name;
             if (out[string.lower(tkey)] == nil) then
@@ -639,7 +682,7 @@ function S2G.Convert(opts)
                 name = nil; -- taken by an earlier path
             end
         end
-        if (name == nil) and (next(gear) ~= nil) and not placedTable[f.set] then
+        if (name == nil) and (not refused) and (next(gear) ~= nil) and not placedTable[f.set] then
             -- weapon skills, abilities and spells the template has no free set for keep their own name; a
             -- custom-handler template's handlers get a by-name lookup (below) so they are used
             local k, kind = f.path, nil;

@@ -75,14 +75,15 @@ Bags: `Inventory`, `Wardrobe` … `Wardrobe8`, any case. Spelled `Wardrobe` … 
 | `idle` `.Refresh` `.Regen` `.Regain`, `resting`, `Kiting`, `TreasureHunter` | `Idle` `Idle_Refresh` `Idle_Regen` `Idle_Regain`, `Resting`, `Movement`, `TH` |
 | `engaged` `.<OffenseMode>` | `Tp_Default` `Tp_<mode>`; OffenseMode = `/mset` list |
 | `defense.PDT` `.MDT` (else `.MEVA`) | `Dt` `mdt` |
-| `precast.FC`, `FC.Cure`, `FC['Enhancing Magic']` | `Precast` `Cure_Precast` `Enhancing_Precast` |
+| `precast.FC`, `FC.Cure`, `FC['Enhancing Magic']`, `FC.Impact` | `Precast`, `['Healing Magic_Precast']`, `['Enhancing Magic_Precast']`, `Impact_Precast` (skill or spell family + `_Precast`) |
 | `precast.WS` `['Savage Blade']` `.Acc` | `Ws_Default`, `['Savage Blade']`, `['Savage Blade_Acc']` |
 | `precast.JA[...]`, `midcast.Cure`, `midcast['Enhancing Magic']` | the template's set, else by name |
 | `midcast.RA` `.Acc`; `midcast['Elemental Magic'].OccultAcumen` | `Midshot` `Midshot_Acc`; `OccultAcumen` |
 | `weapons.<Name>` + `state.Weapons` | `Weapon_<Name>` + `/wm` modes |
 | `buff.Doom` `.Sleep`, `Cure_Received`... | `Doomed` `Sleeping` `Cure_Received`... |
 
-- **No GoomSwap place** (`.DT` hybrids, `Resistant`, latent sets...): kept as `['Sel_<path>']`.
+- **No GoomSwap place** (`.DT` hybrids, `Resistant`, latent sets, a set the job's template never wears such as
+  `Enmity` or `buff['Sneak Attack']` off PLD/THF...): kept as `['Sel_<path>']`.
 - **Binds** become that job's `Keybinds`: chat commands as is, modes mapped (`Weapons`→`wm`, `OffenseMode`→`mset`,
   `IdleMode`→`idleset`, `HybridMode`→`tankset`, `RangedMode`→`rangedset`, `CastingMode`→`nukeset` or `sir`,
   `gs reload`→`/lac reload`).
