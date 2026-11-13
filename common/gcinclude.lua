@@ -190,7 +190,7 @@
 
 	gcinclude.AliasList = T{'gcmessages','wsdistance','setcycle','dt','mdt','th','kite','mset','meleeset','mmode','melee','wsset','gcdrain','gcaspir','nukeset','burst','weapon','elecycle','helix','weather','nuke','death','sir','tankset','proc',
 	'packer','pupmode','weaponset','wm','mainset','mw','subset','sw','rangeset','rw','ammoset','aminon','gchud','lock','unlock','hoxne','gchelp','gckey','def','received','gcmodes','gce','xiroll','checksets','smartswap','autogear','gcbar','mbinfo','cormsg','forcestring','songlock','siphon','warpring','mea','holla','dem','rrset','craftset','zeniset','fishset',
-	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','gctemps','gcgear','gcbuild','gcaudit','idleset','rangedset'};
+	'gctrace','naked','weaponsonly','abysseaproc','capacity','jubilee','gcstyle','dw','dynamisrp','gctemps','gcgear','gcbuild','idleset','rangedset'};
 	-- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 	gcinclude.ExitItems = {
 		ontic = 'ontic extremity',
@@ -452,9 +452,6 @@ end
 		elseif (args[1] == 'gcbuild') then -- <JOB>.proposed.lua: the job's example with the gear you own (common/gcbuild.lua, loaded on use)
 			local ok, mod = pcall(gFunc.LoadFile, 'common\\gcbuild.lua');
 			if ok and (type(mod) == 'table') then mod.Run({ args[2], args[3] }, gcinclude.Say, gcinclude.Err) else gcinclude.Err('/gcbuild: common\\gcbuild.lua failed to load') end
-		elseif (args[1] == 'gcaudit') then -- the same checks over your own <JOB>.lua, report only (<JOB>.audit.txt)
-			local ok, mod = pcall(gFunc.LoadFile, 'common\\gcbuild.lua');
-			if ok and (type(mod) == 'table') then mod.RunAudit({ args[2] }, gcinclude.Say, gcinclude.Err) else gcinclude.Err('/gcaudit: common\\gcbuild.lua failed to load') end
 		elseif (args[1] == 'gce') then
 			gcinclude.EnchantCommand(args);
 		elseif (args[1] == 'gchelp') then
@@ -2111,6 +2108,7 @@ end
 	-- GetBuffs copies the 32-entry buff array (Ashita.h IPlayer::GetBuffs) into a new table per call. Inside
 	-- WithBuffs (CheckDefault, HoldTick: a dozen counts each) it is read once, as id -> count, for that call only.
 	local buffIds, buffCache = {}, nil;
+	local dualWieldNow = nil; -- CanDualWield's answer for the same call (asked 3-4 times per HandleDefault)
 	local function buffCounts()
 		if (buffCache ~= nil) then return buffCache end
 		local counts = {};
@@ -2119,9 +2117,9 @@ end
 	end
 	function gcinclude.WithBuffs(fn, ...)
 		if (buffCache ~= nil) then return fn(...) end -- already inside one
-		buffCache = buffCounts();
+		buffCache, dualWieldNow = buffCounts(), nil;
 		local ok, err = pcall(fn, ...);
-		buffCache = nil; -- also after an error, so nothing later reads a stale list
+		buffCache, dualWieldNow = nil, nil; -- also after an error, so nothing later reads a stale list
 		if not ok then error(err, 0) end
 	end
 	function gcinclude.BuffCount(m)
@@ -2419,8 +2417,12 @@ end
 		return can, why;
 	end
 
+	-- Inside WithBuffs (HandleDefault, the hold tick) the answer is worked out once: job, levels and buffs don't
+	-- change while one call runs. A forced weapon change (CheckDualWieldChange) asks DualWieldState itself.
 	function gcinclude.CanDualWield()
-		return (gcinclude.DualWieldState());
+		if (buffCache == nil) then return (gcinclude.DualWieldState()) end
+		if (dualWieldNow == nil) then dualWieldNow = ((gcinclude.DualWieldState()) == true) end
+		return dualWieldNow;
 	end
 
 	-- Dual Wield just lost (e.g. zoning into Sheol Gaol): put the 1h weapons on now, past the TP hold, since an
@@ -2430,6 +2432,7 @@ end
 		if (now < gcinclude.NextDualCheck) then return false end
 		gcinclude.NextDualCheck = now + 0.5;
 		local can, why = gcinclude.DualWieldState();
+		if (buffCache ~= nil) then dualWieldNow = can end -- the weapon layer built below sees this answer
 		local was = gcinclude.DualWieldSeen;
 		gcinclude.DualWieldSeen = can;
 		if (was == true) and (can == false) then
@@ -3084,7 +3087,7 @@ end
 			'holds  : /naked /weaponsonly /abysseaproc [on|off] (one at a time), /capacity /jubilee /dynamisrp [on|off]',
 			'items  : /gce <item> | cancel, /gctemps (Escha drinks), /warpring /mea /holla /dem, /ejenter [chamber] /ejlamps /ejexit (Einherjar)',
 			'checks : /gctrace (sets per action), /gcstyle N (lockstyle); failing actions cancel, reason in chat',
-			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcgear [JOB] (what you own, to a file), /gcbuild [JOB] [family] (the example with your gear, as <JOB>.proposed.lua), /gcaudit [JOB] (your job file against your bags)',
+			'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcgear [JOB] (what you own, to a file), /gcbuild [JOB] [family] (the example with your gear, as <JOB>.proposed.lua)',
 			'bar    : /gcbar [on|off|pos x y]',
 			'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
 			'nuke   : Burst set is automatic on a nuke landing in a live skillchain; /burst = Burst set on every nuke (HUD: * on the nuke cell)',
@@ -3242,11 +3245,17 @@ end
 	gcinclude.IdleWeaponSlots = nil; -- slots left to the idle sets in the last handler (ApplyWeapons)
 	function gcinclude.IdleWeaponDrop(set, player)
 		if (set == nil) or (gcinclude.settings.IdleWeapons == false) or (player == nil) or (player.Status == 'Engaged') then return nil end
-		local function named(n) return gcinclude.BufferedItem(n) ~= nil end
+		-- runs on every HandleDefault out of combat: no helper closures, a table only when something is dropped
+		local buffered = gcinclude.BufferedItem;
 		local drop = nil;
-		local function add(...) drop = drop or {}; for _, n in ipairs({ ... }) do drop[n] = true end end
-		if named(1) or named(2) then add(1, 2) end
-		if named(3) then add(3, 4) elseif named(4) then add(4) end
+		if (buffered(1) ~= nil) or (buffered(2) ~= nil) then drop = { [1] = true, [2] = true } end
+		if (buffered(3) ~= nil) then
+			drop = drop or {};
+			drop[3], drop[4] = true, true;
+		elseif (buffered(4) ~= nil) then
+			drop = drop or {};
+			drop[4] = true;
+		end
 		return drop;
 	end
 
@@ -3415,6 +3424,12 @@ end
 		if (#empty > 0) then
 			gcinclude.Say('empty: ' .. table.concat(empty, ', '));
 		end
+		-- the same sets against your bags: not owned, one copy worn twice, other augments, wrong bag (common/gcbuild.lua)
+		local ok, build = pcall(gFunc.LoadFile, 'common\\gcbuild.lua');
+		if ok and (type(build) == 'table') and (build.CheckSets ~= nil) then
+			local okc, e = pcall(build.CheckSets, gProfile.Sets, gcinclude.WeaponModes, gcinclude.Say, gcinclude.Err);
+			if not okc then gcinclude.Err('checksets: the bag check failed: ' .. tostring(e)) end
+		end
 	end
 
 	-- A set without Main/Sub/Range/Ammo: swapping those costs TP or a Hoxne Enchantment.
@@ -3506,14 +3521,15 @@ end
 		if inTown then local t = gcinclude.FindSet('Town'); if (t ~= nil) then gFunc.EquipSet(t) end end
 	end
 
+	-- The set `name` while pct is under limit (0 or nil: never). Not made anew on every HandleDefault.
+	local function wear(name, pct, limit)
+		if ((limit or 0) <= 0) or (pct == nil) or (pct >= limit) then return end
+		local set = gcinclude.FindSet(name);
+		if (set ~= nil) then gFunc.EquipSet(set) end
+	end
 	function gcinclude.SetRegenRefreshGear(player)
 		local cfg = gcinclude.settings;
 		if (cfg.AutoGear == false) then return end
-		local function wear(name, pct, limit)
-			if ((limit or 0) <= 0) or (pct == nil) or (pct >= limit) then return end
-			local set = gcinclude.FindSet(name);
-			if (set ~= nil) then gFunc.EquipSet(set) end
-		end
 		-- Regen/Refresh only out of combat and never over a manual /dt; auto Dt any time.
 		if (gcdisplay.GetToggle('DTset') ~= true) and (not gcinclude.InCombat(player)) then
 			wear('Idle_Regen', player.HPP, cfg.RegenGearHPP);

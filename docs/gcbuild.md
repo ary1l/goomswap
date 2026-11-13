@@ -1,4 +1,4 @@
-# A job file from the gear you own: `/gcbuild`, `/gcaudit`
+# A job file from the gear you own: `/gcbuild`
 
 [← Back to the README](../README.md)
 
@@ -79,19 +79,18 @@ becomes the default. Both lines say what was changed.
 - It doesn't check job or level: the examples are level 99 sets.
 - `/checksets` afterwards names anything misspelled or missing.
 
-**Checking a job file you already use: `/gcaudit`**
+**Checking a job file you already use: `/checksets`**
 
-`/gcaudit` (or `/gcaudit RDM`) runs the same checks over your own `<JOB>.lua` and changes nothing. Chat gets one
-line of counts; `<JOB>.audit.txt` in the character's folder has the details, each with the set and slot it is in:
+`/checksets` runs the same bag check over the job file you have loaded, and changes nothing. After its usual lines
+(misspelled items, empty sets, wrong ear or ring) it says how many set slots name:
 
-- items the sets name that you don't own (those lines do nothing)
+- items you don't own (those lines do nothing)
 - the same item in two slots of a set with one copy owned
-- augments a set lists that no copy of yours has
+- augments that no copy of yours has
 - items that are only in a bag gear can't be equipped from
-- weapon modes whose `Weapon_<mode>` set has no weapon you own
-- item names outside the sets (`gFunc.Equip`, slot-pick lists) that you don't own
 
-Useful after selling or storing gear, or after copying a job file from someone else.
+and names the worst of each with the sets they are in, plus weapon modes whose `Weapon_<mode>` set has no weapon
+you own. Useful after selling or storing gear, or after copying a job file from someone else.
 
 `/gcgear [JOB]` (Ashita) is the companion: it lists everything you own that the job can wear, by slot, into
 `gear_<JOB>.txt` — what to pick from when you fill the slots `/gcbuild` left out.
