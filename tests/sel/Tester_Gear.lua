@@ -24,6 +24,7 @@ end
 function init_gear_sets()
     sets.precast.JA['Chainspell'] = {body="Viti. Tabard +3"}
     sets.precast.JA['Provoke'] = set_combine(sets.Enmity, {})
+    sets.precast.JA['Nightingale'] = {feet="Bihu Slippers +3"}
     sets.precast.Waltz = {legs="Dashing Subligar"}
     sets.precast.Waltz['Healing Waltz'] = {}
     sets.precast.Step = {waist="Chaac Belt"}

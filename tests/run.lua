@@ -201,6 +201,12 @@ check(placed('RDM', 'MagicBurst', 'Burst') and unused('WAR', 'MagicBurst'), 'sel
 check(placed('PLD', 'Enmity', 'Enmity') and unused('RDM', 'Enmity'), 'sel2goom: Enmity only where the template wears it');
 check(placed('THF', 'buff.Sneak Attack', 'SA') and unused('RDM', 'buff.Sneak Attack'), 'sel2goom: buff sets only where the template has them');
 check(placed('RDM', 'buff.Doom', 'Doomed'), 'sel2goom: Doomed on every job');
+check(placed('BRD', 'precast.JA.Nightingale', 'Nitro') and placed('RDM', 'precast.JA.Nightingale', 'Nightingale'), 'sel2goom: an ability under its template\'s group set, else its own name');
+do
+    local old = string.gsub(read(root .. '/examples/WAR.lua'), 'ByName', 'Unnamed');
+    local text, why = S2G.Convert({ io_ = io_, name = 'Tester', job = 'WAR', gear_file = root .. '/tests/sel/Tester_Gear.lua', template_text = old });
+    check((text == nil) and has(tostring(why), 'old one'), 'sel2goom: a template from before the by-name lookups is refused');
+end
 check(placed('RDM', 'precast.FC.Impact', 'Impact_Precast') and placed('RDM', 'precast.FC.Elemental Magic', '["Elemental Magic_Precast"]'), 'sel2goom: precast sets by spell family and skill');
 check(placed('BRD', 'precast.FC.BardSong', 'Singing_Precast') and unused('RDM', 'precast.FC.BardSong') and unused('RDM', 'precast.FC.Trust'), 'sel2goom: spell.type precast keys');
 check(unused('WAR', 'precast.FC.Impact'), 'sel2goom: no precast by name where the template has no lookup');

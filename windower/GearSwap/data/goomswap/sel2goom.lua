@@ -93,15 +93,23 @@ local function autoviv()
     return setmetatable({}, { __index = function(t, k) local v = autoviv(); rawset(t, k, v); return v end });
 end
 
+-- A set's slot keys in a fixed order (A-Z). A set naming one slot twice (ear1 and left_ear) would otherwise keep
+-- whichever pairs() happened to visit last, a different one from run to run.
+local function slot_keys(t)
+    local keys = {};
+    for k, _ in pairs(t) do
+        if (type(k) == 'string') and (SLOT[string.lower(k)] ~= nil) then keys[#keys + 1] = k end
+    end
+    table.sort(keys);
+    return keys;
+end
+
 local function set_combine(...)
     local o = {};
     for i = 1, select('#', ...) do
         local s = select(i, ...);
         if (type(s) == 'table') then
-            for k, v in pairs(s) do
-                local slot = (type(k) == 'string') and SLOT[string.lower(k)] or nil;
-                if (slot ~= nil) then o[slot] = v end
-            end
+            for _, k in ipairs(slot_keys(s)) do o[SLOT[string.lower(k)]] = s[k] end
         end
     end
     return o;
@@ -175,15 +183,15 @@ local function item_of(v)
 end
 
 local function gear_of(t, bad)
-    local o = {};
-    for k, v in pairs(t) do
-        local slot = (type(k) == 'string') and SLOT[string.lower(k)] or nil;
-        if (slot ~= nil) then
-            local it = item_of(v);
-            if (it ~= nil) then o[slot] = it
-            elseif (v == PLACEHOLDER) or ((type(v) == 'table') and (v.name == '')) then bad.placeholders = (bad.placeholders or 0) + 1
-            else bad[#bad + 1] = slot end
-        end
+    local o, from = {}, {};
+    for _, k in ipairs(slot_keys(t)) do
+        local slot, v = SLOT[string.lower(k)], t[k];
+        local it = item_of(v);
+        if (it ~= nil) then
+            if (from[slot] ~= nil) then bad.twice = bad.twice or {}; bad.twice[#bad.twice + 1] = slot .. ' (' .. from[slot] .. ' and ' .. k .. ': ' .. k .. ' kept)' end
+            o[slot], from[slot] = it, k;
+        elseif (v == PLACEHOLDER) or ((type(v) == 'table') and (v.name == '')) then bad.placeholders = (bad.placeholders or 0) + 1
+        else bad[#bad + 1] = slot end
     end
     return o;
 end
@@ -191,42 +199,10 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Set paths -> GoomSwap names
 ---------------------------------------------------------------------------------------------------
--- Custom-handler templates: their weapon-skill set prefixes (EquipMode('<prefix>'): <prefix>_Default, <prefix>_<mode>).
-local WS_PREFIX = {
-    BLU = { ['Chant du Cygne'] = 'Chant', ['Savage Blade'] = 'Savage', ['Imperator'] = 'Imperator', ['Expiacion'] = 'Expiacion',
-        ['Requiescat'] = 'Requiescat', ['Sanguine Blade'] = 'sanguine' },
-    BRD = { ['Mordant Rime'] = 'Mordant', ['Ruthless Stroke'] = 'Ruthless', ['Savage Blade'] = 'Savage' },
-    COR = { ['Savage Blade'] = 'Savage', ['Evisceration'] = 'Evisceration', ['Aeolian Edge'] = 'Aedge', ['Last Stand'] = 'Laststand',
-        ['Wildfire'] = 'Wildfire', ['Hot Shot'] = 'HS', ['Leaden Salute'] = 'Leaden' },
-    GEO = { ['Black Halo'] = 'BH', ['Aeolian Edge'] = 'Aedge', ['Exudation'] = 'Exudation', ['Judgment'] = 'Judgment',
-        ['Shining Strike'] = 'Strike', ['Seraph Strike'] = 'Strike' },
-    MNK = { ['Victory Smite'] = 'Victory', ['Shijin Spiral'] = 'Shijin', ['Dragon Kick'] = 'kickws', ['Tornado Kick'] = 'kickws',
-        ['Howling Fist'] = 'Howling' },
-    PLD = { ['Chant du Cygne'] = 'Chant', ['Savage Blade'] = 'Savage', ['Imperator'] = 'Imperator', ['Atonement'] = 'Atone',
-        ['Sanguine Blade'] = 'sanguine', ['Knights of Round'] = 'KOR', ['Shining Blade'] = 'shining', ['Seraph Blade'] = 'shining',
-        ['Shining Strike'] = 'shining', ['Aeolian Edge'] = 'Aedge' },
-    RDM = { ['Chant du Cygne'] = 'Chant', ['Sanguine Blade'] = 'sanguine', ['Black Halo'] = 'BH', ['Knights of Round'] = 'KOR',
-        ['Shining Blade'] = 'shining', ['Seraph Blade'] = 'shining', ['Shining Strike'] = 'shining', ['Savage Blade'] = 'Savage',
-        ['Imperator'] = 'Imperator' },
-    RNG = { ['Savage Blade'] = 'Savage', ['Aeolian Edge'] = 'Aedge', ['Trueflight'] = 'TrueFlight', ['Hot Shot'] = 'HS', ['Wildfire'] = 'Wildfire' },
-    SCH = { ['Cataclysm'] = 'Cataclysm', ['Myrkr'] = 'Mykyr' },
-    THF = { ['Savage Blade'] = 'Savage', ['Evisceration'] = 'Evis', ['Aeolian Edge'] = 'AE', ["Rudra's Storm"] = 'Rudra' },
-    WHM = { ['Cataclysm'] = 'Cataclysm' },
-};
--- Custom-handler templates: job ability -> set.
-local JA_SET = {
-    PLD = { ['Fealty'] = 'Fealty', ['Sentinel'] = 'Sentinel', ['Divine Emblem'] = 'de', ['Shield Bash'] = 'Bash', ['Invincible'] = 'Invincible',
-        ['Intervene'] = 'intervene', ['Cover'] = 'Cover', ['Palisade'] = 'palisade', ['Rampart'] = 'Rampart', ['Holy Circle'] = 'circle',
-        ['Chivalry'] = 'chiv' },
-    MNK = { ['Focus'] = 'Focus', ['Dodge'] = 'Dodge', ['Hundred Fists'] = 'HundredFists', ['Chakra'] = 'Chakra', ['Footwork'] = 'FootworkJA',
-        ['Counterstance'] = 'Counterstance', ['Formless Strikes'] = 'FormlessStrikes', ['Boost'] = 'Boost' },
-    COR = { ['Wild Card'] = 'WildCard', ['Fold'] = 'Fold', ['Random Deal'] = 'RandomDeal', ['Snake Eye'] = 'SnakeEye', ['Double-Up'] = 'DoubleUp' },
-    RDM = { ['Chainspell'] = 'CS', ['Saboteur'] = 'sab' },
-    RNG = { ['Scavenge'] = 'Scavenge', ['Sharpshot'] = 'Sharpshot' },
-    THF = { ['Flee'] = 'Flee' },
-    GEO = { ['Full Circle'] = 'fc', ['Bolster'] = 'Bolster' },
+-- Job abilities a template wears under a group set of another name (README Job file: groups keep a plain name).
+local JA_GROUP = {
     BRD = { ['Troubadour'] = 'Nitro', ['Nightingale'] = 'Nitro', ['Soul Voice'] = 'Nitro' },
-    BLU = { ['Diffusion'] = 'Diffusion', ['Efflux'] = 'Efflux', ['Chain Affinity'] = 'Ca', ['Burst Affinity'] = 'Ba' },
+    BLU = { ['Chain Affinity'] = 'Ca', ['Burst Affinity'] = 'Ba' },
 };
 -- Spell / skill / Selindrile spell_maps name -> template set names to try, first one the template has wins.
 local MID_TRY = {
@@ -269,7 +245,7 @@ local RECEIVED = { Cure_Received = true, Cursna_Received = true, Phalanx_Receive
 local function mapper(ctx)
     local function has(n) return ctx.tset[string.lower(n)] ~= nil end
     local function first(list) for _, n in ipairs(list or {}) do if has(n) then return n end end return nil end
-    local job, generic, modes = ctx.job, ctx.generic, ctx.modes;
+    local job, modes = ctx.job, ctx.modes;
     return function(k)
         local n, a, b, c, d = #k, k[1], k[2], k[3], k[4];
         if (n == 1) then
@@ -323,11 +299,10 @@ local function mapper(ctx)
             if (b == 'CorsairRoll') and (n == 2) then return first({ 'Phantom Roll', 'Rolls' }) end
             if (b == 'CorsairShot') and (n == 2) then return first({ 'Quick Draw', 'QD' }) end
             if (b == 'JA') and (n == 3) then
-                if has(c) then return c end -- the template's set named after the ability
-                local m = JA_SET[job] and JA_SET[job][c];
+                if has(c) then return c end
+                local m = JA_GROUP[job] and JA_GROUP[job][c];
                 if (m ~= nil) and has(m) then return m end
-                if generic or has(c) then return c end
-                return nil;
+                return c; -- a set named after the ability (ByName in HandleAbility)
             end
             if (b == 'WS') and (n == 2) then return 'Ws_Default' end
             if (b == 'WS') and (n == 3) and modes[c] then return 'Ws_' .. c end
@@ -337,7 +312,7 @@ local function mapper(ctx)
                 return nil;
             end
             if (b == 'WS') and (n == 4) and ctx.wsModes[d] then
-                if (d == 'PDL') and (generic or has(c)) then return c .. '_HighBuff' end
+                if (d == 'PDL') then return c .. '_HighBuff' end
                 return nil;
             end
             if (b == 'WS') and (n == 3) and ((c == 'SA') or (c == 'TA') or (c == 'SATA')) then return first({ 'Ws_Default_' .. c }) end
@@ -345,16 +320,7 @@ local function mapper(ctx)
                 local mode = (n == 4) and d or nil;
                 if (n == 4) and (not modes[d]) and not ((d == 'SA') or (d == 'TA') or (d == 'SATA')) then return nil end
                 if (n > 4) then return nil end
-                local p = WS_PREFIX[job] and WS_PREFIX[job][c];
-                if (p ~= nil) then
-                    local nm;
-                    if (mode == nil) then nm = p .. '_Default'
-                    elseif modes[mode] then nm = p .. '_' .. mode
-                    else nm = p .. '_Default_' .. mode end
-                    if has(nm) then return nm end -- older templates: <prefix>_Default; named ones fall through
-                end
-                if generic or has(c) then return (mode == nil) and c or (c .. '_' .. mode) end
-                return nil;
+                return (mode == nil) and c or (c .. '_' .. mode); -- a set named after the weapon skill (ByName in HandleWeaponskill)
             end
             return nil;
         end
@@ -366,7 +332,7 @@ local function mapper(ctx)
                 if has(b) then return b end
                 local m = first(MID_TRY[b]);
                 if (m ~= nil) then return m end
-                if generic and ((is_skill(b) and ctx.midSkill) or ((not is_skill(b)) and ctx.midName)) then return b end
+                if (is_skill(b) and ctx.midSkill) or ((not is_skill(b)) and ctx.midName) then return b end
                 return nil;
             end
             if (n == 3) and (c == 'OccultAcumen') and (b == 'Elemental Magic') and has('OccultAcumen') then return 'OccultAcumen' end -- /nukeset oa
@@ -643,7 +609,8 @@ function S2G.Convert(opts)
     if (close == nil) then return nil, 'template sets block not closed' end
     local tset = {};
     for _, k in ipairs(tkeys) do tset[string.lower(k)] = k end
-    local generic = (string.find(tt, 'ByName(', 1, true) ~= nil);
+    -- Every example looks sets up by the action's name (gcinclude.ByName); one that doesn't is a copy from before that.
+    if (string.find(tt, 'ByName(', 1, true) == nil) then return nil, 'the ' .. opts.job .. ' template is an old one (no ByName lookups): copy the current examples folder over it' end
 
     -- walk Selindrile sets
     local hybrid, tankMain = {}, nil;
@@ -671,7 +638,7 @@ function S2G.Convert(opts)
         if SPELL_TYPE[lc] then return false end
         return families[lc] or not groups[lc];
     end
-    local map = mapper({ job = opts.job, generic = generic, modes = modes, tset = tset, hybrid = hybrid, tankMain = tankMain,
+    local map = mapper({ job = opts.job, modes = modes, tset = tset, hybrid = hybrid, tankMain = tankMain,
         preSkill = (string.find(tt, "ByName(spell.Skill .. '_Precast')", 1, true) ~= nil),
         preFamily = (string.find(tt, "ByName(Family(spell.Name) .. '_Precast')", 1, true) ~= nil), family = family,
         midSkill = (string.find(tt, 'ByName(spell.Skill)', 1, true) ~= nil),
@@ -705,15 +672,15 @@ function S2G.Convert(opts)
     end);
 
     local out, outOrder, extra = {}, {}, {};
-    local byName = {}; -- kinds of by-name sets a custom-handler template needs a lookup for: ws, ja, mid
     local placedTable = {}; -- a table already placed or kept: its other names (aliases) aren't repeated as Sel_*
     for _, f in ipairs(found) do
         local bad = {};
         local gear = gear_of(f.set, bad);
         if (#bad > 0) then report.unresolved[#report.unresolved + 1] = path_name(f.path) .. ' (' .. table.concat(bad, ', ') .. ')' end
         report.placeholders = report.placeholders + (bad.placeholders or 0);
+        for _, tw in ipairs(bad.twice or {}) do report.notes[#report.notes + 1] = 'sets.' .. path_name(f.path) .. ' names ' .. tw end
         local name = map(f.path);
-        local refused = generic and (name == nil);
+        local refused = (name == nil); -- the mapper turned it down: no name the template would look up
         if (name ~= nil) then
             local tkey = tset[string.lower(name)] or name;
             if (out[string.lower(tkey)] == nil) then
@@ -726,20 +693,19 @@ function S2G.Convert(opts)
             end
         end
         if (name == nil) and (not refused) and (next(gear) ~= nil) and not placedTable[f.set] then
-            -- weapon skills, abilities and spells the template has no free set for keep their own name; a
-            -- custom-handler template's handlers get a by-name lookup (below) so they are used
-            local k, kind = f.path, nil;
+            -- its template set was taken by an earlier path: a weapon skill, ability or spell keeps its own name,
+            -- which the handlers look up
+            local k = f.path;
             local nk = #k;
-            if (nk == 2) and (k[1] == 'midcast') and (k[2] ~= 'FastRecast') and (k[2] ~= 'RA') then name, kind = k[2], 'mid'
-            elseif (nk == 3) and (k[1] == 'precast') and (k[2] == 'JA') then name, kind = k[3], 'ja'
-            elseif (nk == 3) and (k[1] == 'precast') and (k[2] == 'WS') and not modes[k[3]] and not wsModes[k[3]] then name, kind = k[3], 'ws'
-            elseif (nk == 4) and (k[1] == 'precast') and (k[2] == 'WS') and modes[k[4]] then name, kind = k[3] .. '_' .. k[4], 'ws' end
+            if (nk == 2) and (k[1] == 'midcast') and (k[2] ~= 'FastRecast') and (k[2] ~= 'RA') then name = k[2]
+            elseif (nk == 3) and (k[1] == 'precast') and (k[2] == 'JA') then name = k[3]
+            elseif (nk == 3) and (k[1] == 'precast') and (k[2] == 'WS') and not modes[k[3]] and not wsModes[k[3]] then name = k[3]
+            elseif (nk == 4) and (k[1] == 'precast') and (k[2] == 'WS') and modes[k[4]] then name = k[3] .. '_' .. k[4] end
             if (name ~= nil) and (out[string.lower(name)] == nil) and (tset[string.lower(name)] == nil) then
                 placedTable[f.set] = true;
                 out[string.lower(name)] = { name = name, gear = gear, from = path_name(f.path) };
                 extra[#extra + 1] = string.lower(name);
                 report.mapped = report.mapped + 1;
-                byName[kind] = true;
             else
                 name = nil;
             end
@@ -763,7 +729,6 @@ function S2G.Convert(opts)
                     groupAliases[#groupAliases + 1] = 'sets[' .. q(nm) .. '] = sets[' .. q(src.name) .. '];';
                 end
             end
-            byName.ja = true;
         end
     end
     table.sort(groupAliases);
@@ -834,11 +799,11 @@ function S2G.Convert(opts)
         sub_line('(\n%s*)gcinclude%.Initialize%(%);', table.concat(kl) .. '%1gcinclude.Initialize();');
     end
 
-    -- Generic (by-name) templates: a Selindrile spell_maps group (StatusRemoval, BarElement...) becomes one set
+    -- A Selindrile spell_maps group (StatusRemoval, BarElement...) becomes one set
     -- per spell, sharing that group's gear, where GoomSwap's spell family name differs from the group's.
     local aliases = {};
     local smaps = rawget(env, 'spell_maps');
-    if (generic or byName.mid) and (type(smaps) == 'table') and (getmetatable(smaps) ~= stubmt) then
+    if (type(smaps) == 'table') and (getmetatable(smaps) ~= stubmt) then
         local spells = {};
         for sp, grp in pairs(smaps) do if (type(sp) == 'string') and (type(grp) == 'string') then spells[#spells + 1] = sp end end
         table.sort(spells);
@@ -859,30 +824,6 @@ function S2G.Convert(opts)
     if (#groupAliases > 0) then
         sub_line('\n(profile%.Sets%s*=%s*sets%s*;)', '\n' .. table.concat(groupAliases, '\n') .. '\n%1');
     end
-    -- custom-handler templates: look the by-name sets up (weapon skill / ability / spell name), under the template's own
-    local function inject(handler, find, add, before)
-        local a1 = string.find(body, 'profile.' .. handler .. ' = function()', 1, true);
-        if (a1 == nil) then return false end
-        local e1 = string.find(body, '\nend', a1, true) or #body;
-        local seg = string.sub(body, a1, e1);
-        local at = string.find(seg, find, 1, true);
-        if (at == nil) then return false end
-        local ind = string.match(string.sub(seg, 1, at - 1), '\n([ \t]*)$') or '    ';
-        local newseg;
-        if before then newseg = string.sub(seg, 1, at - 1) .. add .. '\n' .. ind .. string.sub(seg, at)
-        else newseg = string.sub(seg, 1, at + #find - 1) .. '\n' .. ind .. add .. string.sub(seg, at + #find) end
-        body = string.sub(body, 1, a1 - 1) .. newseg .. string.sub(body, e1 + 1);
-        return true;
-    end
-    if not generic then
-        if byName.ws then inject('HandleWeaponskill', "gcinclude.EquipMode('Ws');", 'gcinclude.ByName(ws.Name); -- migrated: a weapon skill\'s own set (from Selindrile)', false) end
-        if byName.ja then inject('HandleAbility', 'gcinclude.CheckCancels();', 'gcinclude.ByName(gData.GetAction().Name); -- migrated: an ability\'s own set (from Selindrile)', true) end
-        if byName.mid then
-            inject('HandleMidcast', 'local spell = gData.GetAction();',
-                'gcinclude.ByName(spell.Skill); if not gcinclude.ByName(spell.Name) then gcinclude.ByName(gcinclude.Family(spell.Name)) end -- migrated: Selindrile sets by skill/spell, under the sets below', false);
-        end
-    end
-
     -- header
     for slot, item in string.gmatch(string.sub(tt, close + 1), "gFunc%.Equip%('(%a+)',[^\n]-'([^']+)'%)") do
         local li = string.lower(item);
