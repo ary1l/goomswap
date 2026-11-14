@@ -2030,6 +2030,7 @@ end
 			if (type(original) == 'function') then
 				gProfile[name] = function(...)
 					if gcinclude.Checked:contains(name) and gcaction.Check() then gFunc.CancelAction(); return end
+					if (name == 'HandleAbility') and gcinclude.MidCast() then return end -- sent as is, the cast keeps its gear
 					gcaction.TraceStart();
 					gcinclude.CheckHoldExempt();
 					if (name == 'HandleAbility') then gcinclude.AnnounceCast() end -- Waltzes to your own boxes
@@ -2067,6 +2068,7 @@ end
 		if (type(ws) == 'function') then
 			gProfile.HandleWeaponskill = function(...)
 				if gcaction.Check() then gFunc.CancelAction(); return end
+				if gcinclude.MidCast() then return end -- sent as is, the cast keeps its gear
 				gcaction.TraceStart();
 				local result, trail = gcinclude.TrackEars(function(...)
 					gcinclude.WornSets = {};
@@ -4471,14 +4473,23 @@ end
 		local a = gState.PlayerAction;
 		if (a ~= nil) and (a.Type == 'Spell') then a.GcSentAt = nil end
 	end
+	-- A weapon skill or ability pressed while a spell of mine is casting (its start packet seen): GoomSwap doesn't
+	-- cancel it or say anything (they have no cast of their own); it goes to the game as is, and no gear moves, so
+	-- the spell keeps its midcast set.
+	function gcinclude.MidCast()
+		return (gcauto ~= nil) and (gcauto.CastLeft ~= nil) and ((gcauto.CastLeft()) > 0);
+	end
 	function gcinclude.CastLeft()
 		local left, id = 0, nil;
 		if (gcauto ~= nil) and (gcauto.CastLeft ~= nil) then left, id = gcauto.CastLeft() end
 		if (left > 0) then return left, id end
 		local p = gcinclude.PrevAction;
 		local now = os.clock();
+		-- Not once the server has answered it: a start packet is in gcauto's count above, and a finish or interrupt
+		-- means it is over. (A quick spell, Flash, finished before the 1.5s window ran out read as "casting".)
+		local answered = (gcauto ~= nil) and ((gcauto.LastCastPacket or -1e9) >= (p and p.GcSentAt or math.huge));
 		if (p ~= nil) and (p.Type == 'Spell') and (p.GcSentAt ~= nil) and (now - p.GcSentAt < gcinclude.StartWindow)
-			and ((p.Completion or 0) > now) then
+			and ((p.Completion or 0) > now) and not answered then
 			local cast = ((gcauto ~= nil) and (gcauto.CastTime ~= nil)) and gcauto.CastTime(p.Resource) or 0; -- learned, as gcauto does
 			return math.max(p.GcSentAt + cast - now, 0.1), (p.Resource ~= nil) and p.Resource.Index or nil;
 		end
