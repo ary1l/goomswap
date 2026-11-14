@@ -48,7 +48,7 @@ Ashita `/name`; Windower `//name` or `//gs c name`.
 | `/gcmodes [all]` | Modes in chat |
 | `/checksets` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2); gear you don't own, wrong bag, other augments |
 | `/gcgear [JOB]` | Everything you own the job can wear → `gear_<JOB>.txt` (Ashita) |
-| `/gcbuild [JOB] [family]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua` ([/gcbuild](gcbuild.md)) |
+| `/gcbuild [JOB]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua` ([/gcbuild](gcbuild.md)) |
 | `/gctrace` `/gcstyle [N]` `/gcmessages` `/gchelp` | Trace / lockstyle / chat lines / help |
 | `/gckey <key> <cmd>` | Bind a key |
 

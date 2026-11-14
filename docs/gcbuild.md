@@ -11,7 +11,10 @@ that work instead of someone else's gear list. Ashita and Windower.
    `data/goomswap/examples/`.
 2. Log in on the character and type `/gcbuild` (your current job) or `/gcbuild RDM` (any job).
 3. Open `<JOB>.proposed.lua` in the character's folder (Ashita `luashitacast/<Name>_<id>/`, Windower
-   `data/goomswap/<Name>/`). Read it, then save it as `<JOB>.lua` and reload.
+   `data/goomswap/<Name>/`). The top of the file says what is missing and what to move.
+4. Fill the commented-out slots. On Ashita `/gcbuild` also writes `gear_<JOB>.txt` next to it: everything you own
+   that the job can wear, by slot.
+5. Save it as `<JOB>.lua`, reload (`/lac reload`), then `/checksets`.
 
 Your existing `<JOB>.lua` is **never changed**. Running `/gcbuild` again only replaces the `.proposed.lua` file.
 
@@ -42,9 +45,9 @@ compares by item name:
 A commented-out slot simply shows whatever the set underneath puts there (`Ws_Default` under a weapon skill's own
 set, `Idle` under `Idle_Refresh`...), so the file works as it is.
 
-**`/gcbuild RDM family`: your own version of the same item**
+**Your own version of the same item**
 
-Off unless you add the word `family`. Then a piece you lack is swapped for the version of *the same item* you do
+A piece you lack is swapped for the version of *the same item* you do
 own, the highest you have: `Leth. Chappel +2` for `+3`, plain `Chirich Ring` for `Chirich Ring +1` (also for the
 second ring of a pair). Each swapped line says what the example named:
 
@@ -73,8 +76,8 @@ becomes the default. Both lines say what was changed.
 
 **What it does not do**
 
-- It **never picks a different item**. Without `family` a slot you lack is left out; with it, only another version
-  of the same item is used. It won't guess that another piece of yours is "close enough". Fill those in yourself.
+- It **never picks a different item**. A slot you lack is left out unless you own another version of the same item
+  (`+2` for `+3`). It won't guess that another piece of yours is "close enough". Fill those in yourself.
 - Apart from the two weapon-mode lines, `OnLoad` and the handlers are the example's, untouched.
 - It doesn't check job or level: the examples are level 99 sets.
 - `/checksets` afterwards names anything misspelled or missing.
@@ -92,5 +95,4 @@ becomes the default. Both lines say what was changed.
 and names the worst of each with the sets they are in, plus weapon modes whose `Weapon_<mode>` set has no weapon
 you own. Useful after selling or storing gear, or after copying a job file from someone else.
 
-`/gcgear [JOB]` (Ashita) is the companion: it lists everything you own that the job can wear, by slot, into
-`gear_<JOB>.txt` — what to pick from when you fill the slots `/gcbuild` left out.
+`/gcgear [JOB]` (Ashita) writes that `gear_<JOB>.txt` on its own, any time.

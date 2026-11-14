@@ -1,10 +1,10 @@
--- /gcbuild [JOB] [family]: a proposed job file for this character. Takes the job's example (examples/<JOB>.lua)
+-- /gcbuild [JOB]: a proposed job file for this character. Takes the job's example (examples/<JOB>.lua)
 -- and keeps, set by set, the gear the character owns:
 --   owned as the example names it            the line stays
 --   owned, but with other augments           the name alone stays (LAC needs every listed augment on the item)
 --   owned, only in a bag sets can't use      the line stays, marked: move it to a wardrobe
 --   not owned (or one copy for two slots)    the line is commented out where it stands, so the set under it shows through
--- `family` (off unless asked for): a piece you lack is swapped for the version of the same item you do own
+-- A piece you lack is swapped for the version of the same item you do own
 -- (Leth. Chappel +2 for +3, Chirich Ring for Chirich Ring +1), the highest you have. Nothing else is ever picked.
 -- Outside the sets only two things change: weapon modes whose Weapon_<mode> set lost its weapon leave the
 -- WeaponModes list, and a DefaultWeapons that was one of them moves to the first mode left. Other item names in
@@ -461,7 +461,7 @@ function gcbuild.Build(templateText, owned, info)
     if info.family then
         h[#h + 1] = string.format('-- family: %d slots got the version of the item you own (each says which the example named).', rep.family);
     else
-        h[#h + 1] = '-- Nothing was picked for the slots left out (/gcbuild ' .. job .. ' family: your own version of the same item, e.g. +2 for +3).';
+        h[#h + 1] = '-- Nothing was picked for the slots left out.';
     end
     if (#rep.modes > 0) then h[#h + 1] = '-- Weapon modes taken out of /wm (their weapon is not owned): ' .. table.concat(rep.modes, ', ') .. '.' end
     h[#h + 1] = '-- Handlers and OnLoad are otherwise the example\'s. Review, then save as ' .. job .. '.lua; /checksets after.';
@@ -542,9 +542,10 @@ local function folders()
     return root .. 'examples\\', string.format('%s%s_%u\\', root, gState.PlayerName, gState.PlayerId), gState.PlayerName, 'luashitacast\\examples\\';
 end
 
--- args: the command's words after /gcbuild, in any order: a job, `family`. say / err: gcinclude's chat lines.
+-- args: the command's words after /gcbuild: a job (the old word `family` is still taken: it is always on now).
+-- say / err: gcinclude's chat lines. Returns the job when the file was written.
 function gcbuild.Run(args, say, err)
-    local job, family = nil, false;
+    local job, family = nil, true;
     for _, a in ipairs(args or {}) do
         local word = string.upper(tostring(a));
         if (word == 'FAMILY') then
@@ -554,7 +555,7 @@ function gcbuild.Run(args, say, err)
             for _, j in ipairs(JOBS) do
                 if (j == word) then found = j end
             end
-            if (found == nil) then err('/gcbuild: no job ' .. tostring(a) .. ' (usage: /gcbuild [JOB] [family])'); return end
+            if (found == nil) then err('/gcbuild: no job ' .. tostring(a) .. ' (usage: /gcbuild [JOB])'); return end
             job = found;
         end
     end
@@ -575,10 +576,11 @@ function gcbuild.Run(args, say, err)
     if (out == nil) then err('/gcbuild: cannot write ' .. file); return end
     out:write(text);
     out:close();
-    say(string.format('%s written to your character folder: %d of %d set slots kept, %d left out, %d by name only, %d to move to a wardrobe%s%s.',
-        file, rep.kept, rep.slots, rep.dropped, rep.renamed, rep.moved,
-        family and string.format(', %d by family', rep.family) or '',
+    say(string.format('%s written to your character folder: %d of %d set slots kept (%d as your own version of the item, %d by name only), %d left out, %d to move to a wardrobe%s.',
+        file, rep.kept, rep.slots, rep.family, rep.renamed, rep.dropped, rep.moved,
         (#rep.modes > 0) and (', weapon modes out: ' .. table.concat(rep.modes, ' ')) or ''));
+    say('Next: fill the commented slots, save it as ' .. job .. '.lua, ' .. ((windower ~= nil) and '//gs reload, //gs c checksets.' or '/lac reload, /checksets.'));
+    return job;
 end
 
 -- /checksets: the loaded sets (profile.Sets, as LuAshitacast holds them) against the bags. An item is 'Name' or
