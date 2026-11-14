@@ -215,7 +215,6 @@ local sets = {
         Feet = 'Telchine Pigaches',
     },
     Self_Enhancing = {},
-    Skill_Enhancing = {},
     Stoneskin = {
         Neck = 'Nodens Gorget',
         Waist = 'Siegel Sash',
