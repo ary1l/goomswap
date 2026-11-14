@@ -227,6 +227,7 @@ local function cast_packet(P)
     if (cat ~= 8) and (cat ~= 4) then return end
     local me = P.me;
     if (me == nil) or (P.actor ~= me) then return end
+    gcauto.LastCastPacket = os.clock(); -- my spell started, was interrupted or finished: gcinclude.CastLeft
     if (cat == 8) then
         local id = (P.ntgt > 0) and (P.nres[1] > 0) and P.rval[P.first[1]] or nil;
         castStart = (bit.band(P.param, 0xFFFF) == 24931) and (id ~= nil) and { id = id, t = os.clock() } or nil;
@@ -253,6 +254,8 @@ local function cast_packet(P)
     if (#list > 5) then table.remove(list, 1) end
     castRatio[res.Skill] = list;
 end
+
+gcauto.LastCastPacket = -1e9; -- when the last start / interrupt / finish packet of a spell of mine came in
 
 -- Seconds left on my cast in progress, and its spell id: its start packet was seen and no finish or
 -- interrupt yet. 0 when not casting. Past its learned cast time it stays at 0.1 for up to 2s (the finish

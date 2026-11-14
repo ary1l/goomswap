@@ -74,9 +74,14 @@ local function cast_left()
     return gcauto.CastLeft(); -- seconds, spell id
 end
 
--- Recast or your cast in progress: cancelled, reason in chat (the game refuses them, and a cancel keeps your
--- current cast's gear on). The spell you're casting pressed again is cancelled without a message.
+-- Recast, or for a spell your cast in progress: cancelled, reason in chat (the game refuses them, and a cancel
+-- keeps your current cast's gear on). The spell you're casting pressed again is cancelled without a message.
+-- Weapon skills and abilities have no cast: never "casting" (one pressed mid-cast: gcinclude.MidCast).
 local function on_wait(a, kind, recast)
+    if (kind ~= 'Spell') then
+        if ((recast or 0) > 0) then say(a.Name .. ': recast ' .. mmss(recast)); return true end
+        return false;
+    end
     local casting, castId = cast_left();
     if (casting > 0) and (kind == 'Spell') and (castId ~= nil) and (a.Resource ~= nil) and (castId == a.Resource.Index) then
         return true;
