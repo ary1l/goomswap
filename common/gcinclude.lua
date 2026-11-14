@@ -2004,6 +2004,15 @@ end
 		gFunc.Equip('Range', 'ignore');
 	end
 
+	-- Dispelga can only be cast with Daybreak in the main hand (BG-Wiki Dispelga: "Mainhand: Daybreak", on WHM BLM RDM
+	-- BRD SMN SCH GEO), so its precast and midcast end with Daybreak in Main whatever the job's sets put there: a job
+	-- file needs no Dispelga set for the spell to go off. A Sub that can't go with it is dropped (SubFits); a /lock or
+	-- /aminon on Main still wins.
+	function gcinclude.CheckDaybreak()
+		local action = gData.GetAction();
+		if (action ~= nil) and (action.Name == 'Dispelga') then gFunc.Equip('Main', 'Daybreak') end
+	end
+
 	-- Trace phase per handler: 'pre' waits for its 'mid' so a spell or shot prints one line.
 	gcinclude.TracePhase = { HandlePrecast = 'pre', HandleMidcast = 'mid', HandlePreshot = 'pre', HandleMidshot = 'mid' };
 	gcinclude.Checked = T{'HandlePrecast', 'HandleAbility'};
@@ -2043,6 +2052,7 @@ end
 					if (gcinclude.SmartKeep == true) and ((name == 'HandlePrecast') or (name == 'HandleMidcast')) then
 						gcinclude.StripWeaponSwaps();
 					end
+					if (name ~= 'HandleAbility') then gcinclude.CheckDaybreak() end -- last: nothing above may take Daybreak off a Dispelga
 					gcaction.TraceEnd(gcinclude.TracePhase[name]);
 					return result;
 				end

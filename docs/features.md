@@ -25,6 +25,12 @@
 `Burst` goes on when a nuke lands in a live skillchain of its element within `MBWindow` (10s). You cast; GoomSwap
 dresses. `/burst` = every nuke. `MBSkills` = skills that get it.
 
+## Dispelga
+
+Dispelga only goes off with Daybreak in the main hand. GoomSwap puts Daybreak in `Main` for its precast and
+midcast on any job, over whatever your sets name there, so no job file needs a Dispelga set to cast it (one named
+`Dispelga` or `Dispelga_Precast` still works for the other slots). `/lock` or `/aminon` on Main stops it.
+
 ## Items
 
 - **Packer** (Ashita, Bellhop): `PackerItems` → `char.lua` `Packer` → `gcinclude.Packer = { ['Trump Card'] = 99 }`;
