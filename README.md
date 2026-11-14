@@ -1,7 +1,5 @@
 # GoomSwap
 
-[![tests](https://github.com/ary1l/goomswap/actions/workflows/tests.yml/badge.svg)](https://github.com/ary1l/goomswap/actions/workflows/tests.yml)
-
 A gear-swap engine for FFXI, built for multiboxing. You write gear sets in a job file; GoomSwap wears them and
 layers weapons, defense, TH, obi and more on top.
 
@@ -87,8 +85,3 @@ Windower: `//wm` or `//gs c wm`. Every box at once: `/mss /wm` (Multisend). [All
 | Wrong gear | `/checksets`, spelling, `/gctrace` |
 | Action cancelled | chat says why |
 | Bar or HUD gone | `/gcbar on`, `/gchud on`, `/gcbar reset` |
-
-## Tests
-
-`luajit tests/run.lua` from the repo root, no game needed: the engine is loaded with stand-ins for the game, and
-`/gcbuild` and the Selindrile converter run against every example. Runs on every pull request.
