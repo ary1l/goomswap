@@ -338,7 +338,7 @@ do
         contains = function(t, v) for _, x in pairs(t) do if (x == v) then return true end end return false end,
         append = function(t, v) t[#t + 1] = v; return t end,
     } };
-    local env, loaded, worn = nil, {}, {};
+    local env, loaded, worn, wrote = nil, {}, {}, {};
     local function LoadFile(path)
         local p = string.gsub(path, '\\', '/');
         local text = read(root .. '/' .. p);
@@ -353,7 +353,12 @@ do
         gFunc = setmetatable({ LoadFile = LoadFile, EquipSet = function(set) worn[#worn + 1] = set end }, { __index = function() return function() end end }),
         pairs = pairs, ipairs = ipairs, next = next, type = type, tostring = tostring, tonumber = tonumber, select = select, unpack = unpack,
         pcall = pcall, error = error, setmetatable = setmetatable, getmetatable = getmetatable, rawget = rawget, rawset = rawset,
-        string = string, table = table, math = math, os = os, io = io, bit = bit, print = function() end,
+        string = string, table = table, math = math, os = os, bit = bit, print = function() end,
+        -- reading only: the engine writes HUD and bar files under the game's folder, which here is a stand-in
+        io = { open = function(path, mode)
+            if (type(mode) == 'string') and (string.find(mode, '[wa+]') ~= nil) then wrote[#wrote + 1] = tostring(path); return nil end
+            return io.open(path, mode);
+        end },
         require = function() return stub() end },
         { __index = function(t, k) if STUBS[k] then local v = stub(); rawset(t, k, v); return v end return nil end });
     env._G = env;
@@ -408,6 +413,9 @@ do
         check(auto(100, 10) == '', 'engine: auto gear: 0 turns one off');
         inc.settings.AutoGear = false;
         check(auto(10, 10) == '', 'engine: auto gear: AutoGear = false turns all off');
+        -- chat lines go through the HUD's message file: the stand-in io must have caught the write, not the disk
+        inc.Say('test line');
+        check(#wrote > 0, 'engine: file writes are caught by the test, none reach the disk (' .. #wrote .. ' caught)');
     end
 end
 
