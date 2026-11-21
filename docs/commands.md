@@ -17,7 +17,7 @@
 | `/mset [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets; `acc` also wears `Midshot_Acc` (COR RNG PLD) |
 | `/wsset [mid\|high]` | `high`: WS sets add their `_HighBuff` |
 | `/th` | `TH` until tagged (THF main: always) |
-| `/wsdistance [yalms]` | WS range check |
+| `/wsdistance [yalms\|on\|off]` | WS range check: a melee WS out of reach is cancelled (reach = WS range 3 + your and the target's hitboxes, so further on a big mob; `yalms` = the least reach, default 5) |
 | `/def [dt\|mdt\|aminon\|off]` | DT → MDT → Aminon → off; `/dt` `/mdt` `/aminon` one |
 | `/sir` `/kite` | SIR over midcasts (not `SIRSkip`) / Movement |
 | `/idleset [refresh\|regen\|regain]` | `Idle_<mode>` over `Idle` while idle |

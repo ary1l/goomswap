@@ -26,8 +26,9 @@ do
             -- toggles, certain messages will always appear
             Messages = false,
             AutoGear = true, -- master switch for the four auto sets below, /autogear to change any of them in game
-            WScheck = true, --set to false if you dont want to use the WSdistance safety check
-            -- default max distance (yalms) to allow non-ranged WS to go off at if the above WScheck is true
+            WScheck = true, --set to false if you dont want to use the WS distance safety check
+            -- the least reach (yalms, center to center) for a non-ranged WS while WScheck is on; a big mob gets more:
+            -- WS range 3 + your and its hitbox (gcinclude.WsReach)
             WSdistance = 5,
             RegenGearHPP = 60, -- Idle_Regen below this HPP, out of combat only, 0 = never
             RefreshGearMPP = 60, -- Idle_Refresh below this MPP, out of combat only, 0 = never
@@ -388,14 +389,19 @@ do
                 end
                 gcinclude.Say('Chat messages ' .. (gcinclude.settings.Messages and 'on' or 'off'))
             elseif args[1] == 'wsdistance' then
-                if tonumber(args[2]) then
+                local w = (args[2] ~= nil) and string.lower(args[2]) or nil
+                if (w == 'on') or (w == 'off') then
+                    gcinclude.settings.WScheck = (w == 'on')
+                    gcinclude.Say('WS distance check is now ' .. tostring(gcinclude.settings.WScheck))
+                elseif tonumber(args[2]) then
                     gcinclude.settings.WScheck = true
                     gcinclude.settings.WSdistance = tonumber(args[2])
                     gcinclude.Say('WS Distance is on and set to ' .. gcinclude.settings.WSdistance)
                 else
                     gcinclude.settings.WScheck = not gcinclude.settings.WScheck
                     gcinclude.Say('WS distance check is now ' .. tostring(gcinclude.settings.WScheck))
-                    gcinclude.Say('Can change WS distance allowed by using /wsdistance ##')
+                    gcinclude.Say('/wsdistance N: the least reach in yalms (a big mob reaches further: WS range '
+                        .. gcinclude.WsRange .. ' + both hitboxes)')
                 end
             elseif args[1] == 'dt' then
                 gcinclude.FlipToggle('DTset', args[2])

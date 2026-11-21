@@ -2410,12 +2410,32 @@ function gcinclude.CheckWsBailout()
     end
     local target = gData.GetActionTarget()
     local distance = (target ~= nil) and tonumber(target.Distance) or nil
-    if gcinclude.settings.WScheck and (distance ~= nil) and (not gcinclude.DistanceWS:contains(ws.Name))
-        and (distance > gcinclude.settings.WSdistance) then
-        gcinclude.Say('Distance to mob is too far! Move closer or /wsdistance ##')
-        return false
+    if gcinclude.settings.WScheck and (distance ~= nil) and (not gcinclude.DistanceWS:contains(ws.Name)) then
+        local reach = gcinclude.WsReach(target)
+        if (distance > reach) then
+            gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f). Move closer, or /wsdistance off',
+                ws.Name, distance, reach))
+            return false
+        end
     end
     return true
+end
+
+-- How far a melee weapon skill reaches, center to center: its range past both bodies, as the LandSandBoat server
+-- checks it (char_entity.cpp OnWeaponSkillFinished: distance <= range + attacker hitbox + target hitbox; melee weapon
+-- skills have range 3 in its data/weapon_skills.yaml). A big mob is hit from further away than a small one, so a
+-- fixed distance cancels weapon skills your swings still reach. WSdistance (/wsdistance N) stays the least reach.
+gcinclude.WsRange = 3
+function gcinclude.WsReach(target)
+    local floor = tonumber(gcinclude.settings.WSdistance) or 0
+    local ok, sizes = pcall(function()
+        local mm = AshitaCore:GetMemoryManager()
+        local ent = mm:GetEntity()
+        return (tonumber(ent:GetModelHitboxSize(mm:GetParty():GetMemberTargetIndex(0))) or 0)
+            + (tonumber(ent:GetModelHitboxSize(target.Index)) or 0)
+    end)
+    if not ok or (target == nil) or (target.Index == nil) then return floor end
+    return math.max(floor, gcinclude.WsRange + sizes)
 end
 
 -- After a teleport ring's use (warped or not): stop keeping that ring on, so the next HandleDefault puts
