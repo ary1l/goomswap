@@ -569,10 +569,15 @@ end
 -- One per-frame hook for the engine's timed work: gcauto (TH tags, burst windows) and the HUD's files, each
 -- guarded, then the TP hold (HoldTick, unguarded: an error in it is reported as before).
 local tickErr = false
+-- Filled each frame (gcauto / gchud / gcgear can load after this file), not built anew: no garbage per frame.
+local tickFns = { false, false, false }
 function gcinclude.Tick()
     local t0 = (gcinclude.Perf ~= nil) and perfNow() or nil
-    for _, f in ipairs({ (gcauto ~= nil) and gcauto.Tick or false, (gchud ~= nil) and gchud.Tick or false,
-        (gcgear ~= nil) and gcgear.Tick or false }) do
+    tickFns[1] = (gcauto ~= nil) and gcauto.Tick or false
+    tickFns[2] = (gchud ~= nil) and gchud.Tick or false
+    tickFns[3] = (gcgear ~= nil) and gcgear.Tick or false
+    for i = 1, 3 do
+        local f = tickFns[i]
         if f then
             local ok, e = pcall(f)
             if (not ok) and (not tickErr) then tickErr = true; gcinclude.Err('tick: ' .. tostring(e)) end
