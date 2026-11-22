@@ -168,6 +168,11 @@ function actionModel.New(context)
                     .. tostring(st.weapons or '?')
                     .. ' (/wm)'
                     .. ((st.status ~= 'Engaged') and '; not fighting, so weapons your idle sets name win' or '')
+            end, WearWeaponLayer = function() -- gcruntime: the weapon mode and slot picks, over the sets before
+                return 'weapon mode ' .. tostring(st.weapons or '?') .. ' (/wm): its weapons go on over the sets '
+                    .. 'before (/mw /sw /rw picks too)'
+                    .. (((st.status ~= 'Engaged') and (cfg.IdleWeapons ~= false))
+                        and '; not fighting, so weapons your idle sets name win' or '')
             end, BuildWeaponLayer = function()
                 return 'weapon mode ' .. tostring(st.weapons or '?') .. ' (/wm)'
             end, CheckMDT = function()
@@ -367,26 +372,53 @@ function actionModel.New(context)
             end
         end
         V.still = (#V.still > 0) and table.concat(V.still, ' ') or nil
+        -- the order the sets went on: each one's pieces by slot (cells, in the equipment screen's order: worn, the
+        -- same piece put on again later, or replaced by a later one, which says by what), and why it went on
         V.order = {}
+        local at = {}
+        for i, slot in ipairs(SCREEN) do at[slot] = i end
+        local function in_screen_order(t)
+            table.sort(t, function(a, b) return (at[a] or 99) < (at[b] or 99) end)
+            return t
+        end
         for i, L in ipairs(layers) do
-            local won, same, lost = {}, {}, {}
+            local won, same, lost, cells, by = {}, {}, {}, {}, {}
             for _, w in ipairs(L.writes) do
+                local c = { name = w.name, state = 'won' }
                 if w.won then
                     won[#won + 1] = w.slot
                 elseif w.same then
                     same[#same + 1] = w.slot
+                    c.state = 'same'
                 else
+                    local f = final[w.slot]
+                    by[w.slot] = w.blocked and 'a lock'
+                        or (((f ~= nil) and (f.layer ~= nil) and (num[f.layer] ~= nil))
+                            and (num[f.layer] .. '. ' .. source_label(f.by)) or nil)
                     lost[#lost + 1] = w.slot
+                    c.state, c.by = 'lost', by[w.slot]
                 end
+                if at[w.slot] ~= nil then cells[at[w.slot]] = c end
             end
+            in_screen_order(won)
+            in_screen_order(same)
+            in_screen_order(lost)
+            for k, slot in ipairs(lost) do
+                if by[slot] ~= nil then lost[k] = slot .. ' (by ' .. by[slot] .. ')' end
+            end
+            local label = source_label(L.by)
+            if L.by == 'WearWeaponLayer()' then label = label .. ' ' .. tostring((pick.state or {}).weapons or '?') end
+            local reason = tostring(why(L, pick) or '')
+            if string.sub(reason, -1) ~= '.' then reason = reason .. '.' end
             V.order[i] = {
-                title = i .. '. ' .. source_label(L.by),
+                title = i .. '. ' .. label,
                 rawSource = L.by,
                 mine = is_set_label(L.by, set.name),
-                why = 'why: ' .. why(L, pick),
-                won = (#won > 0) and ('kept: ' .. table.concat(won, ' ')) or nil,
+                why = string.upper(string.sub(reason, 1, 1)) .. string.sub(reason, 2),
+                won = (#won > 0) and ('worn: ' .. table.concat(won, ' ')) or nil,
                 same = (#same > 0) and ('same piece put on again later: ' .. table.concat(same, ' ')) or nil,
-                lost = (#lost > 0) and ('replaced later: ' .. table.concat(lost, ' ')) or nil,
+                lost = (#lost > 0) and ('replaced later: ' .. table.concat(lost, ', ')) or nil,
+                cells = cells,
             }
         end
         -- sets looked for and not there: why each was looked for, and what goes on without it

@@ -181,6 +181,9 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   only worn where your code names it; the dialog warns.
 - **Undo edit** steps back through slot changes; **Undo slot** restores the saved definition.
 - **Result** shows what an action wore, layer by layer: recorded since load, or expected from your sets and modes.
+  **Equip order** lists the layers first to last, each with its pieces as icons (green: still worn; faded orange:
+  replaced later, by what on hover), the slots in screen order, and why it went on (*Weapon mode DeathPenalty: its
+  weapons go on over the sets before; not fighting, so weapons your idle sets name win*).
 - **Related** lists the sets you have that go on with this one, in the order they go on (a later one wins its
   slots): number, set (click to open), when it goes on (`(on now)`: its modes are on in game). The ones your file
   doesn't have are one line under them (*+ 26 you could make*); that line or **Not made too** lists them in their
