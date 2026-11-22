@@ -7,7 +7,8 @@ Edits your loaded job file. Changes stay in memory until you confirm a save. `/g
 ## Add a set or mode
 
 1. **+ New set**, type a name, **Create**. Names the engine looks for that your file lacks are suggested as you
-   type. Tick *Copy slots from ...* to start from the open set.
+   type (your spells, abilities and weapon skills too), and the box says what would wear a set by that name
+   (`Absorb-TP`: *Worn: when Absorb-TP goes off (midcast).*). Tick *Copy slots from ...* to start from the open set.
 2. Click a slot and pick gear from **Gear** (or **Use worn** for everything you have on).
 3. **Save + reload**, check the review, confirm.
 
@@ -19,7 +20,7 @@ Edits your loaded job file. Changes stay in memory until you confirm a save. `/g
 | TP or WS gear for a weapon type | `Tp_2h` / `Tp_1h` (and `Ws_`, `Dt_`, `Idle_`...): for a weapon with no set of its own, by its Main ([How sets stack](sets.md#how-sets-stack)) |
 | A Main/Sub/Range pick (`/mw` `/sw` `/rw`) | Nothing: every item in a `Weapon_` set is one. Others go in `gcinclude.SubModes` (etc.) in the file |
 | A COR/RNG gun | Add its name to `gcinclude.RangeModes` in the file |
-| A melee mode (`/mset`) | **+ /mset mode** on the **MELEE** heading (also **+ New mode** on the **Related** tab): name it, tick the sets to make for it (`Tp_<mode>` and `Ws_<mode>` start ticked; `Dt_<mode>` and each weapon skill's `Savage Blade_<mode>` offered), **Add**. They start empty: fill only what differs. **Save + reload** adds it to `gcinclude.MeleeModes`; `/mset <mode>` then wears each over its base |
+| A melee mode (`/mset`) | **+ /mset mode** on the **MELEE** heading (also on the **Related** tab): name it, tick the sets to make for it (`Tp_<mode>` and `Ws_<mode>` start ticked; `Dt_<mode>` and each weapon skill's `Savage Blade_<mode>` offered), **Add**. They start empty: fill only what differs. **Save + reload** adds it to `gcinclude.MeleeModes`; `/mset <mode>` then wears each over its base |
 | A set for one buff | Open `Buffs` (idle/engaged), `Buffs_Ws` or `Buffs_Midcast`, type the buff's name as the game shows it, **New buff set**. Each shows under its parent (`Buffs['Aftermath: Lv.3']`) and edits, deletes and copies to other jobs like any set. Renaming one also renames code that takes it from its parent (`sets.Buffs['Haste']`, `sets.Buffs.Haste`) |
 
 ## Headings
@@ -170,7 +171,10 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   only worn where your code names it; the dialog warns.
 - **Undo edit** steps back through slot changes; **Undo slot** restores the saved definition.
 - **Result** shows what an action wore, layer by layer: recorded since load, or expected from your sets and modes.
-- **Related** lists the sets and modes for this action; **Make** stages a missing one.
+- **Related** lists every set that goes on with this one, in the order they go on (a later one wins its slots):
+  number, set (click to open; **make** stages one not made), when it goes on (`(on now)`: its modes are on in game),
+  and for a set not made what goes on instead (its base set, GoomSwap's own `Doomed`, ...). Hover a name: what it
+  goes over and the job file line that wears it.
 - **To fill** lists placeholders, missing or unusable items and empty weapon modes; **Fill all** stages one choice
   for every listed use. When nothing is left, it says **Nothing left to fill.**
 

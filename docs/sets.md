@@ -108,7 +108,7 @@ missing. The examples carry only sets with gear; `/gcedit` → **+ New set** lis
 | `['Healing Magic_Precast']` `['Stoneskin_Precast']` | over `Precast` |
 | `Tp_Default` `Tp_SubtleBlow` `Tp_Acc` | engaged, `/mset` |
 
-Any `/mset` mode works the same way: add it to `gcinclude.MeleeModes` (or `/gcedit` → **+ New mode**) and every
+Any `/mset` mode works the same way: add it to `gcinclude.MeleeModes` (or `/gcedit` → **+ /mset mode**) and every
 `<set>_<mode>` goes on over its base set.
 
 Groups keep a plain name (`Phantom Roll` for every roll, `Quick Draw`, `Nitro`, `Enmity`, BRD song groups).
