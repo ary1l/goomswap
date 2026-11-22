@@ -226,6 +226,7 @@ local function item_id(name)
     end
     return id or nil
 end
+ctx.item_id = item_id -- Related's weapon icons
 ctx.GRID_COLUMNS, ctx.CELL_W, ctx.CELL_H, ctx.ICON, ctx.ROW_ICON, ctx.iconBudget =
     GRID_COLUMNS, CELL_W, CELL_H, ICON, ROW_ICON, iconBudget
 local function icon(id) -- the item's icon as an ImGui texture id, or nil

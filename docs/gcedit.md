@@ -187,7 +187,11 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 - **Related** lists the sets you have that go on with this one, in the order they go on (a later one wins its
   slots): number, set (click to open), when it goes on (`(on now)`: its modes are on in game). The ones your file
   doesn't have are one line under them (*+ 26 you could make*); that line or **Not made too** lists them in their
-  place with **make** (**Make all** on top). A long name or condition is cut with `...`; hover it for all of it,
+  place with **make** (**Make all** on top). Every `Weapon_` set is one **Weapons** entry, since only one goes on
+  (the one for your `/wm`, its `/mset` version when made, its `_1h` when you can't dual wield): a row per `/wm`
+  mode, a column per version (loadout, no Dual Wield, `/mset Acc`...; versions not made only with **Not made too**),
+  each cell its Main, Sub and Range as icons (click opens it; outlined: worn now). A set's own `/mset` versions
+  (`Dt_Acc`) are chips under it. A search lists them all as rows. A long name or condition is cut with `...`; hover it for all of it,
   what it goes over, the job file line that wears it, and for one not made what goes on instead (its base set,
   GoomSwap's own `Doomed`, ...).
 - **To fill** lists placeholders, missing or unusable items and empty weapon modes; **Fill all** stages one choice
