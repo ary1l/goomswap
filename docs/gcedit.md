@@ -175,8 +175,9 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   (256/1024; listed values are rounded, so 25-26% as listed is at the cap), Fast Cast 80%, Snapshot 70% (merits
   and Flurry count too), Quick Magic 10%, Cure potency 50%; damage taken as the game caps it: physical (DT + PDT),
   magic (DT + MDT) and breath (DT + BDT), each -50%, with the parts shown and the II versions apart (past -50%, up
-  to -87.5% in all). Hover one: where the cap comes from (BG-Wiki, FFXIclopedia).
-- An item's hover (picker, slot cards) says which sets name it: *In 9 sets of COR.lua: Tp_Default, Midshot...*.
+  to -87.5% in all); one Damage taken row when the gear has DT only. Hover one: where the cap comes from (BG-Wiki,
+  FFXIclopedia).
+- An item's hover (picker, slot cards) says which sets name it: *In 9 sets: Tp_Default, Midshot... +3*.
 - Hover any item for its stats; elemental resistances show as the element's coloured dot and value, as the game's
   icons do (also in Summary, and as a dot row on the card: one value when they all match, a ring for a penalty). **Inspect item below grid** pins it while you pick. Commented, inherited and
   Result items can be inspected without adding them.

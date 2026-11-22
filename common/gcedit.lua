@@ -1486,7 +1486,7 @@ ctx.draw_backups = function()
     end
     imgui.EndPopup()
 end
--- An item's hover: the sets naming it, as edited ('In 9 sets of COR.lua: Tp_Default, Midshot...'), nil when none.
+-- An item's hover: the sets naming it, as edited ('In 9 sets: Tp_Default, Midshot... +3'), nil when none.
 -- Worked out once per edit for every item.
 ctx.used_in = function(name)
     if type(name) ~= 'string' then return nil end
@@ -1514,10 +1514,9 @@ ctx.used_in = function(name)
     local list = U.by[string.lower(name)]
     if list == nil then return nil end
     local shown = {}
-    for i = 1, math.min(#list, 8) do shown[i] = list[i] end
-    return 'In ' .. #list .. ((#list == 1) and ' set' or ' sets') .. ' of ' .. tostring(doc.file) .. ': '
-        .. table.concat(shown, ', ') .. ((#list > 8) and ('... (+' .. (#list - 8) .. ')') or '')
-        .. '. Right-click: Find in every job file.'
+    for i = 1, math.min(#list, 6) do shown[i] = list[i] end
+    return 'In ' .. #list .. ((#list == 1) and ' set: ' or ' sets: ') .. table.concat(shown, ', ')
+        .. ((#list > 6) and (' +' .. (#list - 6)) or '')
 end
 -- Recent (over the slots): the sets opened last, newest first, kept with the job's editor preferences; a click opens
 -- one.
