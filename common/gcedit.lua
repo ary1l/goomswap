@@ -515,7 +515,8 @@ local function current(set, slot) -- Pending or saved slot definition, including
 end
 
 -- Hovering a set's name (the set list, Related): its gear as icons, 4x4 in the equipment screen's order, then the
--- hover's text. A slot it leaves out, or writes as code, is a dark blank. Its icon ids are kept per edit.
+-- hover's text. A slot it leaves out, or writes as code, is a dark blank; rows after its last item are left out.
+-- Its icon ids are kept per edit.
 ctx.set_peek = function(set, text)
     if (set == nil) or (set.code ~= nil) or (set.slots == nil) then
         set_tip(text)
@@ -538,7 +539,11 @@ ctx.set_peek = function(set, text)
     imgui.BeginTooltip()
     local dl = ((imgui.GetWindowDrawList ~= nil) and (imgui.GetCursorScreenPos ~= nil) and (imgui.GetColorU32 ~= nil))
         and imgui.GetWindowDrawList() or nil
+    local last = 0 -- rows after the last one with an item are left out (a weapon set: one row)
     for i = 1, #SCREEN do
+        if set.peekIds[i] then last = i end
+    end
+    for i = 1, math.ceil(last / 4) * 4 do
         if (i - 1) % 4 ~= 0 then imgui.SameLine(0, 2) end
         if set.peekIds[i] then
             draw_icon(set.peekIds[i], 32)

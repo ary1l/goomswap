@@ -110,7 +110,8 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   `WeaponRoles` naming a weapon or mode nothing offers is flagged there and in **Settings**: the engine skips it at
   load without a word.
 - Hover a set's name (the list, **Related**): its gear as icons, 4x4 in the equipment screen's order (a slot it
-  leaves out is blank), over the usual hover text.
+  leaves out is blank; rows after its last item are left out, so a weapon set is one row), over the usual hover
+  text.
 - Search the set list by a set's name or an item (`nyame`: every set wearing a Nyame piece, as edited), or fold its
   headings; for your main sets at the top, make a heading of your own and move them into it
   ([Headings](#headings)). **Unsaved sets**, **Issues**, **Missing**, **Needs RP** and **Unused** filter it; the `?`

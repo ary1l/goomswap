@@ -197,10 +197,18 @@ local function set_completion_tip(set, status)
         or ('Armor complete: all 12 armor/accessory slots name items.\n'
             .. status.weapons
                 .. '/4 top-row slots name items. Omitted weapons stay unchanged; no weapon swap is required.'))
-        or ('Partial definition: ' .. status.armor .. '/12 armor/accessory slots name items.\n'
-            .. 'Omitted slots keep earlier gear; overlays can be intentionally partial.')
-    if status.missing > 0 then detail = detail .. '\n' .. status.missing .. ' named items are not owned.' end
-    if #status.unfinished > 0 then detail = detail .. '\n' .. #status.unfinished .. ' items need RP.' end
+        or (((status.armor == 0) and (status.weapons > 0))
+            and ('Weapons only (' .. status.weapons .. '/4 top-row slots): armor stays as it is.')
+            or ('Partial definition: ' .. status.armor .. '/12 armor/accessory slots name items.\n'
+                .. 'Omitted slots keep earlier gear; overlays can be intentionally partial.'))
+    if status.missing > 0 then
+        detail = detail .. '\n' .. status.missing .. ((status.missing == 1) and ' named item is' or ' named items are')
+            .. ' not owned.'
+    end
+    if #status.unfinished > 0 then
+        detail = detail .. '\n' .. #status.unfinished .. ((#status.unfinished == 1) and ' item needs' or ' items need')
+            .. ' RP.'
+    end
     if status.edited then detail = detail .. '\nIncludes unsaved edits.' end
     return detail
 end
@@ -764,7 +772,9 @@ local function draw_sets()
                     local status = set_status(set)
                     local col = set_color(set, status)
                     if col ~= nil then imgui.PushStyleColor(ImGuiCol_Text, col) end
-                    if imgui.Selectable(set.rowLabel, on) then
+                    local picked = imgui.Selectable(set.rowLabel, on)
+                    if col ~= nil then imgui.PopStyleColor(1) end -- the name only: not its hover's text
+                    if picked then
                         editorState.cache.listSel, editorState.selection.back = set.name, nil
                         editorPreferences.Select(editorState, set.name)
                     end
@@ -777,7 +787,6 @@ local function draw_sets()
                     end
                     drag_set_from(set)
                     drop_set_here(grp.g, (not nested) and set or nil) -- under its parent: in file order
-                    if col ~= nil then imgui.PopStyleColor(1) end
                     if on then left_bar(palette.sel) end
                     if on and scroll and (imgui.SetScrollHereY ~= nil) then imgui.SetScrollHereY(0.5) end
                     -- issues as numbers: (empty slots, not owned), each coloured; hover a number for what it counts
