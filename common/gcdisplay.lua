@@ -869,6 +869,30 @@ local function menu_item(id, text, w, lead, current, kind, col, dim)
     end
     return clicked
 end
+-- This box's menus end with '+ new mode...': /gcedit opens on the new mode (gcinclude.EditorRequest). Not on another
+-- box's line: its editor would open on that box's screen.
+local NEW_MODE = '+ new mode...'
+local function ctrl_down()
+    local ok, io = pcall(imgui.GetIO)
+    return ok and (io ~= nil) and (io.KeyCtrl == true)
+end
+local function menu_tip(text)
+    imgui.PushStyleVar(ImGuiStyleVar_WindowPadding, TIP_PAD)
+    imgui.BeginTooltip()
+    imgui.PushStyleColor(ImGuiCol_Text, COL_KEY)
+    imgui.TextUnformatted(text)
+    imgui.PopStyleColor()
+    imgui.EndTooltip()
+    imgui.PopStyleVar()
+end
+local function new_mode_item(id, x, w, kind, tipText)
+    if (x ~= nil) then imgui.SameLine(x) end -- under its column
+    if menu_item(id, NEW_MODE, w, gcdisplay.PILL_PLAIN_LEAD, false, 'plain', nil, true) then
+        if (inc ~= nil) and (inc.EditorRequest ~= nil) then inc.EditorRequest(kind) end
+        imgui.CloseCurrentPopup()
+    end
+    if imgui.IsItemHovered() then menu_tip(tipText) end
+end
 local function weapon_menu(drop)
     local vars = push_menu()
     local shown = imgui.BeginPopup('##gcbar_wpn')
@@ -881,6 +905,7 @@ local function weapon_menu(drop)
             if (type(list) == 'table') and (#list > 1) then
                 local c = { key = mc[1], label = mc[2], list = list, texts = {} }
                 local w = textw(mc[2])
+                if (mc[1] == 'Weapons') and (menuFor == nil) then w = math.max(w, textw(NEW_MODE)) end
                 for i, v in ipairs(list) do
                     c.texts[i] = (v == 'None') and 'none' or value_text(mc[1], v)
                     w = math.max(w, textw(c.texts[i]))
@@ -893,6 +918,10 @@ local function weapon_menu(drop)
         end
         if (#cols == 0) then
             label((menuFor ~= nil) and (menuFor .. ': no weapon lists shared yet') or 'No weapon modes or picks')
+            if (menuFor == nil) then
+                new_mode_item('##gcbar_newwm', nil, math.floor(textw(NEW_MODE) + 12 * B.s), 'wm',
+                    'A /wm mode: /gcedit opens on New set, Weapon_ typed.')
+            end
         else
             for i, c in ipairs(cols) do label(c.label, (i > 1) and c.x or nil) end
             for r = 1, rows do
@@ -906,11 +935,26 @@ local function weapon_menu(drop)
                         local col = (c.key == 'Weapons') and menuCol or WEAPON_COL[item_class(v) or '']
                         if menu_item('##gcbar_mi' .. c.key .. '_' .. r, c.texts[r], c.w, c.lead, current, 'plain', col,
                             v == 'None') then
-                            run(menuFor, BAR_CMD[c.key] .. ' ' .. r)
+                            if (c.key == 'Weapons') and (menuFor == nil) and (v ~= 'None') and ctrl_down()
+                                and (inc ~= nil) and (inc.EditorCommand ~= nil) then
+                                inc.EditorCommand('Weapon_' .. v) -- ctrl+click: its set in /gcedit
+                            else
+                                run(menuFor, BAR_CMD[c.key] .. ' ' .. r)
+                            end
                             imgui.CloseCurrentPopup()
+                        end
+                        if (c.key == 'Weapons') and (menuFor == nil) and (v ~= 'None') and imgui.IsItemHovered() then
+                            menu_tip('Click: /wm ' .. string.lower(tostring(v)) .. '\nCtrl+click: edit Weapon_' .. v
+                                .. ' in /gcedit')
                         end
                     end
                 end
+            end
+            if (menuFor == nil) then -- under the mode column (else the first)
+                local mc = cols[1]
+                for _, c in ipairs(cols) do if (c.key == 'Weapons') then mc = c end end
+                new_mode_item('##gcbar_newwm', (mc ~= cols[1]) and mc.x or nil, mc.w, 'wm',
+                    'A /wm mode: /gcedit opens on New set, Weapon_ typed (as its WEAPONS heading\'s + mode).')
             end
         end
         imgui.EndPopup()
@@ -930,7 +974,9 @@ local function mode_menu(drop)
             label((menuFor ~= nil) and 'not shared by that box yet' or 'no values')
         else
             local w = 0
+            local own = (k == 'MeleeSet') and (menuFor == nil) -- this box's melee modes: + new mode...
             for _, v in ipairs(list) do w = math.max(w, textw(tostring(v))) end
+            if own then w = math.max(w, textw(NEW_MODE)) end
             w = math.floor(w + (gcdisplay.PILL_LEAD + gcdisplay.PILL_TAIL) * B.s + 0.5)
             for i, v in ipairs(list) do
                 local kind, col = gcdisplay.ModeKind(k, v)
@@ -939,6 +985,10 @@ local function mode_menu(drop)
                     run(menuFor, BAR_CMD[k] .. ' ' .. i)
                     imgui.CloseCurrentPopup()
                 end
+            end
+            if own then
+                new_mode_item('##gcbar_newms', nil, w, 'mset',
+                    'A /mset mode of your own: /gcedit opens on its popup (the name, then the sets to make for it).')
             end
         end
         imgui.EndPopup()
