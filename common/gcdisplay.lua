@@ -875,7 +875,7 @@ local NEW_MODE, ADD_PICK = '+ new mode...', '+ add...'
 -- each column's last row on this box's weapon menu: what it asks /gcedit for, and its hover text
 local MENU_ADD = {
     Weapons = { NEW_MODE, 'wm', 'A /wm mode: /gcedit opens on New set, Weapon_ typed (as its WEAPONS heading\'s '
-        .. '+ mode).' },
+        .. '+ /wm mode).' },
     Main = { ADD_PICK, 'MainModes', '/mw picks: /gcedit Settings opens on MainModes. Every Main in a Weapon_ set is '
         .. 'one already.' },
     Sub = { ADD_PICK, 'SubModes', '/sw picks: /gcedit Settings opens on SubModes. Every Sub in a Weapon_ set is one '
