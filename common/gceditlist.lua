@@ -29,6 +29,30 @@ local function draw_new_popup()
         imgui.PopTextWrapPos()
     end
     local clash = (editorState.document.model.byLower[lname] ~= nil)
+    if (note == nil) and (name ~= '') and not clash and (ctx.actions ~= nil) and (ctx.actions.When ~= nil) then
+        -- what wears a set by this name, before it is made: the Used for sentence's first part
+        local nw = editorState.ui.newWhen
+        if (nw == nil) or (nw.name ~= name) or (nw.rev ~= editorState.document.revision) then
+            local proper = name -- as the game spells it (a suggestion picked or typed in any case)
+            for _, sg in ipairs(editorState.ui.sugg) do
+                if sg.lname == lname then proper = sg.name break end
+            end
+            local ok, text = pcall(ctx.actions.When, { name = proper, lname = lname })
+            nw = { name = name, rev = editorState.document.revision }
+            if ok and (type(text) == 'string') and (string.find(text, '^No built%-in trigger') == nil) then
+                text = string.match(text, '^(.-%.)%s+%u') or text -- its first sentence
+                nw.text = 'Worn: ' .. string.lower(string.sub(text, 1, 1)) .. string.sub(text, 2)
+            end
+            editorState.ui.newWhen = nw
+        end
+        imgui.PushTextWrapPos(340)
+        if nw.text ~= nil then
+            imgui.TextColored(palette.blue, nw.text)
+        else
+            imgui.TextColored(palette.warn, 'Nothing wears a set by this name: only code in your job file could.')
+        end
+        imgui.PopTextWrapPos()
+    end
     local from = (editorState.selection.setName ~= nil)
             and editorState.document.model.byName[editorState.selection.setName] or nil
     if (from ~= nil) and (from.code == nil) and not from.extra then

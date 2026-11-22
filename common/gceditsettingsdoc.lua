@@ -77,7 +77,7 @@ local job = {
     { 'RangeModes', '/rw picks: these first, in order; every item your Weapon_ sets put in Range follows anyway.', "{ 'None', 'Anarchy +2' }" },
     { 'WeaponItemMap', "A pick's name for one exact item, like an augment path (/mw rostama).", "{ RostamA = { Name = 'Rostam', AugPath = 'A' } }" },
     { 'AlwaysDualWield', 'Counts as able to dual wield whatever the support job (BLU: from its spells), so Weapon_<Mode>_1h is not used.', nil, 'false' },
-    { 'MeleeModes', 'The /mset modes. Related tab: + New mode adds one.', nil, "{ 'Default', 'SubtleBlow', 'Acc' }", true },
+    { 'MeleeModes', 'The /mset modes. + /mset mode (MELEE heading, Related tab) adds one.', nil, "{ 'Default', 'SubtleBlow', 'Acc' }", true },
     { 'NukeModes', "The /nukeset modes (RDM BLM SCH GEO WHM DRK).", "{ 'Power', 'Macc', 'OccultAcumen' }", "{ 'Power', 'Macc' } (DRK: { 'Power', 'OccultAcumen' })" },
     { 'Packer', "Kept in inventory on this job too (/packer), with the PackerItems setting: a count or 'stack'.", "{ ['Trump Card'] = 99 }" },
     { 'SIRSkip', 'Spells /sir leaves alone on this job, on top of the SIRSkip setting.', "{ 'Phalanx' }" },
