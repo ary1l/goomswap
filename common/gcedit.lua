@@ -2093,6 +2093,12 @@ function gcedit.RequestClose()
 end
 
 -- /gcedit <set> while open: go to that set, keeping the changes.
+function gcedit.Request(kind) -- the bar's '+ new mode...' (gcinclude.EditorRequest): its popup on the next frame
+    if not editorState.open then return end
+    if (kind == 'wm') then editorState.ui.openNewSet = 'Weapon_'
+    elseif (kind == 'mset') then editorState.ui.requestNewMset = true end
+end
+
 function gcedit.Show(setName, slot) -- slot: select it too (the /gcgear right-click)
     if (not editorState.open) or (setName == nil) then return end
     local hit = editorState.document.model.byLower[string.lower(setName)]
