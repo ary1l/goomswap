@@ -401,6 +401,59 @@ local function parts_line(color, text)
     end
 end
 
+-- One layer of the equip order as icons, 4 to a row in the equipment screen's order, rows after its last piece left
+-- out: outlined green while still worn, faded with an orange outline when a later one replaced it, grey when the
+-- same piece went on again later. Ids worked out once per view.
+local ORDER_ICON = 18
+local function order_grid(o)
+    if o.ids == nil then
+        o.ids, o.last = {}, 0
+        for i = 1, #SCREEN do
+            local c = o.cells and o.cells[i] or nil
+            if c ~= nil then
+                local l = string.lower(tostring(c.name))
+                o.ids[i] = (not is_slot_word({ kind = 'item', name = c.name })) and (l ~= 'ignore') and item_id(c.name)
+                    or false
+                o.last = i
+            end
+        end
+    end
+    local dl = ((imgui.GetWindowDrawList ~= nil) and (imgui.GetCursorScreenPos ~= nil) and (imgui.GetColorU32 ~= nil))
+        and imgui.GetWindowDrawList() or nil
+    local EDGE = { won = palette.ok, lost = palette.override, same = palette.dim }
+    imgui.BeginGroup()
+    for i = 1, math.max(1, math.ceil(o.last / 4)) * 4 do
+        if (i - 1) % 4 ~= 0 then imgui.SameLine(0, 2) end
+        local c = o.cells and o.cells[i] or nil
+        local x, y = nil, nil
+        if dl ~= nil then x, y = xy(imgui.GetCursorScreenPos()) end
+        if (x ~= nil) and (y ~= nil) then
+            dl:AddRectFilled({ x, y }, { x + ORDER_ICON, y + ORDER_ICON }, imgui.GetColorU32({ 0.09, 0.11, 0.14, 1 }))
+        end
+        if (c ~= nil) and o.ids[i] then
+            local faded = (c.state == 'lost') and (ImGuiStyleVar_Alpha ~= nil)
+            if faded then imgui.PushStyleVar(ImGuiStyleVar_Alpha, 0.35) end
+            draw_icon(o.ids[i], ORDER_ICON)
+            if faded then imgui.PopStyleVar(1) end
+        else
+            imgui.Dummy({ ORDER_ICON, ORDER_ICON })
+        end
+        if c ~= nil then
+            if (x ~= nil) and (y ~= nil) then
+                dl:AddRect({ x - 1, y - 1 }, { x + ORDER_ICON + 1, y + ORDER_ICON + 1 },
+                    imgui.GetColorU32(EDGE[c.state] or palette.dim), 0, 0, 1)
+            end
+            if imgui.IsItemHovered() then
+                set_tip(SCREEN[i] .. ': ' .. tostring(c.name) .. '\n'
+                    .. ((c.state == 'won') and 'Still worn.'
+                        or (c.state == 'same') and 'The same piece went on again later.'
+                        or ('Replaced later' .. ((c.by ~= nil) and (' by ' .. c.by) or '') .. '.')))
+            end
+        end
+    end
+    imgui.EndGroup()
+end
+
 local function draw_layer_view(set, V)
     imgui.PushTextWrapPos(0)
     imgui.TextUnformatted(V.head)
@@ -463,19 +516,29 @@ local function draw_layer_view(set, V)
     end
 
     imgui.Spacing()
-    if editorPanels.Section(imgui, palette, 'Equip order and reasons##gcedit_order') then
-        imgui.PushTextWrapPos(0)
+    if editorPanels.Section(imgui, palette, 'Equip order: who put on what, first to last##gcedit_order') then
         for _, o in ipairs(V.order) do
-            imgui.TextColored(o.mine and palette.blue or palette.text, o.title)
+            imgui.TextColored(palette.dim, string.match(o.title, '^%d+%.') or '')
+            imgui.SameLine()
+            order_grid(o)
+            imgui.SameLine(0, 10)
+            imgui.BeginGroup()
+            imgui.PushTextWrapPos(0)
+            imgui.TextColored(o.mine and palette.blue or palette.text, (string.gsub(o.title, '^%d+%.%s*', '')))
             if imgui.IsItemHovered() then set_tip(o.rawSource or o.title) end
-            imgui.Indent(18)
+            if o.mine then
+                imgui.SameLine()
+                imgui.TextColored(palette.blue, '(this set)')
+            end
             imgui.TextColored(palette.dim, o.why)
             if o.won ~= nil then imgui.TextColored(palette.ok, o.won) end
             if o.same ~= nil then imgui.TextColored(palette.dim, o.same) end
             if o.lost ~= nil then imgui.TextColored(palette.override, o.lost) end
-            imgui.Unindent(18)
+            imgui.PopTextWrapPos()
+            imgui.EndGroup()
+            imgui.Spacing()
         end
-        imgui.PopTextWrapPos()
+        imgui.TextColored(palette.dim, 'Green: still worn. Orange, faded: a later one replaced it. Hover a piece.')
     end
     if (#V.missing + #V.variants > 0) and editorPanels.Section(imgui, palette, 'Set suggestions ('
         .. (#V.missing + #V.variants) .. ')##gcedit_suggestions') then
