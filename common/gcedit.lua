@@ -1532,6 +1532,8 @@ ctx.draw_recent = function(set)
         p.dirty = true
     end
     local shown = 0
+    imgui.PushStyleColor(ImGuiCol_Button, palette.chipBg) -- quieter than the strip under it
+    imgui.PushStyleColor(ImGuiCol_Text, palette.dim)
     for i = 2, #p.recent do
         local hit = editorState.document.model.byName[p.recent[i]]
         if hit ~= nil then
@@ -1545,6 +1547,8 @@ ctx.draw_recent = function(set)
             shown = shown + 1
         end
     end
+    imgui.PopStyleColor(2)
+    if shown > 0 then imgui.Separator() end
 end
 
 local function job_abbr_of(job)

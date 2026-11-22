@@ -1006,6 +1006,17 @@ local function draw_over(set)
     end
     local function row(w) -- one set: its place in the order, its name (click: open it) or make, when it goes on
         local x0 = imgui.GetCursorPosX()
+        if w.self and (imgui.GetWindowDrawList ~= nil) and (imgui.GetCursorScreenPos ~= nil)
+            and (imgui.GetColorU32 ~= nil) then -- this set: the title strip's fill and bar, under the row
+            local sx, sy = xy(imgui.GetCursorScreenPos())
+            local lh = (imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or 14
+            local rw = (width ~= nil) and width or 600
+            if (sx ~= nil) and (sy ~= nil) then
+                local dl = imgui.GetWindowDrawList()
+                dl:AddRectFilled({ sx - 4, sy - 1 }, { sx + rw, sy + lh + 1 }, imgui.GetColorU32(palette.selBg))
+                dl:AddRectFilled({ sx - 4, sy - 1 }, { sx - 1, sy + lh + 1 }, imgui.GetColorU32(palette.sel))
+            end
+        end
         w.num = w.num or (w.pos .. '.')
         imgui.SetCursorPosX(x0 + C.num - tw(w.num))
         imgui.TextColored(palette.dim, w.num)

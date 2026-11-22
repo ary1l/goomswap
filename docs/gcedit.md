@@ -128,6 +128,8 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   first, each with the sets that differ from the file now; **Compare** shows them slot by slot (then -> now).
   **Restore** puts one back: the file is backed up first, then replaced and reloaded. Not with unsaved edits.
 - **Recent** (over the slots): the sets you opened last, newest first; a click opens one. Kept per job.
+- The set you're editing sits in a strip under it: an accent bar, its heading (`IDLE > Town`), its name and badges
+  (Needs RP), how many of the 16 slots it names, and what it is used for. Related marks its row the same way.
 - **Unused gear** lists, by bag, the gear in your Inventory and Wardrobes that nothing of this character names:
   none of its job files, char.lua, the shared settings file, GoomSwap's own sets or its code (Moonshade, obis,
   Warp Ring). A name anywhere as a string counts, code and unsaved edits too. Read only: it moves nothing.
