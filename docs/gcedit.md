@@ -109,6 +109,8 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   (`Main picks (/mw): ...`, from `MainModes` `SubModes` `RangeModes`). A `DefaultWeapons` or
   `WeaponRoles` naming a weapon or mode nothing offers is flagged there and in **Settings**: the engine skips it at
   load without a word.
+- Hover a set's name (the list, **Related**): its gear as icons, 4x4 in the equipment screen's order (a slot it
+  leaves out is blank), over the usual hover text.
 - Search the set list by a set's name or an item (`nyame`: every set wearing a Nyame piece, as edited), or fold its
   headings; for your main sets at the top, make a heading of your own and move them into it
   ([Headings](#headings)). **Unsaved sets**, **Issues**, **Missing**, **Needs RP** and **Unused** filter it; the `?`
@@ -121,6 +123,9 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   this character), GoomSwap's own, or any of the 30 presets; hover one to preview. Kept per character
   (`gcedit-theme.txt`); the bar keeps its own.
 - **Rescan bags** refreshes ownership and keeps edits. Storage Slip gear counts as owned and shows its slip.
+- **Unused gear** lists, by bag, the gear in your Inventory and Wardrobes that nothing of this character names:
+  none of its job files, char.lua, the shared settings file, GoomSwap's own sets or its code (Moonshade, obis,
+  Warp Ring). A name anywhere as a string counts, code and unsaved edits too. Read only: it moves nothing.
 - The **filename** opens the character's other job files. They are edited without changing your active job and
   saved with **Save file** (no reload). Switching with unsaved work asks to keep editing or discard.
 
@@ -143,6 +148,10 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   slot, can't be ticked); **All in <heading>** ticks the open set's heading
   (an enmity piece in every job ability). Each is an unsaved edit: **Undo slot** per set, **Undo edit** one at a
   time; Save writes them.
+- Changed a piece (Chev. Armet +2 -> +3) that other sets still have? Under the grid: *+2 is still in 6 other sets*,
+  **Replace in all 6**, **Pick...** (tick which) or **Not now** (until the editor closes). An earring or ring is
+  found in either slot of the pair (not where the set already wears your only copy of the new one). Each is an
+  unsaved edit: **Undo edit** steps back; Save writes them.
 - Search matches words anywhere in the name or decoded stats (`nyame damage`); 3+ letters also lists items you don't
   own, after yours, marked not owned, to plan a set (every item is looked through once, a moment the first time).
   Combine **Any job / level**, **Can equip now**, **Needs RP** and **Augmented**. Identical copies share a row; hover

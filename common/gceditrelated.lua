@@ -413,24 +413,28 @@ local function put_rows(P)
     end)
     return rows
 end
+-- Puts the piece src (a slot's value) in set s's slot, as an edit Undo edit takes back. The caller bumps the
+-- revision once for all of them.
+local function put_value(s, slot, src)
+    local saved = s.slots[slot]
+    local pending = editorState.document.edits[s.name] or {}
+    editorState.history.entries = editorState.history.entries or {}
+    editorState.history.entries[#editorState.history.entries + 1] = { set = s.name, slot = slot,
+        previous = pending[slot] }
+    if #editorState.history.entries > 100 then table.remove(editorState.history.entries, 1) end
+    if (saved ~= nil) and (saved.value.raw == (src.text or src.raw)) then
+        pending[slot] = nil
+    else
+        pending[slot] = { kind = src.kind, name = src.name, path = src.path, rank = src.rank, augs = src.augs,
+            raw = src.raw, text = src.text or src.raw }
+    end
+    editorState.document.edits[s.name] = next(pending) and pending or nil
+end
 local function put_in(P)
     local n = 0
     for _, r in ipairs(P.rows) do
         if r.tick[1] and not r.off then
-            local s, slot, src = r.set, P.slot, P.source
-            local saved = s.slots[slot]
-            local pending = editorState.document.edits[s.name] or {}
-            editorState.history.entries = editorState.history.entries or {}
-            editorState.history.entries[#editorState.history.entries + 1] = { set = s.name, slot = slot,
-                previous = pending[slot] }
-            if #editorState.history.entries > 100 then table.remove(editorState.history.entries, 1) end
-            if (saved ~= nil) and (saved.value.raw == (src.text or src.raw)) then
-                pending[slot] = nil
-            else
-                pending[slot] = { kind = src.kind, name = src.name, path = src.path, rank = src.rank, augs = src.augs,
-                    raw = src.raw, text = src.text or src.raw }
-            end
-            editorState.document.edits[s.name] = next(pending) and pending or nil
+            put_value(r.set, P.slot, P.source)
             n = n + 1
         end
     end
@@ -533,6 +537,138 @@ local function draw_put_in()
         imgui.CloseCurrentPopup()
     end
     imgui.EndPopup()
+end
+
+-- == Upgrade everywhere: a piece changed in this set (Chev. Armet +2 -> +3) that other sets still have: the same
+-- change there, all at once or picked. An ear or ring is found in either slot of the pair. ==
+local function piece_key(v) -- name, path and augments, the augments in any order and spelling of the list
+    if (v == nil) or (v.kind ~= 'item') or (v.name == nil) then return nil end
+    local augs = {}
+    for a in string.gmatch(string.lower(tostring(v.augs or '')), '[^,]+') do
+        a = string.gsub(a, '[%s\'"{}]', '')
+        if a ~= '' then augs[#augs + 1] = a end
+    end
+    table.sort(augs)
+    return string.lower(tostring(v.name)) .. '|' .. string.lower(tostring(v.path or '')) .. '|'
+        .. table.concat(augs, ',')
+end
+local function piece_label(v)
+    return tostring(v.name) .. ((v.path ~= nil) and (' (Path ' .. v.path .. ')')
+        or (((v.augs or '') ~= '') and ' (augmented)' or ''))
+end
+-- The slot to offer: the one picked, else the first changed (old piece in the file, a different one now).
+local function upgrade_of(set)
+    local edits = editorState.document.edits[set.name]
+    if edits == nil then return nil end
+    local skip, sel = editorState.ui.upgradeSkip or {}, editorState.selection.slot
+    local order = {}
+    if (sel ~= nil) then order[1] = sel end
+    for _, slot in ipairs(SCREEN) do
+        if slot ~= sel then order[#order + 1] = slot end
+    end
+    for _, slot in ipairs(order) do
+        local e, saved = edits[slot], set.slots[slot]
+        local old = (saved ~= nil) and saved.value or nil
+        local ko, kn = piece_key(old), piece_key(e)
+        if (ko ~= nil) and (kn ~= nil) and (ko ~= kn) then
+            local key = set.name .. '|' .. slot .. '|' .. ko .. '|' .. kn
+            if not skip[key] then return slot, old, e, key end
+        end
+    end
+    return nil
+end
+-- The other sets with the old piece: { set, slot, tick }. Not one the new piece can't go in: its other ear/ring
+-- slot already has it and you own one copy.
+local function upgrade_rows(set, slot, old, new)
+    local doc, rows = editorState.document, {}
+    local ko, lnew = piece_key(old), string.lower(tostring(new.name))
+    local copies = editorState.inventory and editorState.inventory.copiesByName
+        and editorState.inventory.copiesByName[lnew] or {}
+    local slots = (PAIR[slot] ~= nil) and { slot, PAIR[slot] } or { slot }
+    for _, s in ipairs(doc.model.list) do
+        if (s.name ~= set.name) and (s.code == nil) and not s.extra and not doc.deleted[s.name] then
+            for _, sl in ipairs(slots) do
+                if piece_key(current(s, sl)) == ko then
+                    local ov = (PAIR[sl] ~= nil) and current(s, PAIR[sl]) or nil
+                    if not ((ov ~= nil) and (#copies < 2) and (string.lower(tostring(ov.name)) == lnew)) then
+                        rows[#rows + 1] = { set = s, slot = sl, tick = { true } }
+                    end
+                    break
+                end
+            end
+        end
+    end
+    return rows
+end
+local function draw_upgrade(set)
+    if (set == nil) or (set.code ~= nil) or set.extra then return end
+    local slot, old, new, key = upgrade_of(set)
+    if slot == nil then return end
+    local ui = editorState.ui
+    local U = ui.upgrade
+    if (U == nil) or (U.key ~= key) or (U.rev ~= editorState.document.revision) then
+        U = { key = key, rev = editorState.document.revision, rows = upgrade_rows(set, slot, old, new),
+            pick = (U ~= nil) and (U.key == key) and U.pick }
+        ui.upgrade = U
+    end
+    local n = #U.rows
+    if n == 0 then return end
+    imgui.Spacing()
+    imgui.PushTextWrapPos(0)
+    imgui.TextColored(palette.blue, slot .. ': ' .. piece_label(old) .. ' -> ' .. piece_label(new) .. '.')
+    if U.names == nil then
+        local names = {}
+        for i, r in ipairs(U.rows) do
+            if i > 8 then
+                names[#names + 1] = '+' .. (n - 8) .. ' more'
+                break
+            end
+            names[#names + 1] = r.set.name .. ((r.slot ~= slot) and (' (' .. r.slot .. ')') or '')
+        end
+        U.names = table.concat(names, ', ')
+    end
+    imgui.TextUnformatted(tostring(old.name) .. ' is still in ' .. n .. ' other set' .. ((n == 1) and '' or 's')
+        .. ': ' .. U.names)
+    imgui.PopTextWrapPos()
+    local function replace(rows)
+        local done = 0
+        for _, r in ipairs(rows) do
+            if r.tick[1] then
+                put_value(r.set, r.slot, new)
+                done = done + 1
+            end
+        end
+        if done == 0 then return end
+        editorState.document.revision = editorState.document.revision + 1
+        editorState.history.revision = editorState.document.revision -- Undo edit takes them back one by one
+        feedback('Replaced ' .. piece_label(old) .. ' with ' .. piece_label(new) .. ' in ' .. done .. ' set'
+            .. ((done == 1) and '' or 's') .. ' (unsaved): Undo edit steps back; Save writes them.')
+    end
+    if make_button('Replace in all ' .. n .. '##gcup_all') then
+        for _, r in ipairs(U.rows) do r.tick[1] = true end
+        replace(U.rows)
+    end
+    if imgui.IsItemHovered() then
+        set_tip('The same change in every set listed: ' .. piece_label(new) .. ' where ' .. piece_label(old)
+            .. ' is now. Unsaved until Save + reload.')
+    end
+    imgui.SameLine()
+    if imgui.SmallButton((U.pick and 'Hide list' or 'Pick...') .. '##gcup_pick') then U.pick = not U.pick end
+    imgui.SameLine()
+    if imgui.SmallButton('Not now##gcup_skip') then
+        ui.upgradeSkip = ui.upgradeSkip or {}
+        ui.upgradeSkip[key] = true
+    end
+    if imgui.IsItemHovered() then set_tip('Hides this until the editor is closed. The sets stay as they are.') end
+    if U.pick then
+        local m = 0
+        for i, r in ipairs(U.rows) do
+            if i > 1 then editorPanels.SameLineIfFits(imgui, text_w(r.set.name) + 40) end
+            imgui.Checkbox(r.set.name .. ((r.slot ~= slot) and (' (' .. r.slot .. ')') or '') .. '##gcup' .. i, r.tick)
+            if r.tick[1] then m = m + 1 end
+        end
+        if (m > 0) and make_button('Replace in ' .. m .. '##gcup_some') then replace(U.rows) end
+    end
 end
 
 -- Every set GoomSwap could put on for this set's action, grouped by what has to be on for it, have or missing.
@@ -811,7 +947,10 @@ local function draw_over(set)
         else
             imgui.TextColored(palette.dim, w.name)
         end
-        if imgui.IsItemHovered() then set_tip(row_tip(w)) end
+        if imgui.IsItemHovered() then
+            local made = w.have and editorState.document.model.byLower[string.lower(w.name)] or nil
+            if (made ~= nil) and (ctx.set_peek ~= nil) then ctx.set_peek(made, row_tip(w)) else set_tip(row_tip(w)) end
+        end
         if not w.have then
             imgui.SameLine()
             w.makeLabel = w.makeLabel or ('make##gcwi' .. w.pos)
@@ -1659,7 +1798,7 @@ end
     return { draw_over = draw_over, draw_picker = draw_picker, fill_list = fill_list, draw_fill = draw_fill,
         draw_weapon_sets = draw_weapon_sets,
         draw_mset_mode = draw_mset_mode,
-        draw_put_in = draw_put_in,
+        draw_put_in = draw_put_in, draw_upgrade = draw_upgrade,
         draw_context_menu = draw_context_menu, variants_of = variants_of, rename_problem = rename_problem,
         rename_new = rename_new }
 end

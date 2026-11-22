@@ -514,6 +514,52 @@ local function current(set, slot) -- Pending or saved slot definition, including
     return (cur ~= nil) and cur.value or nil
 end
 
+-- Hovering a set's name (the set list, Related): its gear as icons, 4x4 in the equipment screen's order, then the
+-- hover's text. A slot it leaves out, or writes as code, is a dark blank. Its icon ids are kept per edit.
+ctx.set_peek = function(set, text)
+    if (set == nil) or (set.code ~= nil) or (set.slots == nil) then
+        set_tip(text)
+        return
+    end
+    if set.peekVer ~= editorState.document.revision then
+        set.peekVer, set.peekIds, set.peekN = editorState.document.revision, {}, 0
+        for i, slot in ipairs(SCREEN) do
+            local v = current(set, slot)
+            local id = ((v ~= nil) and (v.kind == 'item')) and item_id(v.name) or nil
+            set.peekIds[i] = id or false
+            if id ~= nil then set.peekN = set.peekN + 1 end
+        end
+    end
+    if set.peekN == 0 then
+        set_tip(text)
+        return
+    end
+    imgui.PushStyleColor(ImGuiCol_PopupBg, { 0.055, 0.06, 0.08, 1 })
+    imgui.BeginTooltip()
+    local dl = ((imgui.GetWindowDrawList ~= nil) and (imgui.GetCursorScreenPos ~= nil) and (imgui.GetColorU32 ~= nil))
+        and imgui.GetWindowDrawList() or nil
+    for i = 1, #SCREEN do
+        if (i - 1) % 4 ~= 0 then imgui.SameLine(0, 2) end
+        if set.peekIds[i] then
+            draw_icon(set.peekIds[i], 32)
+        else
+            local x, y = nil, nil
+            if dl ~= nil then x, y = xy(imgui.GetCursorScreenPos()) end
+            if (x ~= nil) and (y ~= nil) then
+                dl:AddRectFilled({ x, y }, { x + 32, y + 32 }, imgui.GetColorU32({ 0.09, 0.11, 0.14, 1 }))
+            end
+            imgui.Dummy({ 32, 32 })
+        end
+    end
+    if (text ~= nil) and (text ~= '') then
+        imgui.PushTextWrapPos(440)
+        imgui.TextUnformatted(tostring(text))
+        imgui.PopTextWrapPos()
+    end
+    imgui.EndTooltip()
+    imgui.PopStyleColor()
+end
+
 local function owned_for(set, slot)
     if editorState.cache.matchVer ~= editorState.document.revision then
         editorState.cache.matchVer, editorState.cache.matches = editorState.document.revision, {}
@@ -1163,6 +1209,109 @@ local function job_files()
     return editorState.ui.jobFiles, others
 end
 
+-- Unused gear (top bar): the gear in your equip bags (Inventory, Wardrobes: gSettings.EquipBags) that nothing of
+-- this character names: no job file, char.lua, the shared settings file, GoomSwap's own sets or its code
+-- (gcinclude, gcruntime: Moonshade, obis, Warp Ring). A piece is named when its name is a string in one of them
+-- ('Name', "Name", 'Chasseur\'s'), so code naming it counts, as do unsaved edits. Read only: moves nothing.
+ctx.cleanup_scan = function(C)
+    local texts, files = {}, job_files()
+    for _, f in ipairs(files) do
+        local t = (fileWriter.FileKey(f.path) == fileWriter.FileKey(editorState.document.path))
+            and editorState.document.model.text or read_file(f.path)
+        if type(t) == 'string' then texts[#texts + 1] = t end
+    end
+    local base = AshitaCore:GetInstallPath() .. 'config\\addons\\luashitacast\\'
+    for _, path in ipairs({ (char_dir() or base) .. 'char.lua', base .. 'goomswap-shared.lua',
+        base .. 'common\\gcinclude.lua', base .. 'common\\gcruntime.lua' }) do
+        local t = read_file(path)
+        if type(t) == 'string' then texts[#texts + 1] = t end
+    end
+    -- every string in them, once (an escaped quote kept), then a plain search for what that missed
+    local blob = string.lower(table.concat(texts, '\n'))
+    local named, esc = {}, string.gsub(string.gsub(blob, "\\'", '\1'), '\\"', '\2')
+    for q in string.gmatch(esc, "'([^'\n]*)'") do named[(string.gsub(q, '\1', "'"))] = true end
+    for q in string.gmatch(esc, '"([^"\n]*)"') do named[(string.gsub(q, '\2', '"'))] = true end
+    for _, e in pairs(editorState.document.edits) do
+        for _, v in pairs(e) do
+            if type(v.name) == 'string' then named[string.lower(v.name)] = true end
+        end
+    end
+    for _, set in pairs((ctx.gearEngine ~= nil) and ctx.gearEngine.sets or {}) do
+        for _, v in pairs((type(set) == 'table') and set or {}) do
+            local n = (type(v) == 'table') and v.Name or v
+            if type(n) == 'string' then named[string.lower(n)] = true end
+        end
+    end
+    local function is_named(l)
+        if named[l] == nil then
+            named[l] = (string.find(blob, "'" .. string.gsub(l, "'", "\\'") .. "'", 1, true) ~= nil)
+                or (string.find(blob, '"' .. l .. '"', 1, true) ~= nil)
+        end
+        return named[l]
+    end
+    local rows, byKey = {}, {}
+    C.perBag = {}
+    for _, g in ipairs(editorState.inventory.items or {}) do
+        if g.equippable and not is_named(g.lname) then
+            local key = g.lname .. '|' .. g.bag
+            local r = byKey[key]
+            if r == nil then
+                r = { id = g.id, name = g.name, lname = g.lname, bag = g.bag, level = g.level, count = 0,
+                    at = math.floor((g.order or 0) / 1000) }
+                byKey[key], rows[#rows + 1] = r, r
+            end
+            r.count = r.count + 1
+            C.perBag[g.bag] = (C.perBag[g.bag] or 0) + 1
+            C.n = (C.n or 0) + 1
+        end
+    end
+    table.sort(rows, function(a, b)
+        if a.at ~= b.at then return a.at < b.at end
+        return a.lname < b.lname
+    end)
+    C.rows, C.nFiles = rows, #files
+end
+ctx.draw_cleanup = function()
+    local C = editorState.ui.cleanup
+    if C == nil then return end
+    if C.open then
+        C.open = nil
+        ctx.cleanup_scan(C)
+        imgui.OpenPopup('##gcedit_cleanup')
+    end
+    if not imgui.BeginPopup('##gcedit_cleanup') then
+        editorState.ui.cleanup = nil -- closed (a click outside it)
+        return
+    end
+    local n = C.n or 0
+    imgui.TextUnformatted((gState.PlayerName or 'You') .. ': ' .. n .. ' piece' .. ((n == 1) and '' or 's')
+        .. ' in your equip bags nothing names')
+    imgui.PushTextWrapPos(460)
+    imgui.TextColored(palette.dim, 'Checked: ' .. C.nFiles .. ' job files, char.lua, the shared settings, GoomSwap\'s '
+        .. 'own sets and code (a name in code counts). To store or move off a wardrobe. Read only: moves nothing.')
+    imgui.PopTextWrapPos()
+    imgui.BeginChild('##gcedit_cleanup_list', { 460, math.min(360, 60 + #C.rows * 28) }, CHILD_BORDERS)
+    if n == 0 then imgui.TextColored(palette.ok, 'Every piece in your equip bags is named somewhere.') end
+    local bag = nil
+    for i, r in ipairs(C.rows) do
+        if r.bag ~= bag then
+            bag = r.bag
+            imgui.TextColored(palette.section, bag .. ' (' .. C.perBag[bag] .. ')')
+        end
+        draw_icon(r.id, 24)
+        imgui.SameLine()
+        imgui.TextUnformatted(r.name .. ((r.count > 1) and (' x' .. r.count) or ''))
+        imgui.SameLine()
+        imgui.TextColored(palette.dim, 'Lv' .. tostring(r.level or '?'))
+    end
+    imgui.EndChild()
+    if imgui.Button('Close##gcedit_cleanup') then
+        editorState.ui.cleanup = nil
+        imgui.CloseCurrentPopup()
+    end
+    imgui.EndPopup()
+end
+
 local function job_abbr_of(job)
     local s = AshitaCore:GetResourceManager():GetString('jobs.names_abbr', job)
     return (type(s) == 'string') and (string.gsub(s, '%z', '')) or ('job ' .. tostring(job))
@@ -1510,8 +1659,8 @@ local function body()
     end
     -- the file's actions at the right edge, apart from the view's (on a line of their own when they don't fit)
     local d = editorPanels.Density(editorState.preferences.density)
-    local need = text_w('Rescan bags') + text_w('Reload file')
-        + text_w(editorState.document.inactive and 'Save file' or 'Save + reload') + 6 * d.padding[1] + 2 * d.spacing[1]
+    local need = text_w('Unused gear') + text_w('Rescan bags') + text_w('Reload file')
+        + text_w(editorState.document.inactive and 'Save file' or 'Save + reload') + 8 * d.padding[1] + 3 * d.spacing[1]
     imgui.SameLine()
     local avail = imgui.GetContentRegionAvail()
     avail = (type(avail) == 'number') and avail or (avail.x or avail[1])
@@ -1520,6 +1669,13 @@ local function body()
     elseif (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil) then
         imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - need)
     end
+    if imgui.Button('Unused gear##gcedit') then editorState.ui.cleanup = { open = true } end
+    if imgui.IsItemHovered() then
+        set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap names: '
+            .. 'to store or move off a wardrobe. Read only.')
+    end
+    ctx.draw_cleanup()
+    imgui.SameLine()
     if imgui.Button('Rescan bags##gcedit') then
         rescan()
         feedback('Bags rescanned: ' .. #editorState.inventory.items .. ' items. Unsaved edits kept.')
@@ -1668,6 +1824,7 @@ local function body()
     end
     if set ~= nil then
         draw_set(set)
+        m_gceditrelated.draw_upgrade(set) -- a piece changed here that other sets still have: offer it there
     else
         imgui.TextColored(palette.dim, 'Pick a set on the left.')
     end
