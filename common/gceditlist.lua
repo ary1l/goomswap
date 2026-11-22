@@ -759,7 +759,8 @@ local function draw_sets()
                     if imgui.IsItemHovered() and (editorState.ui.dragSet == nil) then
                         local rc = (grp.hint ~= nil) and row_cmd(set) or nil
                         local done = set_completion_tip(set, status)
-                        set_tip(((rc ~= nil) and (rc.tip ~= nil)) and (rc.tip .. '\n\n' .. done) or done)
+                        local tip = ((rc ~= nil) and (rc.tip ~= nil)) and (rc.tip .. '\n\n' .. done) or done
+                        if ctx.set_peek ~= nil then ctx.set_peek(set, tip) else set_tip(tip) end -- its gear too
                     end
                     drag_set_from(set)
                     drop_set_here(grp.g, (not nested) and set or nil) -- under its parent: in file order
