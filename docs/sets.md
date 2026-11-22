@@ -13,7 +13,8 @@ Later wins, slot by slot.
    `Tp_2h` for a two-handed Main (Great Sword, Great Axe, Scythe, Polearm, Great Katana, Staff), `Tp_1h` for a
    one-handed one (Dagger, Sword, Axe, Katana, Club); Hand-to-Hand takes neither. With no `/wm` mode, the Main worn.
 2. Hoxne sets → auto `Idle_Regen` `Idle_Refresh` `Dt` → `Town`.
-3. Weapon mode → `mdt`/`Aminon` → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → XIRoll.
+3. Weapon mode → `mdt`/`Aminon` → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → Hoxne + buff
+   (`Hoxne_Tp_Berserk`: over `Buffs['Berserk']`, it wins the slots both name) → XIRoll.
 4. `Incapacitated` (slept, petrified, stunned, terror), over 1-3: Aminon, else `mdt`, else `Dt` (no weapons), its set.
 5. `Sleeping` → `Doomed`.
 
@@ -22,7 +23,8 @@ obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` 
 
 **WS:** job file (`Ws_Default` → `Ws_<weapon>` → `Ws_<mset>` → `Ws_<weapon>_<mset>` → the WS's own set →
 `<WS>_<weapon>` → `<WS>_<mset>` → `<WS>_<weapon>_<mset>`; `<weapon>` falls back to `2h` / `1h` as above) → `_HighBuff` →
-`_Dt` (`/dt`) → Hoxne (→ its `_Dt`) → `Buffs_Ws` → Moonshade → obi/Orpheus/back.
+`_Dt` (`/dt`) → Hoxne (→ its `_Dt`) → `Buffs_Ws` → Hoxne + buff (`Hoxne_Ws_Berserk`, → its `_Dt`) → Moonshade →
+obi/Orpheus/back.
 `/proc`: only `Ws_Proc` (else `Proc`) in place of all of that; the job file's checks still run.
 `/dt` adds `_Dt` to each WS set worn: `Ws_Dt`, `Ws_SubtleBlow_Dt`, `['Victory Smite_Dt']`, `Hoxne_Ws_Dt`.
 
@@ -46,7 +48,7 @@ and its toggle wears it. Until then it falls back as the table says (`Aminon` �
 | `Incapacitated` `Sleeping` | disabled / asleep (weapons pass the TP hold) |
 | `Absorb` `Absorb_TP` `LightBonus` | Absorb spells / Healing Magic |
 | `Buffs` `Buffs_Ws` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while the buff is up; each is its own set in `/gcedit` |
-| `Hoxne_Tp` `_Idle` `_Dt` `_Ws` `Hoxne_<set>_<buff>` | `/hoxne` + Enchantment; each also `_<mset>` (`Hoxne_Dt_Impetus_SubtleBlow`) |
+| `Hoxne_Tp` `_Idle` `_Dt` `_Ws` `Hoxne_<set>_<buff>` | `/hoxne` + Enchantment; each also `_<mset>` (`Hoxne_Dt_Impetus_SubtleBlow`). `Hoxne_<set>_<buff>` (`Hoxne_Tp_Berserk`, `&` for several: `Hoxne_Tp_Berserk&Aggressor`) while those buffs are up too, over the plain buff sets (`Buffs['Berserk']`) |
 | `Ws_Dt` `<ws>_Dt` `<ws>_<mset>_Dt` | WS while `/dt` is on |
 | `XIRoll` | idle with a roll at 11 |
 | `*_Received` | a spell coming at you (`ReceivedSets`, 8s max) |

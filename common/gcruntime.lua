@@ -1088,6 +1088,7 @@ do
             gcinclude.CheckTH()
             gcinclude.CheckReceived()
             gcinclude.CheckBuffSets()
+            gcinclude.CheckHoxneCombos(player) -- Hoxne + buff sets over the plain buff sets
             gcinclude.CheckXIRoll(player)
         end
     end

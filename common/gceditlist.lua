@@ -180,8 +180,7 @@ end
 local function set_color(set, status)
     if editorState.document.deleted[set.name] then return palette.bad end
     if status.edited then return palette.warn end
-    if status.missing > 0 then return palette.bad end
-    if #status.unfinished > 0 then return palette.rp end
+    if status.missing > 0 then return palette.bad end -- unfinished RP: a dot after the name, not its colour
     if set.code or set.extra or set.count == 0 then return nil end
     if status.armor == 12 then return status.weapons == 4 and palette.ok or palette.armor end
     -- Partial overlays are useful as written. Base armor gaps still need attention.
@@ -437,7 +436,8 @@ end
 local COLOR_KEY = {
     { 'ok', 'Full 16 slots, or a ready partial overlay.' },
     { 'armor', 'All 12 armor/accessory slots filled; weapons may stay unchanged.' },
-    { 'rp', 'Needs RP.' },
+    { 'rp', 'Dot after a name: a piece in it needs RP (the line over the list names them).' },
+    { 'ok', 'Dot before a name: on you now (On you now, over the list).' },
     { 'bad', 'Names gear you do not own (or deleted on Save).' },
     { 'warn', 'Unsaved edits.' },
 }
@@ -533,6 +533,94 @@ local function mset_ghosts()
     end
 end
 
+-- A small filled dot at the cursor (dx from it), centred on the text line; nothing drawn without a draw list.
+local function dot(dx, col)
+    if (imgui.GetWindowDrawList == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetColorU32 == nil) then
+        return
+    end
+    local x, y = ctx.xy(imgui.GetCursorScreenPos())
+    local lh = (imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or 14
+    if (x ~= nil) and (y ~= nil) then
+        imgui.GetWindowDrawList():AddCircleFilled({ x + dx, y + lh / 2 }, 3, imgui.GetColorU32(col), 12)
+    end
+end
+local SLOT_OF = { 'Main', 'Sub', 'Range', 'Ammo', 'Head', 'Body', 'Hands', 'Legs', 'Feet', 'Neck', 'Waist', 'Ear1',
+    'Ear2', 'Ring1', 'Ring2', 'Back' } -- LAC's slot numbers (gcaction's records)
+-- On you now (over the list): the sets wearing something on you, the most slots first, from gcaction's record of
+-- each slot's last swap (GcWornBy); a click opens one. The loaded job only. Its rows get a green dot.
+local function draw_now()
+    editorState.cache.nowSets = nil
+    if editorState.document.inactive or (type(GcWornBy) ~= 'table') then return end
+    local N = editorState.cache.nowSetsKept
+    local stamp = (type(GcRecords) == 'table') and GcRecords.n or 0
+    if (N == nil) or (N.stamp ~= stamp) or (N.rev ~= editorState.document.revision) then
+        N = { stamp = stamp, rev = editorState.document.revision, list = {}, by = {} }
+        for slot = 1, 16 do
+            local w = GcWornBy[slot]
+            local by = (w ~= nil) and w.by or nil
+            local hit = (type(by) == 'string') and editorState.document.model.byLower[string.lower(by)] or nil
+            if hit ~= nil then
+                local e = N.by[hit.name]
+                if e == nil then
+                    e = { name = hit.name, n = 0, slots = {} }
+                    N.by[hit.name], N.list[#N.list + 1] = e, e
+                end
+                e.n, e.slots[#e.slots + 1] = e.n + 1, SLOT_OF[slot]
+            end
+        end
+        table.sort(N.list, function(a, b) if a.n ~= b.n then return a.n > b.n end return a.name < b.name end)
+        editorState.cache.nowSetsKept = N
+    end
+    editorState.cache.nowSets = N
+    if #N.list == 0 then return end
+    imgui.TextColored(palette.dim, 'On you now:')
+    for _, e in ipairs(N.list) do
+        e.label = e.label or (e.name .. ' ' .. e.n .. '##gcnow')
+        editorPanels.SameLineIfFits(imgui, text_w(e.name .. ' ' .. e.n) + 16)
+        imgui.PushStyleColor(ImGuiCol_Button, palette.okBg)
+        imgui.PushStyleColor(ImGuiCol_Text, palette.ok)
+        if imgui.SmallButton(e.label) then go_to(e.name) end
+        imgui.PopStyleColor(2)
+        if imgui.IsItemHovered() then
+            set_tip(e.name .. ': ' .. e.n .. ' of your 16 slots right now (' .. table.concat(e.slots, ' ') .. ').')
+        end
+    end
+end
+-- The RP line (over the list): the pieces your sets name that need RP, and in how many sets; a click shows only
+-- those sets (Needs RP). Worked out once per edit.
+local function draw_rp_line()
+    local R = editorState.cache.rpLine
+    if (R == nil) or (R.rev ~= editorState.document.revision) then
+        R = { rev = editorState.document.revision, pieces = {}, sets = 0 }
+        local seen = {}
+        for _, set in ipairs(editorState.document.model.list) do
+            local st = set_status(set)
+            if #st.unfinished > 0 then
+                R.sets = R.sets + 1
+                for _, u in ipairs(st.unfinished) do
+                    local piece = string.match(u, '^[^:]+: (.+)$') or u
+                    if not seen[piece] then
+                        seen[piece] = true
+                        R.pieces[#R.pieces + 1] = piece
+                    end
+                end
+            end
+        end
+        R.text = (#R.pieces == 1 and '1 piece needs RP: ' or (#R.pieces .. ' pieces need RP: '))
+            .. table.concat(R.pieces, ', ') .. ' (' .. R.sets .. ((R.sets == 1) and ' set)' or ' sets)')
+        editorState.cache.rpLine = R
+    end
+    if #R.pieces == 0 then return end
+    dot(4, palette.rp)
+    imgui.Dummy({ 9, 1 })
+    imgui.SameLine(0, 2)
+    imgui.PushTextWrapPos(0)
+    imgui.TextColored(palette.rp, R.text)
+    imgui.PopTextWrapPos()
+    if imgui.IsItemHovered() then set_tip('Click: only the sets using them (Needs RP), again: all.') end
+    if imgui.IsItemClicked(0) then editorState.ui.needsRpOnly[1] = not editorState.ui.needsRpOnly[1] end
+end
+
 local function draw_sets()
     if imgui.Button('+ New set##gcedit') then
         editorState.ui.sugg = nil
@@ -599,6 +687,8 @@ local function draw_sets()
             draw_unused_delete()
         end
     end
+    draw_now() -- On you now: the sets wearing something on you
+    draw_rp_line() -- the pieces that need RP, in one line
     local find = string.lower(editorState.ui.find[1] or '')
     -- the groups' rows, rebuilt only when the filter or the set list changes
     local key = find
@@ -771,6 +861,8 @@ local function draw_sets()
                     end
                     local status = set_status(set)
                     local col = set_color(set, status)
+                    local nowSets = editorState.cache.nowSets
+                    if (nowSets ~= nil) and (nowSets.by[set.name] ~= nil) then dot(-7, palette.ok) end -- on you now
                     if col ~= nil then imgui.PushStyleColor(ImGuiCol_Text, col) end
                     local picked = imgui.Selectable(set.rowLabel, on)
                     if col ~= nil then imgui.PopStyleColor(1) end -- the name only: not its hover's text
@@ -822,6 +914,14 @@ local function draw_sets()
                             )
                         end
                         part(')', palette.dim)
+                    end
+                    if #status.unfinished > 0 then -- a piece in it needs RP: a small dot, the pieces on hover
+                        imgui.SameLine(0, 6)
+                        dot(3, palette.rp)
+                        imgui.Dummy({ 7, 1 })
+                        if imgui.IsItemHovered() then
+                            set_tip('Needs RP:\n' .. table.concat(status.unfinished, '\n'))
+                        end
                     end
                     if (cmd ~= nil) and (cmd.text ~= nil) then -- what puts it on, at the row's right end
                         imgui.SameLine()

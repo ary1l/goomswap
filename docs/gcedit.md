@@ -117,8 +117,10 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   ([Headings](#headings)). **Unsaved sets**, **Issues**, **Missing**, **Needs RP** and **Unused** filter it; the `?`
   after the filters shows the colours as your theme draws them.
 - Set colours (GoomSwap's own; a theme recolours them but keeps them apart): amber unsaved, red missing gear,
-  violet unfinished RP, then green (all 16 slots, or a ready overlay) and teal (all 12 armor slots; weapons left
-  out on purpose).
+  then green (all 16 slots, or a ready overlay) and teal (all 12 armor slots; weapons left out on purpose). A
+  violet dot after a name: a piece in it needs RP (hover: which). Over the list, one line names the pieces that need
+  RP and in how many sets (click: only those sets), and **On you now** shows the sets wearing something on you, the
+  most slots first (click one to open it); their rows get a green dot.
 - Drag dividers to resize (double-click resets). Density is remembered per job.
 - **Theme** (top bar): the editor's colours. Same as the bar (default), **Match goomui** (the theme goomui saved for
   this character), GoomSwap's own, or any of the 30 presets; hover one to preview. Kept per character
@@ -208,6 +210,11 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   (`Dt_Acc`) are chips under it. A search lists them all as rows. A long name or condition is cut with `...`; hover it for all of it,
   what it goes over, the job file line that wears it, and for one not made what goes on instead (its base set,
   GoomSwap's own `Doomed`, ...).
+- Related's modes are as the game has them: **Show sets for** All modes / As now / Pick; one **/mset** at a time;
+  **Toggles** (DT, WS high-buff, Proc, Hoxne) lit when on. In All modes or As now a click on any of them switches to
+  Pick from what was shown. **Buffs up** (`Berserk, Aftermath: Lv.3`) lists each buff's set (`Buffs['Berserk']`;
+  the ones your file has are listed anyway) and, with Hoxne, its Hoxne version (`Hoxne_Tp_Berserk`), which goes on
+  over the buff set: **make** adds either (a buff set inside `Buffs`).
 - **To fill** lists placeholders, missing or unusable items and empty weapon modes; **Fill all** stages one choice
   for every listed use. When nothing is left, it says **Nothing left to fill.**
 

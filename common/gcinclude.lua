@@ -933,6 +933,7 @@ function gcinclude.WrapHoldHandlers()
                 if (gcdisplay.GetToggle('DTset') == true) then gcinclude.WearChildren(worn, {'Dt'}) end
                 gcinclude.CheckHoxneWs()
                 gcinclude.CheckBuffSets('Buffs_Ws')
+                gcinclude.CheckHoxneWsCombos() -- Hoxne + buff over the plain buff sets
                 return r
             end, ...)
             -- WS cancelled
@@ -1514,36 +1515,57 @@ local function wearHoxneCombos(name)
     end
 end
 
--- A Hoxne set, its /mset variant, then its combos.
+-- A Hoxne set, its /mset variant, then its combos (for a job file's own use; GoomSwap's own order below puts the
+-- combos after the plain buff sets).
 function gcinclude.WearHoxne(name)
     gcinclude.ByName(name)
     wearHoxneCombos(name)
 end
 
-function gcinclude.CheckHoxneSets(player)
-    if (player == nil) or (not gcinclude.HoxneActive()) or (gcdisplay.GetToggle('Kite') == true) then return end
-    if (gcdisplay.GetToggle('DTset') == true) then
-        gcinclude.WearHoxne('Hoxne_Dt')
-    elseif (player.Status == 'Engaged') then
-        gcinclude.WearHoxne('Hoxne_Tp')
-    elseif (player.Status == 'Idle') and (player.IsMoving ~= true) then
-        gcinclude.WearHoxne('Hoxne_Idle')
-    end
+-- The Hoxne set idle/engaged takes now: Hoxne_Dt on /dt, else Hoxne_Tp engaged, Hoxne_Idle idle; nil: none.
+local function hoxneBase(player)
+    if (player == nil) or (not gcinclude.HoxneActive()) or (gcdisplay.GetToggle('Kite') == true) then return nil end
+    if (gcdisplay.GetToggle('DTset') == true) then return 'Hoxne_Dt' end
+    if (player.Status == 'Engaged') then return 'Hoxne_Tp' end
+    if (player.Status == 'Idle') and (player.IsMoving ~= true) then return 'Hoxne_Idle' end
+    return nil
+end
+function gcinclude.CheckHoxneSets(player) -- the Hoxne set (and its /mset version); its buff combos come later
+    local base = hoxneBase(player)
+    if (base ~= nil) then gcinclude.ByName(base) end
+end
+-- Its buff combos (Hoxne_Tp_Berserk, Hoxne_Tp_Berserk&Aggressor): after the plain buff sets (Buffs['Berserk']),
+-- so a Hoxne + buff set wins the slots both name and layers over the buff set (CheckWeapons, after CheckBuffSets).
+function gcinclude.CheckHoxneCombos(player)
+    local base = hoxneBase(player)
+    if (base ~= nil) then wearHoxneCombos(base) end
 end
 
+-- The Hoxne WS sets (Hoxne_Ws, Hoxne_<WS>) and, on /dt, their _Dt; their buff combos come after Buffs_Ws.
+local function hoxneWsName()
+    local ws = gData.GetAction()
+    return (ws ~= nil) and (ws.Name ~= nil) and ('Hoxne_' .. ws.Name) or nil
+end
 function gcinclude.CheckHoxneWs()
     if not gcinclude.HoxneActive() then return end
-    -- Buff combos go over both WS sets, as job files put buff sets over the WS set.
-    local ws = gData.GetAction()
-    local name = (ws ~= nil) and (ws.Name ~= nil) and ('Hoxne_' .. ws.Name) or nil
+    local name = hoxneWsName()
     gcinclude.WornSets = {} -- the Hoxne WS sets worn, for their /dt children
     gcinclude.ByName('Hoxne_Ws')
     if (name ~= nil) then gcinclude.ByName(name) end
+    local worn = gcinclude.WornSets
+    gcinclude.WornSets = nil
+    -- Hoxne_Ws_Dt, Hoxne_Ws_SubtleBlow_Dt...
+    if (gcdisplay.GetToggle('DTset') == true) then gcinclude.WearChildren(worn, {'Dt'}) end
+end
+-- Their buff combos (Hoxne_Ws_Berserk...), after Buffs_Ws so they win the slots both name; then their _Dt on /dt.
+function gcinclude.CheckHoxneWsCombos()
+    if not gcinclude.HoxneActive() then return end
+    local name = hoxneWsName()
+    gcinclude.WornSets = {}
     wearHoxneCombos('Hoxne_Ws')
     if (name ~= nil) then wearHoxneCombos(name) end
     local worn = gcinclude.WornSets
     gcinclude.WornSets = nil
-    -- Hoxne_Ws_Dt, Hoxne_Ws_SubtleBlow_Dt...
     if (gcdisplay.GetToggle('DTset') == true) then gcinclude.WearChildren(worn, {'Dt'}) end
 end
 
