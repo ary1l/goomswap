@@ -2093,10 +2093,13 @@ function gcedit.RequestClose()
 end
 
 -- /gcedit <set> while open: go to that set, keeping the changes.
-function gcedit.Request(kind) -- the bar's '+ new mode...' (gcinclude.EditorRequest): its popup on the next frame
+function gcedit.Request(kind) -- the bar's '+ new mode...' / '+ add...' (gcinclude.EditorRequest), on the next frame
     if not editorState.open then return end
     if (kind == 'wm') then editorState.ui.openNewSet = 'Weapon_'
-    elseif (kind == 'mset') then editorState.ui.requestNewMset = true end
+    elseif (kind == 'mset') then editorState.ui.requestNewMset = true
+    elseif (type(kind) == 'string') and string.match(kind, '^%a+Modes$') then -- MainModes...: Settings, found
+        editorState.ui.settingsOpen, editorState.ui.settingsFind = { true }, { kind }
+    end
 end
 
 function gcedit.Show(setName, slot) -- slot: select it too (the /gcgear right-click)
