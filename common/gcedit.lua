@@ -1486,6 +1486,39 @@ ctx.draw_backups = function()
     end
     imgui.EndPopup()
 end
+-- An item's hover: the sets naming it, as edited ('In 9 sets of COR.lua: Tp_Default, Midshot...'), nil when none.
+-- Worked out once per edit for every item.
+ctx.used_in = function(name)
+    if type(name) ~= 'string' then return nil end
+    local doc = editorState.document
+    local U = editorState.cache.usedIn
+    if (U == nil) or (U.rev ~= doc.revision) or (U.model ~= doc.model) then
+        U = { rev = doc.revision, model = doc.model, by = {} }
+        for _, set in ipairs(doc.model.list) do
+            if not doc.deleted[set.name] then
+                local seen = {}
+                for _, slot in ipairs(SCREEN) do
+                    local v = current(set, slot)
+                    local named = (v ~= nil) and (v.kind == 'item') and (type(v.name) == 'string')
+                    local l = named and string.lower(v.name) or nil
+                    if (l ~= nil) and not seen[l] then
+                        seen[l] = true
+                        U.by[l] = U.by[l] or {}
+                        table.insert(U.by[l], set.name)
+                    end
+                end
+            end
+        end
+        editorState.cache.usedIn = U
+    end
+    local list = U.by[string.lower(name)]
+    if list == nil then return nil end
+    local shown = {}
+    for i = 1, math.min(#list, 8) do shown[i] = list[i] end
+    return 'In ' .. #list .. ((#list == 1) and ' set' or ' sets') .. ' of ' .. tostring(doc.file) .. ': '
+        .. table.concat(shown, ', ') .. ((#list > 8) and ('... (+' .. (#list - 8) .. ')') or '')
+        .. '. Right-click: Find in every job file.'
+end
 -- Recent (over the slots): the sets opened last, newest first, kept with the job's editor preferences; a click opens
 -- one.
 ctx.draw_recent = function(set)

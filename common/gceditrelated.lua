@@ -1500,6 +1500,7 @@ local function draw_picker(set)
                     equippable = row.equippable,
                     bags = row.bags,
                     otherSlot = inOther[g.lname],
+                    usedIn = (ctx.used_in ~= nil) and ctx.used_in(g.name) or nil,
                 })
             )
             profiler.Finish('Item tooltip', tooltipStarted)

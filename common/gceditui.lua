@@ -639,6 +639,7 @@ function tooltip.Model(value, owned, options)
         item.notes[#item.notes + 1] = 'Copies: ' .. table.concat(options.bags, ', ')
     end
     if options.otherSlot then item.notes[#item.notes + 1] = 'Also used in ' .. options.otherSlot .. '.' end
+    if options.usedIn then item.notes[#item.notes + 1] = options.usedIn end -- 'In 9 sets of COR.lua: ...'
     return item
 end
 -- Read vectors from either Lua tables or the binding's native vector type.
@@ -1248,7 +1249,8 @@ local previewHelp = 'Change subtracts the left set from the right set. A positiv
     .. 'Green/red follow a known beneficial direction; less Damage taken can be green with a negative change.\n'
     .. 'Neutral stats, such as Enmity, are not rated. Gear differences and stat differences are separate.\n'
     .. 'Totals add listed gear bonuses. Zero means no listed numeric contribution, not that an unknown slot is empty.\n'
-    .. 'Live modes/settings, current worn gear, custom logic, buffs, caps and combat formulas are not simulated.\n'
+    .. 'Live modes/settings, current worn gear, custom logic, buffs and combat formulas are not simulated; caps are\n'
+    .. 'shown over the totals (over: wasted), not applied to them.\n'
     .. 'Conditional and unsupported effects are under Other effects / not totaled below the table.'
 local reasons = {
     ['Conditional or variable effect'] = 'Conditional: ',
@@ -1276,6 +1278,104 @@ local function stat_name(imgui, colors, name) -- '<Element> resistance' after it
     if (e ~= nil) and ui.ElementDot(imgui, e) then imgui.SameLine(0, 2) end
     text(imgui, colors.text, name)
 end
+-- Gear totals against their caps, each checked on BG-Wiki or FFXIclopedia (the hover names the page): over is
+-- wasted, under is room left. Damage taken is split as the game caps it: physical (DT + PDT), magic (DT + MDT) and
+-- breath (DT + BDT) each at -50%; the II versions are apart, past it. Only stats the gear has.
+local DT_TIP = 'DT counts toward each of the physical, magic and breath caps (-50% each); PDT, MDT and BDT only '
+    .. 'toward their own. The II versions (PDT II...) are counted apart: past -50%, up to -87.5% in all '
+    .. '(BG-Wiki: Damage Taken). Older gear\'s listed % can round down a little (/256: FFXIclopedia, Damage).'
+local CAPS = {
+    { label = 'Haste (gear)', stat = 'Haste', cap = 25, near = 26,
+        tip = 'Gear haste caps at 256/1024, exactly 25%. Gear lists rounded values (Blitz Ring 11/1024 reads 1%), so '
+            .. '25-26% as listed is at or about the cap (FFXIclopedia: Haste (Status Effect)).' },
+    { label = 'Fast Cast', stat = 'Fast Cast', cap = 80,
+        tip = 'Casting time reduction caps at 80%; traits count toward it too (BG-Wiki: Fast Cast).' },
+    { label = 'Snapshot', stat = 'Snapshot', cap = 70,
+        tip = '70% from all sources: merits (up to 10%) and Flurry count too; Rapid Shot and Velocity Shot are apart '
+            .. '(BG-Wiki: Snapshot).' },
+    { label = 'Quick Magic', stat = 'Quick Magic', cap = 10, tip = 'Caps at +10% (FFXIclopedia: Quick Magic).' },
+    { label = 'Cure potency', stat = 'Cure potency', cap = 50,
+        tip = 'Equipment cure potency caps at +50% (FFXIclopedia: Cure Potency).' },
+}
+local DT_ROWS = { -- the specific stat with DT toward one -50% cap, and its II
+    { label = 'Physical damage taken', short = 'PDT', stat = 'Physical damage taken',
+        two = 'Physical damage taken II' },
+    { label = 'Magic damage taken', short = 'MDT', stat = 'Magic damage taken', two = 'Magic damage taken II' },
+    { label = 'Breath damage taken', short = 'BDT', stat = 'Breath damage taken', only = true },
+}
+local function fmt(v) return ((v > 0) and '+' or '') .. string.format('%g', v) .. '%' end
+local function caps_rows(model) -- { { label, total, parts, state, color, tip } }, worked out once per model
+    if model.caps ~= nil then return model.caps end
+    local t = {}
+    for _, row in ipairs(model.rows) do
+        if row.unit == '%' then t[row.name] = (t[row.name] or 0) + row.value end
+    end
+    local out = {}
+    for _, c in ipairs(CAPS) do
+        local v = t[c.stat] or 0
+        if v ~= 0 then
+            local r = { label = c.label, total = fmt(v), tip = c.tip }
+            if v > (c.near or c.cap) then
+                r.state, r.color = string.format('%g', v - (c.near or c.cap)) .. '% over (cap ' .. c.cap .. '%)', 'warn'
+            elseif v >= c.cap then
+                r.state, r.color = 'at cap (' .. c.cap .. '%)', 'ok'
+            else
+                r.state, r.color = string.format('%g', c.cap - v) .. '% free (cap ' .. c.cap .. '%)', 'dim'
+            end
+            out[#out + 1] = r
+        end
+    end
+    local dt, dt2 = t['Damage taken'] or 0, t['Damage taken II'] or 0
+    for _, d in ipairs(DT_ROWS) do
+        local own = t[d.stat] or 0
+        if (own ~= 0) or ((dt ~= 0) and not d.only) then
+            local v = dt + own
+            local parts = {}
+            if dt ~= 0 then parts[#parts + 1] = 'DT ' .. string.format('%g', dt) end
+            if own ~= 0 then parts[#parts + 1] = d.short .. ' ' .. string.format('%g', own) end
+            local r = { label = d.label, total = fmt(v), parts = table.concat(parts, ' + '), tip = DT_TIP }
+            if v < -50 then
+                r.state, r.color = string.format('%g', -50 - v) .. '% over (cap -50%)', 'warn'
+            elseif v == -50 then
+                r.state, r.color = 'at cap (-50%)', 'ok'
+            else
+                r.state, r.color = string.format('%g', v + 50) .. '% free (cap -50%)', 'dim'
+            end
+            local two = dt2 + ((d.two ~= nil) and (t[d.two] or 0) or 0)
+            if two ~= 0 then r.two = 'II ' .. string.format('%g', two) .. '% past the cap' end
+            out[#out + 1] = r
+        end
+    end
+    model.caps = out
+    return out
+end
+local function caps(imgui, colors, model, tw)
+    local rows = caps_rows(model)
+    if #rows == 0 then return end
+    local lw, vw = 0, 0
+    for _, r in ipairs(rows) do lw, vw = math.max(lw, tw(r.label)), math.max(vw, tw(r.total)) end
+    for _, r in ipairs(rows) do
+        local x0 = (imgui.GetCursorPosX ~= nil) and imgui.GetCursorPosX() or nil
+        imgui.TextColored(colors.text, r.label)
+        ui.Panels.Tip(imgui, colors, r.tip) -- where the cap comes from, and what counts toward it
+        imgui.SameLine()
+        if (x0 ~= nil) and (imgui.SetCursorPosX ~= nil) then imgui.SetCursorPosX(x0 + lw + 12 + vw - tw(r.total)) end
+        imgui.TextColored(colors.text, r.total)
+        if r.parts ~= nil then
+            imgui.SameLine(0, 10)
+            imgui.TextColored(colors.dim, '(' .. r.parts .. ')')
+        end
+        imgui.SameLine(0, 12)
+        imgui.TextColored(colors[r.color] or colors.dim, r.state)
+        ui.Panels.Tip(imgui, colors, r.tip)
+        if r.two ~= nil then
+            imgui.SameLine(0, 10)
+            imgui.TextColored(colors.blue, r.two)
+            ui.Panels.Tip(imgui, colors, r.tip)
+        end
+    end
+    imgui.Spacing()
+end
 function views.DrawSummary(imgui, colors, name, model)
     local fs = imgui.GetFontSize() or 16
     local function tw(t)
@@ -1299,6 +1399,7 @@ function views.DrawSummary(imgui, colors, name, model)
         .. (model.baseOnly == 1 and ' item has' or ' items have')
             .. ' base stats only; exact augments are unknown.') end
     imgui.Separator()
+    caps(imgui, colors, model, tw) -- against their caps: over (wasted) or room left
     imgui.BeginChild('##summary_rows', { 0, 0 }, 0)
     local available = imgui.GetContentRegionAvail()
     local width = type(available) == 'number' and available or (available.x or available[1])
