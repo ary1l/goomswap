@@ -1249,7 +1249,7 @@ local previewHelp = 'Change subtracts the left set from the right set. A positiv
     .. 'Green/red follow a known beneficial direction; less Damage taken can be green with a negative change.\n'
     .. 'Neutral stats, such as Enmity, are not rated. Gear differences and stat differences are separate.\n'
     .. 'Totals add listed gear bonuses. Zero means no listed numeric contribution, not that an unknown slot is empty.\n'
-    .. 'Live modes/settings, current worn gear, custom logic, buffs and combat formulas are not simulated; caps are\n'
+    .. 'Live modes/settings, current worn gear, custom logic, buffs and combat formulas are not simulated; caps are '
     .. 'shown over the totals (over: wasted), not applied to them.\n'
     .. 'Conditional and unsupported effects are under Other effects / not totaled below the table.'
 local reasons = {
@@ -1315,8 +1315,10 @@ local function caps_rows(model) -- { { label, total, parts, state, color, tip } 
         local v = t[c.stat] or 0
         if v ~= 0 then
             local r = { label = c.label, total = fmt(v), tip = c.tip }
-            if v > (c.near or c.cap) then
-                r.state, r.color = string.format('%g', v - (c.near or c.cap)) .. '% over (cap ' .. c.cap .. '%)', 'warn'
+            if v > (c.near or c.cap) then -- haste: 25-26% as listed is the cap, so over by a range
+                local lo, hi = v - (c.near or c.cap), v - c.cap
+                r.state, r.color = ((lo ~= hi) and (string.format('%g', lo) .. '-') or '') .. string.format('%g', hi)
+                    .. '% over (cap ' .. c.cap .. '%)', 'warn'
             elseif v >= c.cap then
                 r.state, r.color = 'at cap (' .. c.cap .. '%)', 'ok'
             else
@@ -1326,14 +1328,22 @@ local function caps_rows(model) -- { { label, total, parts, state, color, tip } 
         end
     end
     local dt, dt2 = t['Damage taken'] or 0, t['Damage taken II'] or 0
+    local split = false -- no PDT, MDT or BDT: one Damage taken row (DT counts toward each cap the same)
+    for _, d in ipairs(DT_ROWS) do
+        if ((t[d.stat] or 0) ~= 0) or ((d.two ~= nil) and ((t[d.two] or 0) ~= 0)) then split = true end
+    end
     for _, d in ipairs(DT_ROWS) do
         local own = t[d.stat] or 0
-        if (own ~= 0) or ((dt ~= 0) and not d.only) then
+        if (not split) and (d.short ~= 'PDT') then
+            own = nil -- the one row is the physical row, renamed
+        end
+        if (own ~= nil) and ((own ~= 0) or ((dt ~= 0) and not d.only)) then
             local v = dt + own
             local parts = {}
             if dt ~= 0 then parts[#parts + 1] = 'DT ' .. string.format('%g', dt) end
             if own ~= 0 then parts[#parts + 1] = d.short .. ' ' .. string.format('%g', own) end
-            local r = { label = d.label, total = fmt(v), parts = table.concat(parts, ' + '), tip = DT_TIP }
+            local r = { label = split and d.label or 'Damage taken', total = fmt(v), tip = DT_TIP,
+                parts = split and table.concat(parts, ' + ') or 'physical, magic, breath alike' }
             if v < -50 then
                 r.state, r.color = string.format('%g', -50 - v) .. '% over (cap -50%)', 'warn'
             elseif v == -50 then
@@ -1352,25 +1362,29 @@ end
 local function caps(imgui, colors, model, tw)
     local rows = caps_rows(model)
     if #rows == 0 then return end
-    local lw, vw = 0, 0
-    for _, r in ipairs(rows) do lw, vw = math.max(lw, tw(r.label)), math.max(vw, tw(r.total)) end
+    local lw, vw, sw = 0, 0, 0 -- columns: the stat, its total (right-aligned), the state, then what makes it up
+    for _, r in ipairs(rows) do
+        lw, vw, sw = math.max(lw, tw(r.label)), math.max(vw, tw(r.total)), math.max(sw, tw(r.state))
+    end
+    imgui.TextColored(colors.blue, 'Caps')
     for _, r in ipairs(rows) do
         local x0 = (imgui.GetCursorPosX ~= nil) and imgui.GetCursorPosX() or nil
+        local at = (x0 ~= nil) and (imgui.SetCursorPosX ~= nil)
         imgui.TextColored(colors.text, r.label)
         ui.Panels.Tip(imgui, colors, r.tip) -- where the cap comes from, and what counts toward it
         imgui.SameLine()
-        if (x0 ~= nil) and (imgui.SetCursorPosX ~= nil) then imgui.SetCursorPosX(x0 + lw + 12 + vw - tw(r.total)) end
+        if at then imgui.SetCursorPosX(x0 + lw + 12 + vw - tw(r.total)) end
         imgui.TextColored(colors.text, r.total)
-        if r.parts ~= nil then
-            imgui.SameLine(0, 10)
-            imgui.TextColored(colors.dim, '(' .. r.parts .. ')')
-        end
-        imgui.SameLine(0, 12)
+        imgui.SameLine()
+        if at then imgui.SetCursorPosX(x0 + lw + 12 + vw + 14) end
         imgui.TextColored(colors[r.color] or colors.dim, r.state)
         ui.Panels.Tip(imgui, colors, r.tip)
-        if r.two ~= nil then
-            imgui.SameLine(0, 10)
-            imgui.TextColored(colors.blue, r.two)
+        local after = ((r.parts ~= nil) and r.parts or '') .. ((r.two ~= nil) and (((r.parts ~= nil) and '; ' or '')
+            .. r.two) or '')
+        if after ~= '' then
+            imgui.SameLine()
+            if at then imgui.SetCursorPosX(x0 + lw + 12 + vw + 14 + sw + 14) end
+            imgui.TextColored(colors.dim, after)
             ui.Panels.Tip(imgui, colors, r.tip)
         end
     end

@@ -972,33 +972,36 @@ local function draw_over(set)
         C.when = C.name + nameW + 16
         V.cols = C
     end
+    -- a set's hover: what it goes over and when, open or make it, what covers it when not made, and the job file
+    -- line that wears it (that line whole: not wrapped)
     local function row_tip(w)
         if w.tip ~= nil then return w.tip end
         local tip = {}
         if not w.self then
-            tip[#tip + 1] = w.name .. ': goes on' .. ((w.parent ~= nil) and (' over ' .. w.parent) or '')
-                .. ((#w.conds > 0) and (' when ' .. w.when) or ', always') .. '.'
+            tip[#tip + 1] = w.name .. ((w.parent ~= nil) and (': over ' .. w.parent) or '')
+                .. ((#w.conds > 0) and (', when ' .. w.when) or ', always') .. '.'
         elseif w.cut then
             tip[#tip + 1] = w.name .. ' (this set)'
         end
-        if w.have and not w.self then tip[#tip + 1] = 'Click: open it. < Back (over the slots) comes back here.' end
         if w.src == 'file' then
-            tip[#tip + 1] = 'In your file, named after '
-                .. w.parent
-                .. ', but nothing GoomSwap or your job file names looks for it: your job file may build its name in code (see the note at the end).'
+            tip[#tip + 1] = 'In your file, named after ' .. w.parent .. ', but nothing GoomSwap or your job file names '
+                .. 'looks for it: your job file may build its name in code (see the note at the end).'
         elseif (w.parent ~= nil) and not w.parentHave then
             tip[#tip + 1] = 'GoomSwap only looks for it when ' .. w.parent .. ' exists.'
         end
-        if w.src == 'job' then tip[#tip + 1] = 'Your job file wears it, line ' .. w.line .. ':\n' .. w.code end
         if w.proc == 'engaged' then
-            tip[#tip + 1] =
-                '/proc while engaged: in place of every other set here (to proc a mob, not kill it); the weapon mode stays, and sleep/doom sets still go on.'
+            tip[#tip + 1] = '/proc while engaged: in place of every other set here (to proc a mob, not kill it); the '
+                .. 'weapon mode stays, and sleep/doom sets still go on.'
         elseif w.proc then
-            tip[#tip + 1] =
-                '/proc: in place of all the WS gear above (to proc a mob, not kill it); slots it leaves out keep what you have on.'
+            tip[#tip + 1] = '/proc: in place of all the WS gear above (to proc a mob, not kill it); slots it leaves '
+                .. 'out keep what you have on.'
         end
         if w.fbTip ~= nil then tip[#tip + 1] = w.fbTip end
-        w.tip = wrap(table.concat(tip, '\n'), 60)
+        if w.have and not w.self then tip[#tip + 1] = 'Click: open it (< Back over the slots returns).' end
+        if not w.have then tip[#tip + 1] = 'Click make: add it, empty (Save writes it).' end
+        local text = wrap(table.concat(tip, '\n'), 60)
+        if w.src == 'job' then text = text .. '\nJob file, line ' .. w.line .. ':\n  ' .. w.code end
+        w.tip = text
         return w.tip
     end
     local function row(w) -- one set: its place in the order, its name (click: open it) or make, when it goes on
@@ -1066,7 +1069,7 @@ local function draw_over(set)
         if not w.have then
             w.mkLabel = w.mkLabel or ('+##gcwm' .. w.pos)
             if imgui.SmallButton(w.mkLabel) then make_set(w.name, nil, true) end
-            if imgui.IsItemHovered() then set_tip(row_tip(w) .. '\nClick: make it, empty (Save writes it).') end
+            if imgui.IsItemHovered() then set_tip(row_tip(w)) end
             return
         end
         local made = editorState.document.model.byLower[string.lower(w.name)]
@@ -1180,7 +1183,7 @@ local function draw_over(set)
             else
                 w.chipLabel = w.chipLabel or (ch.mset .. ' +##gcwc' .. w.pos)
                 if make_button(w.chipLabel) then make_set(w.name, nil, true) end
-                if imgui.IsItemHovered() then set_tip(row_tip(w) .. '\nClick: make it, empty (Save writes it).') end
+                if imgui.IsItemHovered() then set_tip(row_tip(w)) end
             end
         end
     end
