@@ -424,6 +424,70 @@ local function color_key()
     imgui.PopStyleColor()
 end
 
+-- MELEE and WEAPONS rows: the command that puts the set on, right-aligned, and a sentence for its hover. Tp_<mode>
+-- for each /mset mode (Default too); Weapon_<mode> and its own sets by gceditactions' When. Kept per revision.
+local function row_cmd(set)
+    if (set.cmdVer == editorState.document.revision) then return set.cmd or nil end
+    set.cmdVer, set.cmd = editorState.document.revision, false
+    if (set.parentName ~= nil) then return nil end
+    local mode = string.match(set.name, '^[Tt][Pp]_(.+)$')
+    if (mode ~= nil) and (ctx.melee_modes ~= nil) then
+        for _, m in ipairs(ctx.melee_modes()) do
+            if (string.lower(m) == string.lower(mode)) then
+                local lm = string.lower(m)
+                if (lm == 'default') then
+                    set.cmd = { text = '/mset default', tip = '/mset default (Base): engaged, the TP set every melee '
+                        .. 'mode starts from.' }
+                else
+                    set.cmd = { text = '/mset ' .. lm, tip = '/mset ' .. lm .. ' wears it over Tp_Default'
+                        .. (((set.count or 0) == 0) and ': empty, so the same gear as Default.' or '.') }
+                end
+                return set.cmd
+            end
+        end
+        return nil
+    end
+    if string.match(set.name, '^[Ww]eapon_') and (ctx.actions ~= nil) and (ctx.actions.When ~= nil) then
+        local ok, text, short = pcall(ctx.actions.When, set)
+        local wm = ok and (type(short) == 'string') and string.match(short, '^/wm (%S+)') or nil
+        if (wm ~= nil) then
+            local cond = string.sub(short, #wm + 6)
+            cond = string.gsub(string.gsub(cond, "when you can't dual wield", 'no dual wield'), '^%s*with%s+', '')
+            cond = string.gsub(cond, '^[%s,]+', '')
+            set.cmd = { text = (cond ~= '') and string.lower(cond) or ('/wm ' .. string.lower(wm)), tip = text }
+            return set.cmd
+        end
+    end
+    return nil
+end
+-- A /mset mode with no Tp_ set yet: a grey row, and make to add it (empty).
+local function mset_ghosts()
+    if (ctx.melee_modes == nil) then return end
+    local by = editorState.document.model.byLower
+    for _, m in ipairs(ctx.melee_modes()) do
+        local name = 'Tp_' .. m
+        if (by[string.lower(name)] == nil) and (string.lower(m) ~= 'default') then
+            imgui.TextColored(palette.dim, name .. ' no set')
+            if imgui.IsItemHovered() then
+                set_tip('/mset ' .. string.lower(m) .. ' has no Tp_ set: engaged gear stays as Default. Make adds '
+                    .. 'it, empty: fill only what differs.')
+            end
+            imgui.SameLine()
+            if imgui.SmallButton('make##gcm_ghost_' .. m) then make_set(name, nil, true) end
+            local t = '/mset ' .. string.lower(m)
+            imgui.SameLine()
+            local avail = (imgui.GetContentRegionAvail ~= nil) and ctx.xy(imgui.GetContentRegionAvail()) or nil
+            if (avail ~= nil) and (avail > text_w(t) + 8) and (imgui.SetCursorPosX ~= nil)
+                and (imgui.GetCursorPosX ~= nil) then
+                imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - text_w(t))
+                imgui.TextColored(palette.dim, t)
+            else
+                imgui.NewLine()
+            end
+        end
+    end
+end
+
 local function draw_sets()
     if imgui.Button('+ New set##gcedit') then
         editorState.ui.sugg = nil
@@ -571,7 +635,7 @@ local function draw_sets()
                 grp.label = grp.label or (grp.head .. '##gcg_' .. grp.g)
                 imgui.SetNextItemOpen(not folded, ImGuiCond_Always or 1)
                 local open = imgui.TreeNodeEx(grp.label, bit.bor(ImGuiTreeNodeFlags_SpanAvailWidth or 0,
-                    ImGuiTreeNodeFlags_AllowOverlap or 0, -- the + mode button on MELEE / WEAPONS
+                    ImGuiTreeNodeFlags_AllowOverlap or 0, -- the + /mset mode, + /wm mode buttons
                     ImGuiTreeNodeFlags_NoTreePushOnOpen or 0))
                 if (open == folded) and (find == '') then -- clicked: it turned
                     editorState.ui.fold[grp.g] = not open
@@ -597,16 +661,17 @@ local function draw_sets()
                 imgui.SameLine(x0 + arrowW + text_w(grp.head) + 12)
                 pill(grp.n, palette.dim, palette.chipBg)
             end
-            if (grp.hint ~= nil) then -- MELEE / WEAPONS: + mode at the heading's right end (folded too)
+            if (grp.hint ~= nil) then -- MELEE / WEAPONS: + /mset mode, + /wm mode at the heading's right end
                 local pad = editorPanels.Density(editorState.preferences.density).padding[1]
-                local bw = text_w('+ mode') + 2 * pad
+                local label = (grp.hint.mset ~= nil) and '+ /mset mode' or '+ /wm mode'
+                local bw = text_w(label) + 2 * pad
                 imgui.SameLine()
                 local avail = (imgui.GetContentRegionAvail ~= nil) and ctx.xy(imgui.GetContentRegionAvail()) or nil
                 if (avail ~= nil) and (avail > bw) and (imgui.SetCursorPosX ~= nil)
                     and (imgui.GetCursorPosX ~= nil) then
                     imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - bw)
                 end
-                if imgui.SmallButton('+ mode##gch_' .. grp.g) then
+                if imgui.SmallButton(label .. '##gch_' .. grp.g) then
                     if (grp.hint.mset ~= nil) then editorState.ui.requestNewMset = true
                     else editorState.ui.openNewSet = 'Weapon_' end
                 end
@@ -623,28 +688,22 @@ local function draw_sets()
                 imgui.Indent(arrowW)
                 imgui.PushTextWrapPos(0)
                 for _, p in ipairs(grp.hint.problems) do imgui.TextColored(palette.warn, p) end
-                if (grp.hint.mset ~= nil) then -- the /mset modes as chips, wrapped to the panel
-                    local avail = (imgui.GetContentRegionAvail ~= nil) and ctx.xy(imgui.GetContentRegionAvail()) or nil
-                    local used = 0
-                    for i, m in ipairs(grp.hint.mset) do
-                        local w = text_w(m) + 12
-                        if (i > 1) then
-                            if (avail == nil) or (used + w <= avail) then imgui.SameLine(0, 12) else used = 0 end
-                        end
-                        pill(m, palette.dim, palette.chipBg)
-                        if imgui.IsItemHovered() then set_tip('/mset ' .. string.lower(m)) end
-                        used = used + w
-                    end
-                end
                 if grp.hint.empty then
-                    for _, p in ipairs(grp.hint.picks) do imgui.TextColored(palette.dim, p) end
-                    if imgui.IsItemHovered() then set_tip('MainModes / SubModes in Settings.') end
+                    for _, p in ipairs(grp.hint.picks) do
+                        imgui.TextColored(palette.dim, p)
+                        if imgui.IsItemHovered() then
+                            set_tip('The weapons /mw /sw /rw switch between (MainModes, SubModes, RangeModes '
+                                .. "in Settings), not what you wear now. A Weapon_ set's Main, Sub and Range are "
+                                .. 'picks too.')
+                        end
+                    end
                 end
                 imgui.PopTextWrapPos()
                 imgui.Unindent(arrowW)
             end
             clip_drawn(clip, grp)
         end
+        if (grp.hint ~= nil) and (grp.hint.mset ~= nil) and not folded then mset_ghosts() end
         for _, set in ipairs(folded and NONE or grp.rows) do
             if (not editorState.ui.issuesOnly[1]) or has_issue(set) then
                 local on = (editorState.selection.setName == set.name)
@@ -674,7 +733,9 @@ local function draw_sets()
                     end
                     if imgui.IsItemClicked(1) then request_context('set', set) end
                     if imgui.IsItemHovered() and (editorState.ui.dragSet == nil) then
-                        set_tip(set_completion_tip(set, status))
+                        local rc = (grp.hint ~= nil) and row_cmd(set) or nil
+                        local done = set_completion_tip(set, status)
+                        set_tip(((rc ~= nil) and (rc.tip ~= nil)) and (rc.tip .. '\n\n' .. done) or done)
                     end
                     drag_set_from(set)
                     drop_set_here(grp.g, (not nested) and set or nil) -- under its parent: in file order
@@ -690,6 +751,7 @@ local function draw_sets()
                     end
                     local nGap = ((gaps ~= nil) and (#gaps > 0)) and #gaps or nil
                     local no = not_owned(set)
+                    local cmd = (grp.hint ~= nil) and row_cmd(set) or nil
                     if (nGap ~= nil) or (no ~= nil) then
                         local function part(text, color, tip)
                             imgui.SameLine(0, 0)
@@ -713,6 +775,19 @@ local function draw_sets()
                             )
                         end
                         part(')', palette.dim)
+                    end
+                    if (cmd ~= nil) and (cmd.text ~= nil) then -- what puts it on, at the row's right end
+                        imgui.SameLine()
+                        local avail = (imgui.GetContentRegionAvail ~= nil)
+                            and ctx.xy(imgui.GetContentRegionAvail()) or nil
+                        local w = text_w(cmd.text)
+                        if (avail ~= nil) and (avail > w + 8) and (imgui.SetCursorPosX ~= nil) then
+                            imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - w)
+                            imgui.TextColored(palette.dim, cmd.text)
+                            if (cmd.tip ~= nil) and imgui.IsItemHovered() then set_tip(cmd.tip) end
+                        else
+                            imgui.NewLine() -- no room: the hover over the name says it
+                        end
                     end
                     clip_drawn(clip, set)
                 end

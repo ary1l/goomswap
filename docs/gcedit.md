@@ -19,7 +19,7 @@ Edits your loaded job file. Changes stay in memory until you confirm a save. `/g
 | TP or WS gear for a weapon type | `Tp_2h` / `Tp_1h` (and `Ws_`, `Dt_`, `Idle_`...): for a weapon with no set of its own, by its Main ([How sets stack](sets.md#how-sets-stack)) |
 | A Main/Sub/Range pick (`/mw` `/sw` `/rw`) | Nothing: every item in a `Weapon_` set is one. Others go in `gcinclude.SubModes` (etc.) in the file |
 | A COR/RNG gun | Add its name to `gcinclude.RangeModes` in the file |
-| A melee mode (`/mset`) | **+ mode** on the **MELEE** heading (your modes show under it as chips; also **+ New mode** on the **Related** tab): name it, tick the sets to make for it (`Tp_<mode>` and `Ws_<mode>` start ticked; `Dt_<mode>` and each weapon skill's `Savage Blade_<mode>` offered), **Add**. They start empty: fill only what differs. **Save + reload** adds it to `gcinclude.MeleeModes`; `/mset <mode>` then wears each over its base |
+| A melee mode (`/mset`) | **+ /mset mode** on the **MELEE** heading (also **+ New mode** on the **Related** tab): name it, tick the sets to make for it (`Tp_<mode>` and `Ws_<mode>` start ticked; `Dt_<mode>` and each weapon skill's `Savage Blade_<mode>` offered), **Add**. They start empty: fill only what differs. **Save + reload** adds it to `gcinclude.MeleeModes`; `/mset <mode>` then wears each over its base |
 | A set for one buff | Open `Buffs` (idle/engaged), `Buffs_Ws` or `Buffs_Midcast`, type the buff's name as the game shows it, **New buff set**. Each shows under its parent (`Buffs['Aftermath: Lv.3']`) and edits, deletes and copies to other jobs like any set. Renaming one also renames code that takes it from its parent (`sets.Buffs['Haste']`, `sets.Buffs.Haste`) |
 
 ## Headings
@@ -85,7 +85,8 @@ written at once; **This job** changes wait for the editor's Save, like set edits
 lines (a new one goes just before `gcinclude.Initialize()`). Below the settings, **Only in <job file>** edits that
 file's own options the same way: `DefaultWeapons`, `WeaponRoles`, `MainModes` `SubModes` `RangeModes`,
 `WeaponItemMap`, `AlwaysDualWield`, `NukeModes`, `Packer`, `SIRSkip` `THSkip`, `CureObi`, `SafeAmmo`, `RangeAmmo`,
-`CORmsg`, `LockstyleSet` (`WeaponModes` and `MeleeModes` are shown; Weapon_ sets and the headings' **+ mode** change them).
+`CORmsg`, `LockstyleSet` (`WeaponModes` and `MeleeModes` are shown; Weapon_ sets and the headings' **+ /wm mode**,
+**+ /mset mode** change them).
 A value written as code, or set in more than one place in the file, is left for you to edit there. True/false are checkboxes, numbers and text are boxes, tables are Lua
 (`{ 'Ninjutsu' }`). Hover a setting for what it does, an example typed the way its box takes it, and its value in
 each file; an empty box shows the example greyed. Numbers keep to their range (HP/MP % 0-100, TP 0-3000).
@@ -99,10 +100,12 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   your weapons`).
 - **Used for** (over the slots) says when a set goes on: GoomSwap's own trigger for it, else where your job file's
   code wears it, read from the file (`moving, not engaged (HandleDefault, line 732)`); hover it for each place.
-- **WEAPONS** and **MELEE** always show, each with **+ mode** at the heading's right end (WEAPONS: New set with
-  `Weapon_` typed, the box says what the name will be; MELEE: the new `/mset` mode and its sets). MELEE lists your
-  `/mset` modes as chips; with no `Weapon_` set WEAPONS lists the file's `/mw` `/sw` picks (`MainModes`,
-  `SubModes`). A `DefaultWeapons` or
+- **WEAPONS** and **MELEE** always show, with **+ /wm mode** / **+ /mset mode** at the heading's right end (WEAPONS:
+  New set with `Weapon_` typed, the box says what the name will be; MELEE: the new `/mset` mode and its sets). Each
+  set there says, at its right end, what wears it: `/mset acc` (`Tp_Acc`), `/wm naegling`, `no dual wield`
+  (`Weapon_Naegling_1h`); hover it for the sentence. A `/mset` mode with no `Tp_<mode>` set shows greyed
+  (`Tp_Hybrid no set`) with **make**. With no `Weapon_` set WEAPONS lists the file's picks
+  (`Main picks (/mw): ...`, from `MainModes` `SubModes` `RangeModes`). A `DefaultWeapons` or
   `WeaponRoles` naming a weapon or mode nothing offers is flagged there and in **Settings**: the engine skips it at
   load without a word.
 - Search the set list by a set's name or an item (`nyame`: every set wearing a Nyame piece, as edited), or fold its

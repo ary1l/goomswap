@@ -67,6 +67,7 @@ end -- LAC slot numbers (constants.EquipSlotNames)
 
 local gearEngine = nil -- gcinclude: Say / Err
 local ctx = {} -- for code in other files: ctx.gearEngine and ctx.actions, kept current here
+ctx.setFile = setFile -- the job file's reader (gcsetfile)
 -- The open editor's state. One table for the module's life, emptied and refilled in place, so code split into
 -- other files keeps a working reference. editorState.open: an editor is open.
 local editorState = {}
@@ -795,7 +796,7 @@ ctx.weapon_problems = function()
     return out
 end
 settingsFiles.WeaponProblems = ctx.weapon_problems -- the Settings window shows them too
--- The /mw /sw /rw /ammoset picks the job file lists (not None): { '/mw: Burtgang, Naegling', ... }.
+-- The /mw /sw /rw /ammoset picks the job file lists (not None): { 'Main picks (/mw): Burtgang, Naegling', ... }.
 ctx.weapon_picks = function()
     local out = {}
     for _, slot in ipairs({ 'Main', 'Sub', 'Range', 'Ammo' }) do
@@ -804,7 +805,9 @@ ctx.weapon_picks = function()
         for _, v in ipairs((type(list) == 'table') and list or {}) do
             if (type(v) == 'string') and (string.lower(v) ~= 'none') then names[#names + 1] = v end
         end
-        if #names > 0 then out[#out + 1] = PICK_CMD[slot] .. ': ' .. table.concat(names, ', ') end
+        if #names > 0 then
+            out[#out + 1] = slot .. ' picks (' .. PICK_CMD[slot] .. '): ' .. table.concat(names, ', ')
+        end
     end
     return out
 end

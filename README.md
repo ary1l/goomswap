@@ -59,7 +59,7 @@ picks it (F7 cycles). While it is on, its own sets go over their base: `Tp_<Name
 **Add one** (example: an RDM adding Mpu Gandring as `/wm mpu`):
 
 1. `/gcedit` on that character. For another job's file, click the file name in the top bar.
-2. **+ mode** on the WEAPONS heading (or **+ New set**), name it `Weapon_Mpu` (one word, no spaces or `_`:
+2. **+ /wm mode** on the WEAPONS heading (or **+ New set**), name it `Weapon_Mpu` (one word, no spaces or `_`:
    `/wm mpu`), **Create**.
 3. **Weapon sets for /wm Mpu** opens. Tick the sets whose gear should differ with Mpu (`Tp_Mpu`, `Ws_Mpu`, a weapon
    skill's set...) and **Make**. They start empty: fill only what differs, and later changes to the base still apply.

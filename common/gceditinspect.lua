@@ -981,27 +981,13 @@ local function wi_from_game()
     wi.proc[1] = ok and (gcdisplay.GetToggle('PROC') == true) or false
 end
 
--- The /mset modes: the game's list, plus modes added here and not saved yet.
--- the file's own /mset list (gcinclude.MeleeModes = {...}), else the engine's; then + New mode's
+-- The /mset modes: the file's gcinclude.MeleeModes ({...} or T{...}), else the engine's, then modes added here and
+-- not saved yet. Read by gcsetfile, as Save writes it; once per file text and new mode, not every frame.
 local function melee_modes()
-    if (editorState.cache.modes ~= nil) and (editorState.cache.modesN == #editorState.document.newModes) then
-        return editorState.cache.modes
-    end -- read from the file once, not every frame
-    local list = {}
-    local own = (editorState.document.model.text ~= nil)
-            and string.match(editorState.document.model.text, '\n%s*gcinclude%.MeleeModes%s*=%s*(%b{})') or nil
-    if own ~= nil then
-        for m in string.gmatch(own, "'([^']+)'") do
-            list[#list + 1] = m
-        end
-    end
-    if #list == 0 then
-        list = { 'Default', 'SubtleBlow', 'Acc' }
-    end -- gcinclude.SetVariables' list
-    for _, m in ipairs(editorState.document.newModes) do
-        list[#list + 1] = m
-    end
-    editorState.cache.modes, editorState.cache.modesN = list, #editorState.document.newModes
+    local doc, c = editorState.document, editorState.cache
+    if (c.modes ~= nil) and (c.modesN == #doc.newModes) and (c.modesText == doc.model.text) then return c.modes end
+    local list = ctx.setFile.MeleeModes(doc.model.text, doc.newModes)
+    c.modes, c.modesN, c.modesText = list, #doc.newModes, doc.model.text
     return list
 end
 
