@@ -680,8 +680,9 @@ local function draw_over(set)
     help_icon(
         'Every set GoomSwap and your job file look for with this one, in the order they go on: a later one wins its slots.\n'
             .. '- A set you have: click its name to open it; < Back over the slots returns.\n'
-            .. '- Not made: make adds it empty (Make all: every one shown), saved on Save + reload. None is needed: '
-            .. 'the last column says what goes on instead.\n'
+            .. '- Not made too lists the sets your file does not have, in their place: make adds one empty (Make all: '
+            .. 'every one shown), saved on Save + reload. None is needed: hover one for what goes on instead.\n'
+            .. '- A name or condition cut with ... is whole in its hover.\n'
             .. "- (on now): its modes are on in game right now.\n"
             .. '- Hover a name: what it goes over, and the job file line that wears it (read from the file, not run).\n'
             .. "- Ignore irrelevant candidates by exact set name in settings.EditorIgnoreSuggestions, e.g. T{'Singing'}.\n"
@@ -691,8 +692,7 @@ local function draw_over(set)
     imgui.PushTextWrapPos(0)
     imgui.TextColored(
         palette.dim,
-        'Every set that goes on with ' .. set.name .. ', top to bottom in the order they go on: a later one wins its '
-            .. 'slots.'
+        'Sets that go on with ' .. set.name .. ', in order: a later one wins its slots.'
     )
     imgui.PopTextWrapPos()
     -- which modes to list: every one (default), only what is on in game now, or ticked by hand
@@ -795,22 +795,23 @@ local function draw_over(set)
             w.parentHave = (w.parent ~= nil) and has_set(w.parent)
             w.when = (#w.conds == 0) and 'always' or table.concat(w.conds, ' + ')
             w.lwhen, w.tip = string.lower(w.when), nil
-            -- not made: what goes on in its place (its base set, GoomSwap's own set of that name, or nothing)
-            w.fb, w.fbTip = nil, nil
+            -- not made, for its hover: what goes on in its place (its base set, GoomSwap's own set of that name, or
+            -- nothing; a base not made either: the hover says GoomSwap only looks for it when that exists)
+            w.fbTip = nil
             if not w.have then
                 local es = (type(own) == 'table') and (w.parent == nil) and own[w.name] or nil
                 if w.parentHave then
-                    w.fb, w.fbTip = w.parent, 'Not made: ' .. w.parent .. ' covers it.'
+                    w.fbTip = 'Not made: ' .. w.parent .. ' covers it.'
                 elseif w.parent ~= nil then
-                    w.fb = 'needs ' .. w.parent
+                    w.fbTip = nil
                 elseif (type(es) == 'table') and (next(es) ~= nil) then
                     local items = {}
                     for _, v in pairs(es) do
                         items[#items + 1] = (type(v) == 'table') and tostring(v.Name) or tostring(v)
                     end
                     table.sort(items)
-                    w.fb, w.fbTip = "GoomSwap's own", "Not made: GoomSwap's own " .. w.name .. ' set goes on ('
-                        .. table.concat(items, ', ') .. ').'
+                    w.fbTip = "Not made: GoomSwap's own " .. w.name .. ' set goes on (' .. table.concat(items, ', ')
+                        .. ').'
                 else
                     w.fbTip = 'Not made: nothing goes on for it; the sets above stay.'
                 end
@@ -822,85 +823,100 @@ local function draw_over(set)
     end
     local list, note = O.list, O.note
     imgui.Separator()
-    -- what is shown: Find (a set's name or when it goes on) and Not made only narrow it; Make all makes what is shown
-    editorState.ui.overFind = editorState.ui.overFind or { '' }
-    editorState.ui.overMiss = editorState.ui.overMiss or { false }
-    imgui.PushItemWidth(200)
-    imgui.InputTextWithHint('##gcwi_find', 'Find: Dt, Impetus, Hoxne...', editorState.ui.overFind, 48)
+    -- what is shown: Find (a set's name or when it goes on) narrows it. The sets not made are one line under the list
+    -- until Not made too (or that line) lists them in their place, with make.
+    local ui = editorState.ui
+    ui.overFind = ui.overFind or { '' }
+    ui.overNotMade = ui.overNotMade or { false }
+    imgui.PushItemWidth(150)
+    imgui.InputTextWithHint('##gcwi_find', 'Find: Dt, Hoxne...', ui.overFind, 48)
     imgui.PopItemWidth()
-    imgui.SameLine()
-    imgui.Checkbox('Not made only##gcwi_miss', editorState.ui.overMiss)
-    imgui.SameLine()
-    imgui.Checkbox('Show ignored (' .. O.nIgnored .. ')##gcwi_ignored', editorState.ui.overShowIgnored)
-    if imgui.IsItemHovered() then
-        set_tip(
-            'Ignored names are hidden by default. Add or remove them in settings.EditorIgnoreSuggestions; this checkbox only shows them temporarily.'
-        )
-    end
-    local find = string.lower(editorState.ui.overFind[1] or '')
-    local vkey = O.key .. '\0' .. find .. '\0' .. tostring(editorState.ui.overMiss[1])
+    local find = string.lower(ui.overFind[1] or '')
+    local vkey = O.key .. '\0' .. find .. '\0' .. tostring(ui.overNotMade[1])
     local V = O.view
     if (V == nil) or (V.key ~= vkey) then
         V = { key = vkey, rows = {}, nHave = 0, nMiss = 0, miss = {} }
         for _, w in ipairs(O.rows) do
-            if ((find == '') or (string.find(string.lower(w.name), find, 1, true) ~= nil)
-                or (string.find(w.lwhen, find, 1, true) ~= nil)) and not (editorState.ui.overMiss[1] and w.have) then
-                V.rows[#V.rows + 1] = w
+            if (find == '') or (string.find(string.lower(w.name), find, 1, true) ~= nil)
+                or (string.find(w.lwhen, find, 1, true) ~= nil) then
                 if w.have then
                     V.nHave = V.nHave + 1
+                    V.rows[#V.rows + 1] = w
                 else
                     V.nMiss = V.nMiss + 1
-                    V.miss[#V.miss + 1] = w
+                    if ui.overNotMade[1] then
+                        V.rows[#V.rows + 1] = w
+                        V.miss[#V.miss + 1] = w
+                    end
                 end
             end
         end
         O.view = V
     end
-    imgui.TextUnformatted(
-        (#V.rows == #O.rows) and string.format('%d sets: ', #O.rows)
-            or string.format('%d of %d sets: ', #V.rows, #O.rows)
-    )
     imgui.SameLine()
-    pill(V.nHave .. ' made', palette.ok, palette.okBg)
-    imgui.SameLine(0, 14)
-    pill(V.nMiss .. ' not made', palette.dim, palette.chipBg)
+    imgui.Checkbox('Not made too (' .. V.nMiss .. ')##gcwi_miss', ui.overNotMade)
     if imgui.IsItemHovered() then
-        set_tip(wrap('Sets GoomSwap or your job file would wear here that your file does not have. None is needed: '
-            .. 'the last column says what goes on instead.', 60))
+        set_tip(wrap('Also the sets GoomSwap or your job file would wear here that your file does not have, in their '
+            .. 'place, with make. None is needed: each falls back to its base (hover one).', 60))
+    end
+    imgui.SameLine()
+    imgui.Checkbox('Show ignored (' .. O.nIgnored .. ')##gcwi_ignored', ui.overShowIgnored)
+    if imgui.IsItemHovered() then
+        set_tip(
+            'Ignored names are hidden by default. Add or remove them in settings.EditorIgnoreSuggestions; this checkbox only shows them temporarily.'
+        )
     end
     local makeAll = nil -- made after the list is drawn: making changes it
-    if V.nMiss > 0 then
+    if ui.overNotMade[1] then
+        pill(V.nHave .. ' made', palette.ok, palette.okBg)
         imgui.SameLine(0, 14)
-        if make_button('Make all ' .. V.nMiss .. '##gcwi_all') then makeAll = V.miss end
-        if imgui.IsItemHovered() then
-            set_tip(wrap('Adds every set shown that is not made, empty, next to its base set in the file.\n'
-                .. 'Nothing is saved until Save + reload.', 60))
+        pill(V.nMiss .. ' not made', palette.dim, palette.chipBg)
+        if V.nMiss > 0 then
+            imgui.SameLine(0, 14)
+            if make_button('Make all ' .. V.nMiss .. '##gcwi_all') then makeAll = V.miss end
+            if imgui.IsItemHovered() then
+                set_tip(wrap('Adds every set shown that is not made, empty, next to its base set in the file.\n'
+                    .. 'Nothing is saved until Save + reload.', 60))
+            end
         end
+    else
+        imgui.TextUnformatted(V.nHave .. ' set' .. ((V.nHave == 1) and '' or 's')
+            .. ((find ~= '') and ' found' or ' you have'))
     end
     imgui.BeginChild('##gcedit_over', { 0, 0 }, 0)
     if #list == 0 then
         imgui.TextColored(palette.dim, 'GoomSwap adds no sets of its own to this one.')
-    elseif #V.rows == 0 then
-        imgui.TextColored(palette.dim, editorState.ui.overMiss[1] and 'Every set here is made.' or 'No set matches.')
+    elseif (#V.rows == 0) and (V.nMiss == 0) then
+        imgui.TextColored(palette.dim, 'No set matches.')
     end
     local width = (imgui.GetWindowWidth ~= nil) and imgui.GetWindowWidth() or nil
     local function tw(t)
         local w = xy(imgui.CalcTextSize(t))
         return tonumber(w) or 0
     end
-    -- the columns: its place in the order, the set (open it, or make it), when it goes on, what goes on if not made
+    local function fit(t, room) -- t, cut to room with '...' when it is wider; and whether it was cut
+        if (room == nil) or (tw(t) <= room) then return t, false end
+        local lo, hi = 0, #t
+        while lo < hi do
+            local mid = math.floor((lo + hi + 1) / 2)
+            if tw(string.sub(t, 1, mid) .. '...') <= room then lo = mid else hi = mid - 1 end
+        end
+        return string.sub(t, 1, lo) .. '...', true
+    end
+    -- the columns: its place in the order, the set (open it, or make it), when it goes on. A long name is cut to the
+    -- set column (at most 40% of the panel), when it goes on to the panel's edge: the hover has them whole.
     local C = V.cols
     if (C == nil) or (C.at ~= width) then
+        C = { at = width, num = tw(#list .. '.'), mk = tw('make') + 16, self = tw(' (this set)'),
+            ign = tw('ignored') + 16 }
         local nameW = tw('Set')
         for _, w in ipairs(V.rows) do
-            local nw = tw(w.name) + (w.self and tw(' (this set)') or 0) + ((not w.have) and (tw('make') + 24) or 0)
-                + (w.ignored and (tw('ignored') + 16) or 0)
+            local nw = tw(w.name) + (w.self and C.self or 0) + ((not w.have) and C.mk or 0) + (w.ignored and C.ign or 0)
             if nw > nameW then nameW = nw end
         end
-        if (width ~= nil) and (nameW > width * 0.45) then nameW = width * 0.45 end
-        C = { at = width, num = tw(#list .. '.') }
-        C.name = C.num + 10
-        C.when = C.name + nameW + 18
+        if width ~= nil then nameW = math.min(nameW, math.max(120, width * 0.4)) end
+        C.name, C.nameW = C.num + 10, nameW
+        C.when = C.name + nameW + 16
         V.cols = C
     end
     local function row_tip(w)
@@ -909,6 +925,8 @@ local function draw_over(set)
         if not w.self then
             tip[#tip + 1] = w.name .. ': goes on' .. ((w.parent ~= nil) and (' over ' .. w.parent) or '')
                 .. ((#w.conds > 0) and (' when ' .. w.when) or ', always') .. '.'
+        elseif w.cut then
+            tip[#tip + 1] = w.name .. ' (this set)'
         end
         if w.have and not w.self then tip[#tip + 1] = 'Click: open it. < Back (over the slots) comes back here.' end
         if w.src == 'file' then
@@ -930,22 +948,26 @@ local function draw_over(set)
         w.tip = wrap(table.concat(tip, '\n'), 60)
         return w.tip
     end
-    local function row(w) -- one set: its place in the order, its name (click: open it) or make, when, if not made
+    local function row(w) -- one set: its place in the order, its name (click: open it) or make, when it goes on
         local x0 = imgui.GetCursorPosX()
         w.num = w.num or (w.pos .. '.')
         imgui.SetCursorPosX(x0 + C.num - tw(w.num))
         imgui.TextColored(palette.dim, w.num)
         imgui.SameLine()
         imgui.SetCursorPosX(x0 + C.name)
+        if w.cutAt ~= C then -- its name, fitted to the set column (redone when the panel's width changes)
+            local room = C.nameW - (w.self and C.self or 0) - ((not w.have) and C.mk or 0) - (w.ignored and C.ign or 0)
+            w.shown, w.cut = fit(w.name, room)
+            w.selLabel, w.cutAt, w.tip = w.shown .. '##gcwis' .. w.pos, C, nil
+        end
         if w.self then
-            imgui.TextColored(palette.blue, w.name)
+            imgui.TextColored(palette.blue, w.shown)
             imgui.SameLine()
             imgui.TextColored(palette.dim, '(this set)')
         elseif w.have then
-            w.selLabel = w.selLabel or (w.name .. '##gcwis' .. w.pos)
-            if imgui.Selectable(w.selLabel, false, 0, { tw(w.name), 0 }) then go_to(w.name, nil) end
+            if imgui.Selectable(w.selLabel, false, 0, { tw(w.shown), 0 }) then go_to(w.name, nil) end
         else
-            imgui.TextColored(palette.dim, w.name)
+            imgui.TextColored(palette.dim, w.shown)
         end
         if imgui.IsItemHovered() then
             local made = w.have and editorState.document.model.byLower[string.lower(w.name)] or nil
@@ -963,18 +985,18 @@ local function draw_over(set)
         if w.ignored then tag('ignored', palette.dim) end
         imgui.SameLine()
         if imgui.GetCursorPosX() < x0 + C.when then imgui.SetCursorPosX(x0 + C.when) end
-        imgui.TextColored(palette.dim, w.when)
-        if conds_on(w.conds, now) then
+        local on = conds_on(w.conds, now)
+        local avail = (imgui.GetContentRegionAvail ~= nil) and xy(imgui.GetContentRegionAvail()) or nil
+        local room = (avail ~= nil) and (avail - (on and (tw('(on now)') + 10) or 0) - 6) or nil
+        if (w.whenShown == nil) or (w.whenRoom ~= room) then
+            w.whenShown, w.whenCut = fit(w.when, room)
+            w.whenRoom = room
+        end
+        imgui.TextColored(palette.dim, w.whenShown)
+        if w.whenCut and imgui.IsItemHovered() then set_tip(w.when) end
+        if on then
             imgui.SameLine(0, 10)
             imgui.TextColored(palette.ok, '(on now)')
-        end
-        if w.fb ~= nil then -- right-aligned when it fits, else next to when
-            imgui.SameLine(0, 16)
-            local avail = (imgui.GetContentRegionAvail ~= nil) and xy(imgui.GetContentRegionAvail()) or nil
-            local fw = tw(w.fb)
-            if (avail ~= nil) and (avail > fw) then imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - fw) end
-            imgui.TextColored(palette.dim, w.fb)
-            if imgui.IsItemHovered() then set_tip(row_tip(w)) end
         end
     end
     if #V.rows > 0 then -- the column heads
@@ -987,19 +1009,9 @@ local function draw_over(set)
         imgui.SameLine()
         imgui.SetCursorPosX(x0 + C.when)
         imgui.TextColored(palette.dim, 'Goes on when')
-        if V.nMiss > 0 then
-            local head = 'Not made: uses'
-            imgui.SameLine(0, 16)
-            local avail = (imgui.GetContentRegionAvail ~= nil) and xy(imgui.GetContentRegionAvail()) or nil
-            if (avail ~= nil) and (avail > tw(head)) then
-                imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - tw(head))
-            end
-            imgui.TextColored(palette.dim, head)
-        end
         imgui.Separator()
     end
     local clip = clip_begin()
-    imgui.PushTextWrapPos(0)
     for _, w in ipairs(V.rows) do
         if not clip_skip(clip, w) then
             row(w)
@@ -1007,6 +1019,14 @@ local function draw_over(set)
         end
     end
     clip_end(clip)
+    imgui.PushTextWrapPos(0)
+    if (not ui.overNotMade[1]) and (V.nMiss > 0) then -- the sets not made, one line until listed
+        imgui.Spacing()
+        if imgui.SmallButton('+ ' .. V.nMiss .. ' you could make##gcwi_showmiss') then ui.overNotMade[1] = true end
+        if imgui.IsItemHovered() then set_tip('Lists them in their place, with make (Not made too).') end
+        imgui.SameLine()
+        imgui.TextColored(palette.dim, 'none needed: each falls back to its base')
+    end
     if note ~= nil then
         imgui.Spacing()
         imgui.TextColored(palette.dim, note)

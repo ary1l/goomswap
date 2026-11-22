@@ -180,10 +180,12 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   only worn where your code names it; the dialog warns.
 - **Undo edit** steps back through slot changes; **Undo slot** restores the saved definition.
 - **Result** shows what an action wore, layer by layer: recorded since load, or expected from your sets and modes.
-- **Related** lists every set that goes on with this one, in the order they go on (a later one wins its slots):
-  number, set (click to open; **make** stages one not made), when it goes on (`(on now)`: its modes are on in game),
-  and for a set not made what goes on instead (its base set, GoomSwap's own `Doomed`, ...). Hover a name: what it
-  goes over and the job file line that wears it.
+- **Related** lists the sets you have that go on with this one, in the order they go on (a later one wins its
+  slots): number, set (click to open), when it goes on (`(on now)`: its modes are on in game). The ones your file
+  doesn't have are one line under them (*+ 26 you could make*); that line or **Not made too** lists them in their
+  place with **make** (**Make all** on top). A long name or condition is cut with `...`; hover it for all of it,
+  what it goes over, the job file line that wears it, and for one not made what goes on instead (its base set,
+  GoomSwap's own `Doomed`, ...).
 - **To fill** lists placeholders, missing or unusable items and empty weapon modes; **Fill all** stages one choice
   for every listed use. When nothing is left, it says **Nothing left to fill.**
 
