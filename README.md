@@ -32,7 +32,7 @@ More pictures of the editor, some of them mockups of the newest build, are in [i
 
 **Ashita v4**
 
-1. Copy `common/` and `examples/` into `Ashita/config/addons/luashitacast/`.
+1. Copy `common/` and `examples/` into `Ashita-V4beta-main/config/addons/luashitacast/`.
 2. Copy `examples/<JOB>.lua` into your character's LuAshitacast profile folder. Add `examples/char.lua` there if you
    want per-character settings or a Packer list.
 3. Load LuAshitacast and your job file: `/addon load luashitacast`, then `/lac load`.
