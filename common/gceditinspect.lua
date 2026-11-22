@@ -404,7 +404,7 @@ end
 -- One layer of the equip order as icons, 4 to a row in the equipment screen's order, rows after its last piece left
 -- out: outlined green while still worn, faded with an orange outline when a later one replaced it, grey when the
 -- same piece went on again later. Ids worked out once per view.
-local ORDER_ICON = 18
+local ORDER_ICON = 26
 local function order_grid(o)
     if o.ids == nil then
         o.ids, o.last = {}, 0
