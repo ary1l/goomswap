@@ -104,7 +104,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 - **WEAPONS** and **MELEE** always show, with **+ /wm mode** / **+ /mset mode** at the heading's right end (WEAPONS:
   New set with `Weapon_` typed, the box says what the name will be; MELEE: the new `/mset` mode and its sets). Each
   set there says, at its right end, what wears it: `/mset acc` (`Tp_Acc`), `/wm naegling`, `no dual wield`
-  (`Weapon_Naegling_1h`); hover it for the sentence. A `/mset` mode with no `Tp_<mode>` set shows greyed
+  (`Weapon_Naegling_1h`), cut with `...` when the panel is narrow; hover it for the sentence. A `/mset` mode with no `Tp_<mode>` set shows greyed
   (`Tp_Hybrid no set`) with **make**. With no `Weapon_` set WEAPONS lists the file's picks
   (`Main picks (/mw): ...`, from `MainModes` `SubModes` `RangeModes`). A `DefaultWeapons` or
   `WeaponRoles` naming a weapon or mode nothing offers is flagged there and in **Settings**: the engine skips it at
