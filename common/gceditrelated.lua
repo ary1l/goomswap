@@ -851,6 +851,57 @@ local function draw_over(set)
                 end
             end
         end
+        -- What is drawn, in order. Every Weapon_ set is in one Weapons entry: only one of them goes on (gcruntime
+        -- modeSet: the one for /wm, its /mset version when made, its _1h without Dual Wield). A set's /mset versions
+        -- (Dt_Acc) are chips under it. A search lists every match as a row.
+        V.items = {}
+        local byName, wb = {}, nil
+        for _, w in ipairs(V.rows) do
+            local wmode, ms = nil, nil
+            for _, c in ipairs(w.conds) do
+                wmode = wmode or string.match(c, '^weapon mode (.+)$')
+                ms = ms or string.match(c, '^melee mode (.+)$')
+            end
+            local lname, col = string.lower(w.name), nil
+            local base = (wmode ~= nil) and ('weapon_' .. string.lower(wmode)) or nil
+            if (find == '') and (base ~= nil) then
+                if lname == base then
+                    col = 'base'
+                elseif lname == (base .. '_1h') then
+                    col = '1h'
+                elseif (ms ~= nil) and (lname == (base .. '_' .. string.lower(ms))) then
+                    col = ms
+                end
+            end
+            if col ~= nil then
+                if wb == nil then
+                    wb = { kind = 'weapons', pos = w.pos, modes = {}, byMode = {}, cols = {}, hasCol = {} }
+                    V.items[#V.items + 1] = wb
+                end
+                local m = wb.byMode[string.lower(wmode)]
+                if m == nil then
+                    m = { mode = wmode, cells = {} }
+                    wb.byMode[string.lower(wmode)], wb.modes[#wb.modes + 1] = m, m
+                end
+                m.cells[col], wb.hasCol[col] = w, true
+            else
+                local p = ((find == '') and (ms ~= nil) and (w.parent ~= nil)) and byName[string.lower(w.parent)] or nil
+                if p ~= nil then
+                    p.chips = p.chips or {}
+                    p.chips[#p.chips + 1] = { w = w, mset = ms }
+                else
+                    local it = { kind = 'row', w = w }
+                    V.items[#V.items + 1], byName[lname] = it, it
+                end
+            end
+        end
+        if wb ~= nil then -- its columns: the loadout, no Dual Wield, then each /mset version shown
+            if wb.hasCol.base then wb.cols[#wb.cols + 1] = { key = 'base', head = 'loadout' } end
+            if wb.hasCol['1h'] then wb.cols[#wb.cols + 1] = { key = '1h', head = 'no Dual Wield' } end
+            for _, m in ipairs(o.msets) do
+                if wb.hasCol[m] then wb.cols[#wb.cols + 1] = { key = m, head = '/mset ' .. m } end
+            end
+        end
         O.view = V
     end
     imgui.SameLine()
@@ -910,8 +961,10 @@ local function draw_over(set)
         C = { at = width, num = tw(#list .. '.'), mk = tw('make') + 16, self = tw(' (this set)'),
             ign = tw('ignored') + 16 }
         local nameW = tw('Set')
-        for _, w in ipairs(V.rows) do
-            local nw = tw(w.name) + (w.self and C.self or 0) + ((not w.have) and C.mk or 0) + (w.ignored and C.ign or 0)
+        for _, it in ipairs(V.items) do
+            local w = it.w
+            local nw = (it.kind == 'weapons') and tw('Weapons')
+                or (tw(w.name) + (w.self and C.self or 0) + ((not w.have) and C.mk or 0) + (w.ignored and C.ign or 0))
             if nw > nameW then nameW = nw end
         end
         if width ~= nil then nameW = math.min(nameW, math.max(120, width * 0.4)) end
@@ -999,7 +1052,139 @@ local function draw_over(set)
             imgui.TextColored(palette.ok, '(on now)')
         end
     end
-    if #V.rows > 0 then -- the column heads
+    -- the Weapons entry: its line, then a row per /wm mode with each version's Main, Sub and Range as icons
+    local canDW = nil -- Dual Wield now (the job loaded only): which cell is worn
+    if (not editorState.document.inactive) and (ctx.gearEngine ~= nil) and (ctx.gearEngine.CanDualWield ~= nil) then
+        local okDW, v = pcall(ctx.gearEngine.CanDualWield)
+        if okDW then canDW = v end
+    end
+    local function wm_cell(w, worn)
+        if w == nil then
+            imgui.TextColored(palette.dim, '-')
+            return
+        end
+        if not w.have then
+            w.mkLabel = w.mkLabel or ('+##gcwm' .. w.pos)
+            if imgui.SmallButton(w.mkLabel) then make_set(w.name, nil, true) end
+            if imgui.IsItemHovered() then set_tip(row_tip(w) .. '\nClick: make it, empty (Save writes it).') end
+            return
+        end
+        local made = editorState.document.model.byLower[string.lower(w.name)]
+        if w.idsVer ~= editorState.document.revision then
+            w.ids, w.idsVer = {}, editorState.document.revision
+            for i, slot in ipairs({ 'Main', 'Sub', 'Range' }) do
+                local v = (made ~= nil) and current(made, slot) or nil
+                w.ids[i] = ((v ~= nil) and (v.kind == 'item') and (ctx.item_id ~= nil)) and ctx.item_id(v.name) or false
+            end
+        end
+        local dl = ((imgui.GetWindowDrawList ~= nil) and (imgui.GetCursorScreenPos ~= nil)
+            and (imgui.GetColorU32 ~= nil)) and imgui.GetWindowDrawList() or nil
+        imgui.BeginGroup()
+        for i = 1, 3 do
+            if i > 1 then imgui.SameLine(0, 1) end
+            if w.ids[i] then
+                draw_icon(w.ids[i], 20)
+            else
+                local x, y = nil, nil
+                if dl ~= nil then x, y = xy(imgui.GetCursorScreenPos()) end
+                if (x ~= nil) and (y ~= nil) then
+                    dl:AddRectFilled({ x, y }, { x + 20, y + 20 }, imgui.GetColorU32({ 0.09, 0.11, 0.14, 1 }))
+                end
+                imgui.Dummy({ 20, 20 })
+            end
+        end
+        imgui.EndGroup()
+        if worn and (dl ~= nil) and (imgui.GetItemRectMin ~= nil) then
+            local x1, y1 = xy(imgui.GetItemRectMin())
+            local x2, y2 = xy(imgui.GetItemRectMax())
+            if (x1 ~= nil) and (x2 ~= nil) then
+                dl:AddRect({ x1 - 2, y1 - 2 }, { x2 + 2, y2 + 2 }, imgui.GetColorU32(palette.ok), 2, 0, 1)
+            end
+        end
+        if imgui.IsItemHovered() then
+            if (made ~= nil) and (ctx.set_peek ~= nil) then ctx.set_peek(made, row_tip(w)) else set_tip(row_tip(w)) end
+        end
+        if imgui.IsItemClicked(0) then go_to(w.name, nil) end
+    end
+    local function weapons_entry(b)
+        local x0 = imgui.GetCursorPosX()
+        local num = b.pos .. '.'
+        imgui.SetCursorPosX(x0 + C.num - tw(num))
+        imgui.TextColored(palette.dim, num)
+        imgui.SameLine()
+        imgui.SetCursorPosX(x0 + C.name)
+        imgui.TextUnformatted('Weapons')
+        imgui.SameLine()
+        imgui.SetCursorPosX(x0 + C.when)
+        imgui.TextColored(palette.dim, 'one loadout, picked by your modes')
+        local nowMode = ((not editorState.document.inactive) and (now ~= nil) and (now.wmode ~= nil))
+            and b.byMode[string.lower(now.wmode)] or nil
+        if nowMode ~= nil then
+            imgui.SameLine(0, 10)
+            imgui.TextColored(palette.ok, '(on now: ' .. string.lower(nowMode.mode) .. ')')
+        end
+        if imgui.IsItemHovered() then
+            set_tip(wrap('Only one of these goes on: the row for your /wm; its /mset version replaces it when made; '
+                .. "no Dual Wield: its _1h when you can't dual wield. Each shows its Main, Sub and Range; click one "
+                .. 'to open it.', 60))
+        end
+        if b.at ~= width then -- the columns' widths
+            b.at, b.modeW = width, tw('mode')
+            for _, m in ipairs(b.modes) do b.modeW = math.max(b.modeW, tw('/wm ' .. string.lower(m.mode))) end
+            b.modeW = b.modeW + 16
+            for _, c in ipairs(b.cols) do c.w = math.max(3 * 21 + 12, tw(c.head) + 14) end
+        end
+        local mx = x0 + C.name
+        imgui.SetCursorPosX(mx)
+        imgui.TextColored(palette.dim, 'mode')
+        local cx = mx + b.modeW
+        for _, c in ipairs(b.cols) do
+            imgui.SameLine()
+            imgui.SetCursorPosX(cx)
+            imgui.TextColored(palette.dim, c.head)
+            cx = cx + c.w
+        end
+        for _, m in ipairs(b.modes) do
+            local worn = nil
+            if m == nowMode then -- gcruntime modeSet / WeaponSetFor: the /mset version, else _1h, else the loadout
+                local ms = now.mset
+                worn = ((ms ~= nil) and (ms ~= 'Default') and (m.cells[ms] ~= nil) and m.cells[ms].have) and ms
+                    or (((canDW == false) and (m.cells['1h'] ~= nil) and m.cells['1h'].have) and '1h' or 'base')
+            end
+            imgui.SetCursorPosX(mx)
+            imgui.TextUnformatted('/wm ' .. string.lower(m.mode))
+            cx = mx + b.modeW
+            for _, c in ipairs(b.cols) do
+                imgui.SameLine()
+                imgui.SetCursorPosX(cx)
+                wm_cell(m.cells[c.key], worn == c.key)
+                cx = cx + c.w
+            end
+        end
+        imgui.Spacing()
+    end
+    local function chips_of(it, x0) -- a set's /mset versions, under it
+        imgui.SetCursorPosX(x0 + C.when)
+        imgui.TextColored(palette.dim, 'its /mset versions:')
+        for _, ch in ipairs(it.chips) do
+            local w = ch.w
+            imgui.SameLine()
+            if w.have then
+                w.chipLabel = w.chipLabel or (ch.mset .. '##gcwc' .. w.pos)
+                if imgui.SmallButton(w.chipLabel) then go_to(w.name, nil) end
+                if imgui.IsItemHovered() then
+                    local made = editorState.document.model.byLower[string.lower(w.name)]
+                    if (made ~= nil) and (ctx.set_peek ~= nil) then ctx.set_peek(made, row_tip(w))
+                    else set_tip(row_tip(w)) end
+                end
+            else
+                w.chipLabel = w.chipLabel or (ch.mset .. ' +##gcwc' .. w.pos)
+                if make_button(w.chipLabel) then make_set(w.name, nil, true) end
+                if imgui.IsItemHovered() then set_tip(row_tip(w) .. '\nClick: make it, empty (Save writes it).') end
+            end
+        end
+    end
+    if #V.items > 0 then -- the column heads
         local x0 = imgui.GetCursorPosX()
         imgui.SetCursorPosX(x0 + C.num - tw('#'))
         imgui.TextColored(palette.dim, '#')
@@ -1012,10 +1197,16 @@ local function draw_over(set)
         imgui.Separator()
     end
     local clip = clip_begin()
-    for _, w in ipairs(V.rows) do
-        if not clip_skip(clip, w) then
-            row(w)
-            clip_drawn(clip, w)
+    for _, it in ipairs(V.items) do
+        if not clip_skip(clip, it) then
+            if it.kind == 'weapons' then
+                weapons_entry(it)
+            else
+                local x0 = imgui.GetCursorPosX()
+                row(it.w)
+                if it.chips ~= nil then chips_of(it, x0) end
+            end
+            clip_drawn(clip, it)
         end
     end
     clip_end(clip)
