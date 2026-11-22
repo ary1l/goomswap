@@ -481,7 +481,13 @@ do
                 for i = 2, #args do
                     words[#words + 1] = tostring(args[i])
                 end
-                gcinclude.EditorCommand((#words > 0) and table.concat(words, ' ') or nil) -- /gcedit Savage Blade
+                local w1, w2 = string.lower(words[1] or ''), string.lower(words[2] or '')
+                if (w1 == 'last') and ((#words == 1)
+                    or ((#words == 2) and (gcinclude.EditorLastSlots[w2] ~= nil))) then
+                    gcinclude.EditorLast(words[2]) -- /gcedit last [slot] ('/gcedit Last Stand' is the set)
+                else
+                    gcinclude.EditorCommand((#words > 0) and table.concat(words, ' ') or nil) -- /gcedit Savage Blade
+                end
             elseif args[1] == 'gce' then
                 gcinclude.EnchantCommand(args)
             elseif args[1] == 'gchelp' then

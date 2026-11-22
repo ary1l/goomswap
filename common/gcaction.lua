@@ -246,6 +246,7 @@ function gcaction.RecEnd()
     end
     GcRecords.byKey[key] = r
     GcRecords.n = (GcRecords.n or 0) + 1 -- bumped on every record: /gcedit rebuilds its views only when it changes
+    r.seq = GcRecords.n -- which came last (/gcedit last), finer than r.time's seconds
     -- Each slot's last write that went on, for /gcgear's hover (the set that put it on); the same piece again keeps
     -- the earlier layer, as /gcedit's layers do. A global, like GcRecords.
     GcWornBy = GcWornBy or {}

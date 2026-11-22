@@ -42,6 +42,7 @@
 | `/checksets` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2); gear you don't own, wrong bag, other augments |
 | `/gcbuild [JOB]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua`; on your job it opens in `/gcedit` to fill and save as `<JOB>.lua` ([/gcbuild](gcbuild.md)) |
 | `/gcedit [set]` | Set editor window: sets, slots with icons, gear you own; Save writes `<JOB>.lua` and reloads ([/gcedit](gcedit.md)) |
+| `/gcedit last [slot]` | The editor on the set your last action used (the set named after it, else the last set it wore), Result on that use; with a slot (`ear2`), the set that last put that slot on (as `/gcgear`'s right-click). `/gcedit Last Stand` is still the set |
 | `/gcmessages` `/gchelp` | Chat lines / help |
 | `/gckey <key> <cmd>` | Bind a key |
 

@@ -148,6 +148,11 @@ function state.Decode(text)
             if width and width == width and width >= 80 and width <= 4000 then preferences[key] = width end
         elseif key == 'density' and (value == 'Compact' or value == 'Comfortable') then
             preferences.density = value
+        elseif key == 'recent' then -- the sets opened last, newest first (tab between names)
+            preferences.recent = {}
+            for name in value:gmatch('[^\t]+') do
+                if #preferences.recent < 7 then preferences.recent[#preferences.recent + 1] = name end
+            end
         end -- others (favorite: removed) are left out, and gone at the next save
     end
     return preferences
@@ -156,6 +161,9 @@ end
 function state.Encode(preferences)
     local lines = { 'GoomSwap editor preferences 1', 'left\t' .. preferences.left, 'middle\t' .. preferences.middle }
     lines[#lines + 1] = 'density\t' .. (preferences.density == 'Comfortable' and 'Comfortable' or 'Compact')
+    if (type(preferences.recent) == 'table') and (#preferences.recent > 0) then
+        lines[#lines + 1] = 'recent\t' .. table.concat(preferences.recent, '\t')
+    end
     return table.concat(lines, '\n') .. '\n'
 end
 

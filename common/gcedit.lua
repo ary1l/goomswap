@@ -1318,6 +1318,203 @@ ctx.draw_cleanup = function()
     imgui.EndPopup()
 end
 
+-- Backups (top bar): this file's editor backups (<file>.<date-time>.gcedit.bak, made by every Save), newest first,
+-- each with the sets that differ from the file as it is now (Compare: slot by slot, then -> now). Restore puts one
+-- back: the file is backed up first, then replaced and reloaded (/lac reload for the job loaded). Not while there
+-- are unsaved edits.
+ctx.backup_diff = function(old, now) -- two parsed files: { { name, lines } } for each set that differs
+    local out, names, seen, a, b = {}, {}, {}, {}, {}
+    for _, m in ipairs({ now, old }) do
+        for _, st in ipairs(m.list) do
+            local l = string.lower(st.name)
+            if not seen[l] then seen[l], names[#names + 1] = true, st.name end
+        end
+    end
+    for _, st in ipairs(old.list) do a[string.lower(st.name)] = st end
+    for _, st in ipairs(now.list) do b[string.lower(st.name)] = st end
+    for _, n in ipairs(names) do
+        local so, sn = a[string.lower(n)], b[string.lower(n)]
+        if so == nil then
+            out[#out + 1] = { name = n, lines = { 'new since then (Restore takes it out)' } }
+        elseif sn == nil then
+            out[#out + 1] = { name = n, lines = { 'gone since then (Restore brings it back)' } }
+        elseif (so.code ~= nil) or (sn.code ~= nil) then
+            if so.code ~= sn.code then out[#out + 1] = { name = n, lines = { 'written as code: changed' } } end
+        else
+            local lines = {}
+            for _, slot in ipairs(SCREEN) do
+                local vo = (so.slots[slot] ~= nil) and so.slots[slot].value or nil
+                local vn = (sn.slots[slot] ~= nil) and sn.slots[slot].value or nil
+                if ((vo ~= nil) and vo.raw or nil) ~= ((vn ~= nil) and vn.raw or nil) then
+                    lines[#lines + 1] = slot .. ': ' .. ((vo ~= nil) and tostring(vo.name or vo.raw) or 'empty')
+                        .. ' -> ' .. ((vn ~= nil) and tostring(vn.name or vn.raw) or 'empty')
+                end
+            end
+            if #lines > 0 then out[#out + 1] = { name = n, lines = lines } end
+        end
+    end
+    return out
+end
+ctx.restore_backup = function(b) -- true when written
+    local path, ui = editorState.document.path, editorState.ui
+    local cur = read_file(path)
+    if cur ~= nil then
+        local keep, err = fileWriter.Backups.Path(path, exists_path)
+        local wrote, werr = false, err
+        if keep ~= nil then wrote, werr = fileWriter.Write(keep, cur) end
+        if not wrote then
+            ui.notice, ui.noticeBad = 'Not restored: could not back up the file first (' .. tostring(werr) .. ').', true
+            return false
+        end
+    end
+    local ok, err = fileWriter.Write(path, b.text)
+    if not ok then
+        ui.notice, ui.noticeBad = 'Not restored: ' .. tostring(err), true
+        return false
+    end
+    if editorState.document.inactive then
+        gcedit.Reload()
+        ui.notice, ui.noticeBad = 'Restored ' .. editorState.document.file .. ' from ' .. b.when .. '.', false
+        return true
+    end
+    gearEngine.Say('/gcedit: restored ' .. editorState.document.file .. ' from ' .. b.when .. '; reloading')
+    ui.saving, ui.notice, ui.noticeBad = true, 'Restored: reloading the job file...', false
+    save_preferences()
+    GcEditReopen = nil
+    fileWriter.Write(path .. '.gcedit-reopen', tostring(os.time()) .. '\n' .. (editorState.selection.setName or '')
+        .. '\n' .. (editorState.selection.slot or ''))
+    AshitaCore:GetChatManager():QueueCommand(-1, editorState.document.reloadCommand or '/lac reload')
+    return true
+end
+ctx.draw_backups = function()
+    local B = editorState.ui.backups
+    if B == nil then return end
+    if B.open then
+        B.open = nil
+        local path = editorState.document.path
+        local folder = string.match(path, '^(.*[\\/])') or ''
+        local okL, files = pcall(function() return ashita.fs.get_directory(folder, '.*') end)
+        B.list = fileWriter.Backups.List(path, okL and files or nil) or {}
+        local nowText = read_file(path)
+        local nowModel = (nowText ~= nil) and fileWriter.Parse(nowText) or nil
+        for _, b in ipairs(B.list) do
+            b.text = read_file(b.path)
+            local m = (b.text ~= nil) and fileWriter.Parse(b.text) or nil
+            b.ok = (m ~= nil) and ((loadstring or load)(b.text, '=backup') ~= nil)
+            b.diff = (b.ok and (nowModel ~= nil)) and ctx.backup_diff(m, nowModel) or nil
+            local y, mo, d, h, mi = string.match(b.stamp, '^(%d%d%d%d)(%d%d)(%d%d)%-(%d%d)(%d%d)')
+            b.when = (y ~= nil) and (y .. '-' .. mo .. '-' .. d .. ' ' .. h .. ':' .. mi) or b.stamp
+            if b.sequence > 0 then b.when = b.when .. ' (' .. b.sequence .. ')' end
+        end
+        imgui.OpenPopup('##gcedit_backups')
+    end
+    if not imgui.BeginPopup('##gcedit_backups') then
+        editorState.ui.backups = nil -- closed (a click outside it)
+        return
+    end
+    imgui.TextUnformatted(editorState.document.file .. ' backups, newest first')
+    imgui.TextColored(palette.dim, 'Every Save keeps one (EditorBackupKeep: the newest 10). Compare: then -> now.')
+    local listH = math.min(380, 40 + #B.list * 26 + ((B.compare ~= nil) and 220 or 0))
+    imgui.BeginChild('##gcedit_backups_list', { 560, listH }, CHILD_BORDERS)
+    if #B.list == 0 then imgui.TextColored(palette.dim, 'None yet: the first Save makes one.') end
+    for i, b in ipairs(B.list) do
+        imgui.TextUnformatted(b.when)
+        imgui.SameLine(0, 12)
+        local d = b.diff
+        local what
+        if not b.ok then
+            what = 'unreadable: not offered'
+        elseif d == nil then
+            what = '?'
+        elseif #d == 0 then
+            what = 'the same as now'
+        else
+            local names = {}
+            for k = 1, math.min(3, #d) do names[k] = d[k].name end
+            what = #d .. ((#d == 1) and ' set differs: ' or ' sets differ: ') .. table.concat(names, ', ')
+                .. ((#d > 3) and '...' or '')
+        end
+        imgui.TextColored(palette.dim, what)
+        if b.ok and (d ~= nil) and (#d > 0) then
+            imgui.SameLine()
+            local bw = text_w('Compare') + text_w('Restore') + 30
+            local avail = (imgui.GetContentRegionAvail ~= nil) and xy(imgui.GetContentRegionAvail()) or nil
+            if (avail ~= nil) and (avail > bw) and (imgui.SetCursorPosX ~= nil) then
+                imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - bw)
+            end
+            if imgui.SmallButton(((B.compare == i) and 'Hide' or 'Compare') .. '##gcbk_cmp' .. i) then
+                B.compare = (B.compare ~= i) and i or nil
+            end
+            imgui.SameLine()
+            if imgui.SmallButton('Restore##gcbk_res' .. i) then B.confirm = i end
+        end
+        if B.compare == i then
+            imgui.Indent(16)
+            imgui.PushTextWrapPos(0)
+            for _, e in ipairs(d) do
+                imgui.TextColored(palette.section, e.name)
+                for _, line in ipairs(e.lines) do imgui.TextColored(palette.dim, '  ' .. line) end
+            end
+            imgui.PopTextWrapPos()
+            imgui.Unindent(16)
+        end
+    end
+    imgui.EndChild()
+    local b = (B.confirm ~= nil) and B.list[B.confirm] or nil
+    if b ~= nil then
+        imgui.PushTextWrapPos(560)
+        if dirty_count() > 0 then
+            imgui.TextColored(palette.warn, 'Unsaved edits: Save + reload or Reload file first, then restore.')
+        else
+            imgui.TextColored(palette.warn, 'Restore ' .. b.when .. '? ' .. editorState.document.file
+                .. ' is backed up first, then replaced and reloaded.')
+            if red_button('Restore##gcbk_do') then
+                if ctx.restore_backup(b) then
+                    editorState.ui.backups = nil
+                    imgui.CloseCurrentPopup()
+                end
+            end
+            imgui.SameLine()
+        end
+        imgui.PopTextWrapPos()
+        if imgui.Button('Cancel##gcbk_no') then B.confirm = nil end
+        imgui.SameLine()
+    end
+    if imgui.Button('Close##gcbk_close') then
+        editorState.ui.backups = nil
+        imgui.CloseCurrentPopup()
+    end
+    imgui.EndPopup()
+end
+-- Recent (over the slots): the sets opened last, newest first, kept with the job's editor preferences; a click opens
+-- one.
+ctx.draw_recent = function(set)
+    local p = editorState.preferences
+    p.recent = (type(p.recent) == 'table') and p.recent or {}
+    if p.recent[1] ~= set.name then
+        for i = #p.recent, 1, -1 do
+            if p.recent[i] == set.name then table.remove(p.recent, i) end
+        end
+        table.insert(p.recent, 1, set.name)
+        while #p.recent > 7 do table.remove(p.recent) end
+        p.dirty = true
+    end
+    local shown = 0
+    for i = 2, #p.recent do
+        local hit = editorState.document.model.byName[p.recent[i]]
+        if hit ~= nil then
+            if shown == 0 then
+                imgui.TextColored(palette.dim, 'Recent:')
+                imgui.SameLine()
+            else
+                editorPanels.SameLineIfFits(imgui, text_w(hit.name) + 16)
+            end
+            if imgui.SmallButton(hit.name .. '##gcrecent') then go_to(hit.name) end
+            shown = shown + 1
+        end
+    end
+end
+
 local function job_abbr_of(job)
     local s = AshitaCore:GetResourceManager():GetString('jobs.names_abbr', job)
     return (type(s) == 'string') and (string.gsub(s, '%z', '')) or ('job ' .. tostring(job))
@@ -1665,8 +1862,8 @@ local function body()
     end
     -- the file's actions at the right edge, apart from the view's (on a line of their own when they don't fit)
     local d = editorPanels.Density(editorState.preferences.density)
-    local need = text_w('Unused gear') + text_w('Rescan bags') + text_w('Reload file')
-        + text_w(editorState.document.inactive and 'Save file' or 'Save + reload') + 8 * d.padding[1] + 3 * d.spacing[1]
+    local need = text_w('Backups') + text_w('Unused gear') + text_w('Rescan bags') + text_w('Reload file')
+        + text_w(editorState.document.inactive and 'Save file' or 'Save + reload') + 10 * d.padding[1] + 4 * d.spacing[1]
     imgui.SameLine()
     local avail = imgui.GetContentRegionAvail()
     avail = (type(avail) == 'number') and avail or (avail.x or avail[1])
@@ -1675,6 +1872,12 @@ local function body()
     elseif (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil) then
         imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - need)
     end
+    if imgui.Button('Backups##gcedit') then editorState.ui.backups = { open = true } end
+    if imgui.IsItemHovered() then
+        set_tip('Every Save keeps a dated copy of the file: see what each changed, and put one back.')
+    end
+    ctx.draw_backups()
+    imgui.SameLine()
     if imgui.Button('Unused gear##gcedit') then editorState.ui.cleanup = { open = true } end
     if imgui.IsItemHovered() then
         set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap names: '
@@ -1829,6 +2032,7 @@ local function body()
         imgui.BeginChild('##gcedit_grid', { 0, math.max(1, availableHeight - inspectorHeight - 8) }, 0)
     end
     if set ~= nil then
+        ctx.draw_recent(set)
         draw_set(set)
         m_gceditrelated.draw_upgrade(set) -- a piece changed here that other sets still have: offer it there
     else
@@ -2284,6 +2488,14 @@ function gcedit.Show(setName, slot) -- slot: select it too (the /gcgear right-cl
         return
     end
     go_to(hit.name, slot, 'action')
+end
+
+-- /gcedit last: the Result tab on that use of the set (a gcaction record's key: 'Weaponskill Leaden Salute').
+function gcedit.PickRecord(setName, key)
+    if (not editorState.open) or (setName == nil) or (key == nil) then return end
+    local hit = editorState.document.model.byLower[string.lower(setName)]
+    if hit == nil then return end
+    editorState.cache.recKey, editorState.cache.recFor, editorState.selection.tab = key, hit.name, 'action'
 end
 
 function gcedit.Close()

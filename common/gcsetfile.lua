@@ -1274,10 +1274,10 @@ function backups.Path(path, exists, stamp)
     end
     return nil, 'too many backups with the same timestamp'
 end
-function backups.Prune(path, keep, files, remove, protected)
-    keep = backups.Keep(keep)
-    if keep == 0 then return 0 end
-    if type(files) ~= 'table' then return 0, 'could not list editor backups' end
+-- path's editor backups among files (a folder's listing): { path, stamp, sequence, protected }, newest first (the
+-- protected one, this save's, before all). nil when files is not a list.
+local function backup_list(path, files, protected)
+    if type(files) ~= 'table' then return nil end
     local folder, name = path:match('^(.*[\\/])([^\\/]+)$')
     folder, name = folder or '', name or path
     local prefix = name:gsub('%.[Ll][Uu][Aa]$', ''):lower() .. '.'
@@ -1295,7 +1295,7 @@ function backups.Prune(path, keep, files, remove, protected)
                 and (not parent or file_key(parent) == file_key(folder)) and not seen[key] then
                 seen[key] = true
                 candidates[#candidates + 1] = { path = full, stamp = stamp, sequence = tonumber(sequence) or 0,
-                    protected = key == file_key(protected) }
+                    protected = (protected ~= nil) and (key == file_key(protected)) }
             end
         end
     end
@@ -1304,6 +1304,14 @@ function backups.Prune(path, keep, files, remove, protected)
         if a.stamp ~= b.stamp then return a.stamp > b.stamp end
         return a.sequence > b.sequence
     end)
+    return candidates
+end
+backups.List = backup_list
+function backups.Prune(path, keep, files, remove, protected)
+    keep = backups.Keep(keep)
+    if keep == 0 then return 0 end
+    local candidates = backup_list(path, files, protected)
+    if candidates == nil then return 0, 'could not list editor backups' end
     local removed, failure = 0, nil
     for index = keep + 1, #candidates do
         local ok, err = remove(candidates[index].path)
