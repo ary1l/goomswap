@@ -830,7 +830,24 @@ local function draw_set(set)
         end
         imgui.SameLine(0, 12)
     end
-    imgui.TextUnformatted(set.bracket and ("['" .. set.name .. "']") or set.name)
+    -- the set being edited: a strip (an accent bar, its heading as a breadcrumb, its name and badges, how many
+    -- slots it fills, then what it is used for), apart from the Recent line over it
+    imgui.PushStyleColor(ImGuiCol_ChildBg, palette.selBg)
+    imgui.BeginChild('##gcedit_title', { 0, 0 },
+        (ImGuiChildFlags_AutoResizeY or 32) + (ImGuiChildFlags_AlwaysUseWindowPadding or 2),
+        ImGuiWindowFlags_NoScrollbar or 0)
+    if (imgui.GetWindowDrawList ~= nil) and (imgui.GetWindowPos ~= nil) and (imgui.GetColorU32 ~= nil) then
+        local wx, wy = xy(imgui.GetWindowPos())
+        local wh = imgui.GetWindowHeight()
+        if (wx ~= nil) and (wy ~= nil) and (type(wh) == 'number') then
+            imgui.GetWindowDrawList():AddRectFilled({ wx, wy }, { wx + 3, wy + wh }, imgui.GetColorU32(palette.sel))
+        end
+    end
+    if (set.group ~= nil) and (set.group ~= '') then
+        imgui.TextColored(palette.dim, string.upper(set.group) .. ' >')
+        imgui.SameLine()
+    end
+    imgui.TextColored(palette.blue, set.bracket and ("['" .. set.name .. "']") or set.name)
     if by_name(set) then tag('worn by name', palette.blue) end
     if (editorState.document.renames or {})[set.name] then
         tag('renamed to ' .. editorState.document.renames[set.name] .. ' on Save', palette.warn)
@@ -845,14 +862,35 @@ local function draw_set(set)
                     or ('Cannot register ' .. mode .. ': no gcinclude.Initialize() line in this file.'))
         end
     end
-    local unfinished = set_status(set).unfinished
+    local status = set_status(set)
+    local unfinished = status.unfinished
     if #unfinished > 0 then
+        imgui.SameLine(0, 12)
         imgui.PushStyleColor(ImGuiCol_Text, palette.rp)
-        if imgui.SmallButton('Needs RP: ' .. #unfinished .. ' slot' .. (#unfinished == 1 and '' or 's') .. '##rp') then
+        if imgui.SmallButton('Needs RP: ' .. #unfinished .. '##rp') then
             imgui.OpenPopup('##rp_details')
         end
         imgui.PopStyleColor()
-        if imgui.IsItemHovered() then set_tip(table.concat(unfinished, '\n')) end
+        if imgui.IsItemHovered() then
+            set_tip(#unfinished .. ' slot' .. ((#unfinished == 1) and '' or 's') .. ' below their rank cap:\n'
+                .. table.concat(unfinished, '\n') .. '\nClick: where else they are used.')
+        end
+    end
+    if (set.code == nil) and (status.armor ~= nil) then -- how many of the 16 slots it names, at the strip's right
+        local filled = (status.armor or 0) + (status.weapons or 0)
+        local t = filled .. ' of 16 slots'
+        imgui.SameLine()
+        local avail = (imgui.GetContentRegionAvail ~= nil) and xy(imgui.GetContentRegionAvail()) or nil
+        if (avail ~= nil) and (avail > text_w(t) + 8) and (imgui.SetCursorPosX ~= nil) then
+            imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - text_w(t))
+            imgui.TextColored(palette.dim, t)
+            if imgui.IsItemHovered() then
+                set_tip(status.armor .. ' of 12 armor slots, ' .. (status.weapons or 0) .. ' of 4 weapon slots name '
+                    .. 'gear here; the rest keep what earlier sets put on.')
+            end
+        else
+            imgui.NewLine()
+        end
     end
 
     if imgui.BeginPopup('##rp_details') then
@@ -913,6 +951,8 @@ local function draw_set(set)
         imgui.TextColored(palette.dim, cardText.Fit('Note: ' .. set.note, ctx.CELL_W * ctx.GRID_COLUMNS + 8, text_w))
         if imgui.IsItemHovered() then set_tip(wrap('From the job file, beside ' .. set.name .. ':\n' .. set.note, 68)) end
     end
+    imgui.EndChild()
+    imgui.PopStyleColor()
     if (editorState.document.deleted or {})[set.name] then
         imgui.TextColored(palette.bad, 'This set will be deleted on Save + reload.')
         if imgui.Button('Undo deletion##gcedit') then
