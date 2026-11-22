@@ -5,7 +5,9 @@ abilities, weapon skills, combat modes, defense and utility gear.
 
 For **Ashita v4** (LuAshitacast). Start from an example job file and the in-game set editor (`/gcedit`).
 
-![The set editor: sets, slots with icons and bags, and what each action wore](docs/gcedit_editor.png)
+![The set editor (v3.30): the set list, the open set's slots with icons and bags, and Related: every set that goes on with it, in order (character name pixelated)](docs/gcedit_editor.png)
+
+More pictures of the editor, some of them mockups of the newest build, are in [its docs](docs/gcedit.md).
 
 ## Features
 
@@ -17,9 +19,11 @@ For **Ashita v4** (LuAshitacast). Start from an example job file and the in-game
   that needs RP and swaps that didn't go on; hover a slot for the set that put it on, a box's name in the `/gchud`
   drop for its gear.
 - `/gcbuild` to draft a job file from carried gear; `/gcedit` to browse the character's job files, inspect gear,
-  fill and compare inherited gear/stat totals, keep item details visible, and resize panels;
-  arrange, hide and sort its headings, copy sets to other jobs, find an item in every job file, and edit
-  settings for one character or all of them.
+  fill and compare inherited gear/stat totals (with gear caps: haste, Fast Cast, PDT/MDT), keep item details
+  visible, and resize panels; arrange, hide and sort its headings, copy sets to other jobs, find an item in every
+  job file, put a piece in many sets or replace it everywhere, see which sets are on you now, restore a backup,
+  list gear no job file uses, and edit settings for one character or all of them. `/gcedit last` opens the set
+  your last action used.
 - TP/WS/DT/idle sets per weapon mode or weapon type (`Tp_Chango`, `Tp_2h`).
 
 ![The status bar and, hovered, the other boxes' modes](docs/gcbar.png)

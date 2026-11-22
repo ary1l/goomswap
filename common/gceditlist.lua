@@ -598,7 +598,7 @@ local function draw_rp_line()
             if #st.unfinished > 0 then
                 R.sets = R.sets + 1
                 for _, u in ipairs(st.unfinished) do
-                    local piece = string.match(u, '^[^:]+: (.+)$') or u
+                    local piece = string.gsub(string.match(u, '^[^:]+: (.+)$') or u, '%(NEEDS RP%s*', '(')
                     if not seen[piece] then
                         seen[piece] = true
                         R.pieces[#R.pieces + 1] = piece
@@ -920,7 +920,8 @@ local function draw_sets()
                         dot(3, palette.rp)
                         imgui.Dummy({ 7, 1 })
                         if imgui.IsItemHovered() then
-                            set_tip('Needs RP:\n' .. table.concat(status.unfinished, '\n'))
+                            set_tip('Needs RP:\n' .. string.gsub(table.concat(status.unfinished, '\n'), '%(NEEDS RP%s*',
+                                '('))
                         end
                     end
                     if (cmd ~= nil) and (cmd.text ~= nil) then -- what puts it on, at the row's right end
