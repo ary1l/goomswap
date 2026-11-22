@@ -206,9 +206,17 @@ ctx.xy = xy
 
 local textures, nameIds = {}, {}
 
+-- An item's id by name. Mythic, relic and empyrean weapons keep one name through their stages (Gastraphetes at 75, 99,
+-- 119...), each its own id and stats; the resource lookup by name gives the first. So: the copy you own, else the
+-- highest level one when every item has been looked through (a 3+ letter picker search), else the lookup's.
 local function item_id(name)
     if name == nil then return nil end
     local key = string.lower(name)
+    local inv = editorState.inventory
+    local own = (inv ~= nil) and (inv.firstByName ~= nil) and inv.firstByName[key] or nil
+    if (own ~= nil) and (own.id ~= nil) then return own.id end
+    local any = (allItems ~= nil) and allItems.done and allItems.byName[key] or nil
+    if (any ~= nil) and (any.id ~= nil) then return any.id end
     local id = nameIds[key]
     if id == nil then
         local r = AshitaCore:GetResourceManager():GetItemByName(name, 0)
