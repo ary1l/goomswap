@@ -132,9 +132,15 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 - **Recent** (over the slots): the sets you opened last, newest first; a click opens one. Kept per job.
 - The set you're editing sits in a strip under it: an accent bar, its heading (`IDLE > Town`), its name and badges
   (Needs RP), how many of the 16 slots it names, and what it is used for. Related marks its row the same way.
+
+![On you now, the RP line and dots in the set list; the set you're editing in its strip (mockup of the current build)](gcedit_list.png)
+
 - **Unused gear** lists, by bag, the gear in your Inventory and Wardrobes that nothing of this character names:
   none of its job files, char.lua, the shared settings file, GoomSwap's own sets or its code (Moonshade, obis,
   Warp Ring). A name anywhere as a string counts, code and unsaved edits too. Read only: it moves nothing.
+
+![Backups, Unused gear, and the Replace-in-all offer after you change a piece (mockup of the current build)](gcedit_tools.png)
+
 - The **filename** opens the character's other job files. They are edited without changing your active job and
   saved with **Save file** (no reload). Switching with unsaved work asks to keep editing or discard.
 
@@ -181,6 +187,9 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   magic (DT + MDT) and breath (DT + BDT), each -50%, with the parts shown and the II versions apart (past -50%, up
   to -87.5% in all); one Damage taken row when the gear has DT only. Hover one: where the cap comes from (BG-Wiki,
   FFXIclopedia).
+
+![Caps over the Summary totals: haste, Fast Cast, damage taken split by PDT/MDT (mockup of the current build)](gcedit_caps.png)
+
 - An item's hover (picker, slot cards) says which sets name it: *In 9 sets: Tp_Default, Midshot... +3*.
 - Hover any item for its stats; elemental resistances show as the element's coloured dot and value, as the game's
   icons do (also in Summary, and as a dot row on the card: one value when they all match, a ring for a penalty). **Inspect item below grid** pins it while you pick. Commented, inherited and
@@ -200,6 +209,9 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   **Equip order** lists the layers first to last, each with its pieces as icons (green: still worn; faded orange:
   replaced later, by what on hover), the slots in screen order, and why it went on (*Weapon mode DeathPenalty: its
   weapons go on over the sets before; not fighting, so weapons your idle sets name win*).
+
+![Equip order: each layer's pieces as icons, what it wore and why (in game)](gcedit_order.png)
+
 - **Related** lists the sets you have that go on with this one, in the order they go on (a later one wins its
   slots): number, set (click to open), when it goes on (`(on now)`: its modes are on in game). The ones your file
   doesn't have are one line under them (*+ 26 you could make*); that line or **Not made too** lists them in their
@@ -215,6 +227,9 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   Pick from what was shown. **Buffs up** (`Berserk, Aftermath: Lv.3`) lists each buff's set (`Buffs['Berserk']`;
   the ones your file has are listed anyway) and, with Hoxne, its Hoxne version (`Hoxne_Tp_Berserk`), which goes on
   over the buff set: **make** adds either (a buff set inside `Buffs`).
+
+![Related: modes as the game has them, the weapon loadouts in one entry, a buff set and its Hoxne version (mockup of the current build)](gcedit_related.png)
+
 - **To fill** lists placeholders, missing or unusable items and empty weapon modes; **Fill all** stages one choice
   for every listed use. When nothing is left, it says **Nothing left to fill.**
 
