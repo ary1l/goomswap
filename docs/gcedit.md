@@ -145,6 +145,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 | Missing | No copy owned |
 | Not in this set | A commented-out placeholder |
 | Unchanged / Replaced: source | The set leaves the slot alone / a later layer of the selected Result wins |
+| Faded piece, *from <set>* | Not in this set: the piece an earlier set puts there and that stays (the layers Summary uses) |
 
 - Click a slot, then pick an item from **Gear**; the header shows **Pending** vs **Saved** (paths, augments).
 - **Put in other sets...** (over the picker, or right-click a slot card): that piece, exactly as it is (path,
@@ -168,8 +169,14 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 
 - **Summary** totals the set's listed gear bonuses including inherited layers (`Idle > Tp_Default > Tp_Acc`);
   untick **Include inherited gear** for the written definition only. **Base: Auto** uses the built-in route; pick a
-  base set to change the underlay. Buffs, caps, job code and combat formulas are not simulated; conditional and
-  unknown effects sit under **Other effects / not totaled**.
+  base set to change the underlay. Buffs, job code and combat formulas are not simulated (caps are shown over the
+  totals, not applied to them); conditional and unknown effects sit under **Other effects / not totaled**.
+- Over the totals, **caps**: each stat the gear has against its cap, over (wasted) or room left. Haste (gear) 25%
+  (256/1024; listed values are rounded, so 25-26% as listed is at the cap), Fast Cast 80%, Snapshot 70% (merits
+  and Flurry count too), Quick Magic 10%, Cure potency 50%; damage taken as the game caps it: physical (DT + PDT),
+  magic (DT + MDT) and breath (DT + BDT), each -50%, with the parts shown and the II versions apart (past -50%, up
+  to -87.5% in all). Hover one: where the cap comes from (BG-Wiki, FFXIclopedia).
+- An item's hover (picker, slot cards) says which sets name it: *In 9 sets of COR.lua: Tp_Default, Midshot...*.
 - Hover any item for its stats; elemental resistances show as the element's coloured dot and value, as the game's
   icons do (also in Summary, and as a dot row on the card: one value when they all match, a ring for a penalty). **Inspect item below grid** pins it while you pick. Commented, inherited and
   Result items can be inspected without adding them.

@@ -197,6 +197,23 @@ local function resist_of(v, owned)
     return list
 end
 
+-- A slot the set leaves out: the piece an earlier set puts there, as Summary layers them (Auto: Idle > Idle_Refresh,
+-- Ws_Default > Savage Blade...; or the base picked there), and that set's name. nil: none known, or this set's own.
+local function inherited_of(set, slot)
+    local c = editorState.cache.inherit
+    if (c == nil) or (c.rev ~= editorState.document.revision) or (c.set ~= set.name)
+        or (c.base ~= editorState.ui.statBase) then
+        local ok, eq = pcall(ctx.actions.Equipment, set, editorState.ui.statBase, false)
+        c = { rev = editorState.document.revision, set = set.name, base = editorState.ui.statBase,
+            eq = ok and eq or nil }
+        editorState.cache.inherit = c
+    end
+    local eq = c.eq
+    if (eq == nil) or not eq.layered then return nil end
+    local d, from = eq.definitions[slot], eq.sources[slot]
+    if (d == nil) or (d.kind ~= 'item') or (from == nil) or (from == set.name) or is_slot_word(d) then return nil end
+    return { name = d.name, from = from }
+end
 local function draw_cell(set, slot)
     local v = current(set, slot)
     local selected = (editorState.selection.slot == slot)
@@ -263,16 +280,21 @@ local function draw_cell(set, slot)
         )
     end
     local gh = (v == nil) and ghost_of(set, slot) or nil -- commented out in the file (/gcbuild)
-    local faded = (gh ~= nil) and (ImGuiStyleVar_Alpha ~= nil) -- not worn: its icon faint, like its name
+    -- not in this set: the piece an earlier set puts here, faint, with that set's name below
+    local inh = ((v == nil) and (gh == nil) and not changed) and inherited_of(set, slot) or nil
+    local faded = ((gh ~= nil) or (inh ~= nil)) and (ImGuiStyleVar_Alpha ~= nil) -- not worn: its icon faint
     if faded then imgui.PushStyleVar(ImGuiStyleVar_Alpha, 0.4) end
     draw_icon(
-        ((v ~= nil) and (v.kind == 'item') and item_id(v.name)) or ((gh ~= nil) and item_id(gh.name)) or nil, ctx.ICON
+        ((v ~= nil) and (v.kind == 'item') and item_id(v.name)) or ((gh ~= nil) and item_id(gh.name))
+            or ((inh ~= nil) and item_id(inh.name)) or nil, ctx.ICON
     )
     if faded then imgui.PopStyleVar() end
     imgui.SameLine()
     imgui.BeginGroup()
     if gh ~= nil then
         imgui.TextColored(palette.dim, cardText.Name(gh.name, ctx.CELL_W - ctx.ICON - 24, text_w))
+    elseif inh ~= nil then
+        imgui.TextColored(palette.dim, cardText.Name(inh.name, ctx.CELL_W - ctx.ICON - 24, text_w))
     elseif v == nil then
         imgui.TextColored(changed and palette.warn or palette.dim, changed and 'Slot cleared' or 'Unchanged')
     elseif v.kind == 'code' then
@@ -309,6 +331,8 @@ local function draw_cell(set, slot)
         end
     elseif gh then
         imgui.TextColored(palette.dim, 'Not in this set')
+    elseif inh then
+        imgui.TextColored(palette.dim, cardText.Fit('from ' .. inh.from, ctx.CELL_W - 16, text_w))
     elseif changed then
         imgui.TextColored(palette.warn, 'Cleared on Save')
     end
@@ -365,6 +389,7 @@ local function draw_cell(set, slot)
                     description = not is_slot_word(v) and describe(v.name) or nil,
                     replacement = cover and cover.full,
                     comparison = comparison,
+                    usedIn = (ctx.used_in ~= nil) and not is_slot_word(v) and ctx.used_in(v.name) or nil,
                 })
             )
             profiler.Finish('Item tooltip', tooltipStarted)
@@ -372,7 +397,11 @@ local function draw_cell(set, slot)
             set_tip(wrap(v.raw or '', 68))
         end
     elseif imgui.IsItemHovered() and v == nil and not diff then
-        set_tip('This set leaves the slot alone. Gear from an earlier layer stays equipped.')
+        local inh = (ghost_of(set, slot) == nil) and inherited_of(set, slot) or nil
+        set_tip((inh ~= nil)
+            and (wrap('Not in this set: ' .. inh.from .. ' puts ' .. inh.name .. ' here, and it stays (the layers '
+                .. 'Summary uses; its Base: picks another). Click: pick gear for this set.', 60))
+            or 'This set leaves the slot alone. Gear from an earlier layer stays equipped.')
     elseif imgui.IsItemHovered() and diff then
         local w = current(other, slot)
         set_tip('Empty here.\n' .. other.name .. ' has: ' .. ((w ~= nil) and (w.name or w.raw) or 'nothing'))
