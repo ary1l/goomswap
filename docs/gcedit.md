@@ -124,6 +124,10 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   this character), GoomSwap's own, or any of the 30 presets; hover one to preview. Kept per character
   (`gcedit-theme.txt`); the bar keeps its own.
 - **Rescan bags** refreshes ownership and keeps edits. Storage Slip gear counts as owned and shows its slip.
+- **Backups** lists this file's editor backups (every Save keeps one; `EditorBackupKeep`, the newest 10), newest
+  first, each with the sets that differ from the file now; **Compare** shows them slot by slot (then -> now).
+  **Restore** puts one back: the file is backed up first, then replaced and reloaded. Not with unsaved edits.
+- **Recent** (over the slots): the sets you opened last, newest first; a click opens one. Kept per job.
 - **Unused gear** lists, by bag, the gear in your Inventory and Wardrobes that nothing of this character names:
   none of its job files, char.lua, the shared settings file, GoomSwap's own sets or its code (Moonshade, obis,
   Warp Ring). A name anywhere as a string counts, code and unsaved edits too. Read only: it moves nothing.

@@ -1960,7 +1960,7 @@ function gcinclude.Help()
         'holds  : /capacity /jubilee /dynamisrp /abyproc [on|off]',
         'items  : /gce <item> | cancel, /warpring /mea /holla /dem',
         'checks : failing actions cancel, reason in chat',
-        'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcbuild [JOB] (the example with your gear, as <JOB>.proposed.lua), /gcedit [set] (set editor window, Ashita)',
+        'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcbuild [JOB] (the example with your gear, as <JOB>.proposed.lua), /gcedit [set|last [slot]] (set editor window, Ashita; last: the set your last action used)',
         'bar    : /gcbar [on|off|pos x y|reset|scale N|theme name]',
         'grid   : /gcgear [on|off|pos x y|reset|scale N|alpha N|bg on|off] (worn gear 4x4: locks, holds, RP)',
         'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
@@ -2751,6 +2751,77 @@ function gcinclude.EditorCommand(setName, slot)
         return
     end
     gcinclude.Editor.Open(gcinclude, setName, slot)
+end
+
+-- /gcedit last [slot]: the editor on the set your last action used, its Result tab on that use: the set named after
+-- the action (Leaden Salute), else the last set it wore. With a slot (ear2): the set that last put that slot on, as
+-- /gcgear's right-click. From gcaction's records (GcRecords, GcWornBy); idle/engaged only when nothing else was.
+gcinclude.EditorLastSlots = { main = 1, sub = 2, range = 3, ammo = 4, head = 5, body = 6, hands = 7, legs = 8,
+    feet = 9, neck = 10, waist = 11, ear1 = 12, ear2 = 13, ring1 = 14, ring2 = 15, back = 16 } -- LAC's slot numbers
+local LAST_NAME = { 'Main', 'Sub', 'Range', 'Ammo', 'Head', 'Body', 'Hands', 'Legs', 'Feet', 'Neck', 'Waist', 'Ear1',
+    'Ear2', 'Ring1', 'Ring2', 'Back' }
+local function last_set(by) -- a layer the editor can open: a set's own name, not a function or a table path
+    if (type(by) ~= 'string') or (by == '') or (by == '?') then return nil end
+    if string.find(by, '[%(%[]') or (string.sub(by, 1, 10) == 'gcinclude.') then return nil end
+    return by
+end
+local function editor_pick(set, key)
+    if (gcinclude.Editor ~= nil) and gcinclude.Editor.IsOpen() and (gcinclude.Editor.PickRecord ~= nil) then
+        gcinclude.Editor.PickRecord(set, key)
+    end
+end
+function gcinclude.EditorLast(slotWord)
+    if slotWord ~= nil then
+        local n = gcinclude.EditorLastSlots[string.lower(slotWord)]
+        if n == nil then
+            gcinclude.Err('/gcedit last <slot>: a slot (head, ear2, ring1...), not ' .. tostring(slotWord))
+            return
+        end
+        local w = (type(GcWornBy) == 'table') and GcWornBy[n] or nil
+        local set = (w ~= nil) and last_set(w.by) or nil
+        if set == nil then
+            gcinclude.Say(LAST_NAME[n] .. ': no set of your file put it on yet')
+            return
+        end
+        gcinclude.EditorCommand(set, LAST_NAME[n])
+        editor_pick(set, w.key)
+        return
+    end
+    local job = AshitaCore:GetMemoryManager():GetPlayer():GetMainJob()
+    local best, idle = nil, nil
+    local function later(r, than)
+        return (than == nil) or ((r.seq or 0) > (than.seq or 0))
+            or (((r.seq or 0) == (than.seq or 0)) and ((r.time or 0) > (than.time or 0)))
+    end
+    for _, r in pairs((type(GcRecords) == 'table') and GcRecords.byKey or {}) do
+        if r.job == job then
+            if (r.event == 'Default') then
+                if later(r, idle) then idle = r end
+            elseif later(r, best) then
+                best = r
+            end
+        end
+    end
+    local r = best or idle
+    if r == nil then
+        gcinclude.Say('/gcedit last: nothing recorded since LuAshitacast loaded')
+        return
+    end
+    local set = nil -- the set named after the action, else the last set it wore
+    for _, w in ipairs(r.writes or {}) do
+        local by = last_set(w.by)
+        if (by ~= nil) and (r.action ~= nil) and (string.lower(by) == string.lower(r.action)) then set = by end
+    end
+    for i = #(r.writes or {}), 1, -1 do
+        if set ~= nil then break end
+        set = last_set(r.writes[i].by)
+    end
+    if set == nil then
+        gcinclude.Say('/gcedit last: ' .. tostring(r.key) .. ' wore no set of your file')
+        return
+    end
+    gcinclude.EditorCommand(set)
+    editor_pick(set, r.key)
 end
 
 -- The loaded job file, when it is examples/<JOB>.lua byte for byte: that job, else nil. Read once per load.
