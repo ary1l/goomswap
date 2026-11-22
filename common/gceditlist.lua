@@ -484,6 +484,17 @@ local function row_cmd(set)
     end
     return nil
 end
+-- The command at a row's right end, cut with '...' to the room left (the hover has it whole); nil when not even a few
+-- letters fit.
+local function fit_cmd(t, room)
+    if text_w(t) <= room then return t end
+    local lo, hi = 0, #t - 1
+    while lo < hi do
+        local mid = math.floor((lo + hi + 1) / 2)
+        if text_w(string.sub(t, 1, mid) .. '...') <= room then lo = mid else hi = mid - 1 end
+    end
+    return (lo >= 5) and (string.sub(t, 1, lo) .. '...') or nil
+end
 -- A /mset mode with no Tp_ set yet: a grey row, and make to add it (empty).
 local function mset_ghosts()
     if (ctx.melee_modes == nil) then return end
@@ -501,10 +512,12 @@ local function mset_ghosts()
             local t = '/mset ' .. string.lower(m)
             imgui.SameLine()
             local avail = (imgui.GetContentRegionAvail ~= nil) and ctx.xy(imgui.GetContentRegionAvail()) or nil
-            if (avail ~= nil) and (avail > text_w(t) + 8) and (imgui.SetCursorPosX ~= nil)
-                and (imgui.GetCursorPosX ~= nil) then
-                imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - text_w(t))
-                imgui.TextColored(palette.dim, t)
+            local shown = ((avail ~= nil) and (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil))
+                and fit_cmd(t, avail - 8) or nil
+            if shown ~= nil then
+                imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - text_w(shown))
+                imgui.TextColored(palette.dim, shown)
+                if (shown ~= t) and imgui.IsItemHovered() then set_tip(t) end
             else
                 imgui.NewLine()
             end
@@ -805,13 +818,19 @@ local function draw_sets()
                         imgui.SameLine()
                         local avail = (imgui.GetContentRegionAvail ~= nil)
                             and ctx.xy(imgui.GetContentRegionAvail()) or nil
-                        local w = text_w(cmd.text)
-                        if (avail ~= nil) and (avail > w + 8) and (imgui.SetCursorPosX ~= nil) then
-                            imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - w)
-                            imgui.TextColored(palette.dim, cmd.text)
+                        local shown = nil -- cut with '...' to the room left; kept until that or the command changes
+                        if (avail ~= nil) and (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil) then
+                            if (set.cmdRoom ~= avail) or (set.cmdFor ~= cmd.text) then
+                                set.cmdRoom, set.cmdFor, set.cmdShown = avail, cmd.text, fit_cmd(cmd.text, avail - 8)
+                            end
+                            shown = set.cmdShown
+                        end
+                        if shown ~= nil then
+                            imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - text_w(shown))
+                            imgui.TextColored(palette.dim, shown)
                             if (cmd.tip ~= nil) and imgui.IsItemHovered() then set_tip(cmd.tip) end
                         else
-                            imgui.NewLine() -- no room: the hover over the name says it
+                            imgui.NewLine() -- no room even cut: the hover over the name says it
                         end
                     end
                     clip_drawn(clip, set)
