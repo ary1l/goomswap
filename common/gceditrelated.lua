@@ -448,10 +448,27 @@ local function draw_put_in()
         if (src ~= nil) and (src.kind == 'item') then
             ui.putIn = { set = req.set, slot = req.slot, source = src, group = set.group, find = { '' } }
             ui.putIn.rows = put_rows(ui.putIn)
+            -- Where it opens: under what asked for it, and never into the screen's bottom edge (a popup at the mouse
+            -- there sat over tHotBar, which took the clicks): moved up until all of it fits above.
+            if (req.at ~= nil) then
+                local lh = (imgui.GetFrameHeightWithSpacing ~= nil) and imgui.GetFrameHeightWithSpacing() or 24
+                local h = math.min(340, (#ui.putIn.rows + 6) * lh) + 5 * lh + 30
+                local ok, vh = pcall(function() return imgui.GetMainViewport().Size.y end)
+                vh = ok and tonumber(vh) or nil
+                local y = req.at[2]
+                if (vh ~= nil) then y = math.max(10, math.min(y, vh - h - 60)) end
+                ui.putIn.pos = { req.at[1], y }
+            end
             imgui.OpenPopup('##gcedit_putin')
         end
     end
-    if not imgui.BeginPopup('##gcedit_putin') then return end
+    if (ui.putIn ~= nil) and (ui.putIn.pos ~= nil) then
+        imgui.SetNextWindowPos(ui.putIn.pos, ImGuiCond_Appearing or 8)
+    end
+    if not imgui.BeginPopup('##gcedit_putin') then
+        ui.putIn = nil -- closed (a click outside it)
+        return
+    end
     local P = ui.putIn
     if P == nil then imgui.EndPopup(); return end
     local what = P.source.name .. ((P.source.path ~= nil) and (' (Path ' .. P.source.path .. ')')
@@ -956,7 +973,10 @@ local function draw_picker(set)
     if (now ~= nil) and (now.kind == 'item') and (now.name ~= nil) then
         editorPanels.SameLineIfFits(imgui, text_w('Put in other sets...') + 24)
         if make_button('Put in other sets...##gcedit_putin') then
-            editorState.ui.requestPutIn = { set = set.name, slot = editorState.selection.slot }
+            local bx = xy(imgui.GetItemRectMin())
+            local _, by = xy(imgui.GetItemRectMax())
+            editorState.ui.requestPutIn = { set = set.name, slot = editorState.selection.slot,
+                at = (bx ~= nil) and (by ~= nil) and { bx, by + 4 } or nil }
         end
         if imgui.IsItemHovered() then
             set_tip('This piece as it is here (path and augments too) into the same slot of other sets you tick.')
@@ -1559,7 +1579,9 @@ local function draw_context_menu()
             local here = (context.kind == 'slot') and current(set, slot) or nil
             if (context.kind == 'slot') and menu_button('Put in other sets...##context',
                 (here ~= nil) and (here.kind == 'item') and (here.name ~= nil)) then
-                editorState.ui.requestPutIn = { set = set.name, slot = slot }
+                local mx, my = xy(imgui.GetItemRectMin())
+                editorState.ui.requestPutIn = { set = set.name, slot = slot,
+                    at = (mx ~= nil) and (my ~= nil) and { mx, my } or nil }
                 imgui.CloseCurrentPopup()
             end
             imgui.Separator()
