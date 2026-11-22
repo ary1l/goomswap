@@ -1343,19 +1343,26 @@ function actionModel.New(context)
                 if not clash then add(child(w[1], key), plus(w[2], cond), w[1]) end
             end
         end
-        -- a Hoxne base (WearHoxne / CheckHoxneWs): itself, its /mset, its buff combos (the file's own and the buffs
-        -- typed)
-        local function hoxne(bases, dtKids)
+        -- a Hoxne base (CheckHoxneSets / CheckHoxneWs): itself and its /mset ('bases'), or its buff combos ('combos':
+        -- the file's own, the buffs typed, and extra: each buff set the file has), which GoomSwap puts on after the
+        -- plain buff sets (CheckHoxneCombos / CheckHoxneWsCombos); both when part is nil (a Hoxne set's own list)
+        local function hoxne(bases, dtKids, part, extra)
             local keep = worn
             worn = {}
-            for _, b in ipairs(bases) do
+            for _, b in ipairs((part ~= 'combos') and bases or {}) do
                 with_msets(b[1], b[2], nil)
             end
-            for _, b in ipairs(bases) do
+            for _, b in ipairs((part ~= 'bases') and bases or {}) do
                 local cs, have = {}, {}
                 for _, c in ipairs(combos(o.buffs)) do
                     cs[#cs + 1] = c
                     have[string.lower(c)] = true
+                end
+                for _, c in ipairs(extra or {}) do
+                    if not have[string.lower(c)] then
+                        cs[#cs + 1] = c
+                        have[string.lower(c)] = true
+                    end
                 end
                 local pre = string.lower(b[1]) .. '_'
                 for _, s in ipairs(document.model.list) do -- Hoxne_Tp_Impetus, Hoxne_Ws_Impetus&Footwork: any buff name
@@ -1378,6 +1385,26 @@ function actionModel.New(context)
             end
             if dtKids and o.dt then children('Dt', 'DT mode', worn) end
             worn = keep
+        end
+        -- the buff sets a holder (Buffs, Buffs_Ws, Buffs_Midcast) has, and the buffs typed: each one's set, worn
+        -- while that buff is up (CheckBuffSets); its names, for the Hoxne combos after it. Nil: no such holder.
+        local function buff_sets(holder, conds)
+            if not has_set(holder) then return nil end
+            local names, seen = {}, {}
+            local function name_of(b)
+                if (b ~= nil) and (b ~= '') and not seen[string.lower(b)] then
+                    seen[string.lower(b)] = true
+                    names[#names + 1] = b
+                end
+            end
+            for _, b in ipairs(o.buffs) do name_of(b) end
+            for _, s in ipairs(document.model.list) do
+                if (s.parentName ~= nil) and (string.lower(s.parentName) == string.lower(holder)) then name_of(s.key) end
+            end
+            for _, b in ipairs(names) do
+                add(setFile.ChildName(holder, b), plus(conds, b .. ' up'), nil, { holder = holder, key = b })
+            end
+            return names
         end
         local name = set.name
         if string.match(name, '^Hoxne_') then
@@ -1516,13 +1543,15 @@ function actionModel.New(context)
             if o.dt then
                 children('Dt', 'DT mode', jobWorn)
             end -- the proc sets take no _Dt
-            if o.hoxne then
-                local bases = { { 'Hoxne_Ws', { 'Hoxne' } } }
-                if ctx.action ~= nil then bases[2] = { 'Hoxne_' .. ctx.action, { 'Hoxne' } } end
-                hoxne(bases, true)
+            local bases = { { 'Hoxne_Ws', { 'Hoxne' } } }
+            if ctx.action ~= nil then bases[2] = { 'Hoxne_' .. ctx.action, { 'Hoxne' } } end
+            if o.hoxne then hoxne(bases, true, 'bases') end
+            local buffs = buff_sets('Buffs_Ws', {})
+            if o.hoxne then hoxne(bases, true, 'combos', buffs) end -- Hoxne + buff over the plain buff sets
+            if buffs == nil then
+                notes[#notes + 1] = "Buffs_Ws: a set per buff (Buffs_Ws = { ['Aftermath: Lv.3'] = {...} }), worn while "
+                    .. 'that buff is up; make Buffs_Ws to list them here.'
             end
-            notes[#notes + 1] =
-                "Buffs_Ws: a set per buff (Buffs_Ws = { ['Aftermath: Lv.3'] = {...} }), listed under Buffs_Ws."
         elseif ev == 'Midcast' then
             -- WearChildren over every set the handler wore; left out: TH, idle/weapon swaps (Idle_Staff) and a set that
             -- already carries the word (Burst, Self_Cure: no Burst_Burst)
@@ -1551,20 +1580,25 @@ function actionModel.New(context)
                     add('Absorb_TP', plus(c, (ctx.action == nil) and 'Absorb-TP' or nil))
                 end
             end
+            local mbuffs = buff_sets('Buffs_Midcast', {})
             if (ctx.skill == nil) or (ctx.skill == 'Healing Magic') then
                 add('LightBonus', (ctx.skill == nil) and { 'Healing Magic spells' } or {})
             end
             add('SIR', { 'SIR mode' })
-            notes[#notes + 1] = 'Buffs_Midcast: a set per buff, listed under Buffs_Midcast.'
+            if mbuffs == nil then
+                notes[#notes + 1] = 'Buffs_Midcast: a set per buff, worn while it is up; make Buffs_Midcast to list them.'
+            end
         elseif ev == 'Default' then
             local eng, idle = st('Engaged'), st('Idle')
             if eng ~= nil then
                 add('Proc', plus(eng, 'proc mode'), nil, { proc = 'engaged' })
             end -- in place of the rest
+            local hbases = {} -- the Hoxne sets idle/engaged take; their buff combos go after the plain buff sets
             if o.hoxne then
-                hoxne({ { 'Hoxne_Dt', { 'Hoxne', 'DT mode' } } }, false)
-                if eng ~= nil then hoxne({ { 'Hoxne_Tp', plus(eng, 'Hoxne') } }, false) end
-                if idle ~= nil then hoxne({ { 'Hoxne_Idle', plus(idle, 'Hoxne') } }, false) end
+                hbases[1] = { 'Hoxne_Dt', { 'Hoxne', 'DT mode' } }
+                if eng ~= nil then hbases[#hbases + 1] = { 'Hoxne_Tp', plus(eng, 'Hoxne') } end
+                if idle ~= nil then hbases[#hbases + 1] = { 'Hoxne_Idle', plus(idle, 'Hoxne') } end
+                for _, b in ipairs(hbases) do hoxne({ b }, false, 'bases') end
             end
             local cfg = (gearEngine ~= nil) and gearEngine.settings or {}
             add('Idle_Regen', {
@@ -1621,11 +1655,16 @@ function actionModel.New(context)
                 end
                 add(sn, { table.concat(names, ' / ') .. ' on its way to you' })
             end
+            local buffs = buff_sets('Buffs', {})
+            for _, b in ipairs(hbases) do hoxne({ b }, false, 'combos', buffs) end -- over the plain buff sets
             if idle ~= nil then add('XIRoll', plus(idle, 'a roll at 11')) end
             add('Incapacitated', { 'slept, petrified, stunned or terrorized' })
             add('Sleeping', { 'asleep' })
             add('Doomed', { 'Doom or Bane' })
-            notes[#notes + 1] = "Buffs: a set per buff (Buffs = { ['Aftermath: Lv.3'] = {...} }), listed under Buffs."
+            if buffs == nil then
+                notes[#notes + 1] = "Buffs: a set per buff (Buffs = { ['Aftermath: Lv.3'] = {...} }), worn while that "
+                    .. 'buff is up; make Buffs to list them here.'
+            end
         end
 
         -- 3. the file's own variants of a set listed (Ws_Default_SA): nothing above looks for them

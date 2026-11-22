@@ -695,26 +695,95 @@ local function draw_over(set)
         'Sets that go on with ' .. set.name .. ', in order: a later one wins its slots.'
     )
     imgui.PopTextWrapPos()
-    -- which modes to list: every one (default), only what is on in game now, or ticked by hand
-    local function show(label, key)
-        local on = (editorState.ui.overShow == key)
+    -- which modes to list: every one (default), what is on in game now, or your own pick. The modes as the game
+    -- has them: one /mset at a time, toggles lit when on, and the buffs up (each buff set, and Hoxne + buff). In
+    -- All modes or As now, a click on any of them switches to Pick, from what was shown, with that change.
+    local view = editorState.ui.overShow
+    if (view == 'now') and editorState.document.inactive then view = 'all' end
+    wi.ms, wi.buffs = wi.ms or {}, wi.buffs or { '' }
+    wi.dt, wi.high, wi.proc, wi.hoxne = wi.dt or { false }, wi.high or { false }, wi.proc or { false },
+        wi.hoxne or { false }
+    for _, m in ipairs(values) do
+        if m ~= 'Default' then wi.ms[m] = wi.ms[m] or { false } end
+    end
+    local shown = { ms = nil, dt = false, high = false, proc = false, hoxne = false } -- what the pills light
+    if view == 'all' then
+        shown.all, shown.dt, shown.high, shown.proc, shown.hoxne = true, true, true, true, true
+    elseif view == 'now' then
+        shown.ms = ((now.mset ~= nil) and (now.mset ~= 'Default')) and now.mset or nil
+        shown.dt, shown.high, shown.proc, shown.hoxne = now.dt == true, now.wsset == 'High', now.proc == true,
+            now.hoxne == 'Locked'
+    else
+        for _, m in ipairs(values) do
+            if (m ~= 'Default') and wi.ms[m][1] then shown.ms = m end
+        end
+        shown.dt, shown.high, shown.proc, shown.hoxne = wi.dt[1], wi.high[1], wi.proc[1], wi.hoxne[1]
+    end
+    local function to_pick() -- start Pick from what is shown
+        if view == 'pick' then return end
+        if view == 'now' then wi_from_game() end
+        editorState.ui.overShow, view = 'pick', 'pick'
+    end
+    local function seg(label, on, id) -- a segment of a row: lit when on
         imgui.PushStyleColor(ImGuiCol_Button, on and palette.selBg or palette.btn)
         imgui.PushStyleColor(ImGuiCol_Text, on and palette.blue or palette.dim)
-        if imgui.SmallButton(label .. '##gcwi_show_' .. key) then
-            editorState.ui.overShow = key
-            if key == 'pick' then wi_from_game() end
-        end
+        local hit = imgui.SmallButton(label .. '##gcwi_' .. id)
         imgui.PopStyleColor(2)
+        return hit
     end
-    imgui.TextColored(palette.dim, 'Show:')
-    imgui.SameLine()
-    show('Every mode', 'all')
-    imgui.SameLine()
-    if not editorState.document.inactive then show('Modes on now', 'now') end
-    imgui.SameLine()
-    show('Pick modes', 'pick')
+    local labelW = text_w('Show sets for') + 14
+    local function label(t)
+        local x0 = imgui.GetCursorPosX()
+        imgui.TextColored(palette.dim, t)
+        imgui.SameLine()
+        if imgui.SetCursorPosX ~= nil then imgui.SetCursorPosX(x0 + labelW) end
+    end
+    label('Show sets for')
+    for i, v in ipairs({ { 'All modes', 'all' }, { 'As now', 'now' }, { 'Pick', 'pick' } }) do
+        if (v[2] ~= 'now') or not editorState.document.inactive then
+            if i > 1 then imgui.SameLine(0, 2) end
+            if seg(v[1], view == v[2], 'show_' .. v[2]) then
+                if v[2] == 'pick' then to_pick() else editorState.ui.overShow, view = v[2], v[2] end
+            end
+            if imgui.IsItemHovered() then
+                set_tip(({ all = 'Every version of every mode: what you could make.',
+                    now = 'What is on in game now (the pills light it).',
+                    pick = 'Your own: click the pills.' })[v[2]])
+            end
+        end
+    end
     imgui.SameLine(0, 16)
     if imgui.SmallButton('+ /mset mode##gcedit') then editorState.ui.requestNewMset = true end
+    label('/mset')
+    for i, m in ipairs(values) do
+        if i > 1 then imgui.SameLine(0, 2) end
+        local on = shown.all or ((m == 'Default') and (shown.ms == nil)) or (shown.ms == m)
+        if seg(m, on, 'ms_' .. m) then
+            to_pick()
+            for _, k in ipairs(values) do
+                if k ~= 'Default' then wi.ms[k][1] = (k == m) end
+            end
+        end
+    end
+    if imgui.IsItemHovered() then set_tip('One at a time, as in game (/mset <mode>).') end
+    label('Toggles')
+    local TOGGLES = { { 'DT (/dt)', 'dt' }, { 'WS high-buff', 'high' }, { 'Proc', 'proc' }, { 'Hoxne', 'hoxne' } }
+    for i, t in ipairs(TOGGLES) do
+        if i > 1 then imgui.SameLine(0, 4) end
+        imgui.PushStyleColor(ImGuiCol_Button, shown[t[2]] and palette.okBg or palette.btn)
+        imgui.PushStyleColor(ImGuiCol_Text, shown[t[2]] and palette.ok or palette.dim)
+        local hit = imgui.SmallButton(t[1] .. '##gcwi_tg_' .. t[2])
+        imgui.PopStyleColor(2)
+        if hit then
+            to_pick()
+            wi[t[2]][1] = not shown[t[2]]
+        end
+    end
+    label('Buffs up')
+    imgui.PushItemWidth(-1)
+    imgui.InputTextWithHint('##gcwi_buffs', 'comma between: Berserk, Aftermath: Lv.3 (each buff set; with Hoxne, '
+        .. 'Hoxne + buff too)', wi.buffs, 96)
+    imgui.PopItemWidth()
     if #editorState.document.newModes > 0 then
         imgui.TextColored(
             palette.warn,
@@ -724,44 +793,18 @@ local function draw_over(set)
         )
     end
     local o = { msets = {}, buffs = {} }
-    if editorState.ui.overShow == 'all' then
+    for b in string.gmatch(wi.buffs[1] or '', '[^,]+') do -- the buffs typed count in every view
+        local t = string.match(b, '^%s*(.-)%s*$')
+        if t ~= '' then o.buffs[#o.buffs + 1] = t end
+    end
+    if view == 'all' then
         for _, m in ipairs(values) do
             if m ~= 'Default' then o.msets[#o.msets + 1] = m end
         end
         o.high, o.dt, o.proc, o.hoxne = true, true, true, true -- every option, to make or leave
-    elseif editorState.ui.overShow == 'now' then
-        if (now.mset ~= nil) and (now.mset ~= 'Default') then o.msets[1] = now.mset end
-        o.high, o.dt, o.proc, o.hoxne = (now.wsset == 'High'), now.dt, now.proc, (now.hoxne == 'Locked')
     else
-        for _, m in ipairs(values) do
-            if m ~= 'Default' then
-                wi.ms[m] = wi.ms[m] or { false }
-                if wi.ms[m][1] then o.msets[#o.msets + 1] = m end
-            end
-        end
-        for b in string.gmatch(wi.buffs[1] or '', '[^,]+') do
-            local t = string.match(b, '^%s*(.-)%s*$')
-            if t ~= '' then o.buffs[#o.buffs + 1] = t end
-        end
-        o.high, o.dt, o.hoxne, o.proc = wi.high[1], wi.dt[1], wi.hoxne[1], wi.proc[1]
-        imgui.TextColored(palette.dim, 'Melee mode (/mset):')
-        for _, m in ipairs(values) do
-            if m ~= 'Default' then
-                imgui.SameLine()
-                imgui.Checkbox(m .. '##gcwi_' .. m, wi.ms[m])
-            end
-        end
-        imgui.Checkbox('DT mode (/dt)##gcwi', wi.dt)
-        imgui.SameLine()
-        imgui.Checkbox('WS high-buff mode (/wsset high)##gcwi', wi.high)
-        imgui.Checkbox('Hoxne Ampulla (/hoxne)##gcwi', wi.hoxne)
-        imgui.SameLine()
-        imgui.Checkbox('Proc mode (/proc)##gcwi', wi.proc)
-        imgui.PushItemWidth(-1)
-        imgui.InputTextWithHint(
-            '##gcwi_buffs', 'Buffs up (for Hoxne combos), comma between: Impetus, Footwork', wi.buffs, 96
-        )
-        imgui.PopItemWidth()
+        if shown.ms ~= nil then o.msets[1] = shown.ms end
+        o.high, o.dt, o.proc, o.hoxne = shown.high, shown.dt, shown.proc, shown.hoxne
     end
     -- what_if (resource lookups) and the grouping, redone only when the set, the modes or the set list change
     local ignored, ignoreList = ignored_suggestion_names(), {}
@@ -972,6 +1015,15 @@ local function draw_over(set)
         C.when = C.name + nameW + 16
         V.cols = C
     end
+    -- make a set not made: a buff set (Buffs['Berserk']) inside its holder, any other at the file's top level
+    local function make_row(w)
+        local holder = (w.holder ~= nil) and editorState.document.model.byName[w.holder] or nil
+        if holder ~= nil then
+            make_set(w.name, nil, true, holder, w.key)
+        else
+            make_set(w.name, nil, true)
+        end
+    end
     -- a set's hover: what it goes over and when, open or make it, what covers it when not made, and the job file
     -- line that wears it (that line whole: not wrapped)
     local function row_tip(w)
@@ -1043,7 +1095,7 @@ local function draw_over(set)
         if not w.have then
             imgui.SameLine()
             w.makeLabel = w.makeLabel or ('make##gcwi' .. w.pos)
-            if make_button(w.makeLabel) then make_set(w.name, nil, true) end
+            if make_button(w.makeLabel) then make_row(w) end
             if imgui.IsItemHovered() then
                 set_tip(wrap('Adds ' .. w.name .. ', empty, next to its base set in the file: fill only what differs. '
                     .. 'Saved on Save + reload.', 60))
@@ -1079,7 +1131,7 @@ local function draw_over(set)
         end
         if not w.have then
             w.mkLabel = w.mkLabel or ('+##gcwm' .. w.pos)
-            if imgui.SmallButton(w.mkLabel) then make_set(w.name, nil, true) end
+            if imgui.SmallButton(w.mkLabel) then make_row(w) end
             if imgui.IsItemHovered() then set_tip(row_tip(w)) end
             return
         end
@@ -1193,7 +1245,7 @@ local function draw_over(set)
                 end
             else
                 w.chipLabel = w.chipLabel or (ch.mset .. ' +##gcwc' .. w.pos)
-                if make_button(w.chipLabel) then make_set(w.name, nil, true) end
+                if make_button(w.chipLabel) then make_row(w) end
                 if imgui.IsItemHovered() then set_tip(row_tip(w)) end
             end
         end
@@ -1247,7 +1299,7 @@ local function draw_over(set)
     imgui.EndChild()
     if makeAll ~= nil then
         for _, w in ipairs(makeAll) do
-            if not w.have and not has_set(w.name) then make_set(w.name, nil, true) end
+            if not w.have and not has_set(w.name) then make_row(w) end
         end
     end
 end

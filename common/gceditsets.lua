@@ -242,9 +242,10 @@ end
 -- gcinclude: EquipMode(prefix) = <prefix>_Default then <prefix>_<mset>; ByName(n) = n then n_<mset>; WS wrapper
 -- (WrapHoldHandlers) = job file, Ws_Proc/Proc (/proc), then WearChildren(worn, HighBuff) on /wsset high and
 -- WearChildren(worn, Dt) on /dt (each worn n: n_<key>, and <prefix>_<key> for <prefix>_Default), then CheckHoxneWs
--- (Hoxne_Ws, Hoxne_<ws>, their buff combos <base>_<buffs> and each one's _<mset>, then their _Dt on /dt), Buffs_Ws.
--- Idle/engaged (CheckHoxneSets): Hoxne_Dt on /dt, else Hoxne_Tp engaged / Hoxne_Idle idle, each by WearHoxne
--- (ByName + combos). Midcast: WearChildren(worn, Self / Others / Burst). Job files may look for more (THF _SA,
+-- (Hoxne_Ws, Hoxne_<ws> and each one's _<mset>, their _Dt on /dt), Buffs_Ws, then CheckHoxneWsCombos (their buff
+-- combos <base>_<buffs>, over the plain buff sets). Idle/engaged: CheckHoxneSets (Hoxne_Dt on /dt, else Hoxne_Tp
+-- engaged / Hoxne_Idle idle, by ByName), ..., Buffs, then CheckHoxneCombos (that base's buff combos). Midcast:
+-- WearChildren(worn, Self / Others / Burst). Job files may look for more (THF _SA,
 -- MNK Victory Smite_Impetus): those show under Worn in when an action looks for them.
 ---------------------------------------------------------------------------------------------------------------------
 
