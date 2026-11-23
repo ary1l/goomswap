@@ -242,7 +242,7 @@ function analysis.New(options)
             if (ctx.skill ~= nil) and (in_list(mb, ctx.skill) == false) then return false, {} end
             return nil, { 'magic burst' }
         end
-        if a == 'gcinclude.RangedAcc()' then return nil, { 'ranged mode Acc' } end
+        if a == 'gcinclude.RangedAcc()' then return nil, { 'melee mode Acc (/mset)' } end -- /mset acc: ranged too
         local blist, barg = string.match(a, '^T%s*(%b{})%s*:%s*contains%((.-)%)$')
         if blist ~= nil then
             local names = {}

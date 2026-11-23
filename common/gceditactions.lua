@@ -843,13 +843,46 @@ function actionModel.New(context)
                         end
                         if status then nots = {} end -- resting, not engaged: resting says it
                         if built ~= nil then conds[#conds + 1] = built end
-                        uses[#uses + 1] = { event = ev, line = r.line, conds = conds, nots = nots }
+                        uses[#uses + 1] = { event = ev, line = r.line, conds = conds, nots = nots, kind = r.kind }
                     end
                 end
             end
         end
         table.sort(uses, function(x, y) return x.line < y.line end)
         return uses
+    end
+    -- The modes a ByName set's version is worn with, from the rest of its name after the base ('Acc': 'melee mode
+    -- Acc (/mset)', a /wm mode, 2h / 1h, or both: 'Fomalhaut_Acc'); nil when it is none (MNK's _Impetus: the job
+    -- file's own logic). Read as Dt's version would be, which takes all of them.
+    local function version_modes(rest)
+        local st = {}
+        local a = action_for({ name = 'Dt_' .. rest, lname = string.lower('Dt_' .. rest) }, st)
+        if (a == nil) or ((st.mset == nil) and (st.wmode == nil) and (st.hands == nil)) then return nil end
+        return (string.gsub(tostring(a.as or ''), '^as if ', ''))
+    end
+    -- Where the job file wears this set as another's version: ByName(base) also wears base_<wm>, base_<mset> and
+    -- base_<wm>_<mset> when made (Midshot_Acc for ByName('Midshot')). The base's ByName uses, each with the modes.
+    local function version_uses(set)
+        local i = 0
+        while true do
+            i = string.find(set.name, '_', i + 1, true)
+            if i == nil then return {} end
+            local base, rest = string.sub(set.name, 1, i - 1), string.sub(set.name, i + 1)
+            local modes = has_set(base) and version_modes(rest) or nil
+            if modes ~= nil then
+                local out = {}
+                for _, u in ipairs(job_uses({ name = base, lname = string.lower(base) })) do
+                    if u.kind == 'byname' then
+                        local conds = {}
+                        for _, c in ipairs(u.conds) do conds[#conds + 1] = c end
+                        if #conds == 0 then conds[1] = EVENT_ALL[u.event] or u.event end
+                        conds[#conds + 1] = 'with ' .. modes
+                        out[#out + 1] = { event = u.event, line = u.line, conds = conds, nots = u.nots }
+                    end
+                end
+                if #out > 0 then return out end
+            end
+        end
     end
     -- The job file's uses as a sentence (each with its handler and line) and a short label.
     local function uses_text(uses)
@@ -929,6 +962,12 @@ function actionModel.New(context)
         end
         local auto = AUTO_WHEN[set.lname]
         local uses = job_uses(set)
+        local lines = {}
+        for _, u in ipairs(uses) do lines[u.line] = true end
+        for _, u in ipairs(version_uses(set)) do -- worn as a ByName set's version too (Midshot_Acc)
+            if not lines[u.line] then uses[#uses + 1] = u end
+        end
+        table.sort(uses, function(x, y) return x.line < y.line end)
         local jtext, jshort
         if #uses > 0 then jtext, jshort = uses_text(uses) end
         if text == nil then -- nothing by its name: the job file's code, and GoomSwap's threshold

@@ -399,6 +399,9 @@ local function save()
     if renames[editorState.selection.setName or ''] then
         editorState.selection.setName = renames[editorState.selection.setName]
     end
+    if (editorState.preferences ~= nil) and (editorState.preferences.start == 'on') then -- Getting started: saved once
+        editorState.preferences.start, editorState.preferences.dirty = 'saved', true
+    end
     if editorState.document.inactive then
         ctx.gearEngine.Say('/gcedit: saved ' .. editorState.document.file .. '; active job left loaded')
         save_preferences()

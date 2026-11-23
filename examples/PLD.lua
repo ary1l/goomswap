@@ -834,8 +834,7 @@ profile.HandlePreshot = function()
 end
 
 profile.HandleMidshot = function()
-    gFunc.EquipSet(sets.Midshot);
-    if gcinclude.RangedAcc() then gFunc.EquipSet(sets.Midshot_Acc) end -- /mset acc
+    ByName('Midshot'); -- then Midshot_<wm>, Midshot_Acc on /mset acc, Midshot_<wm>_Acc: the ones made
     gcinclude.CheckTH();
 end
 
