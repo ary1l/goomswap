@@ -14,7 +14,7 @@
 | `/mw` `/sw` `/rw` `/ammoset [name\|none]` | One slot's pick over the mode; any TP. Picks: the job's `MainModes`/`SubModes`/`RangeModes`, then any item its `Weapon_` sets name |
 | `/dw [on\|off\|auto]` | Dual Wield: why; `off` = `_1h` always |
 | `/smartswap` | Light spells (Dia, Blink…) keep weapons at `SmartSwapTP`+ |
-| `/mset [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets; `acc` also wears `Midshot_Acc` (COR RNG PLD) |
+| `/mset [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets; `acc` also wears `Midshot_Acc` (COR RNG PLD; `Midshot_<Mode>_Acc` per weapon mode) |
 | `/wsset [mid\|high]` | `high`: WS sets add their `_HighBuff` |
 | `/th` | `TH` until tagged (THF main: always) |
 | `/wsdistance [yalms\|on\|off]` | WS range check: a melee WS out of reach is cancelled (reach = WS range 3 + your and the target's hitboxes, so further on a big mob; `yalms` = the least reach, default 5) |

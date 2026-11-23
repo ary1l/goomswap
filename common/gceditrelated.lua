@@ -373,11 +373,66 @@ end
 -- Put in other sets: one slot's piece, exactly as written (path, augments), into the same slot of the sets ticked.
 -- Each is a pending edit (as Copy from makes them: Undo slot per set; Save writes them). Sets written as code, a
 -- table of sets, deleted, or with that slot written as code can't take it.
-local function same_piece(a, b)
-    if (a == nil) or (b == nil) then return false end
-    return (string.lower(tostring(a.name)) == string.lower(tostring(b.name)))
+-- A piece's augments: { key, text } each, key in lower case without spaces or quotes (the file drops the quotes of
+-- "Fast Cast"+10, the bags keep them), text as shown.
+local function aug_items(v)
+    local out = {}
+    for a in string.gmatch(tostring((v ~= nil) and v.augs or ''), '[^,]+') do
+        local key = string.gsub(string.lower(a), '[%s\'"{}]', '')
+        if key ~= '' then
+            out[#out + 1] = { key = key, text = (string.gsub(string.gsub(a, '["{}]', ''), '^%s*(.-)%s*$', '%1')) }
+        end
+    end
+    return out
+end
+local function piece_key(v) -- name, path and augments, the augments in any order and spelling of the list
+    if (v == nil) or (v.kind ~= 'item') or (v.name == nil) then return nil end
+    local augs = {}
+    for _, x in ipairs(aug_items(v)) do augs[#augs + 1] = x.key end
+    table.sort(augs)
+    return string.lower(tostring(v.name)) .. '|' .. string.lower(tostring(v.path or '')) .. '|'
+        .. table.concat(augs, ',')
+end
+local function piece_label(v)
+    return tostring(v.name) .. ((v.path ~= nil) and (' (Path ' .. v.path .. ')')
+        or (((v.augs or '') ~= '') and ' (augmented)' or ''))
+end
+-- Two versions of one piece (same name and path): the augments only a has, only b has, and both have ('' if none).
+local function aug_diff(a, b)
+    local ia, ib, inA, inB = aug_items(a), aug_items(b), {}, {}
+    for _, x in ipairs(ia) do inA[x.key] = true end
+    for _, x in ipairs(ib) do inB[x.key] = true end
+    local onlyA, onlyB, both = {}, {}, {}
+    for _, x in ipairs(ia) do
+        if inB[x.key] then both[#both + 1] = x.text else onlyA[#onlyA + 1] = x.text end
+    end
+    for _, x in ipairs(ib) do
+        if not inA[x.key] then onlyB[#onlyB + 1] = x.text end
+    end
+    return table.concat(onlyA, ', '), table.concat(onlyB, ', '), table.concat(both, ', ')
+end
+local function same_version_of(a, b) -- same name and path: only the augments can differ
+    return (a ~= nil) and (b ~= nil) and (a.kind == 'item') and (b.kind == 'item')
+        and (string.lower(tostring(a.name)) == string.lower(tostring(b.name)))
         and (string.lower(tostring(a.path or '')) == string.lower(tostring(b.path or '')))
-        and (string.lower(tostring(a.augs or '')) == string.lower(tostring(b.augs or '')))
+end
+-- Old -> new, said by what differs: Rudianos's Mantle (Evasion+2, HP+6 -> Evasion+20, HP+60) for two versions of
+-- one piece, else each whole (Chev. Armet +2 -> Chev. Armet +3).
+local function change_label(old, new)
+    if same_version_of(old, new) then
+        local a, b = aug_diff(old, new)
+        return tostring(new.name) .. ' (' .. ((a ~= '') and a or 'no augments') .. ' -> '
+            .. ((b ~= '') and b or 'no augments') .. ')'
+    end
+    return piece_label(old) .. ' -> ' .. piece_label(new)
+end
+-- Hover for a version of the piece being put in: what it has that the other lacks, and what both have.
+local function version_tip(here, putting)
+    local a, b, both = aug_diff(here, putting)
+    local lines = { 'Here: ' .. ((a ~= '') and a or 'nothing the other lacks'),
+        'Putting in: ' .. ((b ~= '') and b or 'nothing this one lacks') }
+    if both ~= '' then lines[#lines + 1] = 'Both have: ' .. both end
+    return table.concat(lines, '\n')
 end
 local PAIR = { Ear1 = 'Ear2', Ear2 = 'Ear1', Ring1 = 'Ring2', Ring2 = 'Ring1' }
 local function put_rows(P)
@@ -388,21 +443,35 @@ local function put_rows(P)
     local copies = editorState.inventory and editorState.inventory.copiesByName
         and editorState.inventory.copiesByName[lname] or {}
     local one = (#copies < 2)
+    local key = piece_key(P.source)
+    -- the piece this set had in the file before you changed it here (Rudianos's Mantle before its new augments)
+    local home = doc.model.byName[P.set]
+    local was = (home ~= nil) and (home.slots[P.slot] ~= nil) and home.slots[P.slot].value or nil
+    local wasKey = piece_key(was)
+    if (wasKey == nil) or (wasKey == key) then was, wasKey = nil, nil end
+    P.replaced, P.oldCount = was, 0
     for i, s in ipairs(doc.model.list) do
         if (s.name ~= P.set) and (s.code == nil) and not s.extra and not doc.deleted[s.name] then
             local saved = s.slots[P.slot]
             local r = { set = s, at = i, tick = { false } }
             local v = current(s, P.slot)
+            local vk = piece_key(v)
             local pv = (other ~= nil) and one and current(s, other) or nil
             if (saved ~= nil) and (saved.value.kind == 'code') then
                 r.note, r.off = 'code', true
-            elseif same_piece(v, P.source) then
+            elseif (vk ~= nil) and (vk == key) then
                 r.note, r.off = 'has it', true
             elseif (pv ~= nil) and (string.lower(tostring(pv.name)) == lname) then
                 r.note, r.off = 'in ' .. other .. ' (one copy)', true
+            elseif (wasKey ~= nil) and (vk == wasKey) then
+                r.note, r.old = 'now the one you replaced', true
+                P.oldCount = P.oldCount + 1
+            elseif same_version_of(v, P.source) then
+                r.note = 'now another version'
             else
                 r.note = 'now ' .. (((v ~= nil) and v.name) or 'empty')
             end
+            if same_version_of(v, P.source) and not r.off then r.tip = version_tip(v, P.source) end
             rows[#rows + 1] = r
         end
     end
@@ -475,8 +544,11 @@ local function draw_put_in()
     end
     local P = ui.putIn
     if P == nil then imgui.EndPopup(); return end
-    local what = P.source.name .. ((P.source.path ~= nil) and (' (Path ' .. P.source.path .. ')')
-        or (((P.source.augs or '') ~= '') and ' (augmented)' or ''))
+    local what = piece_label(P.source)
+    if same_version_of(P.replaced, P.source) then -- the new augments, not just (augmented)
+        local _, b = aug_diff(P.replaced, P.source)
+        if b ~= '' then what = P.source.name .. ' (' .. b .. ')' end
+    end
     imgui.TextColored(palette.section, 'Put ' .. what .. ' in ' .. P.slot .. ' of:')
     if ((P.source.augs or '') ~= '') and imgui.IsItemHovered() then set_tip(P.source.augs) end
     imgui.PushItemWidth(220)
@@ -492,6 +564,16 @@ local function draw_put_in()
     imgui.SameLine()
     if imgui.SmallButton('None##gcpi_none') then
         for _, r in ipairs(P.rows) do r.tick[1] = false end
+    end
+    if (P.oldCount or 0) > 0 then -- the sets that still have what this set had before
+        local label = 'Sets with the one you replaced (' .. P.oldCount .. ')##gcpi_old'
+        editorPanels.SameLineIfFits(imgui, text_w(label) + 24)
+        if imgui.SmallButton(label) then
+            for _, r in ipairs(P.rows) do r.tick[1] = (r.old == true) end
+        end
+        if imgui.IsItemHovered() then
+            set_tip('Ticks only them: ' .. change_label(P.replaced, P.source) .. '.')
+        end
     end
     local find = string.lower(P.find[1] or '')
     local lh = (imgui.GetFrameHeightWithSpacing ~= nil) and imgui.GetFrameHeightWithSpacing() or 24
@@ -516,7 +598,8 @@ local function draw_put_in()
                 local avail = xy(imgui.GetContentRegionAvail())
                 if (avail ~= nil) and (avail > nw) then imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - nw) end
             end
-            imgui.TextColored(palette.dim, r.note)
+            imgui.TextColored(r.old and palette.blue or palette.dim, r.note)
+            if (r.tip ~= nil) and imgui.IsItemHovered() then set_tip(r.tip) end
         end
     end
     imgui.EndChild()
@@ -541,21 +624,6 @@ end
 
 -- == Upgrade everywhere: a piece changed in this set (Chev. Armet +2 -> +3) that other sets still have: the same
 -- change there, all at once or picked. An ear or ring is found in either slot of the pair. ==
-local function piece_key(v) -- name, path and augments, the augments in any order and spelling of the list
-    if (v == nil) or (v.kind ~= 'item') or (v.name == nil) then return nil end
-    local augs = {}
-    for a in string.gmatch(string.lower(tostring(v.augs or '')), '[^,]+') do
-        a = string.gsub(a, '[%s\'"{}]', '')
-        if a ~= '' then augs[#augs + 1] = a end
-    end
-    table.sort(augs)
-    return string.lower(tostring(v.name)) .. '|' .. string.lower(tostring(v.path or '')) .. '|'
-        .. table.concat(augs, ',')
-end
-local function piece_label(v)
-    return tostring(v.name) .. ((v.path ~= nil) and (' (Path ' .. v.path .. ')')
-        or (((v.augs or '') ~= '') and ' (augmented)' or ''))
-end
 -- The slot to offer: the one picked, else the first changed (old piece in the file, a different one now).
 local function upgrade_of(set)
     local edits = editorState.document.edits[set.name]
@@ -615,7 +683,15 @@ local function draw_upgrade(set)
     if n == 0 then return end
     imgui.Spacing()
     imgui.PushTextWrapPos(0)
-    imgui.TextColored(palette.blue, slot .. ': ' .. piece_label(old) .. ' -> ' .. piece_label(new) .. '.')
+    imgui.TextColored(palette.blue, slot .. ': ' .. change_label(old, new) .. '.')
+    if imgui.IsItemHovered() and (((old.augs or '') ~= '') or ((new.augs or '') ~= '')) then
+        local function all(v)
+            local t = {}
+            for _, x in ipairs(aug_items(v)) do t[#t + 1] = x.text end
+            return (#t > 0) and table.concat(t, ', ') or 'no augments'
+        end
+        set_tip('Old: ' .. all(old) .. '\nNew: ' .. all(new))
+    end
     if U.names == nil then
         local names = {}
         for i, r in ipairs(U.rows) do
@@ -627,7 +703,7 @@ local function draw_upgrade(set)
         end
         U.names = table.concat(names, ', ')
     end
-    imgui.TextUnformatted(tostring(old.name) .. ' is still in ' .. n .. ' other set' .. ((n == 1) and '' or 's')
+    imgui.TextUnformatted('The old one is still in ' .. n .. ' other set' .. ((n == 1) and '' or 's')
         .. ': ' .. U.names)
     imgui.PopTextWrapPos()
     local function replace(rows)
@@ -641,7 +717,7 @@ local function draw_upgrade(set)
         if done == 0 then return end
         editorState.document.revision = editorState.document.revision + 1
         editorState.history.revision = editorState.document.revision -- Undo edit takes them back one by one
-        feedback('Replaced ' .. piece_label(old) .. ' with ' .. piece_label(new) .. ' in ' .. done .. ' set'
+        feedback(slot .. ': ' .. change_label(old, new) .. ' in ' .. done .. ' more set'
             .. ((done == 1) and '' or 's') .. ' (unsaved): Undo edit steps back; Save writes them.')
     end
     if make_button('Replace in all ' .. n .. '##gcup_all') then
@@ -649,8 +725,8 @@ local function draw_upgrade(set)
         replace(U.rows)
     end
     if imgui.IsItemHovered() then
-        set_tip('The same change in every set listed: ' .. piece_label(new) .. ' where ' .. piece_label(old)
-            .. ' is now. Unsaved until Save + reload.')
+        set_tip('The same change in every set listed: the new one where the old one is now. Unsaved until '
+            .. 'Save + reload.')
     end
     imgui.SameLine()
     if imgui.SmallButton((U.pick and 'Hide list' or 'Pick...') .. '##gcup_pick') then U.pick = not U.pick end

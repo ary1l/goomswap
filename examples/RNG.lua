@@ -386,14 +386,13 @@ end
 profile.HandleMidshot = function()
     local double = gcinclude.BuffCount('Double Shot');
     local barrage = gcinclude.BuffCount('Barrage');
-    gFunc.EquipSet(sets.Midshot);
+    -- Midshot, then the ones made of: Midshot_<wm> (the /wm mode's own), Midshot_Acc on /mset acc,
+    -- Midshot_<wm>_Acc
+    ByName('Midshot');
 
     if double > 0 then
         gFunc.EquipSet(sets.DoubleShot);
-    end
-
-    if gcinclude.RangedAcc() then -- /mset acc
-        gFunc.EquipSet(sets.Midshot_Acc);
+        if gcinclude.RangedAcc() then gFunc.EquipSet(sets.Midshot_Acc) end -- /mset acc: accuracy over Double Shot
     end
 
     if barrage > 0 then--ensure acc as base if barrage up

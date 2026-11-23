@@ -4,6 +4,11 @@
 
 Edits your loaded job file. Changes stay in memory until you confirm a save. `/gcedit Savage Blade` opens a set.
 
+A new job file (still the example as is, or a `/gcbuild` draft) gets a **Getting started** list at the top: your own
+gear (**Keep only my gear**), what is left **To fill**, a `/wm` weapon mode (or `/mw` `/sw` picks), one **Save +
+reload**, and the status bar (`/gcbar`). Each step ticks itself; the list goes once all are done, or with **Hide**
+(for that job file).
+
 ## Add a set or mode
 
 1. **+ New set**, type a name, **Create**. Names the engine looks for that your file lacks are suggested as you
@@ -162,10 +167,14 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   augments), into the same slot of the sets you tick: grouped by heading, each showing what it has now (sets that
   already have it, write that slot as code, or wear your only copy of that earring or ring in the other ear or ring
   slot, can't be ticked); **All in <heading>** ticks the open set's heading
-  (an enmity piece in every job ability). Each is an unsaved edit: **Undo slot** per set, **Undo edit** one at a
-  time; Save writes them.
-- Changed a piece (Chev. Armet +2 -> +3) that other sets still have? Under the grid: *+2 is still in 6 other sets*,
-  **Replace in all 6**, **Pick...** (tick which) or **Not now** (until the editor closes). An earring or ring is
+  (an enmity piece in every job ability). Other versions of the piece (an ambuscade cape with other augments) say
+  *now the one you replaced* (what this set had before) or *now another version*; hover one for the augments that
+  differ. **Sets with the one you replaced (N)** ticks just those. Each is an unsaved edit: **Undo slot** per set,
+  **Undo edit** one at a time; Save writes them.
+- Changed a piece (Chev. Armet +2 -> +3) that other sets still have? Under the grid: *The old one is still in 6 other
+  sets*, **Replace in all 6**, **Pick...** (tick which) or **Not now** (until the editor closes). A new version of the
+  same piece names only what changed: *Back: Rudianos's Mantle (Evasion+2, HP+6 -> Evasion+20, HP+60)*; hover it for
+  all the augments of both. An earring or ring is
   found in either slot of the pair (not where the set already wears your only copy of the new one). Each is an
   unsaved edit: **Undo edit** steps back; Save writes them.
 - Search matches words anywhere in the name or decoded stats (`nyame damage`); 3+ letters also lists items you don't

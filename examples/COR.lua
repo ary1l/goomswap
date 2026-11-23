@@ -513,14 +513,13 @@ end
 
 profile.HandleMidshot = function()
     local triple = gcinclude.BuffCount('Triple Shot');
-    gFunc.EquipSet(sets.Midshot);
+    -- Midshot, then the ones made of: Midshot_<wm> (the /wm mode's own), Midshot_Acc on /mset acc,
+    -- Midshot_<wm>_Acc
+    ByName('Midshot');
 
     if triple > 0 then
         gFunc.EquipSet(sets.TripleShot);
-    end
-
-    if gcinclude.RangedAcc() then -- /mset acc
-        gFunc.EquipSet(sets.Midshot_Acc);
+        if gcinclude.RangedAcc() then gFunc.EquipSet(sets.Midshot_Acc) end -- /mset acc: accuracy over Triple Shot
     end
     gcinclude.CheckTH();
 end

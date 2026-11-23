@@ -77,7 +77,7 @@ do
             -- with gcinclude.Packer (/packer)
             PackerItems = { ['Grape Daifuku +1'] = 'stack' },
             PackerPutAway = true, -- on a job change, /packer puts back (Bellhop) what only the previous job's list kept
-            -- set names hidden from /gcedit's All sets for this action tab, e.g. T{'Singing'}
+            -- set names hidden from /gcedit's Related tab, e.g. T{'Singing'}
             EditorIgnoreSuggestions = T{},
             -- newest dated /gcedit backups kept per job file, after a successful save; 0 = keep all
             EditorBackupKeep = 10,

@@ -51,7 +51,11 @@ More pictures of the editor, some of them mockups of the newest build, are in [i
    into a set.
 4. Choose **Save + reload**. The previous file is backed up; the newest ten editor backups per job are kept
    by default (`EditorBackupKeep = 0` keeps all). Other job files use **Save file** without changing your active job.
-5. Run `/checksets`; use **What you actually wore** in the editor to inspect an action.
+5. Run `/checksets`; the editor's **Result** tab shows what an action actually put on, slot by slot.
+
+While a job file is new (still the example, or a `/gcbuild` draft), the editor shows a **Getting started** list of
+these steps, each ticked from what GoomSwap sees, with a button for each. It goes away once every step is done, or
+with **Hide**.
 
 ## Weapon modes
 

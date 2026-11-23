@@ -1825,6 +1825,155 @@ local function theme_menu()
     if previewing then use_theme(preview) else use_theme(themeTarget) end
 end
 
+do -- (in a block: the main chunk is at Lua's 200 locals)
+-- "Keep only my gear": /gcbuild on the live job, after the changes are saved or dropped (the draft replaces this view).
+ctx.build_button = function(id)
+    imgui.PushStyleColor(ImGuiCol_Button, palette.save)
+    imgui.PushStyleColor(ImGuiCol_ButtonHovered, palette.saveHi)
+    local go = imgui.SmallButton('Keep only my gear (/gcbuild)##' .. id)
+    imgui.PopStyleColor(2)
+    if imgui.IsItemHovered() then
+        set_tip(
+            wrap(
+                'Opens a draft here:\n- the example, with every piece you do not own commented out\n- your own +N of an item kept\nTo fill lists the gaps. Save writes it as your '
+                    .. editorState.document.file .. '.', 60
+            )
+        )
+    end
+    if go then
+        if dirty_count() > 0 then
+            editorState.ui.notice, editorState.ui.noticeBad =
+                'Save or revert your changes first: the draft replaces this view.', true
+        else
+            AshitaCore:GetChatManager():QueueCommand(-1, '/lac fwd gcbuild')
+        end
+    end
+end
+
+-- == Getting started: the first steps for a job file new to GoomSwap (the example as is, or a /gcbuild draft), each
+-- ticked from what GoomSwap can see, until every one is done or it is hidden. preferences.start: 'on' (shown),
+-- 'saved' (shown, saved once since), 'off' (done or hidden: not again for this job file). ==
+local function start_steps()
+    local doc = editorState.document
+    local nf = fill_list().n
+    local weapons = #ctx.weapon_picks() > 0 -- /mw /sw picks are weapons set up too
+    for _, s in ipairs(doc.model.list) do
+        if weapons then break end
+        weapons = (string.match(s.name, '^[Ww]eapon_') ~= nil) and not doc.deleted[s.name]
+    end
+    local settings = (gearEngine ~= nil) and gearEngine.settings or nil
+    return {
+        { done = not doc.example, act = 'build', text = doc.example
+            and ('Your own gear: this is still the ' .. tostring(doc.jobAbbreviation) .. ' example as is')
+            or 'Your own gear, not the example as is' },
+        { done = nf == 0, act = 'fill', text = (nf == 0) and 'Nothing left to fill'
+            or (nf .. ' left to fill: empty slots, gear you lack or must move') },
+        { done = weapons, act = 'wm', text = 'Your weapons: a /wm mode (or /mw /sw picks)' },
+        { done = editorState.preferences.start == 'saved', act = 'save',
+            text = 'Saved once: Save + reload writes your file (the old one kept as a backup)' },
+        { done = (type(settings) == 'table') and (settings.DisplayBar == true), act = 'bar',
+            text = 'The status bar on (/gcbar)' },
+    }
+end
+local function start_dot(col, filled) -- a status dot at the line's start, then room for it
+    local lh = (imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or 14
+    if (imgui.GetWindowDrawList ~= nil) and (imgui.GetCursorScreenPos ~= nil) and (imgui.GetColorU32 ~= nil) then
+        local x, y = xy(imgui.GetCursorScreenPos())
+        if (x ~= nil) and (y ~= nil) then
+            local dl = imgui.GetWindowDrawList()
+            if filled then dl:AddCircleFilled({ x + 6, y + lh / 2 }, 4, imgui.GetColorU32(col), 12)
+            else dl:AddCircle({ x + 6, y + lh / 2 }, 4, imgui.GetColorU32(col), 12, 1.5) end
+        end
+    end
+    imgui.Dummy({ 16, lh })
+    imgui.SameLine()
+end
+local function start_right(label) -- a small button at the line's right end
+    imgui.SameLine()
+    local w = text_w(label) + 12
+    local avail = (imgui.GetContentRegionAvail ~= nil) and xy(imgui.GetContentRegionAvail()) or nil
+    if (avail ~= nil) and (avail > w) and (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil) then
+        imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - w)
+    end
+end
+-- Draws the list when it is on; true when drawn (the example line is then its first step).
+ctx.draw_start = function()
+    local doc, p = editorState.document, editorState.preferences
+    if doc.inactive or (p == nil) or (p.start == 'off') then return false end
+    if p.start == nil then -- only a new job file starts it: not one you already set up
+        if not (doc.example or (doc.sourcePath ~= nil)) then return false end
+        p.start, p.dirty = 'on', true
+        save_preferences()
+    end
+    local steps = start_steps()
+    local done = 0
+    for _, st in ipairs(steps) do
+        if st.done then done = done + 1 end
+    end
+    if done == #steps then
+        p.start, p.dirty = 'off', true
+        save_preferences()
+        feedback('Getting started: all ' .. #steps .. ' steps done.')
+        return false
+    end
+    imgui.PushStyleColor(ImGuiCol_ChildBg, palette.selBg)
+    imgui.BeginChild('##gcedit_start', { 0, 0 },
+        (ImGuiChildFlags_AutoResizeY or 32) + (ImGuiChildFlags_AlwaysUseWindowPadding or 2),
+        ImGuiWindowFlags_NoScrollbar or 0)
+    if (imgui.GetWindowDrawList ~= nil) and (imgui.GetWindowPos ~= nil) and (imgui.GetColorU32 ~= nil) then
+        local wx, wy = xy(imgui.GetWindowPos())
+        local wh = imgui.GetWindowHeight()
+        if (wx ~= nil) and (wy ~= nil) and (type(wh) == 'number') then
+            imgui.GetWindowDrawList():AddRectFilled({ wx, wy }, { wx + 3, wy + wh }, imgui.GetColorU32(palette.sel))
+        end
+    end
+    imgui.TextColored(palette.blue, 'Getting started')
+    imgui.SameLine()
+    imgui.TextColored(palette.dim, done .. ' of ' .. #steps .. ' done')
+    start_right('Hide')
+    if imgui.SmallButton('Hide##gcstart_hide') then
+        p.start, p.dirty = 'off', true
+        save_preferences()
+        feedback('Getting started hidden for ' .. tostring(doc.file) .. '.')
+    end
+    if imgui.IsItemHovered() then set_tip('Not shown again for ' .. tostring(doc.file) .. '.') end
+    for i, st in ipairs(steps) do
+        start_dot(st.done and palette.ok or palette.warn, st.done)
+        imgui.TextColored(st.done and palette.dim or palette.text, st.text)
+        if not st.done then
+            if st.act == 'build' then
+                start_right('Keep only my gear (/gcbuild)')
+                ctx.build_button('gcstart_build')
+            elseif st.act == 'fill' then
+                start_right('To fill')
+                if imgui.SmallButton('To fill##gcstart_fill') then editorState.selection.tab = 'fill' end
+            elseif st.act == 'wm' then
+                start_right('+ /wm mode')
+                if imgui.SmallButton('+ /wm mode##gcstart_wm') then editorState.ui.openNewSet = 'Weapon_' end
+                if imgui.IsItemHovered() then
+                    set_tip('A /wm mode: New set Weapon_<Name> with Main and Sub. /wm <name> puts them on. Save adds '
+                        .. 'it to gcinclude.WeaponModes.')
+                end
+            elseif st.act == 'save' then
+                start_right('Save + reload')
+                if imgui.SmallButton('Save + reload##gcstart_save') then editorState.ui.openSave = true end
+                if imgui.IsItemHovered() then
+                    set_tip('The same as Save + reload at the top: shows what changes first.')
+                end
+            elseif st.act == 'bar' then
+                start_right('Turn it on')
+                if imgui.SmallButton('Turn it on##gcstart_bar') then
+                    AshitaCore:GetChatManager():QueueCommand(-1, '/lac fwd gcbar on')
+                end
+            end
+        end
+    end
+    imgui.EndChild()
+    imgui.PopStyleColor()
+    return true
+end
+end
+
 local function body()
     editorPreferences.TickFeedback(editorState, imgui.GetIO().DeltaTime or 0)
     editorState.ui.frame = (editorState.ui.frame or 0) + 1
@@ -1948,6 +2097,10 @@ local function body()
     if imgui.Button(editorState.document.inactive and 'Save file##gcedit' or 'Save + reload##gcedit') and canSave then
         imgui.OpenPopup('##save_preview')
     end
+    if editorState.ui.openSave then -- Getting started's Save + reload: opened here, where the popup lives
+        editorState.ui.openSave = nil
+        if canSave then imgui.OpenPopup('##save_preview') end
+    end
     imgui.PopStyleColor(2)
     if off then imgui.EndDisabled() end
     draw_save_review()
@@ -1997,33 +2150,15 @@ local function body()
         imgui.TextColored(palette.blue, editorState.ui.draftLine)
         imgui.PopTextWrapPos()
     end
-    if editorState.document.example and not editorState.document.inactive then -- /gcbuild acts on the live job
+    local starting = ctx.draw_start() -- Getting started: the example line below is then its first step
+    if editorState.document.example and not editorState.document.inactive and not starting then -- /gcbuild: live job
         imgui.TextColored(
             palette.blue,
             'This is the '
                 .. editorState.document.jobAbbreviation .. ' example as is: its sets name gear you may not own.'
         )
         imgui.SameLine()
-        imgui.PushStyleColor(ImGuiCol_Button, palette.save)
-        imgui.PushStyleColor(ImGuiCol_ButtonHovered, palette.saveHi)
-        local go = imgui.Button('Keep only my gear (/gcbuild)##gcedit_build')
-        imgui.PopStyleColor(2)
-        if imgui.IsItemHovered() then
-            set_tip(
-                wrap(
-                    'Opens a draft here:\n- the example, with every piece you do not own commented out\n- your own +N of an item kept\nTo fill lists the gaps. Save writes it as your '
-                        .. editorState.document.file .. '.', 60
-                )
-            )
-        end
-        if go then
-            if dirty_count() > 0 then
-                editorState.ui.notice, editorState.ui.noticeBad =
-                    'Save or revert your changes first: the draft replaces this view.', true
-            else
-                AshitaCore:GetChatManager():QueueCommand(-1, '/lac fwd gcbuild')
-            end
-        end
+        ctx.build_button('gcedit_build')
     end
     if editorState.ui.notice ~= nil then
         imgui.PushTextWrapPos(0)
