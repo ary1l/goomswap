@@ -2452,8 +2452,8 @@ end
 -- checks it (char_entity.cpp OnWeaponSkillFinished: distance <= range + attacker hitbox + target hitbox; melee weapon
 -- skills have range 3 in its data/weapon_skills.yaml). A big mob is hit from further away than a small one, so a
 -- fixed distance cancels weapon skills your swings still reach. WSdistance (/wsdistance N) stays the least reach.
--- Also at least as far as your melee rounds reached this mob (gcauto.MeleeSeen): the server's own range, whatever
--- the formula, race or lag.
+-- Also at least as far as your melee rounds reached a mob of this name and hitbox (gcauto.MeleeSeen): the server's
+-- own range, whatever the formula, race or lag.
 -- Retail too: "Weapon Skill range is always 1' longer than melee range" (ffxiclopedia Distance).
 -- WsRanges: the few non-ranged weapon skills whose range isn't 3 (LandSandBoat data/weapon_skills.yaml): Gust Slash
 -- and Cyclone are client range 10 like Mistral Axe (Windower Resources weapon_skills.lua); ffxiclopedia: Cyclone
@@ -2462,8 +2462,8 @@ gcinclude.WsRange = 3
 gcinclude.WsRanges = { ['Gust Slash'] = 14, ['Cyclone'] = 14 }
 function gcinclude.WsReach(target, wsName)
     local floor = tonumber(gcinclude.settings.WSdistance) or 0
-    local seen = (target ~= nil) and (gcauto ~= nil) and (gcauto.MeleeSeen ~= nil) and gcauto.MeleeSeen(target.Id)
-    if (type(seen) == 'number') and (seen > floor) then floor = seen end
+    local okSeen, seen = pcall(function() return gcauto.MeleeSeen(target.Index) end)
+    if okSeen and (type(seen) == 'number') and (seen > floor) then floor = seen end
     local range = gcinclude.WsRanges[wsName] or gcinclude.WsRange
     local ok, sizes = pcall(function()
         local mm = AshitaCore:GetMemoryManager()
