@@ -2438,7 +2438,7 @@ function gcinclude.CheckWsBailout()
     local target = gData.GetActionTarget()
     local distance = (target ~= nil) and tonumber(target.Distance) or nil
     if gcinclude.settings.WScheck and (distance ~= nil) and (not gcinclude.DistanceWS:contains(ws.Name)) then
-        local reach = gcinclude.WsReach(target)
+        local reach = gcinclude.WsReach(target, ws.Name)
         if (distance > reach) then
             gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f). Move closer, or /wsdistance off',
                 ws.Name, distance, reach))
@@ -2454,19 +2454,25 @@ end
 -- fixed distance cancels weapon skills your swings still reach. WSdistance (/wsdistance N) stays the least reach.
 -- Also at least as far as your melee rounds reached this mob (gcauto.MeleeSeen): the server's own range, whatever
 -- the formula, race or lag.
+-- Retail too: "Weapon Skill range is always 1' longer than melee range" (ffxiclopedia Distance).
+-- WsRanges: the few non-ranged weapon skills whose range isn't 3 (LandSandBoat data/weapon_skills.yaml): Gust Slash
+-- and Cyclone are client range 10 like Mistral Axe (Windower Resources weapon_skills.lua); ffxiclopedia: Cyclone
+-- "can be used from a distance (Up to 15')".
 gcinclude.WsRange = 3
-function gcinclude.WsReach(target)
+gcinclude.WsRanges = { ['Gust Slash'] = 14, ['Cyclone'] = 14 }
+function gcinclude.WsReach(target, wsName)
     local floor = tonumber(gcinclude.settings.WSdistance) or 0
     local seen = (target ~= nil) and (gcauto ~= nil) and (gcauto.MeleeSeen ~= nil) and gcauto.MeleeSeen(target.Id)
-    if (seen ~= nil) and (seen > floor) then floor = seen end
+    if (type(seen) == 'number') and (seen > floor) then floor = seen end
+    local range = gcinclude.WsRanges[wsName] or gcinclude.WsRange
     local ok, sizes = pcall(function()
         local mm = AshitaCore:GetMemoryManager()
         local ent = mm:GetEntity()
         return (tonumber(ent:GetModelHitboxSize(mm:GetParty():GetMemberTargetIndex(0))) or 0)
             + (tonumber(ent:GetModelHitboxSize(target.Index)) or 0)
     end)
-    if not ok or (target == nil) or (target.Index == nil) then return floor end
-    return math.max(floor, gcinclude.WsRange + sizes)
+    if not ok or (target == nil) or (target.Index == nil) then sizes = 0 end
+    return math.max(floor, range + sizes)
 end
 
 -- After a teleport ring's use (warped or not): stop keeping that ring on, so the next HandleDefault puts
