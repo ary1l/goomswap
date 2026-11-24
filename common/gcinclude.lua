@@ -2438,10 +2438,11 @@ function gcinclude.CheckWsBailout()
     local target = gData.GetActionTarget()
     local distance = (target ~= nil) and tonumber(target.Distance) or nil
     if gcinclude.settings.WScheck and (distance ~= nil) and (not gcinclude.DistanceWS:contains(ws.Name)) then
-        local reach = gcinclude.WsReach(target, ws.Name)
+        local reach, range, me, mob, seen, floor = gcinclude.WsReach(target, ws.Name)
         if (distance > reach) then
-            gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f). Move closer, or /wsdistance off',
-                ws.Name, distance, reach))
+            gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f: WS %g + you %.1f + mob %.1f, swing %s, '
+                .. 'min %g). Move closer, or /wsdistance off', ws.Name, distance, reach, range, me, mob,
+                (seen ~= nil) and string.format('%.1f', seen) or 'none', floor))
             return false
         end
     end
@@ -2463,16 +2464,17 @@ gcinclude.WsRanges = { ['Gust Slash'] = 14, ['Cyclone'] = 14 }
 function gcinclude.WsReach(target, wsName)
     local floor = tonumber(gcinclude.settings.WSdistance) or 0
     local okSeen, seen = pcall(function() return gcauto.MeleeSeen(target.Index) end)
-    if okSeen and (type(seen) == 'number') and (seen > floor) then floor = seen end
+    if not okSeen or (type(seen) ~= 'number') then seen = nil end
     local range = gcinclude.WsRanges[wsName] or gcinclude.WsRange
-    local ok, sizes = pcall(function()
+    local ok, me, mob = pcall(function()
         local mm = AshitaCore:GetMemoryManager()
         local ent = mm:GetEntity()
-        return (tonumber(ent:GetModelHitboxSize(mm:GetParty():GetMemberTargetIndex(0))) or 0)
-            + (tonumber(ent:GetModelHitboxSize(target.Index)) or 0)
+        return (tonumber(ent:GetModelHitboxSize(mm:GetParty():GetMemberTargetIndex(0))) or 0),
+            (tonumber(ent:GetModelHitboxSize(target.Index)) or 0)
     end)
-    if not ok or (target == nil) or (target.Index == nil) then sizes = 0 end
-    return math.max(floor, range + sizes)
+    if not ok or (target == nil) or (target.Index == nil) then me, mob = 0, 0 end
+    -- the reach, then its parts for the "too far" message
+    return math.max(floor, seen or 0, range + me + mob), range, me, mob, seen, floor
 end
 
 -- After a teleport ring's use (warped or not): stop keeping that ring on, so the next HandleDefault puts
