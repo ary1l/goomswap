@@ -2452,9 +2452,13 @@ end
 -- checks it (char_entity.cpp OnWeaponSkillFinished: distance <= range + attacker hitbox + target hitbox; melee weapon
 -- skills have range 3 in its data/weapon_skills.yaml). A big mob is hit from further away than a small one, so a
 -- fixed distance cancels weapon skills your swings still reach. WSdistance (/wsdistance N) stays the least reach.
+-- Also at least as far as your melee rounds reached this mob (gcauto.MeleeSeen): the server's own range, whatever
+-- the formula, race or lag.
 gcinclude.WsRange = 3
 function gcinclude.WsReach(target)
     local floor = tonumber(gcinclude.settings.WSdistance) or 0
+    local seen = (target ~= nil) and (gcauto ~= nil) and (gcauto.MeleeSeen ~= nil) and gcauto.MeleeSeen(target.Id)
+    if (seen ~= nil) and (seen > floor) then floor = seen end
     local ok, sizes = pcall(function()
         local mm = AshitaCore:GetMemoryManager()
         local ent = mm:GetEntity()

@@ -5,7 +5,7 @@ local settings = {
     Messages = { 'A chat line on every mode change and /gc toggle (DT, TH, Kite...); some always show.' },
     AutoGear = { 'Master switch for the auto sets: Idle_Regen, Idle_Refresh, Dt, Pet_Dt (by the HP/MP % below). /autogear changes them in game.' },
     WScheck = { 'Distance check: a non-ranged weapon skill goes off only within its reach (WS range 3 past your and '
-        .. "the target's hitboxes, so further on a big mob; WSdistance at least)." },
+        .. "the target's hitboxes, so further on a big mob; as far as your swings reached it; WSdistance at least)." },
     WSdistance = { 'The least reach in yalms (center to center) a non-ranged weapon skill gets, while WScheck is on; '
         .. 'a big mob gets more.', '5' },
     RegenGearHPP = { 'Idle_Regen below this HP %, out of combat only. 0 = never.', '60' },

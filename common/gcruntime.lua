@@ -28,7 +28,7 @@ do
             AutoGear = true, -- master switch for the four auto sets below, /autogear to change any of them in game
             WScheck = true, --set to false if you dont want to use the WS distance safety check
             -- the least reach (yalms, center to center) for a non-ranged WS while WScheck is on; a big mob gets more:
-            -- WS range 3 + your and its hitbox (gcinclude.WsReach)
+            -- WS range 3 + your and its hitbox, or as far as your swings reached it (gcinclude.WsReach)
             WSdistance = 5,
             RegenGearHPP = 60, -- Idle_Regen below this HPP, out of combat only, 0 = never
             RefreshGearMPP = 60, -- Idle_Refresh below this MPP, out of combat only, 0 = never
@@ -401,7 +401,7 @@ do
                     gcinclude.settings.WScheck = not gcinclude.settings.WScheck
                     gcinclude.Say('WS distance check is now ' .. tostring(gcinclude.settings.WScheck))
                     gcinclude.Say('/wsdistance N: the least reach in yalms (a big mob reaches further: WS range '
-                        .. gcinclude.WsRange .. ' + both hitboxes)')
+                        .. gcinclude.WsRange .. ' + both hitboxes, or as far as your swings reached it)')
                 end
             elseif args[1] == 'dt' then
                 gcinclude.FlipToggle('DTset', args[2])
@@ -1755,13 +1755,23 @@ function runtime.NewAuto()
         [198]=true, [217]=true, [219]=true, [283]=true, [284]=true, [313]=true, [323]=true, [324]=true,
         [328]=true, [423]=true, [653]=true, [654]=true, [655]=true, [656]=true, [658]=true, [659]=true }
     local TAGCAT = { [1]='any', [2]='any', [3]='any', [4]='landed', [6]='any', [14]='landed', [15]='landed' }
-    local function prune_tags()
-        if (next(tagged) == nil) then return end
+    -- Melee reach seen, for gcinclude.WsReach: per mob, the furthest distance (yalms, center to center, as the
+    -- client shows it) my melee round (cmd_no 1) reached it from. The server swings only within melee range
+    -- (LandSandBoat battle_entity.cpp GetMeleeRange: 2 + both hitboxes) and a melee WS reaches its range 3 + both
+    -- (char_entity.cpp OnWeaponSkillFinished), so a WS from no further than a swing is in reach. Dropped with the
+    -- TH tags: at 0 HP and on zone.
+    local meleeSeen = {}
+    local function prune_dead(list)
+        if (next(list) == nil) then return end
         local ent = AshitaCore:GetMemoryManager():GetEntity()
-        for id in pairs(tagged) do
+        for id in pairs(list) do
             local idx = bit.band(id, 0x7FF)
-            if (ent:GetServerId(idx) == id) and ((ent:GetHPPercent(idx) or 0) == 0) then tagged[id] = nil end
+            if (ent:GetServerId(idx) == id) and ((ent:GetHPPercent(idx) or 0) == 0) then list[id] = nil end
         end
+    end
+    local function prune_tags()
+        prune_dead(tagged)
+        prune_dead(meleeSeen)
     end
 
     -- Reads the bit-packed 0x0028 action packet once, layout per atom0s' XiPackets notes.
@@ -2184,6 +2194,21 @@ function runtime.NewAuto()
         inc = gcinclude
     end
 
+    local function melee_packet(P)
+        if (P.cat ~= 1) or (P.me == nil) or (P.actor ~= P.me) then return end
+        local ent = AshitaCore:GetMemoryManager():GetEntity()
+        for t = 1, P.ntgt do
+            local id = P.tgt[t]
+            local idx = entity_index(id)
+            local d = (idx ~= nil) and math.sqrt(ent:GetDistance(idx) or 0) or nil
+            if (d ~= nil) and (d > (meleeSeen[id] or 0)) then meleeSeen[id] = d end
+        end
+    end
+
+    function gcauto.MeleeSeen(id)
+        return (id ~= nil) and meleeSeen[id] or nil
+    end
+
     -- My item use started / was interrupted (cmd_no 9, result value = item id, 0 if interrupted) or finished
     -- (cmd_no 5, cmd_arg = item id), XiPackets 0x0028: tells gcinclude's enchanted-item use.
     local function item_packet(P)
@@ -2234,7 +2259,7 @@ function runtime.NewAuto()
                 if ok then
                     pcall(roll_packet, P); pcall(combat_packet, P); pcall(cast_packet, P); pcall(mb_packet,
                         P); pcall(item_packet, P); pcall(incoming_cast, P); pcall(incoming_end,
-                        P); pcall(predict_packet, P)
+                        P); pcall(predict_packet, P); pcall(melee_packet, P)
                 end
             end
             if (e.id == 0x0029) then pcall(refused_packet, e.data) end
@@ -2245,6 +2270,7 @@ function runtime.NewAuto()
             if (e.id == 0x000A) and (inc ~= nil) and (inc.OnZone ~= nil) then pcall(inc.OnZone) end
             if (e.id == 0x000A) then
                 predicted = {}; gcauto.RollReset(); gcauto.ClearTags(); lastCombat = -1e9; monsterCache = {}; mbres = {}
+                meleeSeen = {}
             end
         end)
     end
