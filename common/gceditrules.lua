@@ -9,6 +9,9 @@ return function(o)
     local R = gFunc.LoadFile('common\\gcrules.lua')
     local Conv = gFunc.LoadFile('common\\gcconvert.lua')
     local Check = gFunc.LoadFile('common\\gcconvertcheck.lua') -- the same-gear check, a little each frame
+    R.BuffName = function(id) -- 'while 581 is up' -> 'while Flurry II is up'
+        return AshitaCore:GetResourceManager():GetString('buffs.names', id)
+    end
     local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip)
     local M = { R = R }
 

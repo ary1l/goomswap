@@ -408,6 +408,21 @@ function R.Words(rule)
 end
 
 -- == A rule as a sentence, for the editor: "When a Cure on you, MP at most 50%: wear Cure_LowMP". ==
+-- R.BuffName(id) -> name: the editor sets it (the game's buff names), so 'while 581 is up' reads 'while Flurry II is up'.
+R.BuffName = nil
+local function buff_names(v)
+    local function one(x)
+        if (type(x) == 'number') and (R.BuffName ~= nil) then
+            local ok, n = pcall(R.BuffName, x)
+            if ok and (type(n) == 'string') and (n ~= '') then return n end
+        end
+        return x
+    end
+    if type(v) ~= 'table' then return one(v) end
+    local out = {}
+    for i, x in ipairs(v) do out[i] = one(x) end
+    return out
+end
 local function either_of(v, sep)
     if type(v) ~= 'table' then return tostring(v) end
     local out = {}
@@ -474,9 +489,10 @@ local SAY = {
         return (n and 'not in ' or 'in ') .. w .. ' weather' end) end,
     zone = function(v) return text_say(v, function(w, n) return (n and 'not in ' or 'in ') .. w end) end,
     time = function(v) return num_say('time', v) end,
-    buff = function(v) return either_of(v) .. ' up' end,
-    allbuffs = function(v) return either_of(v, 'and') .. ' up' end,
+    buff = function(v) return either_of(buff_names(v)) .. ' up' end,
+    allbuffs = function(v) return either_of(buff_names(v), 'and') .. ' up' end,
     nobuff = function(v)
+        v = buff_names(v)
         if (type(v) == 'table') and (#v > 1) then return 'none of ' .. either_of(v, 'or') .. ' up' end
         return either_of(v) .. ' not up'
     end,
@@ -599,9 +615,10 @@ local STATE = {
     tp = function(v) return num_say('your TP is', v) end,
     targethpp = function(v) return num_say("the target's HP is", v, '%') end,
     distance = function(v) return num_say('the target is', v, ' yalms away') end,
-    buff = function(v) return either_of(v) .. ((type(v) == 'table' and #v > 1) and ' is up' or ' is up') end,
-    allbuffs = function(v) return either_of(v, 'and') .. ' are all up' end,
+    buff = function(v) return either_of(buff_names(v)) .. ' is up' end,
+    allbuffs = function(v) return either_of(buff_names(v), 'and') .. ' are all up' end,
     nobuff = function(v)
+        v = buff_names(v)
         if (type(v) == 'table') and (#v > 1) then return 'none of ' .. either_of(v, 'or') .. ' is up' end
         return either_of(v) .. ' is not up'
     end,
@@ -652,7 +669,7 @@ local function state_of(when, skipStatus)
     return table.concat(out, ', ', 1, #out - 1) .. ' and ' .. out[#out]
 end
 -- The moment and what it is about: 'When you cast Absorb-TP on yourself', 'While fighting'.
-local function moment(when, phase)
+local function moment(when, phase, whatOverride)
     if phase == 'Default' then
         local st = when.status
         if st == 'Engaged' then return 'While fighting', true end
@@ -660,7 +677,7 @@ local function moment(when, phase)
         if st == 'Resting' then return 'While resting', true end
         return 'While not acting (idle, fighting, resting)', false
     end
-    local what = what_of(when, phase)
+    local what = whatOverride or what_of(when, phase)
     local head
     if phase == 'Precast' then head = 'When you start casting ' .. (what or 'a spell')
     elseif phase == 'Midcast' then head = 'When you cast ' .. (what or 'a spell')
@@ -684,7 +701,43 @@ function R.Say(rule, phase)
     phase = rule.on or phase
     local when = (type(rule.when) == 'table') and rule.when or {}
     if member and (next(when) == nil) then return 'Otherwise: ' .. R.SayWear(rule) end
-    local head, statusSaid = moment(when, phase)
+    -- 'either its name has "Roll", or Double-Up': when every choice is about the action itself, say it as the action
+    local whatOverride = nil
+    if (type(when.any) == 'table') and (phase ~= 'Default') and (when.name == nil) and (when.family == nil)
+        and (when.skill == nil) and (when.type == nil) and (when.element == nil) then
+        local whats, plain = {}, true
+        for _, alt in ipairs(when.any) do
+            for k in pairs(alt) do if (k == 'target') or not ACTION_KEYS[k] then plain = false end end
+            local w = plain and what_of(alt, phase) or nil
+            if w == nil then plain = false else whats[#whats + 1] = w end
+        end
+        if plain and (#whats > 1) then
+            whatOverride = table.concat(whats, ', ', 1, #whats - 1) .. ' or ' .. whats[#whats]
+            local w2 = {}
+            for k, v in pairs(when) do if k ~= 'any' then w2[k] = v end end
+            when = w2
+        end
+    end
+    if member then -- a group's choice: only what it adds ('If Flurry II is up', 'For Dark Shot or Light Shot')
+        local what = whatOverride or what_of(when, phase)
+        local st = state_of(when, false)
+        local tgt = nil
+        if when.target ~= nil then
+            local t = {}
+            for _, x in ipairs((type(when.target) == 'table') and when.target or { when.target }) do t[#t + 1] = TARGET_SAY[x] or ('on ' .. tostring(x)) end
+            tgt = table.concat(t, ' or ')
+        end
+        local head
+        if what ~= nil then
+            head = 'For ' .. what .. ((tgt ~= nil) and (' ' .. tgt) or '') .. ((st ~= nil) and (', while ' .. st) or '')
+        elseif tgt ~= nil then
+            head = 'If cast ' .. tgt .. ((st ~= nil) and (', while ' .. st) or '')
+        else
+            head = 'If ' .. (st or 'it fits')
+        end
+        return head .. ': ' .. R.SayWear(rule)
+    end
+    local head, statusSaid = moment(when, phase, whatOverride)
     local st = state_of(when, statusSaid)
     if st ~= nil then head = head .. ((phase == 'Default') and ', when ' or ', while ') .. st end
     if type(rule.first) == 'table' then -- a group: the first of its choices that fits
