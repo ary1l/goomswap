@@ -915,8 +915,14 @@ local function draw_set(set)
         imgui.EndPopup()
     end
     local when, short = ctx.actions.When(set)
+    local ruleUse = (ctx.rules ~= nil) and ctx.rules.UsesOf(set.name) or nil -- gcinclude.Rules that wear it
+    if (when ~= nil) and (ruleUse ~= nil) and not string.find(when, 'No built-in trigger', 1, true) then
+        when = when .. '\n\n' .. ruleUse.text
+    end
     if when ~= nil then
-        if string.find(when, 'No built-in trigger', 1, true) then -- GoomSwap never wears it by its name
+        if (ruleUse ~= nil) and string.find(when, 'No built-in trigger', 1, true) then
+            short, when = ruleUse.short, ruleUse.text
+        elseif string.find(when, 'No built-in trigger', 1, true) then -- GoomSwap never wears it by its name
             if set.new or not ctx.actions.NamedInCode(set) then
                 short = 'nothing yet (never worn)'
                 when = 'GoomSwap never puts this set on by itself, and nothing in your job file names it, so it is never '

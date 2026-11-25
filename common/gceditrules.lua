@@ -41,6 +41,33 @@ return function(o)
         local list = M.List()
         return (list ~= nil) and #list or 0
     end
+    -- The rules that wear a set (its "Used for" line): { short, text }, nil when none do.
+    function M.UsesOf(name)
+        local list = M.List()
+        if (list == nil) or (type(name) ~= 'string') then return nil end
+        local lines = {}
+        local function add(rule, on, extra)
+            if (type(rule.wear) == 'string') and (string.lower(rule.wear) == string.lower(name)) and not rule.off then
+                lines[#lines + 1] = (R.PHASE_LABEL[on] or tostring(on)) .. ', when ' .. R.WhenWords(rule.when)
+                    .. (extra or '')
+            end
+        end
+        for _, rule in ipairs(list) do
+            if type(rule) == 'table' then
+                if type(rule.first) == 'table' then
+                    for _, m in ipairs(rule.first) do
+                        add(m, rule.on, (rule.when ~= nil) and (' (and ' .. R.WhenWords(rule.when) .. ')') or nil)
+                    end
+                else
+                    add(rule, rule.on)
+                end
+            end
+        end
+        if #lines == 0 then return nil end
+        return { short = 'a rule: ' .. lines[1] .. ((#lines > 1) and (' (+' .. (#lines - 1) .. ')') or ''),
+            text = 'Rules that wear it (RULES, top of the set list):\n' .. table.concat(lines, '\n') }
+    end
+
     -- Staged for Save: the whole list (none: the line goes).
     function M.Stage(list)
         if #list == 0 then
