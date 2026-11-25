@@ -51,7 +51,7 @@ return function(o)
         imgui.TextUnformatted('New job file')
         imgui.SameLine()
         pick = pick or current_job() or 'WAR'
-        if imgui.SmallButton(pick .. ' v##newjob_pick') then imgui.OpenPopup('##newjob_jobs') end
+        if imgui.SmallButton(pick .. ' (change)##newjob_pick') then imgui.OpenPopup('##newjob_jobs') end
         if imgui.BeginPopup('##newjob_jobs') then
             for i, j in ipairs(JOBS) do
                 if (i - 1) % 6 ~= 0 then imgui.SameLine() end

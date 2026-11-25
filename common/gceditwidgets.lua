@@ -17,6 +17,7 @@ return function(imgui, palette, set_tip)
     local function width(text)
         return (vec(imgui.CalcTextSize(text)))
     end
+    local width_of = width
     -- Wrapping flow for chips: SameLine while the next one fits the row.
     local function flow_start() return { used = 0, avail = (vec(imgui.GetContentRegionAvail())) } end
     local function flow_next(f, w)
@@ -42,15 +43,48 @@ return function(imgui, palette, set_tip)
         return out
     end
 
-    -- A small dropdown: options are values or { value, label }; the pick, or nil.
-    function W.Pick(id, label, options)
-        if imgui.SmallButton(label .. ' v##' .. id) then imgui.OpenPopup('##pick_' .. id) end
+    -- A dropdown that looks like one: a field (the input boxes' fill, a thin edge, text on the left) with a chevron
+    -- on its right; a click lists the options, the one shown highlighted. options: values or { value, label }.
+    -- width: the field's (default: its text and the chevron). The pick, or nil.
+    local function draw_list()
+        local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil
+        if (type(dl) == 'userdata') or (type(dl) == 'table') then return dl end
+        return nil
+    end
+    local P1, P2 = { 0, 0 }, { 0, 0 }
+    local function u32(c) return imgui.GetColorU32(c) end
+    function W.Pick(id, label, options, width)
+        label = tostring(label)
+        local w = width or (width_of(label) + 34)
+        imgui.PushStyleColor(ImGuiCol_Button, palette.cell or palette.btn)
+        imgui.PushStyleColor(ImGuiCol_ButtonHovered, palette.edge or palette.btnHi)
+        imgui.PushStyleColor(ImGuiCol_ButtonActive, palette.selBg or palette.btnHi)
+        local align = (ImGuiStyleVar_ButtonTextAlign ~= nil) and (imgui.PushStyleVar ~= nil)
+        if align then imgui.PushStyleVar(ImGuiStyleVar_ButtonTextAlign, { 0, 0.5 }) end
+        local clicked = imgui.Button(label .. '##pick_' .. id, { w, 0 })
+        if align then imgui.PopStyleVar() end
+        imgui.PopStyleColor(3)
+        local dl = draw_list()
+        if (dl ~= nil) and (imgui.GetItemRectMin ~= nil) and (imgui.GetColorU32 ~= nil) then
+            local x1, y1 = vec(imgui.GetItemRectMin())
+            local x2, y2 = vec(imgui.GetItemRectMax())
+            if (x1 ~= nil) and (y1 ~= nil) and (x2 ~= nil) and (y2 ~= nil) and (x2 > x1) then
+                P1[1], P1[2], P2[1], P2[2] = x1, y1, x2, y2
+                dl:AddRect(P1, P2, u32(palette.edge or palette.dim), 3, 0, 1)
+                local cx, cy = x2 - 11, (y1 + y2) / 2
+                P1[1], P1[2], P2[1], P2[2] = cx - 4, cy - 2, cx, cy + 2
+                dl:AddLine(P1, P2, u32(palette.dim), 1.5)
+                P1[1], P1[2], P2[1], P2[2] = cx, cy + 2, cx + 4, cy - 2
+                dl:AddLine(P1, P2, u32(palette.dim), 1.5)
+            end
+        end
+        if clicked then imgui.OpenPopup('##pick_' .. id) end
         local out = nil
         if imgui.BeginPopup('##pick_' .. id) then
             for i, o in ipairs(options) do
                 local value, text = o, tostring(o)
                 if type(o) == 'table' then value, text = o[1], o[2] end
-                if imgui.Selectable(text .. '##' .. id .. '_' .. i, false) then out = value end
+                if imgui.Selectable(text .. '##' .. id .. '_' .. i, text == label) then out = value end
             end
             imgui.EndPopup()
         end
@@ -214,7 +248,7 @@ return function(imgui, palette, set_tip)
             imgui.TextUnformatted(r.name .. ((r.raw ~= nil) and ' (augmented)' or ''))
             imgui.SameLine(opts.at or 200)
             local options = { { 'stack', 'a stack' }, { 'all', 'all you have' }, { 1, '1' }, { 'count', 'a count...' } }
-            local pick = W.Pick(id .. '_n' .. i, count_label(r.n), options)
+            local pick = W.Pick(id .. '_n' .. i, count_label(r.n), options, 110)
             if pick == 'count' then
                 boxes[id .. '_c' .. i] = { a = { (type(r.n) == 'number') and tostring(r.n) or '' } }
             elseif pick ~= nil then
@@ -308,7 +342,7 @@ return function(imgui, palette, set_tip)
             imgui.Checkbox(m[2] .. '##' .. id .. '_m' .. m[1], b.mods[m[1]])
             imgui.SameLine()
         end
-        local pick = W.Pick(id .. '_key', b.key, KEYS)
+        local pick = W.Pick(id .. '_key', b.key, KEYS, 80)
         if pick ~= nil then b.key = pick end
         imgui.SameLine()
         imgui.PushItemWidth(220)

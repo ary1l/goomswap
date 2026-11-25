@@ -346,7 +346,7 @@ return function(o)
     local function draw_row(e, i, r)
         local meta = R.KEY[r.key] or { label = r.key, kind = 'text' }
         local id = 'rb_' .. i
-        local pick = W.Pick(id .. '_key', meta.label, key_options(e.phase))
+        local pick = W.Pick(id .. '_key', meta.label, key_options(e.phase), 230)
         if pick ~= nil and pick ~= r.key then
             r.key, r.value, r.sub = pick, nil, nil
             local m = R.KEY[pick]
@@ -359,29 +359,29 @@ return function(o)
         end
         imgui.SameLine()
         if meta.kind == 'bool' then
-            local v = W.Pick(id .. '_bool', (r.value == false) and 'no' or 'yes', { { true, 'yes' }, { false, 'no' } })
+            local v = W.Pick(id .. '_bool', (r.value == false) and 'no' or 'yes', { { true, 'yes' }, { false, 'no' } }, 80)
             if v ~= nil then r.value = v end
         elseif meta.kind == 'toggle' then
-            local s = W.Pick(id .. '_sub', '/' .. (r.sub or 'dt'), TOGGLE_NAMES)
+            local s = W.Pick(id .. '_sub', '/' .. (r.sub or 'dt'), TOGGLE_NAMES, 120)
             if s ~= nil then r.sub = s end
             imgui.SameLine()
-            local v = W.Pick(id .. '_tv', (r.value == false) and 'off' or 'on', { { true, 'on' }, { false, 'off' } })
+            local v = W.Pick(id .. '_tv', (r.value == false) and 'off' or 'on', { { true, 'on' }, { false, 'off' } }, 80)
             if v ~= nil then r.value = v end
         else
             if meta.kind == 'mode' then
-                local s = W.Pick(id .. '_sub', '/' .. (r.sub or 'wm'), CYCLE_NAMES)
+                local s = W.Pick(id .. '_sub', '/' .. (r.sub or 'wm'), CYCLE_NAMES, 120)
                 if s ~= nil then r.sub = s end
                 imgui.SameLine()
                 imgui.TextUnformatted('is')
             elseif meta.kind == 'number' then
                 local op = W.Pick(id .. '_op', OP_WORDS[r.op or 'lt'], { { 'lt', '<' }, { 'le', '<=' }, { 'gt', '>' },
-                    { 'ge', '>=' }, { 'eq', '=' }, { 'ne', 'not' } })
+                    { 'ge', '>=' }, { 'eq', '=' }, { 'ne', 'not' } }, 120)
                 if op ~= nil then r.op = op end
             elseif meta.kind == 'list' then
                 imgui.TextUnformatted('')
             else
                 local op = W.Pick(id .. '_op', OP_WORDS[r.op or 'is'], { { 'is', 'is' }, { 'isnt', 'is not' },
-                    { 'has', 'has' }, { 'start', 'starts with' }, { 'ends', 'ends with' } })
+                    { 'has', 'has' }, { 'start', 'starts with' }, { 'ends', 'ends with' } }, 120)
                 if op ~= nil then r.op = op end
             end
             imgui.SameLine()
@@ -486,7 +486,7 @@ return function(o)
         else
             local options = {}
             for _, p in ipairs(R.PHASES) do options[#options + 1] = { p, R.PHASE_LABEL[p] } end
-            local p = W.Pick('rb_phase', R.PHASE_LABEL[e.phase] or e.phase, options)
+            local p = W.Pick('rb_phase', R.PHASE_LABEL[e.phase] or e.phase, options, 230)
             if p ~= nil then e.phase = p end
         end
         -- if
@@ -496,7 +496,7 @@ return function(o)
             imgui.TextColored(palette.warn, R.WhenWords(e.rule.when) .. '  (this shape is edited in the file)')
         else
             local m = W.Pick('rb_any', e.any and 'any of these' or 'all of these',
-                { { false, 'all of these' }, { true, 'any of these' } })
+                { { false, 'all of these' }, { true, 'any of these' } }, 230)
             if m ~= nil then e.any = m end
             if #e.rows == 0 then
                 imgui.SameLine()
@@ -545,7 +545,7 @@ return function(o)
         imgui.Indent(70)
         local goneItem = nil
         for i, it in ipairs(e.items) do
-            local s = W.Pick('rb_islot_' .. i, it.slot, R.SLOTS)
+            local s = W.Pick('rb_islot_' .. i, it.slot, R.SLOTS, 90)
             if s ~= nil then it.slot = s end
             imgui.SameLine()
             imgui.PushItemWidth(220)
