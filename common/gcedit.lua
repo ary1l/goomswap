@@ -1215,7 +1215,7 @@ local function job_files()
     return editorState.ui.jobFiles, others
 end
 
--- Unused gear (top bar): the gear in your equip bags (Inventory, Wardrobes: gSettings.EquipBags) that nothing of
+-- Unused gear (top bar, Tools): the gear in your equip bags (Inventory, Wardrobes: gSettings.EquipBags) that nothing of
 -- this character names: no job file, char.lua, the shared settings file, GoomSwap's own sets or its code
 -- (gcinclude, gcruntime: Moonshade, obis, Warp Ring). A piece is named when its name is a string in one of them
 -- ('Name', "Name", 'Chasseur\'s'), so code naming it counts, as do unsaved edits. Read only: moves nothing.
@@ -1318,7 +1318,7 @@ ctx.draw_cleanup = function()
     imgui.EndPopup()
 end
 
--- Backups (top bar): this file's editor backups (<file>.<date-time>.gcedit.bak, made by every Save), newest first,
+-- Backups (top bar, Tools): this file's editor backups (<file>.<date-time>.gcedit.bak, made by every Save), newest first,
 -- each with the sets that differ from the file as it is now (Compare: slot by slot, then -> now). Restore puts one
 -- back: the file is backed up first, then replaced and reloaded (/lac reload for the job loaded). Not while there
 -- are unsaved edits.
@@ -2047,8 +2047,8 @@ local function body()
     end
     -- the file's actions at the right edge, apart from the view's (on a line of their own when they don't fit)
     local d = editorPanels.Density(editorState.preferences.density)
-    local need = text_w('Backups') + text_w('Unused gear') + text_w('Rescan bags') + text_w('Reload file')
-        + text_w(editorState.document.inactive and 'Save file' or 'Save + reload') + 10 * d.padding[1] + 4 * d.spacing[1]
+    local need = text_w('Tools') + text_w('Reload file')
+        + text_w(editorState.document.inactive and 'Save file' or 'Save + reload') + 6 * d.padding[1] + 2 * d.spacing[1]
     imgui.SameLine()
     local avail = imgui.GetContentRegionAvail()
     avail = (type(avail) == 'number') and avail or (avail.x or avail[1])
@@ -2057,24 +2057,30 @@ local function body()
     elseif (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil) then
         imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - need)
     end
-    if imgui.Button('Backups##gcedit') then editorState.ui.backups = { open = true } end
-    if imgui.IsItemHovered() then
-        set_tip('Every Save keeps a dated copy of the file: see what each changed, and put one back.')
+    -- the less used file actions in one menu, so Save + reload stands out
+    if imgui.Button('Tools##gcedit') then imgui.OpenPopup('##gcedit_tools') end
+    if imgui.IsItemHovered() then set_tip('Backups, Unused gear, Rescan bags.') end
+    if imgui.BeginPopup('##gcedit_tools') then
+        if ctx.menu_item('Backups##gcedit') then editorState.ui.backups = { open = true } end
+        if imgui.IsItemHovered() then
+            set_tip('Every Save keeps a dated copy of the file: see what each changed, and put one back.')
+        end
+        if ctx.menu_item('Unused gear##gcedit') then editorState.ui.cleanup = { open = true } end
+        if imgui.IsItemHovered() then
+            set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap '
+                .. 'names: to store or move off a wardrobe. Read only.')
+        end
+        if ctx.menu_item('Rescan bags##gcedit') then
+            rescan()
+            feedback('Bags rescanned: ' .. #editorState.inventory.items .. ' items. Unsaved edits kept.')
+        end
+        if imgui.IsItemHovered() then
+            set_tip('Read your bags again (after moving gear). Keeps your unsaved changes.')
+        end
+        imgui.EndPopup()
     end
-    ctx.draw_backups()
-    imgui.SameLine()
-    if imgui.Button('Unused gear##gcedit') then editorState.ui.cleanup = { open = true } end
-    if imgui.IsItemHovered() then
-        set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap names: '
-            .. 'to store or move off a wardrobe. Read only.')
-    end
+    ctx.draw_backups() -- their windows, opened from the menu: drawn every frame, outside it
     ctx.draw_cleanup()
-    imgui.SameLine()
-    if imgui.Button('Rescan bags##gcedit') then
-        rescan()
-        feedback('Bags rescanned: ' .. #editorState.inventory.items .. ' items. Unsaved edits kept.')
-    end
-    if imgui.IsItemHovered() then set_tip('Read your bags again (after moving gear). Keeps your unsaved changes.') end
     imgui.SameLine()
     if imgui.Button('Reload file##gcedit') then
         if n > 0 then

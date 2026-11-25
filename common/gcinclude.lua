@@ -4,8 +4,23 @@ local enchantRuntime, equippedId
 function gcinclude.Relay(msg, isErr) -- also shown on the box with the HUD open (gchud)
     if (gchud ~= nil) and (gchud.Relay ~= nil) then pcall(gchud.Relay, msg, isErr) end
 end
-function gcinclude.Say(msg) print(chat.header('GoomSwap'):append(chat.message(msg))); gcinclude.Relay(msg, false) end
-function gcinclude.Err(msg) print(chat.header('GoomSwap'):append(chat.error(msg))); gcinclude.Relay(msg, true) end
+-- The same line again within 2s is dropped (a mashed macro's cancel), unless always (a status asked for).
+local lastLine, lastLineAt = nil, -1e9
+local function repeated(msg, always)
+    if always then return false end
+    local now = os.clock()
+    if (msg == lastLine) and ((now - lastLineAt) < 2) then return true end
+    lastLine, lastLineAt = msg, now
+    return false
+end
+function gcinclude.Say(msg, always)
+    if repeated(msg, always) then return end
+    print(chat.header('GoomSwap'):append(chat.message(msg))); gcinclude.Relay(msg, false)
+end
+function gcinclude.Err(msg, always)
+    if repeated(msg, always) then return end
+    print(chat.header('GoomSwap'):append(chat.error(msg))); gcinclude.Relay(msg, true)
+end
 function gcinclude.Queue(cmd) AshitaCore:GetChatManager():QueueCommand(-1, cmd) end -- a chat command, as typed
 
 local runtime = gFunc.LoadFile('common\\gcruntime.lua')
@@ -35,7 +50,7 @@ gcinclude.AliasList = T{'gcmessages','wsdistance','dt','mdt','th','kite','mset',
     'death','sir','tankset','proc','packer','pupmode','wm','mw','sw','rw','ammoset','aminon','gchud','lock','unlock',
     'hoxne','gchelp','gckey','def','gce','checksets','gcperf','smartswap','autogear','gcbar','forcestring','songlock',
     'siphon','warpring','mea','holla','dem','capacity','jubilee','abyproc','dw','dynamisrp','gcbuild','gcedit',
-    'gcconfig','idleset','gcgear'}
+    'gcconfig','idleset','gcgear','gcstatus'}
 -- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 gcinclude.ExitItems = { ontic = 'ontic extremity', shard = 'v. con. shard', }
 for k in pairs(gcinclude.ExitItems) do
@@ -1977,7 +1992,8 @@ function gcinclude.Help()
             ', ')) or '')
             .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
         'hud    : /gchud [on|off|debug] (the other boxes, dropped under the bar)',
-        'checks : /checksets, /gcperf (timings in chat every 10s)',
+        'checks : /checksets, /gcperf (timings in chat every 10s), /gcstatus (every mode, toggle, check and lock)',
+        'ws     : /wsdistance [on|off|N] (no word: the check and your target\'s reach; N = the least reach)',
         'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
         'holds  : /capacity /jubilee /dynamisrp /abyproc [on|off]',
         'items  : /gce <item> | cancel, /warpring /mea /holla /dem',
@@ -1985,7 +2001,7 @@ function gcinclude.Help()
         'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcbuild [JOB] (the example with your gear, as <JOB>.proposed.lua), /gcedit [set|last [slot]] (set editor window, Ashita; last: the set your last action used)',
         'bar    : /gcbar [on|off|pos x y|reset|scale N|theme name]',
         'grid   : /gcgear [on|off|pos x y|reset|scale N|alpha N|bg on|off] (worn gear 4x4: locks, holds, RP)',
-        'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
+        'on/off : every toggle takes on|off (no arg flips it, but /wsdistance shows); /def off|dt|mdt|aminon',
         'nuke   : Burst set is automatic on a nuke landing in a live skillchain; /burst = Burst set on every nuke (HUD: * on the nuke cell)',
         'keys   : F7 wm, Shift+F7 wm default, F9 mset, Ctrl+F9 tankset, Alt+F9 wsset, F10 def, Alt+F10 kite,',
         '         Win+F10 hoxne, Shift+F11 nukeset, Alt+F11 burst, Shift+F12 idleset, Alt+F12 def off, Ctrl+Win+Alt+F12 reload',
@@ -2475,6 +2491,49 @@ function gcinclude.WsReach(target, wsName)
     if not ok or (target == nil) or (target.Index == nil) then me, mob = 0, 0 end
     -- the reach, then its parts for the "too far" message
     return math.max(floor, seen or 0, range + me + mob), range, me, mob, seen, floor
+end
+
+-- /wsdistance with no word: the check's state, and for your target its distance and reach (nothing changes).
+function gcinclude.WsDistanceStatus()
+    local cfg = gcinclude.settings
+    local line = string.format('WS distance check %s, min %g yalms', cfg.WScheck and 'on' or 'off',
+        tonumber(cfg.WSdistance) or 0)
+    local target = gData.GetTarget()
+    local distance = (target ~= nil) and tonumber(target.Distance) or nil
+    if (distance ~= nil) then
+        local reach, range, me, mob, seen = gcinclude.WsReach(target, nil)
+        line = line .. string.format('; %s %.1f yalms, reach %.1f (WS %g + you %.1f + mob %.1f, swing %s)',
+            tostring(target.Name or 'target'), distance, reach, range, me, mob,
+            (seen ~= nil) and string.format('%.1f', seen) or 'none')
+    end
+    gcinclude.Say(line .. '. /wsdistance on|off|N', true)
+end
+
+-- /gcstatus: every mode, the toggles on, the checks and locks, in one line.
+function gcinclude.StatusCommand()
+    local cfg = gcinclude.settings
+    local cycles, names = gcdisplay.GetCycles(), {}
+    for k in pairs(cycles) do names[#names + 1] = k end
+    table.sort(names)
+    local modes = {}
+    for _, k in ipairs(names) do modes[#modes + 1] = k .. ' ' .. tostring(cycles[k]) end
+    local toggles, on = gcdisplay.GetToggles(), {}
+    for k, v in pairs(toggles) do
+        if v then on[#on + 1] = k end
+    end
+    table.sort(on)
+    local locked = {}
+    for slot = 1, 16 do
+        local owners = gcinclude.LockedSlots[slot]
+        if (owners ~= nil) and (next(owners) ~= nil) then locked[#locked + 1] = gcinclude.SlotName(slot) end
+    end
+    local dwOk, dwCan = pcall(gcinclude.DualWieldState)
+    gcinclude.Say(string.format('Modes: %s | On: %s | WS distance %s (min %g) | AutoGear %s | SmartSwap %s | '
+        .. 'DW %s%s | Messages %s | Locked: %s', (#modes > 0) and table.concat(modes, ', ') or 'none',
+        (#on > 0) and table.concat(on, ', ') or 'none', cfg.WScheck and 'on' or 'off', tonumber(cfg.WSdistance) or 0,
+        (cfg.AutoGear ~= false) and 'on' or 'off', cfg.SmartSwap and 'on' or 'off',
+        tostring(gcinclude.DualWieldMode or 'auto'), dwOk and (dwCan and ' (yes)' or ' (no)') or '',
+        cfg.Messages and 'on' or 'off', (#locked > 0) and table.concat(locked, ', ') or 'none'), true)
 end
 
 -- After a teleport ring's use (warped or not): stop keeping that ring on, so the next HandleDefault puts

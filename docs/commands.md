@@ -4,7 +4,7 @@
 
 ## Commands
 
-- **Toggles** take `on` / `off`; no word flips them.
+- **Toggles** take `on` / `off`; no word flips them (`/wsdistance`: no word shows its state).
 - **Modes** take a value in any case: no word = the next one; else its name, its start, its initials, part of it,
   its number, or your own short name in `HUDAbbr` (`/wm max`, `/mset sb`, `/wm 3`).
 
@@ -17,7 +17,7 @@
 | `/mset [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets; `acc` also wears `Midshot_Acc` (COR RNG PLD; `Midshot_<Mode>_Acc` per weapon mode) |
 | `/wsset [mid\|high]` | `high`: WS sets add their `_HighBuff` |
 | `/th` | `TH` until tagged (THF main: always) |
-| `/wsdistance [yalms\|on\|off]` | WS range check: a melee WS out of reach is cancelled (reach = WS range 3 (Gust Slash, Cyclone 14) + your and the target's hitboxes, so further on a big mob, or as far as your swings reached that kind of mob; `yalms` = the least reach, default 5) |
+| `/wsdistance [yalms\|on\|off]` | No word: the check's state and your target's distance and reach. WS range check: a melee WS out of reach is cancelled (reach = WS range 3 (Gust Slash, Cyclone 14) + your and the target's hitboxes, so further on a big mob, or as far as your swings reached that kind of mob; `yalms` = the least reach, default 5) |
 | `/def [dt\|mdt\|aminon\|off]` | DT → MDT → Aminon → off; `/dt` `/mdt` `/aminon` one |
 | `/sir` `/kite` | SIR over midcasts (not `SIRSkip`) / Movement |
 | `/idleset [refresh\|regen\|regain]` | `Idle_<mode>` over `Idle` while idle |
@@ -43,7 +43,8 @@
 | `/gcbuild [JOB]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua`; on your job it opens in `/gcedit` to fill and save as `<JOB>.lua` ([/gcbuild](gcbuild.md)) |
 | `/gcedit [set]` | Set editor window: sets, slots with icons, gear you own; Save writes `<JOB>.lua` and reloads ([/gcedit](gcedit.md)) |
 | `/gcedit last [slot]` | The editor on the set your last action used (the set named after it, else the last set it wore), Result on that use; with a slot (`ear2`), the set that last put that slot on (as `/gcgear`'s right-click). `/gcedit Last Stand` is still the set |
-| `/gcmessages` `/gchelp` | Chat lines / help |
+| `/gcmessages` `/gchelp` | Chat lines / help; the same line twice within 2s shows once |
+| `/gcstatus` | One line: every mode, the toggles on, WS distance, AutoGear, SmartSwap, DW, chat lines, locked slots |
 | `/gckey <key> <cmd>` | Bind a key |
 
 

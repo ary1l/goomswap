@@ -121,6 +121,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   headings; for your main sets at the top, make a heading of your own and move them into it
   ([Headings](#headings)). **Unsaved sets**, **Issues**, **Missing**, **Needs RP** and **Unused** filter it; the `?`
   after the filters shows the colours as your theme draws them.
+- After a name, its issues as counts: `(2 empty, 1 missing)` (amber, red; hover one for which slots).
 - Set colours (GoomSwap's own; a theme recolours them but keeps them apart): amber unsaved, red missing gear,
   then green (all 16 slots, or a ready overlay) and teal (all 12 armor slots; weapons left out on purpose). A
   violet dot after a name: a piece in it needs RP (hover: which). Over the list, one line names the pieces that need
@@ -130,6 +131,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 - **Theme** (top bar): the editor's colours. Same as the bar (default), **Match goomui** (the theme goomui saved for
   this character), GoomSwap's own, or any of the 30 presets; hover one to preview. Kept per character
   (`gcedit-theme.txt`); the bar keeps its own.
+- **Tools** (top right) holds **Rescan bags**, **Backups** and **Unused gear**.
 - **Rescan bags** refreshes ownership and keeps edits. Storage Slip gear counts as owned and shows its slip.
 - **Backups** lists this file's editor backups (every Save keeps one; `EditorBackupKeep`, the newest 10), newest
   first, each with the sets that differ from the file now; **Compare** shows them slot by slot (then -> now).

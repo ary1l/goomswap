@@ -881,7 +881,7 @@ local function draw_sets()
                     drop_set_here(grp.g, (not nested) and set or nil) -- under its parent: in file order
                     if on then left_bar(palette.sel) end
                     if on and scroll and (imgui.SetScrollHereY ~= nil) then imgui.SetScrollHereY(0.5) end
-                    -- issues as numbers: (empty slots, not owned), each coloured; hover a number for what it counts
+                    -- issues as counts: (N empty, N missing), each coloured and named; hover one for which
                     local gaps = empty_armor(set)
                     if set.code ~= nil then
                         tag('code', palette.dim)
@@ -901,7 +901,7 @@ local function draw_sets()
                         imgui.TextColored(palette.dim, '(')
                         if nGap ~= nil then
                             part(
-                                tostring(nGap),
+                                nGap .. ' empty',
                                 (set.name == 'Tp_Default') and palette.dim or palette.warn,
                                 nGap .. ' empty: ' .. table.concat(gaps, ' ') .. '\n(' .. BASE[set.name] .. ')'
                             )
@@ -909,7 +909,7 @@ local function draw_sets()
                         if no ~= nil then
                             if nGap ~= nil then part(', ', palette.dim) end
                             part(
-                                tostring(#no),
+                                #no .. ' missing',
                                 palette.bad, #no .. ' not owned (that slot does nothing):\n' .. table.concat(no, '\n')
                             )
                         end

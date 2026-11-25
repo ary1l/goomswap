@@ -398,10 +398,7 @@ do
                     gcinclude.settings.WSdistance = tonumber(args[2])
                     gcinclude.Say('WS Distance is on and set to ' .. gcinclude.settings.WSdistance)
                 else
-                    gcinclude.settings.WScheck = not gcinclude.settings.WScheck
-                    gcinclude.Say('WS distance check is now ' .. tostring(gcinclude.settings.WScheck))
-                    gcinclude.Say('/wsdistance N: the least reach in yalms (a big mob reaches further: WS range '
-                        .. gcinclude.WsRange .. ' + both hitboxes, or as far as your swings reached that kind of mob)')
+                    gcinclude.WsDistanceStatus() -- no word: shows, never turns the check off
                 end
             elseif args[1] == 'dt' then
                 gcinclude.FlipToggle('DTset', args[2])
@@ -492,6 +489,8 @@ do
                 gcinclude.EnchantCommand(args)
             elseif args[1] == 'gchelp' then
                 gcinclude.Help()
+            elseif args[1] == 'gcstatus' then
+                gcinclude.StatusCommand()
             elseif args[1] == 'gckey' then
                 gcinclude.KeyCommand(args)
             elseif args[1] == 'aminon' then
