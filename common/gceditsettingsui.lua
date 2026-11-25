@@ -372,9 +372,15 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         imgui.SameLine(200)
         imgui.TextColored((how == 'staged') and palette.warn or ((v ~= nil) and palette.ok or palette.dim),
             (how == 'staged') and 'unsaved' or ((v ~= nil) and where_label('job') or 'not set'))
-        local engine = gcinclude
-        local ready, why = false, 'GoomSwap is not loaded'
-        if (engine ~= nil) and (engine.PackerReady ~= nil) then ready, why = engine.PackerReady() end
+        local engine = ((files.Engine ~= nil) and files.Engine()) or gcinclude -- the gcinclude the editor runs with
+        local ready, why = false, nil
+        if engine == nil then
+            why = 'no GoomSwap job file is loaded (/lac load)'
+        elseif engine.PackerReady == nil then
+            why = 'the newest common\\gcinclude.lua: an older one is loaded. Copy common\\ again, then /lac reload'
+        else
+            ready, why = engine.PackerReady()
+        end
         imgui.SameLine()
         if imgui.BeginDisabled ~= nil and not ready then imgui.BeginDisabled() end
         if imgui.SmallButton('Get gear now##packer_get') and ready then
@@ -384,7 +390,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         if imgui.IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled or 0) then
             set_tip(ready and ('/lac gear: every set\'s gear, this list, char.lua\'s Packer and the items GoomSwap '
                 .. 'wears, into your wardrobes and inventory.' .. ((how == 'staged') and ' Save first: the list here '
-                .. 'is not saved yet.' or '')) or ('Get gear needs ' .. tostring(why) .. '.'))
+                .. 'is not saved yet.' or '')) or ('Get gear now needs ' .. tostring(why) .. '.'))
         end
         if (how == 'code') or string.match(how or '', '^set in') then
             imgui.TextColored(palette.dim, '(' .. how .. ' in the file: edit it there)')

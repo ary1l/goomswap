@@ -1308,12 +1308,12 @@ end
 -- /lac gear: the Packer plugin collects every set's gear plus the list above. false and why when it can't run.
 function gcinclude.PackerReady()
     local pm = AshitaCore:GetPluginManager()
-    if (pm == nil) or (not pm:IsLoaded('Packer')) then return false, 'the Packer plugin is not loaded (/load packer)' end
+    if (pm == nil) or (not pm:IsLoaded('Packer')) then return false, 'the Packer plugin: /load packer' end
     return true
 end
 function gcinclude.GetGear()
     local ok, why = gcinclude.PackerReady()
-    if not ok then gcinclude.Err('/lac gear: ' .. why); return false end
+    if not ok then gcinclude.Err('/lac gear needs ' .. why); return false end
     gcinclude.FillPacker()
     AshitaCore:GetChatManager():QueueCommand(1, '/lac gear')
     return true

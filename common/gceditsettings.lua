@@ -42,6 +42,7 @@ return {
     end
 
     function S.Reset() cache = {} end -- another character may have changed the shared file
+    function S.Engine() return o.engine() end -- the loaded gcinclude the editor was opened with
     function S.Defaults() return o.engine().DefaultSettings or {} end
     function S.Path(which) return path_of(which) end
     function S.Layer(which) return layer(which).settings end
