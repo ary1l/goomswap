@@ -633,13 +633,24 @@ local function draw_rp_line()
 end
 
 -- A filter as a chip: lit while on; a click turns it on or off.
+local CLEAR = { 0, 0, 0, 0 }
+-- A filter as an outlined chip: round, its outline only until it is on.
 local function chip(label, value, col)
     local on = value[1] == true
-    imgui.PushStyleColor(ImGuiCol_Button, on and palette.selBg or palette.chipBg)
+    local vars = 0
+    for _, sv in ipairs({ { ImGuiStyleVar_FrameRounding, 9 }, { ImGuiStyleVar_FrameBorderSize, 1 } }) do
+        if (sv[1] ~= nil) and (imgui.PushStyleVar ~= nil) then
+            imgui.PushStyleVar(sv[1], sv[2])
+            vars = vars + 1
+        end
+    end
+    imgui.PushStyleColor(ImGuiCol_Button, on and palette.selBg or CLEAR)
     imgui.PushStyleColor(ImGuiCol_ButtonHovered, on and palette.save or palette.btnHi)
     imgui.PushStyleColor(ImGuiCol_Text, on and palette.blue or (col or palette.dim))
+    imgui.PushStyleColor(ImGuiCol_Border, on and palette.sel or palette.edge)
     if imgui.SmallButton(label) then value[1] = not on end
-    imgui.PopStyleColor(3)
+    imgui.PopStyleColor(4)
+    if vars > 0 then imgui.PopStyleVar(vars) end
 end
 local function draw_sets()
     if ctx.rules ~= nil then ctx.rules.ListButton() end -- RULES: the job file's gcinclude.Rules
@@ -946,6 +957,22 @@ local function draw_sets()
                         if imgui.IsItemHovered() then
                             set_tip('Needs RP:\n' .. string.gsub(table.concat(status.unfinished, '\n'), '%(NEEDS RP%s*',
                                 '('))
+                        end
+                    end
+                    local nSlots = ((set.code == nil) and (set.count or 0) > 0) and status.armor ~= nil
+                        and ((status.armor or 0) + (status.weapons or 0)) or nil
+                    if ((cmd == nil) or (cmd.text == nil)) and (nSlots ~= nil) then -- its slot count, at the right end
+                        local t = tostring(nSlots)
+                        imgui.SameLine()
+                        local avail = (imgui.GetContentRegionAvail ~= nil)
+                            and ctx.xy(imgui.GetContentRegionAvail()) or nil
+                        if (avail ~= nil) and (avail > text_w(t) + 4) and (imgui.SetCursorPosX ~= nil)
+                            and (imgui.GetCursorPosX ~= nil) then
+                            imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - text_w(t) - 4)
+                            imgui.TextColored(palette.dim, t)
+                            if imgui.IsItemHovered() then set_tip(t .. ' of 16 slots name gear in ' .. set.name .. '.') end
+                        else
+                            imgui.NewLine()
                         end
                     end
                     if (cmd ~= nil) and (cmd.text ~= nil) then -- what puts it on, at the row's right end

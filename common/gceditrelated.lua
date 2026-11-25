@@ -1647,9 +1647,10 @@ local function draw_picker(set)
             )
             profiler.Finish('Item tooltip', tooltipStarted)
         end
-        imgui.SameLine(bagX)
-        imgui.TextColored(row.equippable and palette.dim or palette.warn,
-            cardText.Fit(picker.BagCaption(row.bags, g.bag), bagWidth - 8, text_w))
+        imgui.SameLine(bagX + 5) -- its bag as a tag: green worn here, amber not in a bag you can wear from
+        pill(cardText.Fit(picker.BagCaption(row.bags, g.bag), bagWidth - 18, text_w),
+            isNow and palette.ok or (row.equippable and palette.dim or palette.warn),
+            isNow and palette.okBg or (row.equippable and palette.chipBg or palette.warnBg))
         if y0 ~= nil then
             editorState.cache.rowH = imgui.GetCursorPosY() - y0
         end -- first frame: every row drawn, the height measured

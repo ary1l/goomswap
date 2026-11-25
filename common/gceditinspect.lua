@@ -7,6 +7,11 @@ return function(
     set_status, set_tip, statModel, tag, text_w, use_worn, where, wrap, xy
 )
 local BUFF_HOLDERS = { buffs = true, buffs_ws = true, buffs_midcast = true } -- sets the engine reads per buff
+local CLEAR = { 0, 0, 0, 0 }
+-- A small-caps heading, as in Settings and the set list: dim, upper case.
+local function heading(text)
+    imgui.TextColored(palette.dim, string.upper(text))
+end
 
 local function describe(name)
     local key = string.lower(name)
@@ -221,8 +226,9 @@ local function draw_cell(set, slot)
         and (editorState.document.edits[set.name][slot] ~= nil)
     local owned = owned_for(set, slot)
     local rp = owned and owned.progress
-    imgui.PushStyleColor(
-        ImGuiCol_ChildBg, changed and palette.warnBg or ((rp and rp.unfinished) and palette.rpBg or palette.cell)
+    imgui.PushStyleColor( -- a slot this set leaves alone: no fill, only its outline
+        ImGuiCol_ChildBg, changed and palette.warnBg or ((rp and rp.unfinished) and palette.rpBg
+            or ((v == nil) and CLEAR or palette.cell))
     )
     local cover = (
         editorState.cache.view ~= nil
@@ -484,6 +490,8 @@ local function order_grid(o)
 end
 
 local function draw_layer_view(set, V)
+    imgui.Spacing()
+    heading('What goes on')
     imgui.PushTextWrapPos(0)
     imgui.TextUnformatted(V.head)
     imgui.PopTextWrapPos()
@@ -511,8 +519,7 @@ local function draw_layer_view(set, V)
     if imgui.BeginTable('##gcedit_final', 3, TABLE_FLAGS) then
         imgui.TableSetupColumn('Slot', 0, 0.6)
         imgui.TableSetupColumn('What was worn', 0, 1.6)
-        imgui.TableSetupColumn('Source', 0, 1.6)
-        imgui.TableHeadersRow()
+        imgui.TableSetupColumn('Source', 0, 1.6) -- no header row: slot, item, and the set as a tag
         for _, row in ipairs(V.rows) do
             imgui.TableNextRow()
             imgui.TableNextColumn()
@@ -527,7 +534,7 @@ local function draw_layer_view(set, V)
                 end
             end
             imgui.TableNextColumn()
-            imgui.TextColored(palette[row.sourceRole], row.src)
+            pill(row.src, palette[row.sourceRole] or palette.dim, palette.chipBg)
             if row.replacedName ~= nil then
                 imgui.PushTextWrapPos(0) -- wraps at the column's edge
                 imgui.TextColored(
@@ -626,8 +633,7 @@ local function draw_layers(set)
     local records = not editorState.document.inactive and GcRecords or nil
     editorState.cache.cover = nil
     imgui.Spacing()
-    imgui.Separator()
-    imgui.TextUnformatted('Equipped result')
+    heading('When it went on')
     help(
         'Each line is one action:\n'
             .. '- seen: it happened since load. Shows everything that went on, engine rules too.\n'
@@ -670,7 +676,9 @@ local function draw_layers(set)
         editorState.cache.expKey, editorState.cache.exp = ekey, e
     end
     local exp = editorState.cache.exp
-    imgui.Checkbox('Show every action, not only ones that used ' .. set.name .. '##gcedit_all', editorState.ui.allRecs)
+    imgui.SameLine(0, 12)
+    imgui.Checkbox('every action##gcedit_all', editorState.ui.allRecs)
+    if imgui.IsItemHovered() then set_tip('Show every action, not only the ones that used ' .. set.name .. '.') end
     if (#recs == 0) and (exp == nil) then
         imgui.PushTextWrapPos(0)
         imgui.TextColored(
@@ -841,19 +849,12 @@ local function draw_set(set)
     end
     -- the set being edited: a strip (an accent bar, its heading as a breadcrumb, its name and badges, how many
     -- slots it fills, then what it is used for), apart from the Recent line over it
-    imgui.PushStyleColor(ImGuiCol_ChildBg, palette.selBg)
+    imgui.PushStyleColor(ImGuiCol_ChildBg, CLEAR) -- the title: plain, no strip
     imgui.BeginChild('##gcedit_title', { 0, 0 },
         (ImGuiChildFlags_AutoResizeY or 32) + (ImGuiChildFlags_AlwaysUseWindowPadding or 2),
         ImGuiWindowFlags_NoScrollbar or 0)
-    if (imgui.GetWindowDrawList ~= nil) and (imgui.GetWindowPos ~= nil) and (imgui.GetColorU32 ~= nil) then
-        local wx, wy = xy(imgui.GetWindowPos())
-        local wh = imgui.GetWindowHeight()
-        if (wx ~= nil) and (wy ~= nil) and (type(wh) == 'number') then
-            imgui.GetWindowDrawList():AddRectFilled({ wx, wy }, { wx + 3, wy + wh }, imgui.GetColorU32(palette.sel))
-        end
-    end
     if (set.group ~= nil) and (set.group ~= '') then
-        imgui.TextColored(palette.dim, string.upper(set.group) .. ' >')
+        imgui.TextColored(palette.dim, set.group .. ' >')
         imgui.SameLine()
     end
     imgui.TextColored(palette.text, set.bracket and ("['" .. set.name .. "']") or set.name)

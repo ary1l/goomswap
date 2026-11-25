@@ -48,6 +48,12 @@ local imgui = setmetatable({}, { __index = function(_, k)
             local id = string.match(label, '##(.*)$') or label
             if clicks[id] then clicks[id] = nil; return true end return false end
     end
+    if (k == 'TextColored') then return function(_, t) SEEN[tostring(t)] = true end end
+    if (k == 'TextUnformatted') or (k == 'Text') then return function(t) SEEN[tostring(t)] = true end end
+    if (k == 'IsItemClicked') then
+        return function(b) if (b or 0) == 0 and CLICK_ITEM and CLICK_ITEM > 0 then CLICK_ITEM = CLICK_ITEM - 1
+            return CLICK_ITEM == 0 end return false end
+    end
     return function() return false end
 end })
 package.preload['imgui'] = function() return imgui end
@@ -68,7 +74,11 @@ draw(3)
 local function has(l) return SEEN[l] and 'y' or 'n' end
 print('main: Use worn ' .. has('Use worn##gcedit') .. ', Rules btn ' .. tostring((function() for k in pairs(SEEN) do if k:match('##gcedit_rules_top$') then return k end end end)()))
 local seq = {}; for id in string.gmatch(arg[2] or 'gcedit_rules_top', '[^,]+') do seq[#seq + 1] = id end
-for _, id in ipairs(seq) do clicks[id] = true; draw(2) end
+for _, id in ipairs(seq) do
+    local n = tonumber(string.match(id, '^item(%d+)$'))
+    if n then CLICK_ITEM = n else clicks[id] = true end
+    draw(2)
+end
 print('after: New rule ' .. has('+ New rule##rules_add'))
 for k in pairs(SEEN) do if arg[3] and k:match(arg[3]) then print('  ' .. k) end end
 print(fail and ('FAILED ' .. fail) or 'drawn')
