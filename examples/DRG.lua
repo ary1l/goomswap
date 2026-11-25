@@ -206,6 +206,12 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None'}; -- e.g. {'None', 'Example'} with a Weapon_Example set
     gcinclude.DefaultWeapons = 'None';
     gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
+    -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
+    gcinclude.Rules = {
+        { on = 'Default', at = 'Default 1', when = { pet = true, status = { isnt = 'Engaged' } }, wear = 'Idle_Pet', exact = true },
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+    };
     gcinclude.Initialize();
 end
 
@@ -225,9 +231,7 @@ profile.HandleDefault = function()
     end
     local player = gData.GetPlayer();
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
-    if (player.Status ~= 'Engaged') and (gData.GetPet() ~= nil) then
-        gFunc.EquipSet(sets.Idle_Pet);
-    end
+    gcinclude.RulesAt('Default 1');
     if (player.Status == 'Engaged') then
         gcinclude.EquipMode('Tp');
     elseif (player.Status == 'Resting') then
@@ -237,8 +241,6 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end
     gcinclude.CheckDefault();
 end
 

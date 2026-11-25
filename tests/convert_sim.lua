@@ -145,8 +145,8 @@ local function random_state(lits, rnd)
         player = { Status = pick(statuses), HPP = rnd(100), MPP = rnd(100), TP = rnd(3000), IsMoving = rnd(2) == 1,
             SubJob = pick({ 'NIN', 'DNC', 'WHM', 'RDM', 'SCH', 'WAR' }), MainJobSync = 99, Name = 'Me' },
         action = { Name = name, Skill = pick(skills), Element = pick(elements), Type = pick(lits) },
-        target = (rnd(5) == 1) and nil or { Name = (rnd(2) == 1) and 'Me' or 'Other', Type = pick({ 'PC', 'Monster', 'NPC' }), HPP = rnd(100), Distance = rnd(20) },
-        env = { WeatherElement = pick(elements), DayElement = pick(elements), Area = pick(lits), Time = rnd(24) },
+        target = (rnd(5) == 1) and ((rnd(2) == 1) and {} or nil) or { Name = (rnd(2) == 1) and 'Me' or 'Other', Type = pick({ 'PC', 'Monster', 'NPC' }), HPP = rnd(100), Distance = rnd(20) },
+        env = (rnd(10) == 1) and nil or { WeatherElement = pick(elements), DayElement = pick(elements), Area = pick(lits), Time = rnd(24) },
         pet = (rnd(2) == 1) and { Name = pick(lits), HPP = rnd(100), TP = rnd(3000), Status = pick(statuses) } or nil,
         petAction = nil, buffs = buffs, cycles = cycles, toggles = toggles, burst = rnd(2) == 1, dw = rnd(2) == 1,
         zoneName = pick(lits),
@@ -215,6 +215,9 @@ local files = {}
 for _, job in ipairs({ 'BLM', 'BLU', 'BRD', 'BST', 'COR', 'DNC', 'DRG', 'DRK', 'GEO', 'MNK', 'NIN', 'PLD', 'PUP', 'RDM',
     'RNG', 'RUN', 'SAM', 'SCH', 'SMN', 'THF', 'WAR', 'WHM' }) do
     files[#files + 1] = 'examples/' .. job .. '.lua'
+end
+for _, job in ipairs({ 'BLM', 'RDM', 'SCH', 'GEO', 'WHM', 'BRD', 'COR', 'RNG', 'PLD' }) do -- the examples as they were before their Convert
+    files[#files + 1] = 'tests/fixtures/' .. job .. '.lua'
 end
 for _, f in ipairs(files) do
     tests[#tests + 1] = { 'converted ' .. f .. ' wears what its code did', function() check_file(f, 300) end }

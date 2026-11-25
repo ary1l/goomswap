@@ -457,6 +457,16 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None', 'Tizona', 'Caliburnus'};
     gcinclude.DefaultWeapons = 'Tizona';
     gcinclude.SubModes = {'None', 'Bunzi\'s Rod'}; -- /sw bunzi: nuke offhand (Tizona stays), /sw none: back to the mode's Thibron. A Sub swap resets TP
+    -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
+    gcinclude.Rules = {
+        { on = 'Default', at = 'Default 1', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', at = 'Default 1', when = { toggle = { kite = true } }, wear = 'Evasion', exact = true },
+        { on = 'Ability', at = 'Ability 1', when = { name = 'Provoke' }, wear = 'Enmity', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { buff = 'Chain Affinity' }, wear = 'Ca', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { buff = 'Burst Affinity' }, wear = 'Ba', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { buff = 'Efflux' }, wear = 'Efflux', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { buff = 'Diffusion' }, wear = 'Diffusion', exact = true },
+    };
     gcinclude.Initialize();
 
 end
@@ -482,8 +492,7 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Evasion) end;
+    gcinclude.RulesAt('Default 1');
     --lazy equip weapons for salvage runs
     local area = AshitaCore:GetResourceManager():GetString('zones.names', AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0));
     if (area ~= nil) and area:contains('Remnants') then
@@ -494,7 +503,7 @@ end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-    if (ability.Name == 'Provoke') then gFunc.EquipSet(sets.Enmity) end
+    gcinclude.RulesAt('Ability 1');
     ByName(ability.Name); -- a set named after the ability, e.g. ['Azure Lore']
     gcinclude.CheckCancels();
 end
@@ -508,10 +517,6 @@ profile.HandlePrecast = function()
 end
 
 profile.HandleMidcast = function()
-    local diff = gcinclude.BuffCount('Diffusion');
-    local ca = gcinclude.BuffCount('Chain Affinity');
-    local ba = gcinclude.BuffCount('Burst Affinity');
-    local ef = gcinclude.BuffCount('Efflux');
     local spell = gData.GetAction();
 
     gFunc.EquipSet(sets.Midcast);
@@ -526,10 +531,7 @@ profile.HandleMidcast = function()
     end
     ByName(spell.Name); -- a set named after the spell, e.g. ['White Wind']
 
-    if (ca>=1) then gFunc.EquipSet(sets.Ca) end
-    if (ba>=1) then gFunc.EquipSet(sets.Ba) end
-    if (ef>=1) then gFunc.EquipSet(sets.Efflux) end
-    if (diff>=1) then gFunc.EquipSet(sets.Diffusion) end
+    gcinclude.RulesAt('Midcast 1');
 
     if gcinclude.BluMagTH:contains(spell.Name) then gcinclude.CheckTH(true) end -- AoE: tags the adds too
 end

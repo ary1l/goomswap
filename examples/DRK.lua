@@ -253,6 +253,13 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None'}; -- e.g. {'None', 'Example'} with a Weapon_Example set
     gcinclude.DefaultWeapons = 'None';
     gcinclude.NukeModes = {'Power', 'OccultAcumen'}; -- /nukeset oa: OccultAcumen set on nukes (Power = your Elemental Magic set alone)
+    -- Rules (/gcedit, RULES): when this, wear that, as data.
+    gcinclude.Rules = {
+        { on = 'Default', when = { buff = 'Dread Spikes' }, wear = 'Dread_Spikes_Up', exact = true },
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Midcast', when = { mode = { nukeset = 'OccultAcumen' }, skill = 'Elemental Magic' }, wear = 'OccultAcumen', exact = true },
+    };
     gcinclude.Initialize();
 end
 
@@ -276,9 +283,6 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcinclude.BuffCount('Dread Spikes') > 0) then gFunc.EquipSet(sets.Dread_Spikes_Up) end -- body stays on
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end
     gcinclude.CheckDefault();
 end
 
@@ -298,7 +302,6 @@ profile.HandleMidcast = function()
     gFunc.EquipSet(sets.Midcast);
     ByName(spell.Skill);
     if not ByName(spell.Name) then ByName(Family(spell.Name)) end
-    if (spell.Skill == 'Elemental Magic') and (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa
     gcinclude.CheckTH();
 end
 

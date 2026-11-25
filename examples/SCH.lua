@@ -436,6 +436,17 @@ local ByName, Family = gcinclude.ByName, gcinclude.Family;
 profile.OnLoad = function()
     gSettings.AllowAddSet = true;
     gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
+    -- Rules (/gcedit, RULES): when this, wear that, as data.
+    gcinclude.Rules = {
+        { on = 'Default', when = { mode = { weapon = 'Staff' } }, wear = 'Idle_Staff', exact = true },
+        { on = 'Default', when = { buff = 'Sublimation: Activated' }, wear = 'Sublimation', exact = true },
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Precast', when = { mode = { weapon = 'Staff' } }, wear = 'Idle_Staff', exact = true },
+        { on = 'Midcast', when = { family = 'Refresh', target = 'me' }, wear = 'Self_Refresh', exact = true },
+        { on = 'Midcast', when = { buff = { 'Ebullience', 'Rapture' } }, wear = 'Power', exact = true },
+        { on = 'Midcast', when = { mode = { weapon = 'Staff' } }, wear = 'Idle_Staff', exact = true },
+    };
     gcinclude.Initialize();
 
     AshitaCore:GetChatManager():QueueCommand(1, '/macro book 8');
@@ -452,7 +463,6 @@ end
 
 profile.HandleDefault = function()
     local player = gData.GetPlayer();
-    local sub = gcinclude.BuffCount('Sublimation: Activated');
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
     if (player.Status == 'Engaged') then
@@ -464,14 +474,6 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then
-        gFunc.EquipSet(sets.Idle_Staff);
-    end
-    if (sub > 0) then
-        gFunc.EquipSet(sets.Sublimation);
-    end
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end;
     gcinclude.CheckDefault ();
 end
 
@@ -487,14 +489,12 @@ profile.HandlePrecast = function()
     ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
     ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then gFunc.EquipSet(sets.Idle_Staff) end
 end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
     local target = gData.GetActionTarget() or {}; -- {} when LAC has no entity for the target: no Self_ sets
     local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
-    local power = gcinclude.BuffCount('Ebullience') + gcinclude.BuffCount('Rapture');
     local family = Family(spell.Name); -- 'Cure IV' -> 'Cure'
     gFunc.EquipSet(sets.Midcast);
     ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Elemental Magic']
@@ -533,9 +533,6 @@ profile.HandleMidcast = function()
         gFunc.EquipSet(sets['Enfeebling Magic']); -- mostly macc anyways; Kaustra by name below
     end
     if not ByName(spell.Name) then ByName(family) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna'], ['Drain']
-    if (family == 'Refresh') and (target.Name == me) then gFunc.EquipSet(sets.Self_Refresh) end
-    if (power > 0) then gFunc.EquipSet(sets.Power) end
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then gFunc.EquipSet(sets.Idle_Staff) end
     gcinclude.CheckTH();
 end
 

@@ -747,6 +747,8 @@ local function call_cond(scope, e)
         if (not plain) and string.find(lit.v, MAGIC) then return nil, "a pattern ('" .. lit.v .. "') rules match only as plain text" end
         return { [key] = { has = lit.v } }
     end
+    -- gcinclude.RangedAcc(): gcdisplay.GetCycle('MeleeSet') == 'Acc' (gcinclude.lua)
+    if (p == 'gcinclude.RangedAcc') and (#e.args == 0) then return { mode = { mset = 'Acc' } } end
     if (p == 'string.contains') and (#e.args == 2) then return text_arg(e.args[1], e.args[2], false) end
     if (p == 'string.find') and (#e.args >= 2) then
         local plain = (#e.args == 4) and (e.args[3].k == 'num') and (e.args[3].v == 1) and (e.args[4].k == 'bool')
@@ -1194,6 +1196,10 @@ function C.Plan(text)
                     end
                     last.free = clear
                 end
+                local gone = {} -- this handler's removed ranges, for the unused locals below
+                for _, run in ipairs(runs) do
+                    for _, item in ipairs(run.items) do gone[#gone + 1] = { item.s, item.e } end
+                end
                 local n = 0
                 for _, run in ipairs(runs) do
                     local spot = nil
@@ -1220,6 +1226,36 @@ function C.Plan(text)
                         end
                         plan.removals[#plan.removals + 1] = { item.s, item.e }
                         plan.splices[#plan.splices + 1] = sp
+                    end
+                end
+                -- a local only the converted ifs read (local power = BuffCount(...) + ...) goes with them
+                if #gone > 0 then
+                    local fs, fe = st.exprs[1].s, st.exprs[1].e
+                    local function kept(a, b) -- the handler's text from a to b, the removed ranges blanked
+                        local t = string.sub(text, a, b)
+                        for _, g in ipairs(gone) do
+                            if (g[1] >= a) and (g[2] <= b) then
+                                t = string.sub(t, 1, g[1] - a) .. string.rep(' ', g[2] - g[1] + 1) .. string.sub(t, g[2] - a + 2)
+                            end
+                        end
+                        return t
+                    end
+                    for _, s in ipairs(body) do
+                        if (s.k == 'local') and (#s.exprs == #s.names) then
+                            local pure, used = true, false
+                            for j, nm in ipairs(s.names) do
+                                if meaning(hs, s.exprs[j]) == nil then pure = false end
+                                local before = kept(fs, s.s - 1)
+                                local after = kept(s.e + 1, fe)
+                                local pat = '%f[%w_]' .. nm .. '%f[^%w_]'
+                                if string.find(after, pat) then used = true end
+                                local _ = before
+                            end
+                            if pure and not used then
+                                plan.splices[#plan.splices + 1] = C.Removal(text, s.s, s.e)
+                                plan.locals = (plan.locals or 0) + 1
+                            end
+                        end
                     end
                 end
             end

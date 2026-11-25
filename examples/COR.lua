@@ -434,6 +434,19 @@ profile.OnLoad = function()
     };
     gcinclude.DefaultWeapons = { Weapons = 'Naegling', Range = 'Anarchy +2' }; -- /wm default puts both back
     gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
+    -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
+    gcinclude.Rules = {
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Ability', at = 'Ability 1', when = { type = 'Quick Draw' }, wear = 'Quick Draw' },
+        { on = 'Ability', at = 'Ability 1', when = { name = { 'Dark Shot', 'Light Shot' }, type = 'Quick Draw' }, wear = 'Quick Draw_Acc' },
+        { on = 'Preshot', at = 'Preshot 1', first = {
+            { when = { buff = 581 }, wear = 'Preshot_FlurryII', exact = true },
+            { when = { buff = 265 }, wear = 'Preshot_FlurryI', exact = true },
+        } },
+        { on = 'Midshot', when = { buff = 'Triple Shot' }, wear = 'TripleShot', exact = true },
+        { on = 'Midshot', when = { buff = 'Triple Shot', mode = { mset = 'Acc' } }, wear = 'Midshot_Acc', exact = true },
+    };
     gcinclude.Initialize();
 
     gcinclude.CORmsg = true; -- set this to false if you do not want to see lucky/unlucky # messages
@@ -460,8 +473,6 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end;
     gcinclude.CheckDefault ();
 end
 
@@ -471,10 +482,7 @@ profile.HandleAbility = function()
     if roll or (ability.Name == 'Double-Up') then gFunc.EquipSet(sets.Dt) end -- rolls and Double-Up: DT under the roll gear
     if roll and (ability.Name ~= 'Bolter\'s Roll') then ByName('Phantom Roll') end -- every roll but Bolter's
     if roll then gcinclude.DoCORmsg(ability.Name) end
-    if (ability.Type == 'Quick Draw') then
-        ByName('Quick Draw'); -- every shot; ['Quick Draw_Acc'] with /mset acc
-        if (ability.Name == 'Dark Shot') or (ability.Name == 'Light Shot') then ByName('Quick Draw_Acc') end
-    end
+    gcinclude.RulesAt('Ability 1');
     ByName(ability.Name); -- a set named after the ability, e.g. ['Bolter\'s Roll'], ['Wild Card']
     gcinclude.CheckCancels();
 end
@@ -497,28 +505,17 @@ end
 
 profile.HandlePreshot = function()
     if (gcinclude.CheckBlockedAmmo() == true) then return end
-    local flurryI = gcinclude.BuffCount(265);
-    local flurryII = gcinclude.BuffCount(581);
 
     gFunc.EquipSet(sets.Preshot);
 
-    if flurryII > 0 then
-        gFunc.EquipSet(sets.Preshot_FlurryII);
-    elseif flurryI > 0 then
-        gFunc.EquipSet(sets.Preshot_FlurryI);
-    end
+    gcinclude.RulesAt('Preshot 1');
 end
 
 profile.HandleMidshot = function()
-    local triple = gcinclude.BuffCount('Triple Shot');
     -- Midshot, then the ones made of: Midshot_<wm> (the /wm mode's own), Midshot_Acc on /mset acc,
     -- Midshot_<wm>_Acc
     ByName('Midshot');
 
-    if triple > 0 then
-        gFunc.EquipSet(sets.TripleShot);
-        if gcinclude.RangedAcc() then gFunc.EquipSet(sets.Midshot_Acc) end -- /mset acc: accuracy over Triple Shot
-    end
     gcinclude.CheckTH();
 end
 

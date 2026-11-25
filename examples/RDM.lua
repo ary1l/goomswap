@@ -660,6 +660,33 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None', 'Naegling', 'Maxentius', 'Crocea', 'Caliburnus', 'Mpu', 'Enspell'};
     gcinclude.DefaultWeapons = 'Maxentius';
     gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
+    -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
+    gcinclude.Rules = {
+        { on = 'Default', at = 'Default 1', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', at = 'Default 1', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Enhancing Magic', target = 'me' }, wear = 'Self_Enhancing', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Enhancing Magic' }, first = {
+            { when = { any = { { name = { has = 'Temper' } }, { name = { has = 'En' }, target = 'me' } } }, wear = 'Skill_Enhancing', exact = true },
+            { when = { name = { has = 'Gain' } }, wear = 'Gain', exact = true },
+        } },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Healing Magic', target = 'me' }, wear = 'Self_Cure', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { family = { 'Cure', 'Cura', 'Curaga' }, mpp = { le = 50 }, skill = 'Healing Magic', weather = 'Light' }, wear = 'Cure_LowMP_Storm', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { family = { 'Cure', 'Cura', 'Curaga' }, mpp = { le = 50 }, skill = 'Healing Magic', weather = { isnt = { 'Light' } } }, wear = 'Cure_LowMP', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { family = { 'Cure', 'Cura', 'Curaga' }, skill = 'Healing Magic', toggle = { dt = true } }, wear = 'Cure_Dt', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mode = { nukeset = 'Macc' }, skill = 'Elemental Magic' }, wear = 'NukeACC', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { burst = true, skill = 'Elemental Magic' }, wear = 'Burst', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mode = { nukeset = 'OccultAcumen' }, skill = 'Elemental Magic' }, wear = 'OccultAcumen', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { name = { has = 'helix' }, skill = 'Elemental Magic' }, wear = 'Helix', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mpp = { le = 40 }, skill = 'Elemental Magic' }, wear = 'Mp_Body', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mode = { nukeset = 'Macc' }, skill = 'Enfeebling Magic' }, wear = 'EnfeeblingACC', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Enfeebling Magic' }, first = {
+            { when = { name = { has = { 'Paralyze', 'Slow', 'Addle' } } }, wear = 'Mind_Enfeebling', exact = true },
+            { when = { name = { has = 'Poison' } }, wear = 'Int_Enfeebling', exact = true },
+            { when = { name = { has = { 'Distract', 'Frazzle III' } } }, wear = 'Potency_Enfeebling', exact = true },
+        } },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Dark Magic' }, wear = 'EnfeeblingACC', exact = true },
+        { on = 'Midcast', when = { family = 'Refresh', target = 'me' }, wear = 'Self_Refresh', exact = true },
+    };
     gcinclude.Initialize();
 end
 
@@ -685,8 +712,7 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end;
+    gcinclude.RulesAt('Default 1');
     -- No Dual Wield + /wm none + engaged: Tp_Default's Thibron can't equip, use Genmei Shield.
     if (player.Status == 'Engaged') and (not gcinclude.IsWeaponValue(gcdisplay.GetCycle('Weapons'))) and (not gcinclude.CanDualWield()) then
         gFunc.Equip('Sub', 'Genmei Shield');
@@ -711,51 +737,11 @@ end
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
     local target = gData.GetActionTarget() or {}; -- {} when LAC has no entity for the target: no Self_ sets
-    local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
     local family = Family(spell.Name); -- 'Cure IV' -> 'Cure'
     gFunc.EquipSet(sets.Midcast);
     ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Elemental Magic']
-    if (spell.Skill == 'Enhancing Magic') then
-        if (target.Name == me) then gFunc.EquipSet(sets.Self_Enhancing) end
-        if string.contains(spell.Name, 'Temper') or ((target.Name == me) and string.contains(spell.Name, 'En')) then
-            gFunc.EquipSet(sets.Skill_Enhancing);
-        elseif string.contains(spell.Name, 'Gain') then
-            gFunc.EquipSet(sets.Gain);
-        end
-    elseif (spell.Skill == 'Healing Magic') then
-        if (target.Name == me) then gFunc.EquipSet(sets.Self_Cure) end
-        if T{'Cure', 'Cura', 'Curaga'}:contains(family) then
-            if (gData.GetPlayer().MPP <= 50) then
-                -- Light weather: Aurorastorm counts (LAC GetEnvironment reads storm buffs as weather), so does natural Light
-                local env = gData.GetEnvironment();
-                if (env ~= nil) and (env.WeatherElement == 'Light') then
-                    gFunc.EquipSet(sets.Cure_LowMP_Storm);
-                else
-                    gFunc.EquipSet(sets.Cure_LowMP);
-                end
-            end
-            if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Cure_Dt) end
-        end
-    elseif (spell.Skill == 'Elemental Magic') then
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.NukeACC) end
-        if gcinclude.BurstWanted() then gFunc.EquipSet(sets.Burst) end
-        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
-        if string.match(spell.Name, 'helix') then gFunc.EquipSet(sets.Helix) end
-        if (gData.GetPlayer().MPP <= 40) then gFunc.EquipSet(sets.Mp_Body) end
-    elseif (spell.Skill == 'Enfeebling Magic') then
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.EnfeeblingACC) end
-        if string.contains(spell.Name, 'Paralyze') or string.contains(spell.Name, 'Slow') or string.contains(spell.Name, 'Addle') then
-            gFunc.EquipSet(sets.Mind_Enfeebling);
-        elseif string.contains(spell.Name, 'Poison') then
-            gFunc.EquipSet(sets.Int_Enfeebling);
-        elseif string.contains(spell.Name, 'Distract') or string.match(spell.Name, 'Frazzle III') then
-            gFunc.EquipSet(sets.Potency_Enfeebling);
-        end
-    elseif (spell.Skill == 'Dark Magic') then
-        gFunc.EquipSet(sets.EnfeeblingACC); -- mostly MACC anyways
-    end
+    gcinclude.RulesAt('Midcast 1');
     if not ByName(spell.Name) then ByName(family) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna'], ['Drain']
-    if (family == 'Refresh') and (target.Name == me) then gFunc.EquipSet(sets.Self_Refresh) end
     gcinclude.CheckTH();
 end
 

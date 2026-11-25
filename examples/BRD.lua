@@ -630,6 +630,33 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None', 'Naegling', 'Carnwenhan'}; -- Weapon_CarnwenhanAcc goes on with /mset Acc; Hoxne is /hoxne
     gcinclude.DefaultWeapons = 'Naegling';
     gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
+    -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
+    gcinclude.Rules = {
+        { on = 'Default', at = 'Default 1', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', at = 'Default 1', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Ability', at = 'Ability 1', when = { name = { 'Troubadour', 'Nightingale', 'Soul Voice', 'Clarion Call' } }, wear = 'Nitro', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Healing Magic', target = 'me' }, wear = 'Self_Cure', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Dark Magic' }, wear = 'Enfeebling Magic', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Singing' }, first = {
+            { when = { name = { has = { "Army's Paeon III", "Army's Paeon IV", "Army's Paeon V" } } }, wear = 'Paeon', exact = true },
+            { when = { name = { has = { 'Victory March', 'Advancing March' } } }, wear = 'March', exact = true },
+            { when = { name = { has = { 'Blade Madrigal', 'Sword Madrigal' } } }, wear = 'Madrigal', exact = true },
+            { when = { name = { has = 'Honor March' } }, wear = 'Honor', exact = true },
+            { when = { name = { has = 'Aria of Passion' } }, wear = 'Aria', exact = true },
+            { when = { name = { has = "Sentinel's Scherzo" } }, wear = 'Scherzo', exact = true },
+            { when = { name = { has = { 'Dragonfoe Mambo', 'Sheepfoe Mambo' } } }, wear = 'Mambo', exact = true },
+            { when = { name = { has = 'Ballad' } }, wear = 'Ballad', exact = true },
+            { when = { name = { has = 'Etude' } }, wear = 'Etude', exact = true },
+            { when = { name = { has = { "Army's Paeon", 'Goblin Gavotte' } } }, wear = 'Dummy', exact = true },
+            { wear = 'Buff', exact = true },
+        } },
+        { on = 'Midcast', at = 'Midcast 1', when = { name = { has = { 'Requiem', 'Elegy', 'Threnody', 'Finale', 'Lullaby' } }, skill = 'Singing' }, wear = 'Wind', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Singing' }, first = {
+            { when = { name = { has = 'Horde Lullaby' } }, wear = 'Horde', exact = true },
+            { when = { name = { has = 'Foe Lullaby' } }, wear = 'Foe', exact = true },
+        } },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Singing', toggle = { forcestring = true } }, wear = 'Harp', exact = true },
+    };
     gcinclude.Initialize();
 end
 
@@ -654,15 +681,14 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end;
+    gcinclude.RulesAt('Default 1');
     FixSub(player.Status == 'Engaged');
     gcinclude.CheckDefault ();
 end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-    if T{'Troubadour', 'Nightingale', 'Soul Voice', 'Clarion Call'}:contains(ability.Name) then gFunc.EquipSet(sets.Nitro) end
+    gcinclude.RulesAt('Ability 1');
     ByName(ability.Name); -- a set named after the ability, e.g. ['Soul Voice'] (over Nitro)
     gcinclude.CheckCancels();
     FixSub(gData.GetPlayer().Status == 'Engaged');
@@ -681,49 +707,7 @@ profile.HandleMidcast = function()
     local spell = gData.GetAction();
     gFunc.EquipSet(sets.Midcast);
     ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Enfeebling Magic']
-    if (spell.Skill == 'Healing Magic') then
-        if ((gData.GetActionTarget() or {}).Name == AshitaCore:GetMemoryManager():GetParty():GetMemberName(0)) then
-            gFunc.EquipSet(sets.Self_Cure);
-        end
-    elseif (spell.Skill == 'Dark Magic') then
-        gFunc.EquipSet(sets['Enfeebling Magic']); -- mostly macc anyways
-    elseif (spell.Skill == 'Singing') then -- songs by group
-        if (string.contains(spell.Name, 'Army\'s Paeon III')) or (string.contains(spell.Name, 'Army\'s Paeon IV')) or (string.contains(spell.Name, 'Army\'s Paeon V')) then
-            gFunc.EquipSet(sets.Paeon);
-        elseif (string.contains(spell.Name, 'Victory March')) or (string.contains(spell.Name, 'Advancing March')) then
-            gFunc.EquipSet(sets.March);
-        elseif (string.contains(spell.Name, 'Blade Madrigal')) or (string.contains(spell.Name, 'Sword Madrigal')) then
-            gFunc.EquipSet(sets.Madrigal);
-        elseif (string.contains(spell.Name, 'Honor March')) then
-            gFunc.EquipSet(sets.Honor);
-        elseif (string.contains(spell.Name, 'Aria of Passion')) then
-            gFunc.EquipSet(sets.Aria);
-        elseif (string.contains(spell.Name, 'Sentinel\'s Scherzo')) then
-            gFunc.EquipSet(sets.Scherzo);
-        elseif (string.contains(spell.Name, 'Dragonfoe Mambo')) or (string.contains(spell.Name, 'Sheepfoe Mambo')) then
-            gFunc.EquipSet(sets.Mambo);
-        elseif (string.contains(spell.Name, 'Ballad')) then
-            gFunc.EquipSet(sets.Ballad);
-        elseif (string.contains(spell.Name, 'Etude')) then
-            gFunc.EquipSet(sets.Etude);
-        elseif (string.match(spell.Name, 'Army\'s Paeon')) or (string.match(spell.Name, 'Goblin Gavotte')) then
-            gFunc.EquipSet(sets.Dummy);
-        else
-            gFunc.EquipSet(sets.Buff);
-        end
-        if (string.contains(spell.Name, 'Requiem')) or (string.contains(spell.Name, 'Elegy')) or (string.contains(spell.Name, 'Threnody')) or (string.contains(spell.Name, 'Finale')) or (string.contains(spell.Name, 'Lullaby')) then
-            gFunc.EquipSet(sets.Wind);
-        end
-        if (string.contains(spell.Name, 'Horde Lullaby')) then
-            gFunc.EquipSet(sets.Horde);
-        elseif (string.contains(spell.Name, 'Foe Lullaby')) then
-            gFunc.EquipSet(sets.Foe);
-        end
-
-        if (gcdisplay.GetToggle('String') == true) then
-            gFunc.EquipSet(sets.Harp);
-        end
-    end
+    gcinclude.RulesAt('Midcast 1');
     if not ByName(spell.Name) then ByName(Family(spell.Name)) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna']
     gcinclude.CheckTH();
     SongWeapons(spell);

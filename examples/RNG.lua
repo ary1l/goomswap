@@ -317,6 +317,19 @@ profile.OnLoad = function()
     gcinclude.RangeAmmo = { ['Sparrowhawk +2'] = 'Chrono Arrow' }; -- a bow's arrows replace the sets' bullets; add Gastraphetes = '<your bolt>'
     gcinclude.DefaultWeapons = { Weapons = 'Naegling', Range = 'Annihilator' }; -- /wm default puts both back
     gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
+    -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
+    gcinclude.Rules = {
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Preshot', at = 'Preshot 1', first = {
+            { when = { buff = 581 }, wear = 'Preshot_FlurryII', exact = true },
+            { when = { buff = 265 }, wear = 'Preshot_FlurryI', exact = true },
+        } },
+        { on = 'Midshot', when = { buff = 'Barrage' }, wear = 'Midshot_Acc', exact = true },
+        { on = 'Midshot', when = { buff = 'Barrage' }, wear = 'Barrage', exact = true },
+        { on = 'Midshot', when = { buff = 'Double Shot' }, wear = 'DoubleShot', exact = true },
+        { on = 'Midshot', when = { buff = 'Double Shot', mode = { mset = 'Acc' } }, wear = 'Midshot_Acc', exact = true },
+    };
     gcinclude.Initialize();
 end
 
@@ -341,8 +354,6 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end;
     gcinclude.CheckDefault ();
 end
 
@@ -370,34 +381,18 @@ end
 
 profile.HandlePreshot = function()
     if (gcinclude.CheckBlockedAmmo() == true) then return end
-    local flurryI = gcinclude.BuffCount(265);
-    local flurryII = gcinclude.BuffCount(581);
 
     gFunc.EquipSet(sets.Preshot);
 
-    if flurryII > 0 then
-        gFunc.EquipSet(sets.Preshot_FlurryII);
-    elseif flurryI > 0 then
-        gFunc.EquipSet(sets.Preshot_FlurryI);
-    end
+    gcinclude.RulesAt('Preshot 1');
 end
 
 profile.HandleMidshot = function()
-    local double = gcinclude.BuffCount('Double Shot');
-    local barrage = gcinclude.BuffCount('Barrage');
     -- Midshot, then the ones made of: Midshot_<wm> (the /wm mode's own), Midshot_Acc on /mset acc,
     -- Midshot_<wm>_Acc
     ByName('Midshot');
 
-    if double > 0 then
-        gFunc.EquipSet(sets.DoubleShot);
-        if gcinclude.RangedAcc() then gFunc.EquipSet(sets.Midshot_Acc) end -- /mset acc: accuracy over Double Shot
-    end
 
-    if barrage > 0 then--ensure acc as base if barrage up
-        gFunc.EquipSet(sets.Midshot_Acc);
-        gFunc.EquipSet(sets.Barrage);
-    end
     gcinclude.CheckTH();
 end
 

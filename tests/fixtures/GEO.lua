@@ -1,0 +1,681 @@
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+gcinclude.settings.SmartSwap = false; -- always swap to the casting weapons: TP isn't used on this job
+gcinclude.settings.WeaponTPGuard = 0; -- no 1000+ TP weapon hold either (nukes, Dark, Divine swap too)
+gcinclude.CureObi = true; -- Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts); false = never
+local sets = {
+    Idle = {
+        Main = 'Idris',
+        Sub = 'Genmei Shield',
+        Range = 'Dunna',
+        Head = 'Azimuth Hood +3',
+        Neck = 'Loricate Torque +1',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Lugalbanda Earring',
+        Body = 'Shamash Robe',
+        Hands = 'Nyame Gauntlets',
+        Ring1 = 'Murky Ring',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Mag. Evasion+30', [2] = 'HP+60', [3] = 'Pet: "Regen"+15', [4] = 'Evasion+20' } },
+        Waist = 'Carrier\'s Sash',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+    Idle_Pet = {
+        Main = 'Idris',
+        Sub = 'Genmei Shield',
+        Range = 'Dunna',
+        Head = 'Azimuth Hood +3',
+        Neck = 'Bagua Charm +2',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Lugalbanda Earring',
+        Body = 'Shamash Robe',
+        Hands = 'Geo. Mitaines +4',
+        Ring1 = 'Murky Ring',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Mag. Evasion+30', [2] = 'HP+60', [3] = 'Pet: "Regen"+15', [4] = 'Evasion+20' } },
+        Waist = 'Isa Belt',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Bagua Sandals +3',
+    },
+        Pet_Dt = {
+        Main = 'Idris',
+        Sub = 'Genmei Shield',
+        Range = 'Dunna',
+        Head = 'Azimuth Hood +3',
+        Neck = 'Bagua Charm +2',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Lugalbanda Earring',
+        Body = 'Shamash Robe',
+        Hands = 'Geo. Mitaines +4',
+        Ring1 = 'Murky Ring',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Mag. Evasion+30', [2] = 'HP+60', [3] = 'Pet: "Regen"+15', [4] = 'Evasion+20' } },
+        Waist = 'Isa Belt',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Bagua Sandals +3',
+    },
+    Resting = {},
+    Idle_Regen = {
+        Ring2 = 'Chirich Ring +1',
+        Waist = 'Null Belt',
+    },
+    Idle_Refresh = {
+        Main = 'Bolelabunga',
+        Head = 'Volte Beret',
+        Neck = 'Sibyl Scarf',
+        Body = 'Shamash Robe',
+        Hands = 'Bagua Mitaines +3',
+        Ring1 = 'Gurebu\'s Ring',
+        Ring2 = 'Stikini Ring +1',
+        Waist = 'Fucho-no-Obi',
+        Legs = 'Volte Brais',
+    },
+    Town = {
+        Main = 'Idris',
+        Sub = 'Chanter\'s Shield',
+        Range = 'Dunna',
+        Head = 'Azimuth Hood +3',
+        Neck = 'Sibyl Scarf',
+        Body = 'Shamash Robe',
+        Hands = 'Geo. Mitaines +4',
+        Ring2 = 'Gurebu\'s Ring',
+        Waist = 'Carrier\'s Sash',
+        Legs = 'Geo. Pants +4',
+        Feet = 'Geo. Sandals +4',
+    },
+
+    Dt = {
+        Head = 'Azimuth Hood +3',
+        Neck = 'Loricate Torque +1',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Lugalbanda Earring',
+        Body = 'Shamash Robe',
+        Hands = 'Azimuth Gloves +2',
+        Ring1 = 'Murky Ring',
+        Ring2 = 'Defending Ring',
+        Back = 'Null Shawl',
+        Waist = 'Carrier\'s Sash',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+    Sleeping = { -- worn while asleep over the /def set and Incapacitated, past the TP hold: stage 2 Lorg Mor "Slowly devours your soul" (HP/MP drain wakes you); stages 3+ don't drain
+        Main = 'Lorg Mor',
+    },
+    SIR = {
+        Head = 'Azimuth Hood +3',
+        Neck = 'Loricate Torque +1',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Lugalbanda Earring',
+        Body = 'Shamash Robe',
+        Hands = 'Nyame Gauntlets',
+        Ring1 = 'Murky Ring',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Mag. Evasion+30', [2] = 'HP+60', [3] = 'Pet: "Regen"+15', [4] = 'Evasion+20' } },
+        Waist = 'Carrier\'s Sash',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+    Weapon_Idris = {
+        Main = 'Idris',
+        Sub = 'Bunzi\'s Rod',
+        Range = 'Dunna',
+    },
+    Weapon_Idris_1h = {
+        Main = 'Idris',
+        Sub = 'Genmei Shield',
+        Range = 'Dunna',
+    },
+    Weapon_Maxentius = {
+        Main = 'Maxentius',
+        Sub = 'Bunzi\'s Rod',
+        Range = 'Dunna',
+    },
+    Weapon_Maxentius_1h = {
+        Main = 'Maxentius',
+        Sub = 'Genmei Shield',
+        Range = 'Dunna',
+    },
+    Weapon_Tishtrya = {
+        Main = 'Tishtrya',
+        Sub = 'Bunzi\'s Rod',
+        Range = 'Dunna',
+    },
+    Weapon_Tishtrya_1h = {
+        Main = 'Tishtrya',
+        Sub = 'Genmei Shield',
+        Range = 'Dunna',
+    },
+    Tp_Default = {
+        Main = 'Idris',
+        Sub = 'Ammurapi Shield',
+        Range = 'Dunna',
+        Ammo = 'displaced',
+        Head = 'Nyame Helm',
+        Neck = 'Sanctity Necklace',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Brutal Earring',
+        Body = 'Nyame Mail',
+        Hands = 'Nyame Gauntlets',
+        Ring1 = 'Murky Ring',
+        Ring2 = 'Chirich Ring +1',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Mag. Evasion+30', [2] = 'HP+60', [3] = 'Pet: "Regen"+15', [4] = 'Evasion+20' } },
+        Waist = 'Cornelia\'s Belt',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+    Midcast = {},
+
+    Precast = {
+        Main = 'Idris',
+        Sub = 'Chanter\'s Shield',--3
+        Range = 'Dunna',--3
+        Ammo = 'displaced',
+        Head = 'Volte Beret',--6
+        Neck = 'Voltsurge Torque',--4
+        Ear1 = 'Loquac. Earring',--2
+        Ear2 = 'Malignance Earring',--4
+        Body = 'Indomitable Coat',--10
+        Hands = 'Volte Gloves',--6
+        Ring1 = 'Weather. Ring',--5
+        Ring2 = 'Kishar Ring',--4
+        Back = 'Fi Follet Cape +1',--10
+        Waist = 'Witful Belt',--3
+        Legs = 'Geo. Pants +4',--15
+        Feet = 'Indom. Sabots',--4
+    },
+    ['Healing Magic_Precast'] = {
+        Ear2 = 'Mendi. Earring',
+    },
+    ['Enhancing Magic_Precast'] = {
+        Waist = 'Siegel Sash',
+    },
+    Stoneskin_Precast = {
+        Head = 'Umuthi Hat',
+        --Hands = 'Carapacho Cuffs',
+        Waist = 'Siegel Sash',
+    },
+
+    ['Healing Magic'] = {--I cap is 50, II cap is 30
+        Main = 'Bunzi\'s Rod',--30
+        Sub = 'Genmei Shield',
+        Head = 'Nyame Helm',
+        Neck = 'Loricate Torque +1',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Mendi. Earring',--5
+        Body = 'Annoint. Kalasiris',--10
+        Hands = 'Nyame Gauntlets',
+        Ring1 = 'Murky Ring',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = 'Solemnity Cape',--7
+        Waist = 'Witful Belt',
+        Legs = 'Geo. Pants +4',
+        Feet = 'Nyame Sollerets',
+    },
+    Self_Cure = {--cap 30
+        Waist = 'Gishdubar Sash',
+    },
+    -- Cure/Cura/Curaga midcast, lowest to highest (later wins per slot):
+    --   Cure -> Self_Cure (on you) -> Cure_LowMP or Cure_LowMP_Storm (MP <= 50%) -> Cure_Dt (/dt on)
+    --   -> engine: Hachirin-no-Obi (Light day/weather) -> SIR set (/sir on) last. Empty sets change nothing.
+    -- Main/Sub in these? Copy WHM.lua's KeepWeaponsFor line to OnLoad.
+    Cure_LowMP = { -- MP <= 50%, no Light weather
+    },
+    Cure_LowMP_Storm = { -- MP <= 50%, Light weather: a SCH's Aurorastorm or natural Light
+    },
+    Cure_Dt = { -- /dt on: DT pieces to trade in while curing
+    },
+    Regen = {
+        Main = 'Bolelabunga',
+        Sub = 'Ammurapi Shield',
+        Body = 'Telchine Chas.',
+        Waist = 'Embla Sash',
+        Legs = 'Telchine Braconi',
+        Feet = 'Telchine Pigaches',
+    },
+    Cursna = {
+        Neck = 'Debilis Medallion',
+        Ring1 = 'Haoma\'s Ring',
+        Waist = 'Gishdubar Sash',
+        Feet = 'Vanya Clogs',
+    },
+
+    ['Enhancing Magic'] = {
+        Main = 'Bunzi\'s Rod',
+        Sub = 'Ammurapi Shield',
+        Ammo = 'Pemphredo Tathlum',
+        Head = 'Telchine Cap',
+        Neck = 'Incanter\'s Torque',
+        Ear1 = 'Andoaa Earring',
+        Ear2 = 'Mendi. Earring',
+        Body = 'Telchine Chas.',
+        Hands = 'Nyame Gauntlets',
+        Ring1 = 'Murky Ring',
+        Ring2 = 'Stikini Ring +1',
+        Back = 'Solemnity Cape',
+        Waist = 'Embla Sash',
+        Legs = 'Telchine Braconi',
+        Feet = 'Telchine Pigaches',
+    },
+    Stoneskin = {
+        Neck = 'Nodens Gorget',
+        Waist = 'Siegel Sash',
+    },
+    Refresh = {
+        Waist = 'Gishdubar Sash',
+    },
+    Geomancy = { --900 skill, then indi duration, then CMP
+        Main = 'Idris',
+        Range = 'Dunna',
+        Ammo = 'displaced',
+        Head = 'Azimuth Hood +3',
+        Neck = 'Bagua Charm +2',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Mendi. Earring',
+        Body = 'Bagua Tunic +3',
+        Hands = 'Geo. Mitaines +4',--15
+        Ring1 = 'Weather. Ring',
+        Ring2 = 'Stikini Ring +1',--8
+        Back = 'Lifestream Cape',
+        Waist = 'Embla Sash',
+        --Waist = 'Hachirin-no-Obi',
+        Legs = 'Geo. Pants +4',
+        Feet = 'Azimuth Gaiters +3',
+    },
+    Indi = { --900 skill, then indi duration, then CMP
+        Main = 'Idris',
+        Range = 'Dunna',
+        Ammo = 'displaced',
+        Head = 'Azimuth Hood +3',
+        Neck = 'Bagua Charm +2',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Mendi. Earring',
+        Body = 'Bagua Tunic +3',
+        Hands = 'Geo. Mitaines +4',--15
+        Ring1 = 'Weather. Ring',
+        Ring2 = 'Stikini Ring +1',--8
+        Back = 'Lifestream Cape',
+        Waist = 'Embla Sash',
+        --Waist = 'Hachirin-no-Obi',
+        Legs = 'Bagua Pants +4',
+        Feet = 'Azimuth Gaiters +3',
+    },
+
+    ['Enfeebling Magic'] = {
+        Main = 'Bunzi\'s Rod',
+        Sub = 'Ammurapi Shield',
+        Ammo = 'Pemphredo Tathlum',
+        Head = 'Azimuth Hood +3',
+        Neck = 'Erra Pendant',
+        Ear1 = 'Digni. Earring',
+        Ear2 = 'Malignance Earring',
+        --Ear2 = 'Regal Earring',--use this when u upgrade the AF
+        Body = 'Agwu\'s Robe',
+        Hands = 'Nyame Gauntlets',
+        Ring1 = 'Weather. Ring',
+        Ring2 = 'Stikini Ring +1',
+        Back = 'Aurist\'s Cape +1',
+        Waist = 'Acuity Belt +1',
+        Legs = 'Agwu\'s Slops',
+        Feet = 'Medium\'s Sabots',
+    },
+    Macc = {
+        Main = 'Bunzi\'s Rod',
+        Sub = 'Ammurapi Shield',
+        Ammo = 'Pemphredo Tathlum',
+        Head = 'Nyame Helm',
+        Neck = 'Erra Pendant',
+        Ear1 = 'Digni. Earring',
+        Ear2 = 'Malignance Earring',
+        --Ear2 = 'Regal Earring',--use this when u upgrade the AF
+        Body = 'Agwu\'s Robe',
+        Hands = 'Nyame Gauntlets',
+        Ring1 = 'Metamor. Ring +1',
+        Ring2 = 'Stikini Ring +1',
+        Back = 'Aurist\'s Cape +1',
+        Waist = 'Acuity Belt +1',
+        Legs = 'Agwu\'s Slops',
+        Feet = 'Agwu\'s Pigaches',
+    },
+
+    Drain = {
+        Main = 'Bunzi\'s Rod',
+        Sub = 'Ammurapi Shield',
+        Ammo = 'Pemphredo Tathlum',
+        Head = 'Bagua Galero +1',
+        Neck = 'Erra Pendant',
+        Ear1 = 'Regal Earring',
+        Ear2 = 'Malignance Earring',
+        Body = 'Agwu\'s Robe',
+        Ring1 = 'Metamor. Ring +1',
+        Ring2 = 'Kishar Ring',
+        Back = 'Aurist\'s Cape +1',
+        Waist = 'Fucho-no-Obi',
+        Legs = 'Agwu\'s Slops',
+        Feet = 'Agwu\'s Pigaches',
+    },
+
+    Aspir = {
+        Main = 'Bunzi\'s Rod',
+        Sub = 'Ammurapi Shield',
+        Ammo = 'Pemphredo Tathlum',
+        Head = 'Bagua Galero +1',
+        Neck = 'Erra Pendant',
+        Ear1 = 'Regal Earring',
+        Ear2 = 'Malignance Earring',
+        Body = 'Agwu\'s Robe',
+        Ring1 = 'Metamor. Ring +1',
+        Ring2 = 'Kishar Ring',
+        Back = 'Aurist\'s Cape +1',
+        Waist = 'Fucho-no-Obi',
+        Legs = 'Agwu\'s Slops',
+        Feet = 'Agwu\'s Pigaches',
+    },
+
+    ['Elemental Magic'] = {
+        Main = 'Bunzi\'s Rod',
+        Sub = 'Ammurapi Shield',
+        Ammo = 'Hydrocera',
+        Head = 'Azimuth Hood +3',
+        Neck = 'Sibyl Scarf',
+        Ear1 = 'Malignance Earring',
+        Ear2 = 'Lugalbanda Earring',
+        Body = 'Azimuth Coat +3',
+        Hands = 'Azimuth Gloves +2',
+        Ring1 = 'Metamor. Ring +1',
+        Ring2 = 'Stikini Ring +1',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = '"Mag. Atk. Bns."+10', [2] = 'INT+30', [3] = 'Mag. Acc.+20', [4] = 'Pet: Damage taken -5%', [5] = 'Magic Damage+20' } },
+        Waist = 'Null Belt',
+        Legs = 'Bagua Pants +4',
+        Feet = 'Azimuth Gaiters +3',
+    },
+    NukeACC = {
+        Waist = 'Acuity Belt +1',
+    },
+    OccultAcumen = { -- /nukeset oa: Occult Acumen / Store TP pieces, over Nuke and Burst (TP from nukes)
+    },
+    Burst = {
+        Main = 'Bunzi\'s Rod', --10 and 0
+        Sub = 'Ammurapi Shield',
+        Head = 'Ea Hat', -- 6 and 6
+        Body = 'Ea Houppelande', -- 8 and 8
+        Hands = 'Amalric Gages +1', -- 0 and 6
+        Ring2 = 'Mujin Band', -- 0 and 5
+        Waist = 'Acuity Belt +1',
+        Legs = 'Agwu\'s Slops', -- 9 and 0
+        Feet = 'Ea Pigaches', -- 4 and 4
+    },
+    Mp_Body = {Body = 'Seidr Cotehardie',},
+
+    Preshot = {
+    },
+    Midshot = {
+        Ear1 = 'Telos Earring',
+        Ear2 = 'Crep. Earring',
+    },
+
+    Ws_Default = {
+        Ammo = 'Oshasha\'s Treatise',
+        Head = 'Nyame Helm',
+        Neck = 'Rep. Plat. Medal',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Ishvara Earring',
+        Body = 'Egbesu Frock',
+        Hands = 'Jhakri Cuffs +2',
+        Ring1 = 'Metamor. Ring +1',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Pet: Damage taken -5%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = 'MND+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'Cornelia\'s Belt',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+
+    ['Black Halo'] = {
+        Ammo = 'Oshasha\'s Treatise',
+        Head = 'Nyame Helm',
+        Neck = 'Rep. Plat. Medal',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Ishvara Earring',
+        Body = 'Egbesu Frock',
+        Hands = 'Jhakri Cuffs +2',
+        Ring1 = 'Metamor. Ring +1',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Pet: Damage taken -5%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = 'MND+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'Cornelia\'s Belt',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+    ['Aeolian Edge'] = {
+        Ammo = 'Pemphredo Tathlum',
+        Head = 'Nyame Helm',
+        Neck = 'Baetyl Pendant',
+        Ear1 = 'Regal Earring',
+        Ear2 = 'Malignance Earring',
+        Body = 'Egbesu Frock',
+        Hands = 'Jhakri Cuffs +2',
+        Ring1 = 'Shiva Ring +1',
+        Ring2 = 'Karieyh Ring +1',
+        Waist = 'Eschan Stone',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+    -- Exudation (Idris): physical, attack varies with TP (FFXIclopedia). Stat mods not published
+    -- on FFXIclopedia/BG snippets I could reach, so this starts as Ws_Default; tune it.
+    Exudation = {
+        Ammo = 'Oshasha\'s Treatise',
+        Head = 'Nyame Helm',
+        Neck = 'Rep. Plat. Medal',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Ishvara Earring',
+        Body = 'Egbesu Frock',
+        Hands = 'Jhakri Cuffs +2',
+        Ring1 = 'Metamor. Ring +1',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Pet: Damage taken -5%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = 'MND+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'Cornelia\'s Belt',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+    -- Judgment: physical single hit, STR + MND mods, damage varies with TP. Same profile as Black Halo.
+    Judgment = {
+        Ammo = 'Oshasha\'s Treatise',
+        Head = 'Nyame Helm',
+        Neck = 'Rep. Plat. Medal',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Ishvara Earring',
+        Body = 'Egbesu Frock',
+        Hands = 'Jhakri Cuffs +2',
+        Ring1 = 'Metamor. Ring +1',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Pet: Damage taken -5%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = 'MND+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'Cornelia\'s Belt',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+    -- Shining Strike / Seraph Strike: magical, light, STR + MND mods; INT still counts (dINT term).
+    -- Starts as your Aedge (MAB) set. Obi/Orpheus added by the engine (both are in ElementalWS).
+    ['Seraph Strike'] = {
+        Ammo = 'Pemphredo Tathlum',
+        Head = 'Nyame Helm',
+        Neck = 'Baetyl Pendant',
+        Ear1 = 'Regal Earring',
+        Ear2 = 'Malignance Earring',
+        Body = 'Egbesu Frock',
+        Hands = 'Jhakri Cuffs +2',
+        Ring1 = 'Weather. Ring',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Pet: Damage taken -5%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = 'MND+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'Eschan Stone',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+    ['Shining Strike'] = {
+        Ammo = 'Pemphredo Tathlum',
+        Head = 'Nyame Helm',
+        Neck = 'Baetyl Pendant',
+        Ear1 = 'Regal Earring',
+        Ear2 = 'Malignance Earring',
+        Body = 'Egbesu Frock',
+        Hands = 'Jhakri Cuffs +2',
+        Ring1 = 'Weather. Ring',
+        Ring2 = 'Gurebu\'s Ring',
+        Back = { Name = 'Nantosuelta\'s Cape', Augment = { [1] = 'Pet: Damage taken -5%', [2] = 'Accuracy+30', [3] = 'Attack+20', [4] = 'MND+20', [5] = 'Weapon skill damage +10%' } },
+        Waist = 'Eschan Stone',
+        Legs = 'Nyame Flanchard',
+        Feet = 'Nyame Sollerets',
+    },
+
+    Bolster = {Body = 'Bagua Tunic +3'},
+    ['Full Circle'] = {Head = 'Azimuth Hood +3',
+          Body = 'Geo. Tunic +4',},
+
+    TH = {
+        Ammo = 'Per. Lucky Egg',
+        Waist = 'Chaac Belt',
+    },
+    Movement = {
+        Feet = 'Geo. Sandals +4',
+    },
+    XIRoll = { -- worn standing idle with a roll at 11
+        Ring2 = 'Roller\'s Ring',
+    },
+    -- Templates: fill the ones you use; an empty set changes nothing.
+    Buffs = { -- while the buff is up: idle and engaged
+        ['Aftermath: Lv.3'] = {},
+    },
+    Buffs_Ws = { -- while the buff is up: weapon skills
+        ['Aftermath: Lv.3'] = {},
+    },
+    Absorb_TP = {
+        Main = 'Bunzi\'s Rod',
+        Sub = 'Ammurapi Shield',
+        Ammo = 'Pemphredo Tathlum',
+        Head = 'Azimuth Hood +3',
+        Neck = 'Erra Pendant',
+        Ear1 = 'Alabaster Earring',
+        Ear2 = 'Malignance Earring',
+        Body = 'Geo. Tunic +4',
+        Hands = 'Geo. Mitaines +4',
+        Ring1 = 'Metamor. Ring +1',
+        Ring2 = 'Stikini Ring +1',
+        Back = 'Null Shawl',
+        Waist = 'Null Belt',
+        Legs = 'Geo. Pants +4',
+        Feet = 'Geo. Sandals +4',
+    }, -- Absorb-TP on top of Absorb
+};
+profile.Sets = sets;
+
+-- Kept in your bags for this job by /lac gear (the Packer plugin), with every set's gear; /gcedit Settings edits it.
+profile.Packer = {
+    --{Name = 'Tropical Crepe', Quantity = 'all'},
+    --{Name = 'Rolan. Daifuku', Quantity = 'all'},
+};
+
+local ByName, Family = gcinclude.ByName, gcinclude.Family;
+
+profile.OnLoad = function()
+    gSettings.AllowAddSet = true;
+    gcinclude.WeaponModes = {'None', 'Idris', 'Maxentius', 'Tishtrya'};
+    gcinclude.DefaultWeapons = 'Idris';
+    gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
+    gcinclude.Initialize();
+end
+
+profile.OnUnload = function()
+    gcinclude.Unload();
+end
+
+profile.HandleCommand = function(args)
+    gcinclude.HandleCommands(args);
+end
+
+profile.HandleDefault = function()
+    local player = gData.GetPlayer();
+
+    gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
+
+    if (player.Status == 'Engaged') then
+        gcinclude.EquipMode('Tp');
+    elseif (player.Status == 'Resting') then
+        gFunc.EquipSet(sets.Resting);
+    end
+
+    -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
+    if (player.Status ~= 'Engaged') and (gData.GetPet() ~= nil) then
+        gFunc.EquipSet(sets.Idle_Pet);
+    end
+    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
+    if (gcdisplay.GetToggle('Kite') == true) or (player.IsMoving == true) then gFunc.EquipSet(sets.Movement) end -- any status, over Dt
+    gcinclude.CheckDefault ();
+end
+
+profile.HandleAbility = function()
+    local ability = gData.GetAction();
+    ByName(ability.Name); -- a set named after the ability, e.g. ['Bolster']
+    gcinclude.CheckCancels();
+end
+
+profile.HandlePrecast = function()
+    local spell = gData.GetAction();
+    gFunc.EquipSet(sets.Precast);
+    ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
+    ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
+    gcinclude.CheckCancels();
+end
+
+profile.HandleMidcast = function()
+    local spell = gData.GetAction();
+    local target = gData.GetActionTarget() or {}; -- {} when LAC has no entity for the target: no Self_ sets
+    local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
+    local family = Family(spell.Name); -- 'Cure IV' -> 'Cure'
+    gFunc.EquipSet(sets.Midcast);
+    ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Elemental Magic']
+    -- Enhancing Magic: Phalanx, Stoneskin, Regen, Refresh go on by name below
+    if (spell.Skill == 'Healing Magic') then
+        if (target.Name == me) then gFunc.EquipSet(sets.Self_Cure) end
+        if T{'Cure', 'Cura', 'Curaga'}:contains(family) then
+            if (gData.GetPlayer().MPP <= 50) then
+                -- Light weather: Aurorastorm counts (LAC GetEnvironment reads storm buffs as weather), so does natural Light
+                local env = gData.GetEnvironment();
+                if (env ~= nil) and (env.WeatherElement == 'Light') then
+                    gFunc.EquipSet(sets.Cure_LowMP_Storm);
+                else
+                    gFunc.EquipSet(sets.Cure_LowMP);
+                end
+            end
+            if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Cure_Dt) end
+        end
+    elseif (spell.Skill == 'Elemental Magic') then
+        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.NukeACC) end
+        if gcinclude.BurstWanted() then gFunc.EquipSet(sets.Burst) end
+        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
+        if (gData.GetPlayer().MPP <= 40) then gFunc.EquipSet(sets.Mp_Body) end
+    elseif (spell.Skill == 'Enfeebling Magic') then
+        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.Macc) end
+    elseif (spell.Skill == 'Dark Magic') then
+        gFunc.EquipSet(sets.Macc);
+    elseif (spell.Skill == 'Geomancy') then
+        if string.contains(spell.Name, 'Indi') then gFunc.EquipSet(sets.Indi) end -- over ['Geomancy']
+    end
+    if not ByName(spell.Name) then ByName(family) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna'], ['Drain']
+    gcinclude.CheckTH();
+end
+
+profile.HandlePreshot = function()
+    gFunc.EquipSet(sets.Preshot);
+end
+
+profile.HandleMidshot = function()
+    gFunc.EquipSet(sets.Midshot);
+    gcinclude.CheckTH();
+end
+
+profile.HandleWeaponskill = function()
+    if (gcinclude.CheckWsBailout() == false) then gFunc.CancelAction(); return end
+    local ws = gData.GetAction();
+    gcinclude.EquipMode('Ws');
+    ByName(ws.Name); -- e.g. ['Black Halo'], then ['Black Halo_<mset>']
+end
+
+return profile;

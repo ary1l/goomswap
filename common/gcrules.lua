@@ -171,25 +171,25 @@ local function context(api, phase)
 end
 
 local TEST = {}
-function TEST.status(c, v) local p = c.get('player'); return (p ~= nil) and R.MatchText(p.Status, v) end
+function TEST.status(c, v) local p = c.get('player'); return R.MatchText(p and p.Status, v) end
 function TEST.hpp(c, v) local p = c.get('player'); return (p ~= nil) and R.MatchNumber(p.HPP, v) end
 function TEST.mpp(c, v) local p = c.get('player'); return (p ~= nil) and R.MatchNumber(p.MPP, v) end
 function TEST.tp(c, v) local p = c.get('player'); return (p ~= nil) and R.MatchNumber(p.TP, v) end
 function TEST.moving(c, v) local p = c.get('player'); return (p ~= nil) and ((p.IsMoving == true) == (v == true)) end
 function TEST.combat(c, v) return (c.api.inCombat ~= nil) and ((c.api.inCombat() == true) == (v == true)) end
-function TEST.sub(c, v) local p = c.get('player'); return (p ~= nil) and R.MatchText(p.SubJob, v) end
+function TEST.sub(c, v) local p = c.get('player'); return R.MatchText(p and p.SubJob, v) end
 function TEST.level(c, v) local p = c.get('player'); return (p ~= nil) and R.MatchNumber(p.MainJobSync, v) end
-function TEST.name(c, v) local a = c.action(); return (a ~= nil) and R.MatchText(a.Name, v) end
+function TEST.name(c, v) local a = c.action(); return R.MatchText(a and a.Name, v) end
 function TEST.family(c, v)
     local a = c.action()
-    if (a == nil) or (type(a.Name) ~= 'string') then return false end
+    if (a == nil) or (type(a.Name) ~= 'string') then return R.MatchText(nil, v) end
     return R.MatchText((c.api.family ~= nil) and c.api.family(a.Name) or a.Name, v)
 end
-function TEST.skill(c, v) local a = c.action(); return (a ~= nil) and R.MatchText(a.Skill, v) end
-function TEST.type(c, v) local a = c.action(); return (a ~= nil) and R.MatchText(a.Type, v) end
+function TEST.skill(c, v) local a = c.action(); return R.MatchText(a and a.Skill, v) end
+function TEST.type(c, v) local a = c.action(); return R.MatchText(a and a.Type, v) end
 function TEST.element(c, v)
     local a = c.action()
-    if (a == nil) or (a.Element == nil) then return false end
+    if (a == nil) or (a.Element == nil) then return (type(v) == 'table') and (v[1] == nil) and R.MatchText(nil, v) end
     local env = c.get('env')
     for _, want in ipairs(list_of(v)) do
         if (want == 'weather') then
@@ -202,15 +202,14 @@ function TEST.element(c, v)
     end
     return false
 end
-function TEST.target(c, v)
-    local t = c.get('target')
-    if t == nil then return false end
+function TEST.target(c, v) -- 'other': not you, a missing target included (as `target.Name ~= me` reads it)
+    local t = c.get('target') or {}
     local me = c.get('me')
     for _, want in ipairs(list_of(v)) do
         if want == 'me' then
             if (me ~= nil) and (t.Name == me) then return true end
         elseif want == 'other' then
-            if (t.Name ~= nil) and (t.Name ~= me) then return true end
+            if t.Name ~= me then return true end
         elseif t.Type == want then
             return true
         end
@@ -219,9 +218,9 @@ function TEST.target(c, v)
 end
 function TEST.targethpp(c, v) local t = c.get('target'); return (t ~= nil) and R.MatchNumber(t.HPP, v) end
 function TEST.distance(c, v) local t = c.get('target'); return (t ~= nil) and R.MatchNumber(t.Distance, v) end
-function TEST.day(c, v) local e = c.get('env'); return (e ~= nil) and R.MatchText(e.DayElement, v) end
-function TEST.weather(c, v) local e = c.get('env'); return (e ~= nil) and R.MatchText(e.WeatherElement, v) end
-function TEST.zone(c, v) local e = c.get('env'); return (e ~= nil) and R.MatchText(e.Area, v) end
+function TEST.day(c, v) local e = c.get('env'); return R.MatchText(e and e.DayElement, v) end
+function TEST.weather(c, v) local e = c.get('env'); return R.MatchText(e and e.WeatherElement, v) end
+function TEST.zone(c, v) local e = c.get('env'); return R.MatchText(e and e.Area, v) end
 function TEST.time(c, v) local e = c.get('env'); return (e ~= nil) and R.MatchNumber(e.Time, v) end
 local function up(c, b) return (c.api.buff ~= nil) and ((c.api.buff(b) or 0) > 0) end
 function TEST.buff(c, v)
@@ -245,8 +244,8 @@ end
 function TEST.pet(c, v) return (c.get('pet') ~= nil) == (v == true) end
 function TEST.pethpp(c, v) local p = c.get('pet'); return (p ~= nil) and R.MatchNumber(p.HPP, v) end
 function TEST.pettp(c, v) local p = c.get('pet'); return (p ~= nil) and R.MatchNumber(p.TP, v) end
-function TEST.petname(c, v) local p = c.get('pet'); return (p ~= nil) and R.MatchText(p.Name, v) end
-function TEST.petstatus(c, v) local p = c.get('pet'); return (p ~= nil) and R.MatchText(p.Status, v) end
+function TEST.petname(c, v) local p = c.get('pet'); return R.MatchText(p and p.Name, v) end
+function TEST.petstatus(c, v) local p = c.get('pet'); return R.MatchText(p and p.Status, v) end
 function TEST.mode(c, v)
     if (type(v) ~= 'table') or (c.api.cycle == nil) then return false end
     for name, want in pairs(v) do
