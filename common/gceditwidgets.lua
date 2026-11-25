@@ -53,15 +53,57 @@ return function(imgui, palette, set_tip)
     end
     local P1, P2 = { 0, 0 }, { 0, 0 }
     local function u32(c) return imgui.GetColorU32(c) end
+    -- buttons by what they do (as the Rules page's): accent (add, on), plain, danger (grey, red when hovered), ghost
+    local CLEAR = { 0, 0, 0, 0 }
+    local function kinds(kind)
+        if kind == 'accent' then return palette.selBg, palette.save, palette.save, palette.blue end
+        if kind == 'danger' then return palette.btn, palette.red, palette.redHi, nil end
+        if kind == 'ghost' then return CLEAR, palette.btnHi, palette.btnHi, palette.dim end
+        return palette.btn, palette.btnHi, palette.btnHi, nil
+    end
+    local function button(label, kind)
+        local b, h, a, t = kinds(kind)
+        imgui.PushStyleColor(ImGuiCol_Button, b or palette.btn)
+        imgui.PushStyleColor(ImGuiCol_ButtonHovered, h or palette.btnHi)
+        imgui.PushStyleColor(ImGuiCol_ButtonActive, a or palette.btnHi)
+        if t ~= nil then imgui.PushStyleColor(ImGuiCol_Text, t) end
+        local hit = imgui.SmallButton(label)
+        imgui.PopStyleColor((t ~= nil) and 4 or 3)
+        return hit
+    end
+    W.Button = button
+    -- a key as a key cap: its name on a rounded fill with an edge
+    local function keycap(text)
+        local dl = nil
+        if imgui.GetWindowDrawList ~= nil then
+            dl = imgui.GetWindowDrawList()
+            if (type(dl) ~= 'userdata') and (type(dl) ~= 'table') then dl = nil end
+        end
+        if (dl ~= nil) and (imgui.GetCursorScreenPos ~= nil) and (imgui.GetColorU32 ~= nil) then
+            local x, y = vec(imgui.GetCursorScreenPos())
+            local w, h = vec(imgui.CalcTextSize(text))
+            if (x ~= nil) and (y ~= nil) and (w ~= nil) and (h ~= nil) and (w > 0) then
+                P1[1], P1[2], P2[1], P2[2] = x - 4, y - 1, x + w + 4, y + h + 1
+                dl:AddRectFilled(P1, P2, u32(palette.cell or palette.btn), 4)
+                dl:AddRect(P1, P2, u32(palette.edge or palette.dim), 4, 0, 1)
+            end
+        end
+        imgui.TextUnformatted(text)
+    end
     function W.Pick(id, label, options, width)
         label = tostring(label)
         local w = width or (width_of(label) + 34)
+        local shown = label -- cut with ... to the field, clear of the chevron
+        if width_of(shown) > w - 30 then
+            while (#shown > 1) and (width_of(shown .. '...') > w - 30) do shown = string.sub(shown, 1, #shown - 1) end
+            shown = shown .. '...'
+        end
         imgui.PushStyleColor(ImGuiCol_Button, palette.cell or palette.btn)
         imgui.PushStyleColor(ImGuiCol_ButtonHovered, palette.edge or palette.btnHi)
         imgui.PushStyleColor(ImGuiCol_ButtonActive, palette.selBg or palette.btnHi)
         local align = (ImGuiStyleVar_ButtonTextAlign ~= nil) and (imgui.PushStyleVar ~= nil)
         if align then imgui.PushStyleVar(ImGuiStyleVar_ButtonTextAlign, { 0, 0.5 }) end
-        local clicked = imgui.Button(label .. '##pick_' .. id, { w, 0 })
+        local clicked = imgui.Button(shown .. '##pick_' .. id, { w, 0 })
         if align then imgui.PopStyleVar() end
         imgui.PopStyleColor(3)
         local dl = draw_list()
@@ -101,7 +143,7 @@ return function(imgui, palette, set_tip)
             if string.lower(name) ~= string.lower(text) then
                 shown = shown + 1
                 if shown > 1 then imgui.SameLine() end
-                if imgui.SmallButton(name .. '##sug_' .. id .. '_' .. shown) then b.a[1] = name end
+                if button(name .. '##sug_' .. id .. '_' .. shown, 'ghost') then b.a[1] = name end
             end
         end
     end
@@ -114,7 +156,7 @@ return function(imgui, palette, set_tip)
         for i, v in ipairs(list or {}) do
             local label = tostring(v) .. '  x##' .. id .. '_' .. i
             flow_next(f, width(tostring(v) .. '  x') + 8)
-            if imgui.SmallButton(label) then
+            if button(label, 'danger') then
                 table.remove(out, i)
                 changed = true
             end
@@ -127,7 +169,7 @@ return function(imgui, palette, set_tip)
         imgui.PopItemWidth()
         imgui.SameLine()
         local text = trim(b.a[1])
-        if (imgui.SmallButton('+ Add##' .. id) or (enter and (imgui.IsItemActive == nil))) and (text ~= '') then
+        if (button('+ Add##' .. id, 'accent') or (enter and (imgui.IsItemActive == nil))) and (text ~= '') then
             local dup = false
             if opts.unique ~= false then
                 for _, v in ipairs(out) do
@@ -161,7 +203,7 @@ return function(imgui, palette, set_tip)
             imgui.PopItemWidth()
             if trim(b.a[1]) ~= b.base then
                 imgui.SameLine()
-                if imgui.SmallButton('Set##' .. id .. '_set' .. i) then
+                if button('Set##' .. id .. '_set' .. i, 'accent') then
                     local v = trim(b.a[1])
                     if opts.number then v = tonumber(v) end
                     if v ~= nil and v ~= '' then
@@ -171,7 +213,7 @@ return function(imgui, palette, set_tip)
                 end
             end
             imgui.SameLine()
-            if imgui.SmallButton('x##' .. id .. '_del' .. i) then
+            if button('x##' .. id .. '_del' .. i, 'danger') then
                 out[k] = nil
                 changed = true
             end
@@ -188,7 +230,7 @@ return function(imgui, palette, set_tip)
         imgui.SameLine()
         local k, v = trim(b.a[1]), trim(b.b[1])
         if opts.number then v = tonumber(v) end
-        if imgui.SmallButton('+ Add##' .. id) and (k ~= '') and (v ~= nil) and (v ~= '') then
+        if button('+ Add##' .. id, 'accent') and (k ~= '') and (v ~= nil) and (v ~= '') then
             out[k] = v
             changed = true
             b.a[1], b.b[1] = '', ''
@@ -262,13 +304,13 @@ return function(imgui, palette, set_tip)
                 imgui.PopItemWidth()
                 imgui.SameLine()
                 local n = tonumber(trim(cb.a[1]))
-                if imgui.SmallButton('Set##' .. id .. '_cs' .. i) and (n ~= nil) and (n > 0) then
+                if button('Set##' .. id .. '_cs' .. i, 'accent') and (n ~= nil) and (n > 0) then
                     r.n, changed = math.floor(n), true
                     boxes[id .. '_c' .. i] = nil
                 end
             end
             imgui.SameLine()
-            if imgui.SmallButton('x##' .. id .. '_x' .. i) then
+            if button('x##' .. id .. '_x' .. i, 'danger') then
                 r.gone, changed = true, true
             end
             if imgui.IsItemHovered() then set_tip('Take ' .. r.name .. ' out of the list.') end
@@ -280,7 +322,7 @@ return function(imgui, palette, set_tip)
         imgui.PopItemWidth()
         imgui.SameLine()
         local name = trim(b.a[1])
-        if imgui.SmallButton('+ Add##' .. id) and (name ~= '') then
+        if button('+ Add##' .. id, 'accent') and (name ~= '') then
             local dup = false
             for _, r in ipairs(rows) do
                 if string.lower(r.name) == string.lower(name) then dup = true end
@@ -324,33 +366,56 @@ return function(imgui, palette, set_tip)
     end
     function W.Keybinds(id, list)
         local out, changed = {}, false
+        local keyW, cmdW = 60, 120
+        for _, b in ipairs(list or {}) do
+            keyW = math.max(keyW, width_of(W.KeyText(b[1])) + 24)
+            cmdW = math.max(cmdW, math.min(width_of(tostring(b[2])) + 20, 360))
+        end
+        local x0 = (imgui.GetCursorPosX ~= nil) and imgui.GetCursorPosX() or nil
+        local function at(x) -- the next item at this column of the row
+            imgui.SameLine()
+            if (x0 ~= nil) and (imgui.SetCursorPosX ~= nil) then imgui.SetCursorPosX(x0 + x) end
+        end
         for i, b in ipairs(list or {}) do
             out[i] = { b[1], b[2] }
-            imgui.TextUnformatted(W.KeyText(b[1]))
-            imgui.SameLine(130)
-            imgui.TextUnformatted(tostring(b[2]))
-            imgui.SameLine()
-            if imgui.SmallButton('x##' .. id .. '_x' .. i) then out[i], changed = false, true end
+            imgui.Indent(4)
+            keycap(W.KeyText(b[1]))
+            imgui.Unindent(4)
+            at(keyW)
+            local cmd = tostring(b[2])
+            imgui.TextUnformatted(cmd)
+            if imgui.IsItemHovered() then set_tip(W.KeyText(b[1]) .. ' runs: ' .. cmd) end
+            at(keyW + cmdW)
+            if button('x##' .. id .. '_x' .. i, 'danger') then out[i], changed = false, true end
             if imgui.IsItemHovered() then set_tip('Unbind ' .. W.KeyText(b[1]) .. '.') end
         end
         if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(no keys bound)') end
+        imgui.Spacing()
         local b = box(id)
         b.mods = b.mods or {}
         b.key = b.key or 'F1'
+        imgui.TextColored(palette.dim, 'New:')
         for _, m in ipairs(MODS) do
             b.mods[m[1]] = b.mods[m[1]] or { false }
-            imgui.Checkbox(m[2] .. '##' .. id .. '_m' .. m[1], b.mods[m[1]])
-            imgui.SameLine()
+            imgui.SameLine(0, 4)
+            if button(m[2] .. '##' .. id .. '_m' .. m[1], b.mods[m[1]][1] and 'accent' or 'plain') then
+                b.mods[m[1]][1] = not b.mods[m[1]][1]
+            end
+            if imgui.IsItemHovered() then set_tip('Hold ' .. m[2] .. ' with the key (click: on / off).') end
         end
+        imgui.SameLine(0, 6)
         local pick = W.Pick(id .. '_key', b.key, KEYS, 80)
         if pick ~= nil then b.key = pick end
         imgui.SameLine()
-        imgui.PushItemWidth(220)
+        imgui.PushItemWidth(240)
         imgui.InputTextWithHint('##' .. id .. '_cmd', 'wm, or /ma "Cure IV" <stpc>', b.a, 128)
         imgui.PopItemWidth()
+        if imgui.IsItemHovered() then
+            set_tip('A GoomSwap command without the slash (wm, mset acc) or any chat command (/ja "Provoke" <t>).')
+        end
         imgui.SameLine()
         local cmd = trim(b.a[1])
-        if imgui.SmallButton('+ Bind##' .. id) and (cmd ~= '') then
+        if button('+ Bind##' .. id, 'accent') and (cmd ~= '') then
             local key = ''
             for _, m in ipairs(MODS) do
                 if b.mods[m[1]][1] then key = key .. m[1] end
@@ -362,9 +427,11 @@ return function(imgui, palette, set_tip)
             out[#out + 1] = { key, cmd }
             b.a[1], changed = '', true
         end
-        if imgui.IsItemHovered() then
-            set_tip('A GoomSwap command without the slash (wm, mset acc) or any chat command (/ja "Provoke" <t>).')
+        local preview = ''
+        for _, m in ipairs(MODS) do
+            if b.mods[m[1]][1] then preview = preview .. m[1] end
         end
+        if imgui.IsItemHovered() then set_tip('Binds ' .. W.KeyText(preview .. b.key) .. ' (it replaces what that key had).') end
         if not changed then return nil end
         local keep = {}
         for _, e in ipairs(out) do

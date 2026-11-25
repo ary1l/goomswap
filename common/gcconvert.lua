@@ -1061,6 +1061,14 @@ convert_if = function(scope, st, when, phase, out)
 end
 
 -- == The plan ==
+-- Lines every GoomSwap job file has, which stay as they are (they are GoomSwap's steps, not your own logic).
+C.STANDARD = {
+    { 'gcinclude%.EquipMode%(', 'a standard step: your idle / engaged / resting / moving sets' },
+    { 'not%s+ByName%(', "a standard step: the action's own set, else its family's (Cure IV: Cure)" },
+    { 'not%s+gcinclude%.ByName%(', "a standard step: the action's own set, else its family's (Cure IV: Cure)" },
+    { 'CheckWsBailout', 'a standard step: a weapon skill that would fail is stopped' },
+    { 'CheckBlockedAmmo', 'a standard step: a shot or weapon skill that would use precious ammo is stopped' },
+}
 local HANDLERS = { HandleDefault = 'Default', HandlePrecast = 'Precast', HandleMidcast = 'Midcast',
     HandleAbility = 'Ability', HandleWeaponskill = 'Weaponskill', HandlePreshot = 'Preshot', HandleMidshot = 'Midshot',
     HandleItem = 'Item' }
@@ -1165,6 +1173,12 @@ function C.Plan(text)
                         local rules, why = convert_if(snapshot, s, {}, phase, {})
                         local item = { line = line_of(text, s.s), s = s.s, e = s.e, ok = (rules ~= nil), why = why,
                             rules = rules }
+                        if rules == nil then -- GoomSwap's own steps every job file has: stay, nothing to fix
+                            local code = string.sub(text, s.s, s.e)
+                            for _, std in ipairs(C.STANDARD) do
+                                if string.find(code, std[1]) then item.standard, item.why = true, std[2] break end
+                            end
+                        end
                         h.items[#h.items + 1] = item
                         if item.ok then
                             cur = cur or { items = {}, returnedBefore = returned }

@@ -77,6 +77,15 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     end
 
     local function job_name() return files.JobFile() or 'the job file' end
+    -- who and what each target is: this character's name, and the job file's job (WHM.lua: WHM)
+    local function char_name() return ((gState ~= nil) and gState.PlayerName) or 'this character' end
+    local function job_abbr() return string.match(job_name(), '^(%u%u%u)') or 'this job' end
+    local function where_label(from)
+        if from == 'own' then return char_name() .. ', every job' end
+        if from == 'shared' then return 'every character' end
+        if from == 'job' then return char_name() .. ', ' .. job_abbr() .. ' only' end
+        return 'default'
+    end
     local function target_name(t)
         if t == 'own' then return 'char.lua' end
         if t == 'shared' then return 'goomswap-shared.lua' end
@@ -190,8 +199,8 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         end
         return ((doc ~= nil) and (doc[1] .. '\n\n') or '') .. how_to(kind, doc and doc[2], LIMITS[key])
             .. '\n\nDefault: ' .. ((default == nil) and '(none)' or clip(text_of(default, plain)))
-            .. '\nEvery character: ' .. layer('shared') .. '\nThis character: ' .. layer('own')
-            .. '\nThis job (' .. job_name() .. '): ' .. job_says('settings.' .. key, plain)
+            .. '\nEvery character: ' .. layer('shared') .. '\n' .. char_name() .. ', every job: ' .. layer('own')
+            .. '\n' .. char_name() .. ', ' .. job_abbr() .. ' only (' .. job_name() .. '): ' .. job_says('settings.' .. key, plain)
     end
 
     -- Saved now (char.lua, the shared file), or staged for the job file's Save.
@@ -302,7 +311,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local kind = ed.editable and widget_kind(key, v) or nil
         if kind ~= nil then -- a control under its name; the line keeps where it comes from and Clear
             imgui.TextColored(((from == 'own') or (from == 'job')) and palette.ok
-                or ((from == 'shared') and palette.blue or palette.dim), FROM[from])
+                or ((from == 'shared') and palette.blue or palette.dim), where_label(from))
             local has
             if target == 'job' then has = (files.Job('settings.' .. key) ~= nil) else has = (files.Layer(target)[key] ~= nil) end
             if has then
@@ -320,7 +329,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         if imgui.IsItemHovered() then set_tip(ed.tip) end
         imgui.SameLine()
         imgui.TextColored(((from == 'own') or (from == 'job')) and palette.ok
-            or ((from == 'shared') and palette.blue or palette.dim), FROM[from])
+            or ((from == 'shared') and palette.blue or palette.dim), where_label(from))
         if changed then
             imgui.SameLine()
             if imgui.SmallButton('Save##set_save_' .. key) then
@@ -362,7 +371,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         if imgui.IsItemHovered() then set_tip(entry[2]) end
         imgui.SameLine(200)
         imgui.TextColored((how == 'staged') and palette.warn or ((v ~= nil) and palette.ok or palette.dim),
-            (how == 'staged') and 'unsaved' or ((v ~= nil) and 'this job' or 'not set'))
+            (how == 'staged') and 'unsaved' or ((v ~= nil) and where_label('job') or 'not set'))
         local engine = gcinclude
         local ready, why = false, 'GoomSwap is not loaded'
         if (engine ~= nil) and (engine.PackerReady ~= nil) then ready, why = engine.PackerReady() end
@@ -420,13 +429,13 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             if imgui.IsItemHovered() then set_tip(desc .. '\n\nNot set: ' .. tostring(unset or 'nothing')) end
             imgui.SameLine(200)
             imgui.TextColored((how == 'staged') and palette.warn or ((v ~= nil) and palette.ok or palette.dim),
-                (how == 'staged') and 'unsaved' or ((v ~= nil) and 'this job' or 'not set'))
+                (how == 'staged') and 'unsaved' or ((v ~= nil) and where_label('job') or 'not set'))
             if v ~= nil then
                 imgui.SameLine()
                 if imgui.SmallButton('Clear##job_clear_' .. name) then files.StageJob(name, files.REMOVE) end
             end
             imgui.Indent(24)
-            local nv = draw_widget(kind, 'w_job_' .. name, v)
+            local nv = draw_widget(kind, 'w_jobopt_' .. name, v)
             imgui.Unindent(24)
             if nv ~= nil then files.StageJob(name, nv) end
             return
@@ -436,7 +445,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local ed = ui.settingsEdit[id]
         if (ed == nil) or (ed.base ~= now) then
             ed = { base = now, text = { now }, editable = editable(v) and not readonly }
-            if readonly then ed.why = (v ~= nil) and clip(now) or ('(not set: ' .. tostring(unset) .. ')') end
+            if readonly then ed.why = (v ~= nil) and clip(now) or ('default ' .. tostring(unset)) end
             if (how == 'code') or string.match(how or '', '^set in') then
                 ed.editable, ed.why = false, '(' .. how .. ' in the file: edit it there)'
             end
@@ -447,14 +456,14 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         imgui.TextUnformatted(name)
         if imgui.IsItemHovered() then set_tip(ed.tip) end
         imgui.SameLine(200)
-        local check = (example == nil) and not readonly
+        local check = ((example == nil) or (example == 'true') or (example == 'false')) and not readonly
         local cur = v
         if check and (cur == nil) then cur = (unset == 'true') end
         local changed = value_box(id, ed, check, cur, example, function(b) files.StageJob(name, b) end)
         if imgui.IsItemHovered() then set_tip(ed.tip) end
         imgui.SameLine()
         imgui.TextColored((how == 'staged') and palette.warn or ((v ~= nil) and palette.ok or palette.dim),
-            (how == 'staged') and 'unsaved' or ((v ~= nil) and 'this job' or 'not set'))
+            (how == 'staged') and 'unsaved' or ((v ~= nil) and where_label('job') or 'not set'))
         if changed then
             imgui.SameLine()
             if imgui.SmallButton('Save##job_save_' .. name) then
@@ -504,20 +513,27 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         ui.settingsAll = ui.settingsAll or { false }
         ui.settingsTarget = ui.settingsTarget or 'own'
         imgui.TextColored(palette.dim, 'Save to:')
-        for _, t in ipairs({ { 'own', 'This character (char.lua)' }, { 'shared', 'Every character (goomswap-shared.lua)' },
-            { 'job', 'This job (' .. job_name() .. ')' } }) do
+        local targets = {
+            { 'own', char_name() .. ': every job (char.lua)', 'Only ' .. char_name() .. ', on every job: ' },
+            { 'job', char_name() .. ': ' .. job_abbr() .. ' only (' .. job_name() .. ')', 'Only ' .. char_name()
+                .. ' on ' .. job_abbr() .. ': the job file open in the editor, written by its Save (like set edits). ' },
+            { 'shared', 'Every character (goomswap-shared.lua)', 'Every character on this PC, unless its char.lua or job '
+                .. 'file sets its own: ' },
+        }
+        for _, t in ipairs(targets) do
             imgui.SameLine()
-            if imgui.SmallButton(((ui.settingsTarget == t[1]) and '> ' or '') .. t[2] .. '##set_target_' .. t[1]) then
-                ui.settingsTarget = t[1]
-            end
-            if imgui.IsItemHovered() then
-                set_tip((t[1] == 'job') and ('The job file open in the editor. Changes wait for its Save, like set edits.')
-                    or tostring(files.Path(t[1])))
-            end
+            local on = (ui.settingsTarget == t[1])
+            imgui.PushStyleColor(ImGuiCol_Button, on and palette.selBg or palette.btn)
+            imgui.PushStyleColor(ImGuiCol_ButtonHovered, on and palette.save or palette.btnHi)
+            if on then imgui.PushStyleColor(ImGuiCol_Text, palette.blue) end
+            if imgui.SmallButton(t[2] .. '##set_target_' .. t[1]) then ui.settingsTarget = t[1] end
+            imgui.PopStyleColor(on and 3 or 2)
+            if imgui.IsItemHovered() then set_tip(t[3] .. ((t[1] == 'job') and '' or tostring(files.Path(t[1])))) end
         end
         if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
-        imgui.TextColored(palette.dim, 'A job file wins over char.lua, and char.lua over the shared file. char.lua and the'
-            .. ' shared file are saved at once, after a backup; the job file with Save. Hover a name for what it does.')
+        imgui.TextColored(palette.dim, char_name() .. "'s " .. job_name() .. ' wins over ' .. char_name() .. "'s char.lua, and "
+            .. 'char.lua over the shared file. char.lua and the shared file are saved at once, after a backup; the job '
+            .. 'file with Save. Hover a name for what it does.')
         if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
         imgui.PushItemWidth(260)
         imgui.InputTextWithHint('##set_find', 'Find a setting: Hpp, Editor, Moonshade...', ui.settingsFind, 48)
@@ -559,7 +575,8 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             end
         end
         imgui.Separator()
-        imgui.TextColored(palette.blue, 'Only in ' .. job_name() .. ' (written by Save)')
+        imgui.TextColored(palette.blue, 'Only ' .. char_name() .. ' on ' .. job_abbr() .. ': ' .. job_name()
+            .. "'s own options (written by Save)")
         -- a default weapon or role nothing offers: the engine skips it at load without a word
         for _, p in ipairs((files.WeaponProblems ~= nil) and files.WeaponProblems() or {}) do
             imgui.PushTextWrapPos(0)

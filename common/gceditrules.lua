@@ -346,7 +346,7 @@ return function(o)
     local function draw_row(e, i, r)
         local meta = R.KEY[r.key] or { label = r.key, kind = 'text' }
         local id = 'rb_' .. i
-        local pick = W.Pick(id .. '_key', meta.label, key_options(e.phase), 230)
+        local pick = W.Pick(id .. '_key', meta.label, key_options(e.phase), 170)
         if pick ~= nil and pick ~= r.key then
             r.key, r.value, r.sub = pick, nil, nil
             local m = R.KEY[pick]
@@ -357,7 +357,10 @@ return function(o)
             r.buf = { '' }
             meta = m
         end
+        local tip = meta.hint
+        if imgui.IsItemHovered() and (tip ~= nil) then set_tip(meta.label .. ': ' .. tip) end
         imgui.SameLine()
+        local values = nil
         if meta.kind == 'bool' then
             local v = W.Pick(id .. '_bool', (r.value == false) and 'no' or 'yes', { { true, 'yes' }, { false, 'no' } }, 80)
             if v ~= nil then r.value = v end
@@ -371,50 +374,53 @@ return function(o)
             if meta.kind == 'mode' then
                 local s = W.Pick(id .. '_sub', '/' .. (r.sub or 'wm'), CYCLE_NAMES, 120)
                 if s ~= nil then r.sub = s end
-                imgui.SameLine()
-                imgui.TextUnformatted('is')
             elseif meta.kind == 'number' then
                 local op = W.Pick(id .. '_op', OP_WORDS[r.op or 'lt'], { { 'lt', '<' }, { 'le', '<=' }, { 'gt', '>' },
                     { 'ge', '>=' }, { 'eq', '=' }, { 'ne', 'not' } }, 120)
                 if op ~= nil then r.op = op end
-            elseif meta.kind == 'list' then
-                imgui.TextUnformatted('')
-            else
+            elseif meta.kind ~= 'list' then
                 local op = W.Pick(id .. '_op', OP_WORDS[r.op or 'is'], { { 'is', 'is' }, { 'isnt', 'is not' },
                     { 'has', 'has' }, { 'start', 'starts with' }, { 'ends', 'ends with' } }, 120)
                 if op ~= nil then r.op = op end
             end
-            imgui.SameLine()
+            if meta.kind ~= 'list' then imgui.SameLine() end
             imgui.PushItemWidth(220)
-            imgui.InputTextWithHint('##' .. id .. '_val', (meta.kind == 'number') and 'a number'
-                or 'a name; several: commas', r.buf, 128)
+            local placeholder = meta.example or ((meta.kind == 'number') and 'a number')
+                or ((meta.values ~= nil) and 'pick below, or type') or 'a name; several: commas'
+            imgui.InputTextWithHint('##' .. id .. '_val', placeholder, r.buf, 128)
             imgui.PopItemWidth()
             if imgui.IsItemHovered() then
-                set_tip((meta.kind == 'number') and 'A number.' or ('As the game writes it. Several, separated by commas: '
-                    .. 'any of them.' .. ((r.op == 'has' or r.op == 'start' or r.op == 'ends') and ' Upper and lower '
-                    .. 'case count.' or '')))
+                set_tip(((tip ~= nil) and (tip .. '\n\n') or '') .. ((meta.kind == 'number') and 'A number.'
+                    or ('As the game writes it. Several, separated by commas: any of them.'
+                    .. ((r.op == 'has' or r.op == 'start' or r.op == 'ends') and ' Upper and lower case count.' or ''))))
             end
-            -- the values this key can have: a click puts one in the box
-            local values = meta.values
+            values = meta.values
             if meta.kind == 'mode' and (gcdisplay ~= nil) and (gcdisplay.GetCycleValues ~= nil) then
                 values = gcdisplay.GetCycleValues(R.CYCLES[r.sub or 'wm'] or r.sub)
             end
-            if (values ~= nil) and (#values > 0) then
-                imgui.Indent(24)
-                for j, v in ipairs(values) do
-                    if j > 1 then imgui.SameLine() end
-                    if j > 1 and (j - 1) % 6 == 0 then imgui.NewLine() end
-                    if imgui.SmallButton(tostring(v) .. '##' .. id .. '_v' .. j) then
-                        local cur = trim(r.buf[1])
-                        r.buf[1] = (cur == '') and tostring(v) or (cur .. ', ' .. tostring(v))
-                    end
-                end
-                imgui.Unindent(24)
-            end
         end
         imgui.SameLine()
-        if button('x##' .. id .. '_x', 'danger') then return true end
-        return false
+        local gone = button('x##' .. id .. '_x', 'danger') -- right after its value, before the choices below
+        if imgui.IsItemHovered() then set_tip('Take this condition out.') end
+        -- the values this key can have: a click puts one in the box (wrapped to the pane)
+        if (values ~= nil) and (#values > 0) then
+            imgui.Indent(24)
+            imgui.TextColored(palette.dim, 'pick:')
+            local used, avail = 0, xw(imgui.GetContentRegionAvail())
+            used = xw(imgui.CalcTextSize('pick:')) + 8
+            for j, v in ipairs(values) do
+                local w = xw(imgui.CalcTextSize(tostring(v))) + 12
+                if (used + w + 4 <= avail) or (j == 1) then imgui.SameLine(0, 4) else used = 0 end
+                used = used + w + 4
+                if button(tostring(v) .. '##' .. id .. '_v' .. j, 'ghost') then
+                    local cur = trim(r.buf[1])
+                    r.buf[1] = (cur == '') and tostring(v) or (cur .. ', ' .. tostring(v))
+                end
+                if imgui.IsItemHovered() then set_tip('Puts ' .. tostring(v) .. ' in the box (several: any of them).') end
+            end
+            imgui.Unindent(24)
+        end
+        return gone
     end
 
     local function set_names()
@@ -598,10 +604,21 @@ return function(o)
         imgui.PopItemWidth()
         -- now
         local rule, why = built(e)
+        imgui.TextColored(palette.dim, 'Reads')
+        imgui.SameLine(70)
+        imgui.PushTextWrapPos(0)
+        if rule ~= nil then
+            local r2 = rule
+            if (e.member ~= nil) and (r2.on == nil) then r2 = copy(rule); r2.on = e.phase end
+            imgui.TextColored(palette.ok, (R.PHASE_LABEL[e.phase] or e.phase) .. ': ' .. R.Say(r2))
+        else
+            imgui.TextColored(palette.warn, why)
+        end
+        imgui.PopTextWrapPos()
         imgui.TextColored(palette.dim, 'Now')
         imgui.SameLine(70)
         if rule == nil then
-            imgui.TextColored(palette.warn, why)
+            imgui.TextColored(palette.dim, '-')
         elseif (e.phase == 'Default') or (e.phase == 'Pet') then
             local api = (gcinclude ~= nil) and gcinclude.RulesApi or nil
             local holds = (api ~= nil) and (not editorState.document.inactive) and R.Holds(rule, e.phase, api) or nil
@@ -692,6 +709,7 @@ return function(o)
                     local first = string.match(code, '^[^\n]*') or ''
                     local more = select(2, string.gsub(code, '\n', '\n'))
                     imgui.TextColored(it.ok and palette.ok or palette.dim, 'line ' .. it.line .. ':')
+                    if it.standard then imgui.SameLine(); imgui.TextColored(palette.dim, '(standard)') end
                     imgui.SameLine()
                     imgui.TextColored(palette.dim, fit(first .. ((more > 0) and ('  (+' .. more .. ' lines)') or '')))
                     if imgui.IsItemHovered() then set_tip(string.sub(code, 1, 1200)) end
@@ -703,6 +721,8 @@ return function(o)
                             imgui.TextColored(palette.dim, '   (these go on at ' .. it.spot .. ': the code keeps one line, '
                                 .. "gcinclude.RulesAt('" .. it.spot .. "'), where this was)")
                         end
+                    elseif it.standard then
+                        imgui.TextColored(palette.dim, 'stays: ' .. tostring(it.why))
                     else
                         imgui.TextColored(palette.warn, 'stays code: ' .. tostring(it.why))
                     end
@@ -763,10 +783,10 @@ return function(o)
             paragraph('Nothing to convert: ' .. tostring(c.why) .. '.', palette.warn)
             return
         end
-        local ok, no = 0, 0
+        local ok, no, std = 0, 0, 0
         for _, h in ipairs(c.plan.handlers) do
             for _, it in ipairs(h.items) do
-                if it.ok then ok = ok + 1 else no = no + 1 end
+                if it.ok then ok = ok + 1 elseif it.standard then std = std + 1 else no = no + 1 end
             end
         end
         paragraph('Convert takes the ifs in your job file\'s handlers (HandleDefault, HandleMidcast...) that it can say as '
@@ -787,9 +807,10 @@ return function(o)
             paragraph((no > 0) and 'None of your ifs can be said as rules yet (Show what changes: why).'
                 or 'No ifs in your handlers: nothing to convert.')
         end
-        if no + ok > 0 then
+        if no + ok + std > 0 then
             imgui.SameLine()
-            imgui.Checkbox('Show what changes (' .. ok .. ' convert, ' .. no .. ' stay)##conv_each', editorState.ui.codeOpen)
+            imgui.Checkbox('Show what changes (' .. ok .. ' convert, ' .. no .. ' stay code'
+                .. ((std > 0) and (', ' .. std .. ' standard') or '') .. ')##conv_each', editorState.ui.codeOpen)
             if editorState.ui.codeOpen[1] then draw_changes(c.plan, text) end
         end
     end
