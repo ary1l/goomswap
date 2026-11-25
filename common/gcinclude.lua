@@ -911,10 +911,34 @@ local rulesApi = {
     end,
 }
 gcinclude.RulesApi = rulesApi
+-- The code spots rules are tied to whose gcinclude.RulesAt line is not in the job file (deleted or renamed by
+-- hand): those rules would never go on. { { spot, n } }, empty when the file can't be read.
+local function missing_spots(compiled)
+    local out = {}
+    if (compiled == nil) or (next(compiled.at or {}) == nil) or (gProfile == nil)
+        or (type(gProfile.FilePath) ~= 'string') then
+        return out
+    end
+    local f = io.open(gProfile.FilePath, 'r')
+    if f == nil then return out end
+    local text = string.gsub(f:read('*a') or '', '%-%-[^\n]*', '') -- a commented-out line doesn't count
+    f:close()
+    for spot, list in pairs(compiled.at) do
+        local pat = "RulesAt%s*%(%s*['\"]" .. string.gsub(spot, '%p', '%%%0') .. "['\"]%s*%)"
+        if not string.find(text, pat) then out[#out + 1] = { spot = spot, n = #list } end
+    end
+    table.sort(out, function(a, b) return a.spot < b.spot end)
+    return out
+end
 function gcinclude.CompileRules()
     local compiled, problems = gcrules.Compile(gcinclude.Rules)
     gcinclude.RulesCompiled, gcinclude.RuleProblems = compiled, problems
     for _, p in ipairs(problems) do gcinclude.Err('gcinclude.Rules, ' .. p .. ': left out.') end
+    for _, m in ipairs(missing_spots(compiled)) do
+        gcinclude.Err('gcinclude.Rules: ' .. m.n .. ((m.n == 1) and ' rule goes' or ' rules go') .. " on at code spot '"
+            .. m.spot .. "', but the job file has no gcinclude.RulesAt('" .. m.spot .. "') line: "
+            .. ((m.n == 1) and 'it never goes' or 'they never go') .. ' on. /gcedit, Rules: Edit, More, Use a layer instead.')
+    end
 end
 function gcinclude.HasRules(phase) return gcrules.Count(gcinclude.RulesCompiled, phase) > 0 end
 -- One phase's layer ('job' or 'top'). true when a rule stopped the action; and how many rules went on.
@@ -1273,7 +1297,7 @@ function gcinclude.PackerItems()
     for _, name in ipairs({ 'Moonshade Earring', 'Daybreak', 'Jubilee Ring' }) do items[#items + 1] = name end
     return items
 end
-function gcinclude.FillPacker(again) -- again: char.lua's Packer changed (the editor's Settings)
+function gcinclude.FillPacker(again) -- again: rebuild (char.lua's Packer changed; Get gear: what you own now)
     if gProfile == nil then return end
     if gProfile.GcPackerFilled == true then
         if again ~= true then return end
@@ -1314,7 +1338,7 @@ end
 function gcinclude.GetGear()
     local ok, why = gcinclude.PackerReady()
     if not ok then gcinclude.Err('/lac gear needs ' .. why); return false end
-    gcinclude.FillPacker()
+    gcinclude.FillPacker(true) -- again: what you own now (gear bought or moved since the job file loaded)
     AshitaCore:GetChatManager():QueueCommand(1, '/lac gear')
     return true
 end

@@ -51,4 +51,23 @@ tests[#tests + 1] = { 'the check catches a conversion that changes gear', functi
     local same = K.Same(text, plan, 'HandleMidcast', 300, 1)
     assert(not same, 'a changed rule passed the check')
 end }
+tests[#tests + 1] = { 'a part that errors on both sides is not passed as the same', function()
+    local text = [[
+local profile = {};
+local sets = { Fealty = { Body = 'Caballarius Surcoat +3' } };
+profile.Sets = sets;
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+profile.HandleDefault = function()
+    local x = gcinclude.SomethingUnknown().Field;
+    if (gcinclude.BuffCount('Cover') > 0) then gFunc.EquipSet(sets.Fealty) end
+    gcinclude.CheckDefault();
+end
+return profile;
+]]
+    local plan = K.Run(text, { rounds = 50, trialRounds = 50 })
+    local why = plan.checked.skipped.HandleDefault
+    assert(why ~= nil, 'not left as code')
+    assert(string.find(why, 'could not run', 1, true), why)
+    assert(#plan.rules == 0, 'its rules were kept')
+end }
 return tests

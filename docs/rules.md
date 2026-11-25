@@ -88,7 +88,8 @@ side by side, over 400 random game states each (spells, buffs, modes, HP/MP, tar
 what they wear, slot by slot (it takes a moment, a little each frame; the page says *Checking...*). A part of your
 code whose result differs stays code, with what differed. Your sets are your file's own; GoomSwap's own steps
 (`CheckDefault`, `CheckTH`...) are stand-ins, the same on both sides. If your file can't be run there, the page says
-so and Convert works without the check.
+so and Convert works without the check. A part of your code that stops with an error there in most rounds (it calls
+something the check can't stand in for) isn't counted as the same: it stays code, with that error.
 
 What converts:
 
@@ -103,7 +104,9 @@ What converts:
   reads which slots each set has). Otherwise it leaves one line where it was, `gcinclude.RulesAt('Midcast 1')`, and
   its rules go on right there: their tag says what comes next in your code, **before skill set** (`ByName(spell.Skill)`),
   **before named set** (the set named after the spell), **after line 12** (a line that can stop the handler
-  first). Your later code still wins those slots, as before.
+  first). Your later code still wins those slots, as before. If that line is later taken out of the file by hand,
+  its rules can't go on: GoomSwap says so in chat on load, and the Rules page tags them **not running** (Edit, More,
+  **Use a layer instead**).
 - Stays code: names built in code (`'Tank_' .. tank`), engine calls (`CheckBlockedAmmo`), pet action branches, math
   on counts, two `has` that must both hold. `gData.GetBuffCount` becomes GoomSwap's buff check, which also counts a
   buff that just landed.

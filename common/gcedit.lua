@@ -196,10 +196,8 @@ local ICONS_PER_FRAME = 8 -- texture uploads allowed per frame
 local iconBudget = ICONS_PER_FRAME
 local CHILD_BORDERS = ImGuiChildFlags_Borders or ImGuiChildFlags_Border or 1
 
-local function xy(a, b) -- ImGui vectors come back as two numbers or as a table, by Ashita version
-    if type(a) == 'table' then return a.x or a[1], a.y or a[2] end
-    return a, b
-end
+-- ImGui vectors come back as two numbers or as a table, by Ashita version: the editor's one reader (gceditwidgets)
+local xy = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip).Vec
 ctx.xy = xy
 
 -- Game data: icons, owned gear, worn gear.
@@ -2001,6 +1999,7 @@ local function body()
     editorState.ui.frame = (editorState.ui.frame or 0) + 1
     -- the slot hovered last frame (a card or its row in What goes on): both light up this frame
     editorState.ui.hoverShown, editorState.ui.hoverSlot = editorState.ui.hoverSlot, nil
+    editorState.ui.cardShown, editorState.ui.cardHover = editorState.ui.cardHover, nil -- the card itself, for its ...
     if editorState.history.revision ~= editorState.document.revision then
         editorState.history.entries, editorState.history.redo = {}, nil
         editorState.history.revision = editorState.document.revision

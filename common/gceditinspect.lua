@@ -389,7 +389,7 @@ local function draw_cell(set, slot)
             cardText.Fit(status, ctx.CELL_W - 16, text_w))
     end
     local menuHit = false
-    if lit and (imgui.SetCursorPos ~= nil) then -- hovered: '...' at the bottom right opens the slot's menu
+    if (editorState.ui.cardShown == slot) and (imgui.SetCursorPos ~= nil) then -- the card hovered: '...' opens its menu
         local bw = text_w('...') + 10
         imgui.SetCursorPos({ ctx.CELL_W - bw - 6, ctx.CELL_H - lh - 8 })
         imgui.PushStyleColor(ImGuiCol_Button, palette.btn)
@@ -400,7 +400,7 @@ local function draw_cell(set, slot)
     end
     imgui.EndChild()
     if focusBorder then imgui.PopStyleVar() end
-    if imgui.IsItemHovered() then editorState.ui.hoverSlot = slot end
+    if imgui.IsItemHovered() then editorState.ui.hoverSlot, editorState.ui.cardHover = slot, slot end
     if imgui.IsItemClicked(0) and not menuHit then
         editorState.selection.slot = slot
         editorState.selection.tab = 'gear'

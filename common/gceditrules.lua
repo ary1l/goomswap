@@ -47,10 +47,16 @@ return function(o)
         if spotCache.key ~= key then
             local t = text
             if (doc.convert ~= nil) and (setFile.Apply ~= nil) then t = setFile.Apply(doc.convert.text, doc.convert.splices) or text end
-            local ok, info = pcall(Conv.Spots, t)
-            spotCache = { key = key, info = ok and info or {} }
+            local ok, info, read = pcall(Conv.Spots, t)
+            spotCache = { key = key, info = ok and info or {}, read = ok and (read == true) }
         end
         return spotCache.info[tostring(at)]
+    end
+    -- A rule's spot whose gcinclude.RulesAt line is not in the job file (deleted by hand): the rule never goes on.
+    local function spot_missing(at)
+        if at == nil then return false end
+        local i = spot_info(at)
+        return (i == nil) and (spotCache.read == true)
     end
     local function spot_label(at, plan, text0)
         local i = spot_info(at, plan, text0)
@@ -128,53 +134,10 @@ return function(o)
     M.Serialize = rules_text
 
     -- == The list ==
-    -- == Looks: buttons by what they do, and labels on a rounded fill (as the editor's other pills) ==
-    local function vec(a, b)
-        if type(a) == 'table' then return a.x or a[1], a.y or a[2] end
-        if type(a) == 'number' then return a, b end
-        return nil, nil
-    end
-    local CLEAR = { 0, 0, 0, 0 }
-    -- kind: 'primary' (Save rule, Convert: the save blue), 'accent' (Edit, + Rule: blue text on the tab blue),
-    -- 'plain' (moves, cancel), 'danger' (take out: grey until hovered, then red).
-    local KINDS = {
-        primary = function() return palette.save, palette.saveHi, palette.saveHi, nil end,
-        accent = function() return palette.selBg, palette.save, palette.save, palette.blue end,
-        plain = function() return palette.btn, palette.btnHi, palette.btnHi, nil end,
-        danger = function() return palette.btn, palette.red, palette.redHi, nil end,
-        ghost = function() return CLEAR, palette.btnHi, palette.btnHi, palette.dim end,
-    }
-    local function button(label, kind, big, off, size)
-        local b, h, a, t = KINDS[kind or 'plain']()
-        local disabled = off and (imgui.BeginDisabled ~= nil)
-        if disabled then imgui.BeginDisabled() end
-        imgui.PushStyleColor(ImGuiCol_Button, b)
-        imgui.PushStyleColor(ImGuiCol_ButtonHovered, h)
-        imgui.PushStyleColor(ImGuiCol_ButtonActive, a)
-        if t ~= nil then imgui.PushStyleColor(ImGuiCol_Text, t) end
-        local hit
-        if size ~= nil then hit = imgui.Button(label, size)
-        elseif big then hit = imgui.Button(label)
-        else hit = imgui.SmallButton(label) end -- one of them, never two
-        imgui.PopStyleColor((t ~= nil) and 4 or 3)
-        if disabled then imgui.EndDisabled() end
-        return hit and not off
-    end
+    -- == Looks: buttons by what they do, and labels on a rounded fill: the editor's one copy (gceditwidgets) ==
+    local vec, button, pill = W.Vec, W.Button, W.Pill
     M.Button = button
-    -- text on a rounded fill; plain coloured text when this ImGui has no draw list
-    local PA, PB = { 0, 0 }, { 0, 0 }
-    local function pill(text, fg, bg)
-        local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil
-        if (type(dl) == 'userdata' or type(dl) == 'table') and (imgui.GetColorU32 ~= nil) then
-            local x, y = vec(imgui.GetCursorScreenPos())
-            local w, ht = vec(imgui.CalcTextSize(text))
-            if (x ~= nil) and (y ~= nil) and (w ~= nil) and (ht ~= nil) then
-                PA[1], PA[2], PB[1], PB[2] = x - 4, y - 1, x + w + 4, y + ht + 1
-                dl:AddRectFilled(PA, PB, imgui.GetColorU32(bg), 7)
-            end
-        end
-        imgui.TextColored(fg, text)
-    end
+    local PA, PB = { 0, 0 }, { 0, 0 } -- the outlines' corners (cards, the Reads box)
     local function chip(text, fg, bg)
         imgui.SameLine(0, 10)
         pill(text, fg, bg or palette.chipBg)
@@ -232,14 +195,15 @@ return function(o)
         return w
     end
     local function window_x() return (imgui.GetWindowPos ~= nil) and vec(imgui.GetWindowPos()) or nil end
+    -- Moved by the distance on screen, not to a window offset: inside the card's group ImGui adds the group's
+    -- offset to SameLine(x), so a computed SameLine would land right of the card's edge.
     local function to_right(c, labels)
-        local w, wx = width_of(labels), window_x()
-        imgui.SameLine()
+        local w = width_of(labels)
+        imgui.SameLine(0, 12)
         local cx = vec(imgui.GetCursorScreenPos())
-        if (c.x ~= nil) and (c.w ~= nil) and (wx ~= nil) and (cx ~= nil) and (c.x + c.w - 12 - w > cx) then
-            imgui.SameLine(c.x + c.w - 12 - w - wx)
-        else
-            imgui.SameLine(0, 12)
+        local target = (c.x ~= nil) and (c.w ~= nil) and (c.x + c.w - 12 - w) or nil
+        if (target ~= nil) and (cx ~= nil) and (target > cx) and (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil) then
+            imgui.SetCursorPosX(imgui.GetCursorPosX() + (target - cx))
         end
     end
     -- A sentence that wraps short of the buttons drawn beside it (on its first line, at the right).
@@ -303,7 +267,14 @@ return function(o)
     local function tags(rule)
         pill(R.PHASE_LABEL[rule.on] or tostring(rule.on), palette.blue, palette.selBg)
         if imgui.IsItemHovered() then set_tip('When it is checked: ' .. (R.PHASE_LONG[rule.on] or tostring(rule.on)) .. '.') end
-        if rule.at ~= nil then
+        if spot_missing(rule.at) then
+            chip('not running', palette.bad, palette.badBg)
+            if imgui.IsItemHovered() then
+                set_tip("This rule goes on at code spot '" .. tostring(rule.at) .. "', but your job file has no "
+                    .. "gcinclude.RulesAt('" .. tostring(rule.at) .. "') line any more, so it never goes on. Edit, More, "
+                    .. 'Use a layer instead (or put the line back in the file).')
+            end
+        elseif rule.at ~= nil then
             chip(spot_label(rule.at), palette.ok, palette.okBg)
             if imgui.IsItemHovered() then set_tip(spot_tip(rule.at)) end
         elseif rule.layer == 'top' then
@@ -837,7 +808,7 @@ return function(o)
             for _, h in ipairs((plan ~= nil) and plan.handlers or {}) do
                 for _, it in ipairs(h.items) do if it.ok then any = true end end
             end
-            if any then c.job = Check.Job(text) else c.ready = true end
+            if any then c.job = Check.Job(text, { engine = (o.ctx ~= nil) and o.ctx.gearEngine or nil }) else c.ready = true end
             editorState.ui.convertPlan = c
         end
         if (c.job ~= nil) and c.job.Step(o.checkBudget or 0.004) then
@@ -993,9 +964,9 @@ return function(o)
                 .. ' random game states for each part of your code.'
                 .. ((ck.freed > 0) and (' ' .. ck.freed .. ((ck.freed == 1) and ' piece goes' or ' pieces go')
                     .. ' with your other rules, with no line left in the code.') or '')
-                .. ((ck.skippedCount > 0) and (' ' .. ck.skippedCount .. ((ck.skippedCount == 1) and ' part' or ' parts')
-                    .. ' wore something else, so ' .. ((ck.skippedCount == 1) and 'it stays' or 'they stay')
-                    .. ' code (Stays code: why).') or ''), palette.ok)
+                .. ((ck.skippedCount > 0) and (' ' .. ck.skippedCount .. ((ck.skippedCount == 1) and ' part stays' or ' parts stay')
+                    .. ' code: the check found different gear there, or could not run it (Stays code: why).') or ''),
+                (ck.skippedCount > 0) and palette.warn or palette.ok)
         end
         if c.adoptable then
             paragraph('This file does not load GoomSwap (a plain LuAshitacast file). Adopt adds it: GoomSwap loads at '

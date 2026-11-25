@@ -1498,9 +1498,9 @@ local WEAR_CALL = { ['gFunc.EquipSet'] = true, ['gcinclude.EquipSet'] = true, ['
     ['gFunc.Equip'] = true }
 function C.Spots(text)
     local out = {}
-    if (text == nil) or not string.find(text, 'RulesAt', 1, true) then return out end
+    if (text == nil) or not string.find(text, 'RulesAt', 1, true) then return out, true end
     local chunk = C.Parse(text)
-    if chunk == nil then return out end
+    if chunk == nil then return out, false end -- not read: no spot can be called missing
     local scope = file_scope(chunk)
     local setSlots, funcs = set_table(chunk), {}
     for _, st in ipairs(chunk) do
@@ -1606,7 +1606,7 @@ function C.Spots(text)
             end
         end
     end
-    return out
+    return out, true
 end
 
 -- The splice taking a statement (s..e) out: its whole lines when nothing else is on them (a trailing ';' and

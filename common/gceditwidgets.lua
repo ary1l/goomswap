@@ -18,6 +18,13 @@ return function(imgui, palette, set_tip)
         return (vec(imgui.CalcTextSize(text)))
     end
     local width_of = width
+    -- An ImGui vector as two numbers (two numbers or a table, by Ashita version); nil, nil when it is neither. The
+    -- editor's one copy (gcedit's xy, the Rules page's vec).
+    function W.Vec(a, b)
+        if type(a) == 'table' then return a.x or a[1], a.y or a[2] end
+        if type(a) == 'number' then return a, b end
+        return nil, nil
+    end
     -- Wrapping flow for chips: SameLine while the next one fits the row.
     local function flow_start() return { used = 0, avail = (vec(imgui.GetContentRegionAvail())) } end
     local function flow_next(f, w)
@@ -53,23 +60,32 @@ return function(imgui, palette, set_tip)
     end
     local P1, P2 = { 0, 0 }, { 0, 0 }
     local function u32(c) return imgui.GetColorU32(c) end
-    -- buttons by what they do (as the Rules page's): accent (add, on), plain, danger (grey, red when hovered), ghost
+    -- Buttons by what they do, the editor's one set of looks: primary (Save rule, Convert: the save blue), accent
+    -- (add, on: blue text on the tab blue), plain, danger (grey until hovered, then red), ghost (text only).
+    -- big: a full-size Button, else a SmallButton; off: drawn greyed, never clicks; size: a Button of that size.
     local CLEAR = { 0, 0, 0, 0 }
-    local function kinds(kind)
-        if kind == 'accent' then return palette.selBg, palette.save, palette.save, palette.blue end
-        if kind == 'danger' then return palette.btn, palette.red, palette.redHi, nil end
-        if kind == 'ghost' then return CLEAR, palette.btnHi, palette.btnHi, palette.dim end
-        return palette.btn, palette.btnHi, palette.btnHi, nil
-    end
-    local function button(label, kind)
-        local b, h, a, t = kinds(kind)
-        imgui.PushStyleColor(ImGuiCol_Button, b or palette.btn)
-        imgui.PushStyleColor(ImGuiCol_ButtonHovered, h or palette.btnHi)
-        imgui.PushStyleColor(ImGuiCol_ButtonActive, a or palette.btnHi)
+    local KINDS = {
+        primary = function() return palette.save, palette.saveHi, palette.saveHi, nil end,
+        accent = function() return palette.selBg, palette.save, palette.save, palette.blue end,
+        plain = function() return palette.btn, palette.btnHi, palette.btnHi, nil end,
+        danger = function() return palette.btn, palette.red, palette.redHi, nil end,
+        ghost = function() return CLEAR, palette.btnHi, palette.btnHi, palette.dim end,
+    }
+    local function button(label, kind, big, off, size)
+        local b, h, a, t = (KINDS[kind or 'plain'] or KINDS.plain)()
+        local disabled = off and (imgui.BeginDisabled ~= nil)
+        if disabled then imgui.BeginDisabled() end
+        imgui.PushStyleColor(ImGuiCol_Button, b)
+        imgui.PushStyleColor(ImGuiCol_ButtonHovered, h)
+        imgui.PushStyleColor(ImGuiCol_ButtonActive, a)
         if t ~= nil then imgui.PushStyleColor(ImGuiCol_Text, t) end
-        local hit = imgui.SmallButton(label)
+        local hit
+        if size ~= nil then hit = imgui.Button(label, size)
+        elseif big then hit = imgui.Button(label)
+        else hit = imgui.SmallButton(label) end -- one of them, never two
         imgui.PopStyleColor((t ~= nil) and 4 or 3)
-        return hit
+        if disabled then imgui.EndDisabled() end
+        return hit and not off
     end
     W.Button = button
     -- a key as a key cap: its name on a rounded fill with an edge

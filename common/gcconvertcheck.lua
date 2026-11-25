@@ -39,8 +39,12 @@ local function source(seed)
     end
 end
 
--- One fake game state, and the engine stand-ins that read it.
-local function world(state, record)
+-- An engine value the check has no stand-in for: an empty list you can also call (false), so
+-- `gcinclude.BluMagDebuff:contains(name)` and `gcinclude.Something()` both run.
+local EMPTY_META = { __index = { contains = function() return false end }, __call = function() return false end }
+-- One fake game state, and the engine stand-ins that read it. engine: the loaded gcinclude, when there is one: its
+-- data (spell lists, settings) is read as it is, the same on both sides.
+local function world(state, record, engine)
     local gear = {}
     local W = { gear = gear, sets = {} }
     local function find(name)
@@ -68,8 +72,12 @@ local function world(state, record)
         return true
     end
     W.byname = byname
-    local gc = setmetatable({ settings = setmetatable({}, { __index = function() return nil end }) }, { __index = function(_, k)
-        return function() record('gcinclude.' .. k) return false end
+    local settings = ((engine ~= nil) and (type(engine.settings) == 'table')) and engine.settings or {}
+    local gc = setmetatable({ settings = settings }, { __index = function(_, k)
+        local v = (engine ~= nil) and rawget(engine, k) or nil
+        if type(v) == 'table' then return v end -- data: as the game has it
+        record('gcinclude.' .. k)
+        return setmetatable({}, EMPTY_META)
     end })
     gc.ByName = byname
     gc.FindSet = find
@@ -192,9 +200,10 @@ local function gear_text(g)
 end
 
 local PHASE = C.HANDLERS
--- One handler, original against converted, `rounds` random states. true; or false and what differed. tick: called
--- after each round (the editor's job yields there).
-function K.Same(text, plan, handler, rounds, seed, tick)
+-- One handler, original against converted, `rounds` random states. true; or false, what differed, and why ('gear':
+-- they wear different gear; 'error': the handler errors here in most rounds, so too little was compared to tell).
+-- tick: called after each round (the editor's job yields there).
+function K.Same(text, plan, handler, rounds, seed, tick, engine)
     local converted, err = F.Apply(text, plan.splices)
     if converted == nil then return false, 'the converted file could not be made: ' .. tostring(err) end
     local compiled, problems = R.Compile(plan.rules)
@@ -207,12 +216,13 @@ function K.Same(text, plan, handler, rounds, seed, tick)
     local lits, names = literals(text)
     local rnd = source(seed or #text)
     local none = function() end
+    local bothErr, lastErr = 0, nil -- rounds where both sides stopped with an error: nothing was compared after it
     for round = 1, rounds do
         local state = random_state(lits, rnd, names)
-        local WA = world(state, none)
+        local WA = world(state, none, engine)
         local profA = load(chunkA, WA)
         local okA, errA = pcall(profA[handler])
-        local WB = world(state, none)
+        local WB = world(state, none, engine)
         local profB = load(chunkB, WB)
         local ran = false
         if phase == 'Default' then
@@ -230,15 +240,20 @@ function K.Same(text, plan, handler, rounds, seed, tick)
         end
         if okA ~= okB then
             return false, handler .. ': ' .. (okA and 'the converted one' or 'yours') .. ' stops with an error ('
-                .. tostring(errA or errB) .. ')'
+                .. tostring(errA or errB) .. ')', 'gear'
         end
+        if not okA then bothErr, lastErr = bothErr + 1, errA end
         local a, b = gear_text(WA.gear), gear_text(WB.gear)
         if (a ~= b) or (WA.cancelled ~= WB.cancelled) then
             local what = (a ~= b) and ('yours wears ' .. a .. '; the rules wear ' .. b)
                 or ((WA.cancelled and 'yours cancels it' or 'the rules cancel it'))
-            return false, handler .. ' (' .. (state.action and state.action.Name or '') .. '): ' .. what
+            return false, handler .. ' (' .. (state.action and state.action.Name or '') .. '): ' .. what, 'gear'
         end
         if tick ~= nil then tick() end
+    end
+    if bothErr * 2 > rounds then
+        return false, handler .. ' stops with an error here in ' .. bothErr .. ' of ' .. rounds .. ' rounds ('
+            .. tostring(lastErr) .. ')', 'error'
     end
     return true
 end
@@ -247,7 +262,7 @@ local function count(t) local n = 0 for _ in pairs(t) do n = n + 1 end return n 
 -- The checked plan: runs moved to the rules' own place where the gear stays the same, then every handler checked;
 -- one that differs keeps its ifs as code. plan.checked = { rounds, handlers, freed, skipped = { [handler] = why } };
 -- plan.checked.unavailable = why, when the file can't be run here (the plan is then the unchecked one, as before).
--- o: { rounds = 400, trialRounds = 300, tick = fn }
+-- o: { rounds = 400, trialRounds = 300, tick = fn, engine = gcinclude }
 function K.Run(text, o)
     o = o or {}
     local rounds, trial = o.rounds or 400, o.trialRounds or 300
@@ -261,7 +276,7 @@ function K.Run(text, o)
                 for k in pairs(free) do f[k] = true end
                 f[run.line] = true
                 local tried = C.Plan(text, { free = f })
-                if K.Same(text, tried, run.handler, trial, run.line, o.tick) then free[run.line] = true end
+                if K.Same(text, tried, run.handler, trial, run.line, o.tick, o.engine) then free[run.line] = true end
             end
         end
         local plan = C.Plan(text, { free = free })
@@ -271,18 +286,21 @@ function K.Run(text, o)
             for _, it in ipairs(h.items) do if it.ok then any = true end end
             if any then
                 checked = checked + 1
-                local same, diff = K.Same(text, plan, h.name, rounds, #text + checked, o.tick)
-                if not same then -- its moved runs back in their code spots, then once more
+                local same, diff, kind = K.Same(text, plan, h.name, rounds, #text + checked, o.tick, o.engine)
+                if (not same) and (kind == 'gear') then -- its moved runs back in their code spots, then once more
                     local back = false
                     for _, run in ipairs(plan.runs) do
                         if (run.handler == h.name) and free[run.line] then free[run.line], back = nil, true end
                     end
                     if back then
                         plan = C.Plan(text, { free = free })
-                        same, diff = K.Same(text, plan, h.name, rounds, #text + checked, o.tick)
+                        same, diff, kind = K.Same(text, plan, h.name, rounds, #text + checked, o.tick, o.engine)
                     end
                 end
-                if not same then skip[h.name] = 'Convert\'s check found different gear: ' .. diff end
+                if not same then
+                    skip[h.name] = (kind == 'error') and ('Convert\'s check could not run this part of your file, so it '
+                        .. 'stays code: ' .. diff) or ('Convert\'s check found different gear: ' .. diff)
+                end
             end
         end
         if next(skip) ~= nil then plan = C.Plan(text, { free = free, skip = skip }) end
@@ -311,7 +329,7 @@ function K.Job(text, o)
         total = runs * (o.trialRounds or 300) + handlers * (o.rounds or 400)
     end
     local co = coroutine.create(function()
-        return K.Run(text, { rounds = o.rounds, trialRounds = o.trialRounds,
+        return K.Run(text, { rounds = o.rounds, trialRounds = o.trialRounds, engine = o.engine,
             tick = function() n = n + 1; coroutine.yield() end })
     end)
     function job.Step(seconds)

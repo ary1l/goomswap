@@ -487,17 +487,7 @@ end
 local function text_w(t)
     return (imgui.CalcTextSize ~= nil) and (tonumber((xy(imgui.CalcTextSize(t)))) or 0) or (#t * 7)
 end
-local function pill(text, fg, bg)
-    if canDraw() then
-        local x, y = xy(imgui.GetCursorScreenPos())
-        local w, h = xy(imgui.CalcTextSize(text))
-        if (x ~= nil) and (y ~= nil) and (w ~= nil) and (h ~= nil) then
-            PA[1], PA[2], PB[1], PB[2] = x - 5, y - 1, x + w + 5, y + h + 1
-            imgui.GetWindowDrawList():AddRectFilled(PA, PB, imgui.GetColorU32(bg), 7)
-        end
-    end
-    imgui.TextColored(fg, text)
-end
+local pill = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip).Pill -- the editor's one pill
 
 local function make_button(label) -- adds a set: blue, like the open tab
     imgui.PushStyleColor(ImGuiCol_Button, palette.selBg)
