@@ -367,28 +367,30 @@ function panels.SameLineIfFits(imgui, required)
     if width < required then imgui.NewLine() end
 end
 
-function panels.Tabs(imgui, colors, selected, entries)
+-- keep: tabs reached from inside another (Simple view's Related, Compare): stay selected though not listed.
+function panels.Tabs(imgui, colors, selected, entries, keep)
     local available = imgui.GetContentRegionAvail()
     local width = type(available) == 'number' and available or (available.x or available[1])
     local found = false
     for _, entry in ipairs(entries) do
         if entry[2] == selected then found = true end
     end
-    if not found then selected = entries[1][2] end
+    if not found and not (keep ~= nil and keep[selected]) then selected = entries[1][2] end
     local used = 0
     for _, entry in ipairs(entries) do
         local size = imgui.CalcTextSize(entry[1])
         local labelWidth = (type(size) == 'number' and size or (size.x or size[1])) + 18
         if used > 0 and used + labelWidth + 4 <= width then
-            imgui.SameLine(0, 4)
+            imgui.SameLine(0, 1) -- one segmented control
         else
             used = 0
         end
         local on = selected == entry[2]
-        imgui.PushStyleColor(ImGuiCol_Button, on and colors.selBg or colors.btn)
+        imgui.PushStyleColor(ImGuiCol_Button, on and colors.selBg or colors.chipBg or colors.btn)
+        imgui.PushStyleColor(ImGuiCol_ButtonHovered, on and colors.selBg or colors.btnHi)
         imgui.PushStyleColor(ImGuiCol_Text, on and colors.blue or colors.dim)
         if imgui.Button(entry[1] .. '###gcedit_tab_' .. entry[2]) then selected = entry[2] end
-        imgui.PopStyleColor(2)
+        imgui.PopStyleColor(3)
         used = used + labelWidth + 4
     end
     return selected

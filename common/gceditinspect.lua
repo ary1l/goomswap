@@ -891,6 +891,17 @@ local function draw_set(set)
         else
             imgui.NewLine()
         end
+        -- a slot meter under the strip: how much of the 16 this set fills
+        local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil
+        if (dl ~= nil) and (imgui.GetCursorScreenPos ~= nil) and (imgui.GetColorU32 ~= nil) then
+            local x, y = xy(imgui.GetCursorScreenPos())
+            local w = (imgui.GetContentRegionAvail ~= nil) and xy(imgui.GetContentRegionAvail()) or nil
+            if (x ~= nil) and (y ~= nil) and (w ~= nil) and (w > 20) then
+                dl:AddRectFilled({ x, y + 1 }, { x + w, y + 4 }, imgui.GetColorU32(palette.cell), 2)
+                dl:AddRectFilled({ x, y + 1 }, { x + w * math.min(filled, 16) / 16, y + 4 }, imgui.GetColorU32(palette.sel), 2)
+                imgui.Dummy({ w, 6 })
+            end
+        end
     end
 
     if imgui.BeginPopup('##rp_details') then

@@ -437,7 +437,8 @@ local COLOR_KEY = {
     { 'ok', 'Full 16 slots, or a ready partial overlay.' },
     { 'armor', 'All 12 armor/accessory slots filled; weapons may stay unchanged.' },
     { 'rp', 'Dot after a name: a piece in it needs RP (the line over the list names them).' },
-    { 'ok', 'Dot before a name: on you now (On you now, over the list).' },
+    { 'ok', 'A ring around the dot: on you now (On you now, over the list).' },
+    { 'edge', 'Grey: neither full nor missing anything (a partial set, empty, or code).' },
     { 'bad', 'Names gear you do not own (or deleted on Save).' },
     { 'warn', 'Unsaved edits.' },
 }
@@ -447,7 +448,7 @@ local function color_key()
     imgui.PushStyleColor(ImGuiCol_PopupBg, { 0.055, 0.06, 0.08, 1 })
     imgui.BeginTooltip()
     imgui.PushTextWrapPos(440)
-    imgui.TextUnformatted('Set colors:')
+    imgui.TextUnformatted('The dot before a set\'s name (a green ring around it: on you now):')
     for _, row in ipairs(COLOR_KEY) do imgui.TextColored(palette[row[1]], row[2]) end
     imgui.TextColored(palette.dim, 'Colors describe this definition, not inherited layers. Empty weapon slots are '
         .. 'never counted as gaps. Numbers after a name: (empty slots, not owned); hover one.')
@@ -544,6 +545,16 @@ local function dot(dx, col)
         imgui.GetWindowDrawList():AddCircleFilled({ x + dx, y + lh / 2 }, 3, imgui.GetColorU32(col), 12)
     end
 end
+local function ring(dx, col) -- an open circle around the row's dot: the set is on you now
+    if (imgui.GetWindowDrawList == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetColorU32 == nil) then
+        return
+    end
+    local x, y = ctx.xy(imgui.GetCursorScreenPos())
+    local lh = (imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or 14
+    if (x ~= nil) and (y ~= nil) then
+        imgui.GetWindowDrawList():AddCircle({ x + dx, y + lh / 2 }, 5.5, imgui.GetColorU32(col), 16, 1.5)
+    end
+end
 local SLOT_OF = { 'Main', 'Sub', 'Range', 'Ammo', 'Head', 'Body', 'Hands', 'Legs', 'Feet', 'Neck', 'Waist', 'Ear1',
     'Ear2', 'Ring1', 'Ring2', 'Back' } -- LAC's slot numbers (gcaction's records)
 -- On you now (over the list): the sets wearing something on you, the most slots first, from gcaction's record of
@@ -621,6 +632,15 @@ local function draw_rp_line()
     if imgui.IsItemClicked(0) then editorState.ui.needsRpOnly[1] = not editorState.ui.needsRpOnly[1] end
 end
 
+-- A filter as a chip: lit while on; a click turns it on or off.
+local function chip(label, value, col)
+    local on = value[1] == true
+    imgui.PushStyleColor(ImGuiCol_Button, on and palette.selBg or palette.chipBg)
+    imgui.PushStyleColor(ImGuiCol_ButtonHovered, on and palette.save or palette.btnHi)
+    imgui.PushStyleColor(ImGuiCol_Text, on and palette.blue or (col or palette.dim))
+    if imgui.SmallButton(label) then value[1] = not on end
+    imgui.PopStyleColor(3)
+end
 local function draw_sets()
     if ctx.rules ~= nil then ctx.rules.ListButton() end -- RULES: the job file's gcinclude.Rules
     if imgui.Button('+ New set##gcedit') then
@@ -640,9 +660,7 @@ local function draw_sets()
     if imgui.IsItemHovered() then set_tip('A set\'s name, or an item: every set that wears it (as edited).') end
     local unsaved = unsaved_set_count()
     if unsaved > 0 or editorState.ui.editedOnly[1] then
-        imgui.PushStyleColor(ImGuiCol_Text, palette.warn)
-        imgui.Checkbox('Unsaved sets (' .. unsaved .. ')##set_unsaved', editorState.ui.editedOnly)
-        imgui.PopStyleColor()
+        chip('Unsaved ' .. unsaved .. '##set_unsaved', editorState.ui.editedOnly, palette.warn)
         if imgui.IsItemHovered() then set_tip('Only sets with unsaved slot edits, new definitions, or deletions.') end
     end
     editorState.ui.unusedOnly = editorState.ui.unusedOnly or { false }
@@ -652,10 +670,8 @@ local function draw_sets()
         { 'Needs RP', editorState.ui.needsRpOnly },
         { 'Unused', editorState.ui.unusedOnly },
     }) do
-        if index > 1 then editorPanels.SameLineIfFits(imgui, 100) end
-        if filter[1] == 'Needs RP' then imgui.PushStyleColor(ImGuiCol_Text, palette.rp) end
-        imgui.Checkbox(filter[1] .. '##set_filter', filter[2])
-        if filter[1] == 'Needs RP' then imgui.PopStyleColor() end
+        if index > 1 then editorPanels.SameLineIfFits(imgui, 80) end
+        chip(filter[1] .. '##set_filter', filter[2], (filter[1] == 'Needs RP') and palette.rp or nil)
         if imgui.IsItemHovered() then
             local descriptions = {
                 Issues = 'Sets with empty slots, missing gear, or unfinished RP.',
@@ -672,7 +688,7 @@ local function draw_sets()
     local hiddenPref, jobNow = ctx.headings.pref('EditorHidden'), ctx.headings.job()
     if editorState.cache.anyHidden or ui.showHidden[1] then -- a heading is hidden on this job
         editorPanels.SameLineIfFits(imgui, 120)
-        imgui.Checkbox('Show hidden##set_hidden', ui.showHidden)
+        chip('Show hidden##set_hidden', ui.showHidden)
         if imgui.IsItemHovered() then set_tip('Headings you hid (right-click a heading) show again, marked hidden.') end
     end
     editorPanels.SameLineIfFits(imgui, 30)
@@ -867,10 +883,13 @@ local function draw_sets()
                     local status = set_status(set)
                     local col = set_color(set, status)
                     local nowSets = editorState.cache.nowSets
-                    if (nowSets ~= nil) and (nowSets.by[set.name] ~= nil) then dot(-7, palette.ok) end -- on you now
-                    if col ~= nil then imgui.PushStyleColor(ImGuiCol_Text, col) end
+                    -- its state as a dot before the name (the name stays plain text); a ring: on you now
+                    dot(-8, col or palette.edge)
+                    if (nowSets ~= nil) and (nowSets.by[set.name] ~= nil) then ring(-8, palette.ok) end
+                    local gone = editorState.document.deleted[set.name]
+                    if gone then imgui.PushStyleColor(ImGuiCol_Text, palette.bad) end
                     local picked = imgui.Selectable(set.rowLabel, on)
-                    if col ~= nil then imgui.PopStyleColor(1) end -- the name only: not its hover's text
+                    if gone then imgui.PopStyleColor(1) end
                     if picked then
                         editorState.cache.listSel, editorState.selection.back = set.name, nil
                         editorPreferences.Select(editorState, set.name)

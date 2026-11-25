@@ -2015,79 +2015,25 @@ local function body()
     pill(editorState.cache.head, palette.text, palette.chipBg)
     imgui.SameLine(0, 14)
     if draw_job_files() then return end
-    tag('v3.30', palette.dim)
-    imgui.SameLine()
-    if imgui.SmallButton('Settings##gcsettings') then editorState.ui.settingsOpen = { true } end
-    if imgui.IsItemHovered() then set_tip('GoomSwap settings: this character (char.lua) or every character.') end
-    imgui.SameLine()
-    ctx.rules.TopButton() -- the Rules page (and how many ifs Convert could take)
-    imgui.SameLine()
+    -- the left: who, which file, saved or not; the right: Rules, Settings, ... (view, density, theme, the file's
+    -- tools) and Save
     local simple = ctx.simple.On()
-    if imgui.SmallButton((simple and 'Simple view' or 'Full view') .. '##gcview') then
-        ctx.simple.Set(not simple)
-        save_preferences()
-        simple = not simple
-    end
-    if imgui.IsItemHovered() then
-        set_tip(simple and 'Simple: sets say what they are for, fewer buttons (the rest under ...). Click: Full view.'
-            or 'Full: every button and tab. Click: Simple view.')
-    end
-    imgui.SameLine()
-    if (not simple) and imgui.SmallButton(editorState.preferences.density .. '##density') then imgui.OpenPopup('##density_options') end
-    if imgui.BeginPopup('##density_options') then
-        imgui.TextUnformatted('Display density')
-        for _, name in ipairs({ 'Compact', 'Comfortable' }) do
-            if imgui.Button(name .. '##density_' .. name) then
-                editorState.preferences.density = name
-                editorState.preferences.dirty = true
-                save_preferences()
-                feedback('Display density: ' .. name .. '.')
-                imgui.CloseCurrentPopup()
-            end
-        end
-        imgui.Separator()
-        if editorPanels.Section(imgui, palette, 'Diagnostics##gcedit_diagnostics') then
-            if imgui.Button(profiler.enabled and 'Stop sampling' or 'Start fresh sample') then
-                profiler.enabled = not profiler.enabled
-                if profiler.enabled then profiler.Reset() end
-            end
-            imgui.TextUnformatted('Up to 600 samples per section. CPU time, not FPS.')
-            for _, name in ipairs({
-                'Render',
-                'Bag scan',
-                'Item tooltip',
-                'Action view rebuild',
-                'RP usage rebuild',
-                'Set stats build',
-            }) do
-                imgui.TextUnformatted(profiler.Report(name))
-            end
-        end
-        imgui.EndPopup()
-    end
-    if not simple then
-        imgui.SameLine()
-        theme_menu()
-    end
     local n = dirty_count()
-    imgui.SameLine(0, 14)
+    imgui.SameLine(0, 10)
     if n > 0 then
         imgui.PushStyleColor(ImGuiCol_Button, palette.warnBg)
         imgui.PushStyleColor(ImGuiCol_Text, palette.warn)
-        if imgui.SmallButton(string.format('%d unsaved change%s##gcedit_unsaved', n, (n == 1) and '' or 's')) then
-            show_unsaved_sets()
-        end
+        if imgui.SmallButton(string.format('%d unsaved##gcedit_unsaved', n)) then show_unsaved_sets() end
         imgui.PopStyleColor(2)
-        if imgui.IsItemHovered() then set_tip('Show the ' .. unsaved_set_count() .. ' sets with unsaved changes.') end
+        if imgui.IsItemHovered() then set_tip(n .. ' unsaved change' .. ((n == 1) and '' or 's') .. ': show the '
+            .. unsaved_set_count() .. ' sets with them.') end
     else
         pill('saved', palette.ok, palette.okBg)
     end
-    -- the file's actions at the right edge, apart from the view's (on a line of their own when they don't fit)
     local d = editorPanels.Density(editorState.preferences.density)
-    local need = simple and (text_w('...') + text_w(editorState.document.inactive and 'Save file' or 'Save + reload')
-            + 4 * d.padding[1] + d.spacing[1])
-        or (text_w('Backups') + text_w('Unused gear') + text_w('Rescan bags') + text_w('Reload file')
-        + text_w(editorState.document.inactive and 'Save file' or 'Save + reload') + 10 * d.padding[1] + 4 * d.spacing[1])
+    local saveLabel = editorState.document.inactive and 'Save file' or 'Save + reload'
+    local need = text_w(ctx.rules.TopLabel()) + text_w('Settings') + text_w('...') + text_w(saveLabel)
+        + 8 * d.padding[1] + 3 * d.spacing[1]
     imgui.SameLine()
     local avail = imgui.GetContentRegionAvail()
     avail = (type(avail) == 'number') and avail or (avail.x or avail[1])
@@ -2096,47 +2042,61 @@ local function body()
     elseif (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil) then
         imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - need)
     end
-    -- Simple view: the file's tools under ... (each opens what its Full view button does)
+    ctx.rules.TopButton() -- the Rules page (and how many ifs Convert could take)
+    imgui.SameLine()
+    if imgui.Button('Settings##gcsettings') then editorState.ui.settingsOpen = { true } end
+    if imgui.IsItemHovered() then set_tip('GoomSwap settings: for you on every job, on this job, or for everyone.') end
+    imgui.SameLine()
     local tools = { backups = false, cleanup = false, rescan = false, reload = false }
-    if simple then
-        if imgui.Button('...##gcedit_more') then imgui.OpenPopup('##gcedit_tools') end
-        if imgui.IsItemHovered() then set_tip('Backups, Unused gear, Rescan bags, Reload file, display density, theme.') end
-        if imgui.BeginPopup('##gcedit_tools') then
-            tools.backups = imgui.Selectable('Backups##gct_b', false)
-            tools.cleanup = imgui.Selectable('Unused gear##gct_u', false)
-            tools.rescan = imgui.Selectable('Rescan bags##gct_r', false)
-            tools.reload = imgui.Selectable('Reload file##gct_l', false)
-            imgui.Separator()
-            for _, name in ipairs({ 'Compact', 'Comfortable' }) do
-                if imgui.Selectable(name .. ((editorState.preferences.density == name) and ' (now)' or '') .. '##gct_d' .. name, false) then
-                    editorState.preferences.density = name
-                    editorState.preferences.dirty = true
-                    save_preferences()
-                end
+    if imgui.Button('...##gcedit_more') then imgui.OpenPopup('##gcedit_tools') end
+    if imgui.IsItemHovered() then set_tip('View, density, theme; Backups, Unused gear, Rescan bags, Reload file.') end
+    if imgui.BeginPopup('##gcedit_tools') then
+        imgui.TextColored(palette.dim, 'View')
+        if imgui.Selectable('Simple view' .. (simple and '  (on)' or '') .. '##gct_simple', simple) then
+            ctx.simple.Set(true)
+            save_preferences()
+        end
+        if imgui.IsItemHovered() then set_tip('Sets say what they are for; fewer tabs.') end
+        if imgui.Selectable('Full view' .. ((not simple) and '  (on)' or '') .. '##gct_full', not simple) then
+            ctx.simple.Set(false)
+            save_preferences()
+        end
+        if imgui.IsItemHovered() then set_tip('Every tab: Result, Gear, Summary, Compare, Related, To fill.') end
+        for _, name in ipairs({ 'Compact', 'Comfortable' }) do
+            local on = (editorState.preferences.density == name)
+            if imgui.Selectable(name .. (on and '  (on)' or '') .. '##gct_d' .. name, on) then
+                editorState.preferences.density = name
+                editorState.preferences.dirty = true
+                save_preferences()
             end
-            imgui.Separator()
-            theme_menu()
-            imgui.EndPopup()
         end
-    else
-        tools.backups = imgui.Button('Backups##gcedit')
+        theme_menu()
+        imgui.Separator()
+        imgui.TextColored(palette.dim, 'This file')
+        tools.backups = imgui.Selectable('Backups##gct_b', false)
+        if imgui.IsItemHovered() then set_tip('Every Save keeps a dated copy of the file: see what each changed, and put one back.') end
+        tools.cleanup = imgui.Selectable('Unused gear##gct_u', false)
         if imgui.IsItemHovered() then
-            set_tip('Every Save keeps a dated copy of the file: see what each changed, and put one back.')
+            set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap names. Read only.')
         end
-        imgui.SameLine()
-        tools.cleanup = imgui.Button('Unused gear##gcedit')
-        if imgui.IsItemHovered() then
-            set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap names: '
-                .. 'to store or move off a wardrobe. Read only.')
-        end
-        imgui.SameLine()
-        tools.rescan = imgui.Button('Rescan bags##gcedit')
+        tools.rescan = imgui.Selectable('Rescan bags##gct_r', false)
         if imgui.IsItemHovered() then set_tip('Read your bags again (after moving gear). Keeps your unsaved changes.') end
-        imgui.SameLine()
-        tools.reload = imgui.Button('Reload file##gcedit')
-        if imgui.IsItemHovered() then
-            set_tip('Read the file and your bags again (after editing it in a text editor or moving gear).')
+        tools.reload = imgui.Selectable('Reload file##gct_l', false)
+        if imgui.IsItemHovered() then set_tip('Read the file and your bags again.') end
+        imgui.Separator()
+        if editorPanels.Section(imgui, palette, 'Diagnostics##gcedit_diagnostics') then
+            if imgui.Button(profiler.enabled and 'Stop sampling' or 'Start fresh sample') then
+                profiler.enabled = not profiler.enabled
+                if profiler.enabled then profiler.Reset() end
+            end
+            imgui.TextUnformatted('Up to 600 samples per section. CPU time, not FPS.')
+            for _, name in ipairs({ 'Render', 'Bag scan', 'Item tooltip', 'Action view rebuild', 'RP usage rebuild',
+                'Set stats build' }) do
+                imgui.TextUnformatted(profiler.Report(name))
+            end
         end
+        imgui.TextColored(palette.dim, 'GoomSwap v3.30')
+        imgui.EndPopup()
     end
     if tools.backups then editorState.ui.backups = { open = true } end
     ctx.draw_backups()
@@ -2307,7 +2267,13 @@ local function body()
         tabs[#tabs + 1] = { 'Related', 'over' }
         tabs[#tabs + 1] = { nf > 0 and ('To fill (' .. nf .. ')') or 'To fill', 'fill' }
     end
-    editorState.selection.tab = editorPanels.Tabs(imgui, palette, editorState.selection.tab, tabs)
+    editorState.selection.tab = editorPanels.Tabs(imgui, palette, editorState.selection.tab, tabs,
+        ctx.simple.On() and { over = true, compare = true } or nil)
+    if ctx.simple.On() and ((editorState.selection.tab == 'over') or (editorState.selection.tab == 'compare')) then
+        if imgui.SmallButton('< back##simple_back') then editorState.selection.tab = 'action' end -- to What goes on
+        imgui.SameLine()
+        imgui.TextColored(palette.blue, (editorState.selection.tab == 'over') and 'Related' or 'Compare')
+    end
     imgui.Separator()
     if editorState.selection.tab == 'compare' then
         if set then

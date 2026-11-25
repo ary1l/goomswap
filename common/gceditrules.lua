@@ -303,12 +303,16 @@ return function(o)
         end
         if imgui.IsItemHovered() then set_tip(rules_tip(n, k)) end
     end
+    function M.TopLabel()
+        local n, k = summary()
+        return 'Rules' .. ((n > 0) and (' ' .. n) or '') .. ((k > 0) and ('  +' .. k .. ' to convert') or '')
+    end
     -- The Rules button in the top bar: opens the page, or (open already) goes back to the set.
     function M.TopButton()
         local n, k = summary()
         local sel = editorState.selection.rules == true
-        local label = 'Rules' .. ((n > 0) and (' (' .. n .. ')') or '') .. ((k > 0) and (' - ' .. k .. ' to convert') or '')
-        if button(label .. '##gcedit_rules_top', sel and 'primary' or 'accent') then
+        local label = M.TopLabel()
+        if button(label .. '##gcedit_rules_top', sel and 'primary' or 'accent', true) then
             editorState.selection.rules = not sel
         end
         if imgui.IsItemHovered() then set_tip(rules_tip(n, k) .. (sel and '\n\nClick: back to the set.' or '')) end
