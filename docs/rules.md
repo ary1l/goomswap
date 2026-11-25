@@ -83,7 +83,7 @@ stay code. **Convert N ifs into rules** stages them for Save (a backup first; **
   skill); nested `if`s join their parent's conditions.
 - Order is kept. The last run of `if`s in a handler goes where rules go by themselves (`HandleDefault`: at
   `gcinclude.CheckDefault()`); any other run leaves one line where it was, `gcinclude.RulesAt('Midcast 1')`, and its
-  rules go on right there (the page marks them **at Midcast 1**).
+  rules go on right there (the page marks them **code spot 1**; hover it for what that means).
 - Stays code: names built in code (`'Tank_' .. tank`), engine calls (`CheckBlockedAmmo`), pet action branches, math
   on counts, two `has` that must both hold. `gData.GetBuffCount` becomes GoomSwap's buff check, which also counts a
   buff that just landed.

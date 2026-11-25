@@ -17,10 +17,21 @@ return function(o)
         'sw', 'rw', 'ammoset' }
     local TOGGLE_NAMES = { 'dt', 'mdt', 'kite', 'th', 'sir', 'proc', 'burst', 'aminon', 'death', 'songlock',
         'forcestring' }
-    local TOP_NOTE = 'Over GoomSwap\'s own layers (weapons, TH, Hoxne, buff sets, obi, SIR). Still under /lock, the '
-        .. 'TP and Aftermath holds, Incapacitated, Sleeping and Doomed, SmartSwap\'s weapon keep and Dispelga\'s Daybreak.'
-    local JOB_NOTE = 'Where your job file\'s own code goes: GoomSwap\'s layers (weapons, TH, Hoxne, buff sets, obi, '
-        .. 'SIR...) still go on over it.'
+    local TOP_NOTE = 'Goes on last, over everything GoomSwap adds by itself (weapon mode, TH, Hoxne, buff sets, obi, '
+        .. 'SIR). Only these still win over it: /lock, the TP and Aftermath weapon holds, the Incapacitated, Sleeping and '
+        .. 'Doomed sets, SmartSwap keeping your weapons, and Daybreak for Dispelga.'
+    local JOB_NOTE = 'Goes on right after your job file\'s own gear for this moment (as if it were one more line of it). '
+        .. 'What GoomSwap adds by itself (weapon mode, TH, Hoxne, buff sets, obi, SIR) still goes on after it and wins '
+        .. 'the slots both use.'
+    -- 'Midcast 2' -> 'code spot 2': where Convert left gcinclude.RulesAt('Midcast 2')
+    local function spot_label(at) return 'code spot ' .. (string.match(tostring(at), '(%d+)$') or tostring(at)) end
+    local function spot_tip(at)
+        return 'This rule goes on at a fixed point: where its code used to be in your job file. Convert left one line '
+            .. "there, gcinclude.RulesAt('" .. tostring(at) .. "'), which puts on every rule marked " .. spot_label(at)
+            .. ', in the order listed. So the order of your gear stays as it was: what your code puts on after that '
+            .. "point (a set named after the spell, say) still wins over this rule's gear.\n\n"
+            .. 'A rule without a code spot goes on after all of your job file\'s own code (job layer).'
+    end
 
     local function trim(s) return (string.match(s or '', '^%s*(.-)%s*$')) end
     local function copy(v)
@@ -226,11 +237,8 @@ return function(o)
         imgui.SameLine(0, 10)
         imgui.TextColored(palette.blue, R.PHASE_LABEL[rule.on] or tostring(rule.on))
         if rule.at ~= nil then
-            chip('at ' .. rule.at, palette.blue, palette.selBg)
-            if imgui.IsItemHovered() then
-                set_tip('Goes on at gcinclude.RulesAt(\'' .. rule.at .. '\') in your job file\'s code: Convert left that line '
-                    .. 'where the if was, so this goes on at the same point as before.')
-            end
+            chip(spot_label(rule.at), palette.blue, palette.selBg)
+            if imgui.IsItemHovered() then set_tip(spot_tip(rule.at)) end
         elseif rule.layer == 'top' then
             chip('over everything', palette.warn, palette.warnBg)
             if imgui.IsItemHovered() then set_tip(TOP_NOTE) end
@@ -607,7 +615,8 @@ return function(o)
         if (e.member == nil) and (e.rule.at ~= nil) and not e.unspot then
             imgui.TextColored(palette.dim, 'Where')
             imgui.SameLine(70)
-            imgui.TextUnformatted('at ' .. e.rule.at .. ' in the job file\'s code')
+            imgui.TextUnformatted(spot_label(e.rule.at) .. ': where its code was in your job file')
+            if imgui.IsItemHovered() then set_tip(spot_tip(e.rule.at)) end
             imgui.SameLine()
             if imgui.SmallButton('Use a layer instead##rb_unspot') then e.unspot = true end
             if imgui.IsItemHovered() then
@@ -777,8 +786,9 @@ return function(o)
                     if it.ok then
                         for _, r in ipairs(it.rules) do imgui.TextUnformatted('-> ' .. R.Say(r)) end
                         if it.spot ~= nil then
-                            imgui.TextColored(palette.dim, '   (these go on at ' .. it.spot .. ': the code keeps one line, '
-                                .. "gcinclude.RulesAt('" .. it.spot .. "'), where this was)")
+                            imgui.TextColored(palette.dim, '   (' .. spot_label(it.spot) .. ': these go on where this code '
+                                .. 'was, so the order stays the same)')
+                            if imgui.IsItemHovered() then set_tip(spot_tip(it.spot)) end
                         end
                     elseif it.standard then
                         imgui.TextColored(palette.dim, 'stays: ' .. tostring(it.why))
