@@ -2136,7 +2136,7 @@ function gcinclude.Help()
             ', ')) or '')
             .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
         'hud    : /gchud [on|off|debug] (the other boxes, dropped under the bar)',
-        'checks : /checksets, /gcperf (timings in chat every 10s)',
+        'checks : /checksets [all], /gcperf (timings in chat every 10s)',
         'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
         'holds  : /capacity /jubilee /dynamisrp /abyproc [on|off]',
         'items  : /gce <item> | cancel, /warpring /mea /holla /dem',
@@ -2381,7 +2381,7 @@ function gcinclude.ItemSide(name)
     return sideCache[key] or nil
 end
 
-function gcinclude.CheckSets()
+function gcinclude.CheckSets(all) -- all: every line, not the first 8 of each kind
     if (gProfile == nil) or (type(gProfile.Sets) ~= 'table') then return end
     local empty = T{}
     local unknown = T{}
@@ -2463,7 +2463,8 @@ function gcinclude.CheckSets()
     -- the same sets against your bags: not owned, one copy worn twice, other augments, wrong bag (common/gcbuild.lua)
     local ok, build = pcall(gFunc.LoadFile, 'common\\gcbuild.lua')
     if ok and (type(build) == 'table') and (build.CheckSets ~= nil) then
-        local okc, e = pcall(build.CheckSets, gProfile.Sets, gcinclude.WeaponModes, gcinclude.Say, gcinclude.Err)
+        local okc, e = pcall(build.CheckSets, gProfile.Sets, gcinclude.WeaponModes, gcinclude.Say, gcinclude.Err,
+            all and 1000 or nil)
         if not okc then gcinclude.Err('checksets: the bag check failed: ' .. tostring(e)) end
     end
 end

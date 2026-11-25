@@ -588,7 +588,7 @@ function gcbuild.CheckSets(sets, modes, say, err, most)
     local function lines(kind, label, text)
         for i, e in ipairs(res[kind]) do
             if (i > most) then
-                say('... and ' .. (#res[kind] - most) .. ' more ' .. label .. ' (/gcbuild marks every line)')
+                say('... and ' .. (#res[kind] - most) .. ' more ' .. label .. ' (/checksets all lists them; /gcedit: the Missing filter)')
                 break
             end
             local where = table.concat(e.where, ', ', 1,

@@ -39,7 +39,7 @@
 | `/gcgear [on\|off]` | Worn-gear grid: icons, ammo, encumbrance, locks, holds, RP, missed swaps; right-click a slot: edit its set; ctrl+click: lock, alt+click: take off, shift+click: pick gear ([gear grid](bar.md#gear-grid-gcgear)) |
 | `/gcgear scale <0.5-3>` `alpha <0.2-1>` `bg [on\|off]` `reset` | Its size, icon opacity, panel, first spot; saved per character |
 | `/gcperf` | Timings in chat every 10s: idle/engaged handler, bar, gear grid, engine tick; `/gcperf off` stops |
-| `/checksets` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2); gear you don't own, wrong bag, other augments |
+| `/checksets [all]` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2); gear you don't own, wrong bag, other augments |
 | `/gcbuild [JOB]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua`; on your job it opens in `/gcedit` to fill and save as `<JOB>.lua` ([/gcbuild](gcbuild.md)) |
 | `/gcimport <file> [JOB]` | A Windower GearSwap job file's sets (Mote's names mapped: `sets.engaged.Acc` -> `Tp_Acc`) as `<JOB>.proposed.lua`, the job's example around them; on that job it opens in `/gcedit` to save as `<JOB>.lua` ([Rules](rules.md) for its logic) |
 | `/gcedit [set]` | Set editor window: sets, slots with icons, gear you own; Save writes `<JOB>.lua` and reloads ([/gcedit](gcedit.md)) |

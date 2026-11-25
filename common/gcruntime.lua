@@ -525,7 +525,7 @@ do
             elseif args[1] == 'gcperf' then
                 gcinclude.PerfCommand(args[2] and string.lower(args[2]))
             elseif args[1] == 'checksets' then
-                gcinclude.CheckSets()
+                gcinclude.CheckSets(string.lower(tostring(args[2] or '')) == 'all')
             elseif args[1] == 'kite' then
                 gcinclude.FlipToggle('Kite', args[2])
                 toggle = 'Kite Set'
