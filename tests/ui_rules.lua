@@ -51,7 +51,7 @@ end
 return {
     { 'empty page, list row, builder, save a rule', function()
         M.ListButton(); M.Draw()
-        clicks['+ Rule##rules_add'] = true
+        clicks['+ New rule##rules_add'] = true
         M.Draw()
         local e = state.ui.ruleEdit
         eq(e ~= nil, true, 'builder open')
@@ -81,10 +81,16 @@ return {
         local v = staged.Rules.value
         eq(v[1].first[1].when.skill[2], 'Divine Magic'); eq(v[1].first[1].on, nil, 'a choice has no phase')
         eq(v[1].on, 'Midcast')
-        clicks['x##rule_del_2'] = true
+        clicks['Off##rule_off_2'] = true
+        M.Draw()
+        eq(staged.Rules.value[2].off, true, 'off')
+        state.ui.rulesView = 'Precast'
+        M.Draw()
+        state.ui.rulesView = nil
+        clicks['Delete##rule_del_2'] = true
         M.Draw()
         eq(#staged.Rules.value, 1)
-        clicks['x##rule_delg_1'] = true
+        clicks['Delete##rule_delg_1'] = true
         M.Draw()
         eq(staged.Rules.remove, true, 'none left: the line goes')
     end },
@@ -100,7 +106,7 @@ profile.HandleDefault = function()
 end
 return profile;
 ]]
-        state.ui.codeOpen = { true }
+        state.ui.rulesView = 'code'
         M.Draw()
         clicks['Convert 1 into rules##conv_go'] = true
         M.Draw()
@@ -111,6 +117,9 @@ return profile;
         M.Draw()
         eq(state.document.convert, nil, 'undone')
         eq(staged.Rules.remove, true, 'rules back to none')
+        state.ui.rulesView = 'stays'
+        M.Draw()
+        state.ui.rulesView = nil
     end },
     { 'settings widgets draw', function()
         local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, function() end)

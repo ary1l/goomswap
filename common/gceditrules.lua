@@ -164,109 +164,163 @@ return function(o)
         end
         return string.sub(text, 1, lo) .. '...'
     end
-    local function row_buttons(list, i, group)
-        local id = (group ~= nil) and (tostring(group) .. '_' .. i) or tostring(i)
-        local items = (group ~= nil) and list[group].first or list
-        imgui.SameLine(0, 8)
-        if button('Edit##rule_edit_' .. id, 'accent') then
-            M.Edit(group or i, (group ~= nil) and i or nil)
-        end
-        imgui.SameLine(0, 3)
-        if button('Up##rule_up_' .. id, 'plain', false, i <= 1) then
-            local out = copy(list)
-            local arr = (group ~= nil) and out[group].first or out
-            arr[i], arr[i - 1] = arr[i - 1], arr[i]
-            M.Stage(out)
-        end
-        if imgui.IsItemHovered() then set_tip('Earlier: a later rule wins the slots both wear.') end
-        imgui.SameLine(0, 3)
-        if button('Down##rule_down_' .. id, 'plain', false, i >= #items) then
-            local out = copy(list)
-            local arr = (group ~= nil) and out[group].first or out
-            arr[i], arr[i + 1] = arr[i + 1], arr[i]
-            M.Stage(out)
-        end
-        imgui.SameLine(0, 3)
-        if button('x##rule_del_' .. id, 'danger') then
-            local out = copy(list)
-            if group ~= nil then
-                table.remove(out[group].first, i)
-                if #out[group].first == 0 then table.remove(out, group) end
-            else
-                table.remove(out, i)
-            end
-            M.Stage(out)
-            editorState.ui.ruleEdit = nil
-            feedback('Rule taken out: written by Save.')
-        end
-        if imgui.IsItemHovered() then set_tip('Take it out (Undo: Revert the job file, or put it back).') end
+    -- A card: an outline from where it starts to the pane's right edge, under what was drawn since `top`.
+    local function card_start()
+        local x, y = vec(imgui.GetCursorScreenPos())
+        local w = xw(imgui.GetContentRegionAvail())
+        imgui.BeginGroup()
+        imgui.Dummy({ 1, 2 })
+        imgui.Indent(8)
+        return { x = x, y = y, w = w }
     end
-
-    -- A rule: on top its tick, number, buttons, phase and layer; under it what it does, as a sentence that wraps to
-    -- the pane (so nothing hides past its edge).
-    local function sentence(text, col)
-        imgui.Indent(30)
-        imgui.PushTextWrapPos(0)
+    local function card_end(c, col)
+        imgui.Unindent(8)
+        imgui.Dummy({ 1, 2 })
+        imgui.EndGroup()
+        local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil
+        if (dl == nil) or (type(dl) == 'boolean') or (imgui.GetItemRectMax == nil) or (imgui.GetColorU32 == nil)
+            or (c.x == nil) or (c.y == nil) or (c.w == nil) then return end
+        local _, y2 = vec(imgui.GetItemRectMax())
+        if y2 == nil then return end
+        PA[1], PA[2], PB[1], PB[2] = c.x, c.y, c.x + c.w - 2, y2
+        dl:AddRect(PA, PB, imgui.GetColorU32(col or palette.edge), 5, 0, 1)
+    end
+    -- Quiet text buttons, pushed to the card's right edge when they fit there.
+    local function pad()
+        local st = (imgui.GetStyle ~= nil) and imgui.GetStyle() or nil
+        local p = (type(st) == 'table' or type(st) == 'userdata') and st.FramePadding or nil
+        local x = (type(p) == 'table' or type(p) == 'userdata') and (p.x or p[1]) or nil
+        return tonumber(x) or 4
+    end
+    local function width_of(labels)
+        local w, p = 0, pad()
+        for _, l in ipairs(labels) do w = w + (xw(imgui.CalcTextSize(l)) or 0) + 2 * p + 4 end
+        return w
+    end
+    local function window_x() return (imgui.GetWindowPos ~= nil) and vec(imgui.GetWindowPos()) or nil end
+    local function to_right(c, labels)
+        local w, wx = width_of(labels), window_x()
+        imgui.SameLine()
+        local cx = vec(imgui.GetCursorScreenPos())
+        if (c.x ~= nil) and (c.w ~= nil) and (wx ~= nil) and (cx ~= nil) and (c.x + c.w - 12 - w > cx) then
+            imgui.SameLine(c.x + c.w - 12 - w - wx)
+        else
+            imgui.SameLine(0, 12)
+        end
+    end
+    -- A sentence that wraps short of the buttons drawn beside it (on its first line, at the right).
+    local function sentence_beside(c, text, col, labels)
+        local wx = window_x()
+        local wrap = 0
+        if (c.x ~= nil) and (c.w ~= nil) and (wx ~= nil) then wrap = math.max(80, c.x - wx + c.w - 24 - width_of(labels)) end
+        imgui.PushTextWrapPos(wrap)
         if col ~= nil then imgui.TextColored(col, text) else imgui.TextUnformatted(text) end
         imgui.PopTextWrapPos()
-        imgui.Unindent(30)
     end
-    local function draw_rule_row(list, i)
-        local rule = list[i]
-        if type(rule) ~= 'table' then return end
-        local on = { not rule.off }
-        if imgui.Checkbox('##rule_on_' .. i, on) then
-            local out = copy(list)
-            out[i].off = (not on[1]) or nil
-            M.Stage(out)
-        end
-        if imgui.IsItemHovered() then set_tip(rule.off and 'Off: kept, not used. Tick to use it.' or 'On. Untick to keep it without using it.') end
-        imgui.SameLine()
-        imgui.TextColored(palette.dim, i .. '.')
-        if type(rule.first) ~= 'table' then
-            row_buttons(list, i)
+    local function move(list, i, group, by)
+        local out = copy(list)
+        local arr = (group ~= nil) and out[group].first or out
+        arr[i], arr[i + by] = arr[i + by], arr[i]
+        M.Stage(out)
+    end
+    local function take_out(list, i, group)
+        local out = copy(list)
+        if group ~= nil then
+            table.remove(out[group].first, i)
+            if #out[group].first == 0 then table.remove(out, group) end
         else
-            imgui.SameLine(0, 8)
-            if button('x##rule_delg_' .. i, 'danger') then
-                local out = copy(list)
-                table.remove(out, i)
-                M.Stage(out)
-            end
-            if imgui.IsItemHovered() then set_tip('Take out the whole group.') end
+            table.remove(out, i)
         end
-        imgui.SameLine(0, 10)
-        imgui.TextColored(palette.blue, R.PHASE_LABEL[rule.on] or tostring(rule.on))
+        M.Stage(out)
+        editorState.ui.ruleEdit = nil
+        feedback('Rule taken out: written by Save.')
+    end
+    local function set_off(list, i, off)
+        local out = copy(list)
+        out[i].off = off or nil
+        M.Stage(out)
+    end
+    -- Edit, Up, Down (and Off/On, Delete for a whole rule), as ghost buttons in one row.
+    local function row_buttons(c, list, i, group)
+        local id = (group ~= nil) and (tostring(group) .. '_' .. i) or tostring(i)
+        local items = (group ~= nil) and list[group].first or list
+        local whole = list[group or i]
+        local labels = { 'Edit', 'Up', 'Down', 'Delete' }
+        if group == nil then labels[#labels + 1] = whole.off and 'On' or 'Off' end
+        to_right(c, labels)
+        if button('Edit##rule_edit_' .. id, 'ghost') then M.Edit(group or i, (group ~= nil) and i or nil) end
+        imgui.SameLine(0, 4)
+        if button('Up##rule_up_' .. id, 'ghost', false, i <= 1) then move(list, i, group, -1) end
+        if imgui.IsItemHovered() then set_tip('Earlier: a later rule wins the slots both wear.') end
+        imgui.SameLine(0, 4)
+        if button('Down##rule_down_' .. id, 'ghost', false, i >= #items) then move(list, i, group, 1) end
+        if imgui.IsItemHovered() then set_tip('Later: a later rule wins the slots both wear.') end
+        if group == nil then
+            imgui.SameLine(0, 4)
+            if button((whole.off and 'On' or 'Off') .. '##rule_off_' .. id, 'ghost') then set_off(list, i, not whole.off) end
+            if imgui.IsItemHovered() then
+                set_tip(whole.off and 'Off: kept, not used. On: use it again.' or 'Keep it without using it.')
+            end
+        end
+        imgui.SameLine(0, 4)
+        if button('Delete##rule_del_' .. id, 'danger') then take_out(list, i, group) end
+        if imgui.IsItemHovered() then set_tip('Take it out (Revert the job file to get it back before Save).') end
+    end
+    local function tags(rule)
+        pill(R.PHASE_LABEL[rule.on] or tostring(rule.on), palette.blue, palette.selBg)
+        if imgui.IsItemHovered() then set_tip('When it is checked: ' .. (R.PHASE_LONG[rule.on] or tostring(rule.on)) .. '.') end
         if rule.at ~= nil then
-            chip(spot_label(rule.at), palette.blue, palette.selBg)
+            chip(spot_label(rule.at), palette.ok, palette.okBg)
             if imgui.IsItemHovered() then set_tip(spot_tip(rule.at)) end
         elseif rule.layer == 'top' then
             chip('over everything', palette.warn, palette.warnBg)
             if imgui.IsItemHovered() then set_tip(TOP_NOTE) end
-        else
-            chip('job layer', palette.dim, palette.chipBg)
-            if imgui.IsItemHovered() then set_tip(JOB_NOTE) end
         end
-        if rule.off then
+        if rule.stop then chip('cancels it', palette.bad, palette.chipBg) end
+        if rule.off then chip('off', palette.dim, palette.chipBg) end
+        if (rule.note or '') ~= '' then
             imgui.SameLine(0, 10)
-            imgui.TextColored(palette.dim, '(off)')
+            imgui.TextColored(palette.dim, short(rule.note, 40))
+            if imgui.IsItemHovered() then set_tip(rule.note) end
         end
+    end
+    local function sentence(text, col)
+        imgui.PushTextWrapPos(0)
+        if col ~= nil then imgui.TextColored(col, text) else imgui.TextUnformatted(text) end
+        imgui.PopTextWrapPos()
+    end
+    -- A rule as a card: what it does, as a sentence; under it its tags and its buttons.
+    local function draw_rule_row(list, i)
+        local rule = list[i]
+        if type(rule) ~= 'table' then return end
+        local editing = editorState.ui.ruleEdit
+        local c = card_start()
+        local col = rule.off and palette.dim or nil
         if type(rule.first) == 'table' then
-            sentence(moment_words(rule.on, rule.when) .. ', the first of these that fits:'
-                .. ((rule.note ~= nil) and ('  -- ' .. rule.note) or ''), rule.off and palette.dim or nil)
-            imgui.Indent(30)
+            sentence(moment_words(rule.on, rule.when) .. ', the first that fits:', col)
+            imgui.Indent(14)
             for j, m in ipairs(rule.first) do
                 imgui.TextColored(palette.dim, j .. ')')
-                row_buttons(list, j, i)
-                imgui.SameLine(0, 10)
-                imgui.PushTextWrapPos(0)
-                imgui.TextUnformatted(R.Say(m, rule.on))
-                imgui.PopTextWrapPos()
+                imgui.SameLine(0, 6)
+                sentence_beside(c, R.Say(m, rule.on), col, { 'Edit', 'Up', 'Down', 'Delete' })
+                row_buttons(c, list, j, i)
             end
             if button('+ choice##rule_addc_' .. i, 'ghost') then M.Edit(i, #rule.first + 1) end
-            imgui.Unindent(30)
+            if imgui.IsItemHovered() then set_tip('Another choice, tried after these.') end
+            imgui.Unindent(14)
+            tags(rule)
+            to_right(c, { (rule.off and 'On' or 'Off'), 'Delete' })
+            if button((rule.off and 'On' or 'Off') .. '##rule_off_' .. i, 'ghost') then set_off(list, i, not rule.off) end
+            imgui.SameLine(0, 4)
+            if button('Delete##rule_delg_' .. i, 'danger') then take_out(list, i) end
+            if imgui.IsItemHovered() then set_tip('Take out the whole group.') end
         else
-            sentence(R.Say(rule) .. ((rule.note ~= nil) and ('  -- ' .. rule.note) or ''), rule.off and palette.dim or nil)
+            sentence(R.Say(rule), col)
+            tags(rule)
+            row_buttons(c, list, i)
         end
+        local on = (editing ~= nil) and (editing.index == i)
+        card_end(c, on and palette.blue or nil)
         imgui.Spacing()
     end
 
@@ -523,17 +577,32 @@ return function(o)
         return rule
     end
 
+    -- A numbered step's label: '1  When', in the accent.
+    local function step(n, label)
+        imgui.TextColored(palette.blue, n .. '  ' .. label)
+        imgui.SameLine(90)
+    end
+    -- An outline around the item just drawn (the Reads box), padded.
+    local function outline(col)
+        local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil
+        if (dl == nil) or (type(dl) == 'boolean') or (imgui.GetItemRectMin == nil) or (imgui.GetColorU32 == nil) then return end
+        local x1, y1 = vec(imgui.GetItemRectMin())
+        local x2, y2 = vec(imgui.GetItemRectMax())
+        if (x1 ~= nil) and (y1 ~= nil) and (x2 ~= nil) and (y2 ~= nil) then
+            PA[1], PA[2], PB[1], PB[2] = x1 - 6, y1 - 3, x2 + 6, y2 + 3
+            dl:AddRect(PA, PB, imgui.GetColorU32(col), 4, 0, 1)
+        end
+    end
     local function draw_builder()
         local e = editorState.ui.ruleEdit
         if e == nil then return end
-        imgui.Separator()
-        imgui.TextColored(palette.blue, (e.index == nil) and 'New rule' or ((e.member ~= nil) and ('Rule ' .. e.index
+        imgui.TextColored(palette.text, (e.index == nil) and 'New rule' or ((e.member ~= nil) and ('Rule ' .. e.index
             .. ', choice ' .. e.member) or ('Rule ' .. e.index)))
         imgui.SameLine()
-        imgui.TextColored(palette.dim, '-  pick the moment (When), what has to be true then (If), and what to put on (Wear).')
+        imgui.TextColored(palette.dim, '-  the moment, what has to be true then, and what to put on.')
+        imgui.Spacing()
         -- when
-        imgui.TextColored(palette.dim, 'When')
-        imgui.SameLine(70)
+        step('1', 'When')
         if e.member ~= nil then
             imgui.TextUnformatted(R.PHASE_LONG[e.phase] .. ' (its group\'s)')
         else
@@ -543,8 +612,7 @@ return function(o)
             if p ~= nil then e.phase = p end
         end
         -- if
-        imgui.TextColored(palette.dim, 'If')
-        imgui.SameLine(70)
+        step('2', 'If')
         if e.unsupported then
             imgui.TextColored(palette.warn, R.WhenWords(e.rule.when) .. '  (this shape is edited in the file)')
         else
@@ -555,7 +623,7 @@ return function(o)
                 imgui.SameLine()
                 imgui.TextColored(palette.dim, '(no conditions: every time)')
             end
-            imgui.Indent(70)
+            imgui.Indent(90)
             local gone = nil
             for i, r in ipairs(e.rows) do
                 if draw_row(e, i, r) then gone = i end
@@ -564,11 +632,10 @@ return function(o)
             if button('+ condition##rb_add', 'ghost') then
                 e.rows[#e.rows + 1] = row_state({ key = 'buff', op = 'is' })
             end
-            imgui.Unindent(70)
+            imgui.Unindent(90)
         end
         -- wear
-        imgui.TextColored(palette.dim, 'Wear')
-        imgui.SameLine(70)
+        step('3', 'Wear')
         imgui.PushItemWidth(220)
         imgui.InputTextWithHint('##rb_wear', 'a set, by name', e.wear, 96)
         imgui.PopItemWidth()
@@ -584,7 +651,7 @@ return function(o)
                 .. 'Unticked: that set only.')
         end
         if (#wear >= 2) and not has_set(wear) then -- names that start like it
-            imgui.Indent(70)
+            imgui.Indent(90)
             local shown = 0
             for _, n in ipairs(set_names()) do
                 if (shown < 8) and string.find(string.lower(n), string.lower(wear), 1, true) then
@@ -595,9 +662,9 @@ return function(o)
                     if imgui.IsItemHovered() then set_tip('Wear your set ' .. n .. '.') end
                 end
             end
-            imgui.Unindent(70)
+            imgui.Unindent(90)
         end
-        imgui.Indent(70)
+        imgui.Indent(90)
         local goneItem = nil
         for i, it in ipairs(e.items) do
             local s = W.Pick('rb_islot_' .. i, it.slot, R.SLOTS, 90)
@@ -614,11 +681,18 @@ return function(o)
             e.items[#e.items + 1] = { slot = 'Head', buf = { '' } }
         end
         if imgui.IsItemHovered() then set_tip('One piece in one slot, without a set (Pixie Hairpin +1 on Noctohelix).') end
-        imgui.Unindent(70)
-        -- layer, stop, note
-        if (e.member == nil) and (e.rule.at ~= nil) and not e.unspot then
+        imgui.Unindent(90)
+        -- layer, cancel, note: folded under More (open when the rule uses one)
+        if e.more == nil then
+            e.more = (e.rule.layer == 'top') or (e.rule.stop == true) or ((e.rule.note or '') ~= '') or (e.rule.at ~= nil)
+        end
+        imgui.Spacing()
+        if button((e.more and 'Less' or 'More: layer, cancel it, note') .. '##rb_more', 'ghost') then e.more = not e.more end
+        if not e.more then
+            -- nothing more shown
+        elseif (e.member == nil) and (e.rule.at ~= nil) and not e.unspot then
             imgui.TextColored(palette.dim, 'Where')
-            imgui.SameLine(70)
+            imgui.SameLine(90)
             imgui.TextUnformatted(spot_label(e.rule.at) .. ': where its code was in your job file')
             if imgui.IsItemHovered() then set_tip(spot_tip(e.rule.at)) end
             imgui.SameLine()
@@ -628,7 +702,7 @@ return function(o)
             end
         elseif e.member == nil then
             imgui.TextColored(palette.dim, 'Layer')
-            imgui.SameLine(70)
+            imgui.SameLine(90)
             if button('Job layer##rb_job', (not e.top[1]) and 'accent' or 'plain') then e.top[1] = false end
             if imgui.IsItemHovered() then set_tip(JOB_NOTE) end
             imgui.SameLine()
@@ -641,7 +715,9 @@ return function(o)
             end
         end
         -- cancelling: only where LuAshitacast can (CancelAction), so only offered there
-        if R.STOPPABLE[e.phase] then
+        if not e.more then
+            if not R.STOPPABLE[e.phase] then e.stop[1] = false end
+        elseif R.STOPPABLE[e.phase] then
             imgui.Checkbox('Cancel it instead (it is not used)##rb_stop', e.stop)
             if imgui.IsItemHovered() then
                 set_tip('Rarely needed: when the conditions hold, the spell or ability is not used at all (a line in chat '
@@ -651,26 +727,32 @@ return function(o)
         else
             e.stop[1] = false
             imgui.TextColored(palette.dim, 'Note')
-            imgui.SameLine(70)
+            imgui.SameLine(90)
         end
-        imgui.PushItemWidth(260)
-        imgui.InputTextWithHint('##rb_note', 'a note for yourself (optional)', e.note, 96)
-        imgui.PopItemWidth()
+        if e.more then
+            imgui.PushItemWidth(260)
+            imgui.InputTextWithHint('##rb_note', 'a note for yourself (optional)', e.note, 96)
+            imgui.PopItemWidth()
+        end
         -- now
         local rule, why = built(e)
-        imgui.TextColored(palette.dim, 'Reads')
-        imgui.SameLine(70)
+        imgui.Spacing()
+        imgui.Indent(6)
         imgui.PushTextWrapPos(0)
         if rule ~= nil then
             local r2 = rule
             if (e.member ~= nil) and (r2.on == nil) then r2 = copy(rule); r2.on = e.phase end
             imgui.TextColored(palette.ok, R.Say(r2, e.phase))
+            outline(palette.ok)
         else
             imgui.TextColored(palette.warn, why)
+            outline(palette.warn)
         end
         imgui.PopTextWrapPos()
+        imgui.Unindent(6)
+        imgui.Spacing()
         imgui.TextColored(palette.dim, 'Now')
-        imgui.SameLine(70)
+        imgui.SameLine(90)
         if rule == nil then
             imgui.TextColored(palette.dim, '-')
         elseif (e.phase == 'Default') or (e.phase == 'Pet') then
@@ -764,95 +846,61 @@ return function(o)
         M.Stage(out)
         feedback(conv.title .. ': written by Save. Undo convert takes it back.')
     end
-    -- What Convert changes, each `if` in turn: its code (first line; all of it on hover) and the rules it becomes,
-    -- or why it stays code.
-    local function draw_changes(plan, text)
-        local std = 0
-        for _, h in ipairs(plan.handlers) do
-            local shown = {}
-            for _, it in ipairs(h.items) do
-                if it.standard then std = std + 1 else shown[#shown + 1] = it end
-            end
-            if #shown > 0 then
-                imgui.TextColored(palette.blue, h.name)
-                imgui.Indent(16)
-                for _, it in ipairs(shown) do
-                    local code = string.sub(text, it.s, it.e)
-                    local first = string.match(code, '^[^\n]*') or ''
-                    local more = select(2, string.gsub(code, '\n', '\n'))
-                    imgui.TextColored(it.ok and palette.ok or palette.dim, 'line ' .. it.line .. ':')
-                    if it.standard then imgui.SameLine(); imgui.TextColored(palette.dim, '(standard)') end
-                    imgui.SameLine()
-                    imgui.TextColored(palette.dim, fit(first .. ((more > 0) and ('  (+' .. more .. ' lines)') or '')))
-                    if imgui.IsItemHovered() then set_tip(string.sub(code, 1, 1200)) end
-                    imgui.Indent(24)
-                    imgui.PushTextWrapPos(0)
-                    if it.ok then
-                        for _, r in ipairs(it.rules) do imgui.TextUnformatted('-> ' .. R.Say(r)) end
-                        if it.spot ~= nil then
-                            imgui.TextColored(palette.dim, '   (' .. spot_label(it.spot) .. ': these go on where this code '
-                                .. 'was, so the order stays the same)')
-                            if imgui.IsItemHovered() then set_tip(spot_tip(it.spot)) end
-                        end
-                    elseif it.standard then
-                        imgui.TextColored(palette.dim, 'stays: ' .. tostring(it.why))
-                    else
-                        imgui.TextColored(palette.warn, 'stays code: ' .. tostring(it.why))
-                    end
-                    imgui.PopTextWrapPos()
-                    imgui.Unindent(24)
-                end
-                imgui.Unindent(16)
-            end
-        end
-        if std > 0 then
-            imgui.TextColored(palette.dim, std .. ' more ' .. ((std == 1) and 'is' or 'are') .. " GoomSwap's standard lines "
-                .. '(your idle / engaged steps, the named-set step, the WS check): they stay as they are.')
-        end
-    end
     local function paragraph(text, col)
         imgui.PushTextWrapPos(0)
         imgui.TextColored(col or palette.dim, text)
         imgui.PopTextWrapPos()
     end
-    local function draw_code()
+    -- What Convert changes, one card per `if`: its code (first line; all of it on hover) and the rules it becomes,
+    -- or why it stays code. want: 'ok' (the ones that convert) or 'stays'.
+    local function draw_changes(plan, text, want)
+        local std, shown = 0, 0
+        for _, h in ipairs(plan.handlers) do
+            for _, it in ipairs(h.items) do
+                if it.standard then
+                    std = std + 1
+                elseif (want == 'ok') == (it.ok == true) then
+                    shown = shown + 1
+                    local code = string.sub(text, it.s, it.e)
+                    local first = string.match(code, '^[^\n]*') or ''
+                    local more = select(2, string.gsub(code, '\n', '\n'))
+                    local c = card_start()
+                    pill(h.name, palette.blue, palette.selBg)
+                    imgui.SameLine(0, 10)
+                    imgui.TextColored(palette.dim, 'line ' .. it.line)
+                    imgui.SameLine(0, 10)
+                    imgui.TextColored(palette.dim, fit(first .. ((more > 0) and ('  (+' .. more .. ' lines)') or '')))
+                    if imgui.IsItemHovered() then set_tip(string.sub(code, 1, 1200)) end
+                    imgui.PushTextWrapPos(0)
+                    if it.ok then
+                        for _, r in ipairs(it.rules) do imgui.TextColored(palette.ok, R.Say(r)) end
+                        if it.spot ~= nil then
+                            imgui.TextColored(palette.dim, spot_label(it.spot) .. ': these go on where this code was, '
+                                .. 'so the order stays the same.')
+                            if imgui.IsItemHovered() then set_tip(spot_tip(it.spot)) end
+                        end
+                    else
+                        imgui.TextColored(palette.warn, 'Stays code: ' .. tostring(it.why))
+                    end
+                    imgui.PopTextWrapPos()
+                    card_end(c)
+                    imgui.Spacing()
+                end
+            end
+        end
+        if (want == 'stays') and (std > 0) then
+            paragraph(std .. ' more ' .. ((std == 1) and 'is' or 'are') .. " GoomSwap's standard lines (your idle / engaged "
+                .. 'steps, the named-set step, the WS check): they stay as they are.')
+        end
+        return shown
+    end
+    -- The code views. stays: the ifs that stay code; else the ones Convert can make into rules, and its button.
+    local function draw_code(stays)
         local doc = editorState.document
         local text = (doc ~= nil) and (doc.model ~= nil) and doc.model.text or nil
         if text == nil then return end
-        imgui.Separator()
-        imgui.TextColored(palette.blue, 'CODE THAT CAN BECOME RULES')
-        editorState.ui.codeOpen = editorState.ui.codeOpen or { false }
-        if doc.convert ~= nil then
-            local conv = doc.convert
-            local plan = conv.plan
-            local n, rules, lines = 0, 0, {}
-            for _, h in ipairs((plan ~= nil) and plan.handlers or {}) do
-                for _, it in ipairs(h.items) do
-                    if it.ok then
-                        n, rules = n + 1, rules + #it.rules
-                        lines[#lines + 1] = tostring(it.line)
-                    end
-                end
-            end
-            paragraph('Converted, not saved yet: ' .. ((plan ~= nil) and (n .. ((n == 1) and ' piece' or ' pieces')
-                .. ' of code (line' .. ((#lines == 1) and ' ' or 's ') .. table.concat(lines, ', ') .. ') became the '
-                .. rules .. ((rules == 1) and ' rule' or ' rules') .. ' above. ') or '')
-                .. 'What you wear stays the same. Press Save + reload to keep it (a backup is made first), or Undo convert.',
-                palette.warn)
-            for _, l in ipairs(conv.lines) do
-                if not string.match(l, '^Handle') then paragraph('  ' .. l) end -- Adopt's own steps
-            end
-            if button('Undo convert##conv_undo', 'plain') then
-                M.Stage(conv.prior)
-                doc.convert = nil
-                feedback('Convert undone (rule edits made since are undone too).')
-                return
-            end
-            if plan ~= nil then
-                imgui.SameLine()
-                imgui.Checkbox('Show each##conv_each', editorState.ui.codeOpen)
-                if editorState.ui.codeOpen[1] then draw_changes(plan, conv.text) end
-            end
+        if doc.convert ~= nil then -- staged: draw_staged says so; show what it did
+            if doc.convert.plan ~= nil then draw_changes(doc.convert.plan, doc.convert.text, stays and 'stays' or 'ok') end
             return
         end
         local c = plan_of(text)
@@ -860,22 +908,25 @@ return function(o)
             paragraph('Nothing to convert: ' .. tostring(c.why) .. '.', palette.warn)
             return
         end
-        local ok, no, std = 0, 0, 0
-        for _, h in ipairs(c.plan.handlers) do
-            for _, it in ipairs(h.items) do
-                if it.ok then ok = ok + 1 elseif it.standard then std = std + 1 else no = no + 1 end
-            end
+        if stays then
+            paragraph('These ifs in your job file stay code, each with why. They work as before; Rules go on with them.')
+            imgui.Spacing()
+            if draw_changes(c.plan, text, 'stays') == 0 then paragraph('None: all your gear code can become rules.') end
+            return
         end
-        local example = nil
+        local ok, example = 0, nil
         for _, h in ipairs(c.plan.handlers) do
             for _, it in ipairs(h.items) do
-                if it.ok and (example == nil) then example = R.Say(it.rules[1]) end
+                if it.ok then
+                    ok = ok + 1
+                    if example == nil then example = R.Say(it.rules[1]) end
+                end
             end
         end
         if ok > 0 then
             paragraph('Your job file still picks some gear with code. ' .. ok .. ((ok == 1) and ' piece of it' or ' pieces of it')
-                .. ' can become rules, like: ' .. example .. '. Convert moves them into the rules above, so you can see '
-                .. 'and change them here. What you wear stays the same. Nothing is saved until Save + reload.', palette.text)
+                .. ' can become rules, like: ' .. example .. '. Convert moves them into your rules, so you can see and '
+                .. 'change them here. What you wear stays the same. Nothing is saved until Save + reload.', palette.text)
         end
         if c.adoptable then
             paragraph('This file does not load GoomSwap (a plain LuAshitacast file). Adopt adds it: GoomSwap loads at '
@@ -886,36 +937,101 @@ return function(o)
         elseif ok > 0 then
             if button('Convert ' .. ok .. ' into rules##conv_go', 'primary', true) then
                 stage_convert(c, false)
+                editorState.ui.rulesView = 'all'
             end
         else
-            paragraph((no > 0) and ('Nothing in your job file\'s code can become rules yet: ' .. no
-                .. ((no == 1) and ' piece stays' or ' pieces stay') .. ' code (Show each: why).')
-                or 'Your job file has no gear code left to convert.')
+            paragraph('Nothing in your job file\'s code can become rules (Stays code, on the left: why).')
         end
-        if no + ok > 0 then
-            if ok > 0 then imgui.SameLine() end
-            imgui.Checkbox('Show each' .. ((no > 0) and (' (' .. no .. ' stay code)') or '') .. '##conv_each',
-                editorState.ui.codeOpen)
-            if editorState.ui.codeOpen[1] then draw_changes(c.plan, text) end
-        end
+        imgui.Spacing()
+        draw_changes(c.plan, text, 'ok')
     end
     M.DrawCode = draw_code
 
     -- == The page ==
+    -- Left: what to show (all rules, one moment's, or your code); right: the builder (when open), then the cards.
+    local NAV_W = { 190, 0 }
+    local MAIN_W = { 0, 0 }
+    local function code_counts()
+        local doc = editorState.document
+        if (doc == nil) or (doc.model == nil) or (doc.model.text == nil) then return 0, 0 end
+        if doc.convert ~= nil then return 0, 0 end
+        local c = plan_of(doc.model.text)
+        local ok, no = 0, 0
+        for _, h in ipairs((c.plan ~= nil) and c.plan.handlers or {}) do
+            for _, it in ipairs(h.items) do
+                if it.ok then ok = ok + 1 elseif not it.standard then no = no + 1 end
+            end
+        end
+        return ok, no
+    end
+    local function nav_row(label, n, key, tip)
+        local sel = (editorState.ui.rulesView or 'all') == key
+        if imgui.Selectable(label .. '##rv_' .. key, sel) then editorState.ui.rulesView = key end
+        if (tip ~= nil) and imgui.IsItemHovered() then set_tip(tip) end
+        if n ~= nil then
+            imgui.SameLine(150)
+            imgui.TextColored(palette.dim, tostring(n))
+        end
+    end
+    local function draw_nav(list)
+        imgui.TextColored(palette.dim, 'SHOW')
+        nav_row('All rules', #list, 'all')
+        local per = {}
+        for _, r in ipairs(list) do
+            if type(r) == 'table' and (r.on ~= nil) then per[r.on] = (per[r.on] or 0) + 1 end
+        end
+        for _, ph in ipairs(R.PHASES) do
+            if per[ph] ~= nil then nav_row(R.PHASE_LABEL[ph] or ph, per[ph], ph, R.PHASE_LONG[ph]) end
+        end
+        imgui.Spacing()
+        imgui.TextColored(palette.dim, 'YOUR CODE')
+        local ok, no = code_counts()
+        nav_row('Can become rules', ok, 'code', 'The ifs in your job file that Convert can make into rules.')
+        nav_row('Stays code', no, 'stays', 'The ifs that stay code, and why.')
+    end
+    -- Convert staged and not saved: said on every view, with its Undo.
+    local function draw_staged()
+        local doc = editorState.document
+        local conv = (doc ~= nil) and doc.convert or nil
+        if conv == nil then return end
+        local plan = conv.plan
+        local n, rules = 0, 0
+        for _, h in ipairs((plan ~= nil) and plan.handlers or {}) do
+            for _, it in ipairs(h.items) do
+                if it.ok then n, rules = n + 1, rules + #it.rules end
+            end
+        end
+        paragraph(((plan ~= nil) and ('Converted, not saved yet: ' .. n .. ((n == 1) and ' piece' or ' pieces')
+            .. ' of code became ' .. rules .. ((rules == 1) and ' rule' or ' rules') .. '. ') or (conv.title .. ', not saved yet. '))
+            .. 'What you wear stays the same. Save + reload keeps it (a backup is made first).', palette.warn)
+        if button('Undo convert##conv_undo', 'plain') then
+            M.Stage(conv.prior)
+            doc.convert = nil
+            feedback('Convert undone (rule edits made since are undone too).')
+        end
+        imgui.Spacing()
+    end
     function M.Draw()
         local list, how = M.List()
-        imgui.TextColored(palette.blue, 'RULES')
-        imgui.SameLine()
-        imgui.TextColored(palette.dim, 'when this, wear that: no code. A later rule wins the slots both wear.')
         if list == nil then
             imgui.TextColored(palette.warn, 'gcinclude.Rules is ' .. tostring(how) .. ' in the file: edit it there.')
             return
         end
-        if button('+ Rule##rules_add', 'accent', true) then M.Edit(nil) end
-        if (o.extraButtons ~= nil) then o.extraButtons() end
+        local view = editorState.ui.rulesView or 'all'
+        imgui.BeginChild('##rules_nav', NAV_W, true)
+        draw_nav(list)
+        imgui.EndChild()
+        imgui.SameLine()
+        imgui.BeginChild('##rules_main', MAIN_W, false)
+        if button('+ New rule##rules_add', 'primary', true) then
+            M.Edit(nil)
+            if (view == 'code') or (view == 'stays') then editorState.ui.rulesView = 'all'; view = 'all' end
+        end
+        imgui.SameLine(0, 10)
+        imgui.TextColored(palette.dim, 'A rule puts gear on at a moment, when its conditions hold. Later rules win.')
         if how == 'staged' then
-            imgui.SameLine()
-            imgui.TextColored(palette.warn, 'unsaved: Save writes them')
+            imgui.SameLine(0, 10)
+            imgui.TextColored(palette.warn, 'unsaved')
         end
         -- problems, as the engine would see them on load
         local p = editorState.ui.ruleProblems
@@ -925,17 +1041,38 @@ return function(o)
             editorState.ui.ruleProblems = p
         end
         for _, line in ipairs(p.problems) do imgui.TextColored(palette.bad, 'Left out on load: ' .. line) end
-        imgui.Separator()
-        if #list == 0 then
-            imgui.PushTextWrapPos(0)
-            imgui.TextColored(palette.dim, 'No rules yet. A rule wears a set (or one item) when its conditions hold: '
-                .. 'Fealty while Cover is up, a body piece under 40% MP on nukes, Self_Cure when a cure is on you.')
-            imgui.PopTextWrapPos()
+        imgui.Spacing()
+        draw_staged()
+        if (view == 'code') or (view == 'stays') then
+            draw_code(view == 'stays')
+        else
+            if editorState.ui.ruleEdit ~= nil then
+                local c = card_start()
+                draw_builder()
+                card_end(c, palette.blue)
+                imgui.Spacing()
+            end
+            local shown = 0
+            for i = 1, #list do
+                local r = list[i]
+                if (view == 'all') or ((type(r) == 'table') and (r.on == view)) then
+                    draw_rule_row(list, i)
+                    shown = shown + 1
+                end
+            end
+            if #list == 0 then
+                paragraph('No rules yet. A rule wears a set (or one item) when its conditions hold: Fealty while Cover '
+                    .. 'is up, a body piece under 40% MP on nukes, Self_Cure when a cure is on you.')
+                local ok = code_counts()
+                if ok > 0 then
+                    paragraph(ok .. ((ok == 1) and ' piece' or ' pieces') .. ' of your job file\'s code can become rules: '
+                        .. 'Your code, on the left.', palette.blue)
+                end
+            elseif shown == 0 then
+                paragraph('No rules for this moment.')
+            end
         end
-        for i = 1, #list do draw_rule_row(list, i) end
-        if o.extraRows ~= nil then o.extraRows() end
-        draw_builder()
-        draw_code()
+        imgui.EndChild()
     end
 
     return M

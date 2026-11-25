@@ -5,24 +5,31 @@
 A rule wears a set (or single items) when its conditions hold: Fealty while Cover is up, a body piece under 40% MP
 on nukes, Self_Cure when a cure lands on you. Rules are data in the job file (`gcinclude.Rules`), made and changed in
 `/gcedit`: **Rules** in the top bar (or the blue **RULES** button over the set list) opens them; it also says how many
-of your job file's `if`s Convert can turn into rules (**Rules (0) - 5 to convert**). No code, no text editor.
+of your job file's `if`s Convert can turn into rules (**Rules  +5 to convert**). No code, no text editor.
 
 ## In the editor
 
-- **RULES** lists them in plain words, with their phase, layer and an on/off tick. **Edit**, **^** / **v** (a later
-  rule wins the slots both wear), **x**.
-- **+ Rule** opens the builder:
-  - **When**: Idle / engaged, Pet action, Precast, Midcast, Job ability, Weapon skill, Preshot, Midshot, Item.
-  - **If**: conditions from a menu (below), **all of these** or **any of these**. Skills, elements, targets and
-    modes offer their values; several values, separated by commas, mean any of them.
-  - **Wear**: a set by name, ticked **with its weapon and /mset versions** (as a set worn by name:
-    `Savage Blade`, then `Savage Blade_Naegling`, `Savage Blade_Acc`) or not (that set only); **+ one item** puts one
-    piece in one slot.
-  - **Layer**: **Job layer** (the default: where a job file's own code goes, GoomSwap's layers on top) or **Over
-    everything** (over weapons, TH, Hoxne, buff sets, obi, SIR; still under `/lock`, the TP and Aftermath holds,
-    Incapacitated, Sleeping and Doomed, SmartSwap's weapon keep and Dispelga's Daybreak).
-  - **Stop the action**: Precast, Job ability, Weapon skill, Item and Preshot only (LuAshitacast's `CancelAction`).
-  - **Now**: whether an idle rule's conditions hold right now.
+- **Left**: what to show: **All rules** or one moment's (Casting, Not acting...), and **Your code**: **Can become
+  rules** (Convert) and **Stays code** (each `if` that stays, with why).
+- **Each rule is a card**: what it does as a sentence (`When you cast Absorb-TP: put on Absorb_TP`), its tags
+  (moment, **over everything**, **code spot 1**), and **Edit**, **Up** / **Down** (a later rule wins the slots both
+  wear), **Off** (kept, not used), **Delete**.
+- **+ New rule** opens the builder over the cards, in three steps:
+  1. **When**: not acting (idle, fighting, resting), your pet's move, starting a spell, casting, a job ability, a
+     weapon skill, starting a shot, a ranged shot, using an item.
+  2. **If**: conditions from a menu (below), **all of these** or **any of these**. Skills, elements, targets and
+     modes offer their values; several values, separated by commas, mean any of them.
+  3. **Wear**: a set by name, ticked **with its weapon and /mset versions** (as a set worn by name:
+     `Savage Blade`, then `Savage Blade_Naegling`, `Savage Blade_Acc`) or not (that set only); **+ one item** puts
+     one piece in one slot.
+  - The green box reads the rule back as a sentence. **More** holds the rest:
+    - **Layer**: **Job layer** (the default: where a job file's own code goes, GoomSwap's layers on top) or **Over
+      everything** (over weapons, TH, Hoxne, buff sets, obi, SIR; still under `/lock`, the TP and Aftermath holds,
+      Incapacitated, Sleeping and Doomed, SmartSwap's weapon keep and Dispelga's Daybreak).
+    - **Cancel it instead**: starting a spell, a job ability, a weapon skill, an item, starting a shot only
+      (LuAshitacast's `CancelAction`).
+    - **Note**: for yourself.
+  - **Now**: whether a not-acting rule's conditions hold right now.
 - **Save** (or **Save + reload**) writes them, one rule a line; the review lists each in words.
 
 ## Conditions
@@ -72,8 +79,9 @@ everything. `off = true`: kept, not used. A rule the engine can't use is left ou
 
 ## Convert: your code into rules
 
-The Rules page lists every `if` in your job file's handlers (**Show each**): green converts, the rest say why they
-stay code. **Convert N ifs into rules** stages them for Save (a backup first; **Undo convert** takes it back):
+**Your code** on the Rules page lists every `if` in your job file's handlers: **Can become rules** shows each with
+the rules it becomes, **Stays code** each that stays and why. **Convert N into rules** stages them for Save (a
+backup first; **Undo convert** takes it back):
 
 - Conditions on the values above, joined by `and` / `or` / `not`; locals read from `gData` or `gcinclude.BuffCount`
   (sums of buff counts too); `T{...}:contains(...)`; plain-text searches (`string.contains`, `string.find(..., 1,
