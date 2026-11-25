@@ -176,7 +176,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   **Use worn**, **Copy from...**, **Compare...** (and **Weapon sets...** on a `/wm` set), **More...** (Revert,
   Rename, Delete).
 
-![The main view: the set list (state dots, tags, slot counts, filter chips), the open set (title, slot cards, the Neck card hovered) and What goes on (mockup of the current build)](gcedit_list.png)
+![The main view as the game draws it (Compact, bar theme abyss): the set list with state dots, tags and slot counts, the open set, and Result (drawn from the current code; name changed)](gcedit_list.png)
 
 - **Unused gear** lists, by bag, the gear in your Inventory and Wardrobes that nothing of this character names:
   none of its job files, char.lua, the shared settings file, GoomSwap's own sets or its code (Moonshade, obis,
