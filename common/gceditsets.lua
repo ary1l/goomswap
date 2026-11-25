@@ -381,10 +381,6 @@ local function save()
         end
     end
     local written, err = fileWriter.Write(editorState.document.path, text)
-    if written and (ctx.goom_write ~= nil) then -- <JOB>.goom.lua: the same sets, rules and options as data
-        local okData, dataErr = ctx.goom_write(editorState.document.path, text)
-        if not okData then ctx.gearEngine.Err('Saved, but the .goom.lua data file was not written: ' .. tostring(dataErr)) end
-    end
     if not written then
         local restored = old and fileWriter.Write(editorState.document.path, old)
         editorState.ui.notice, editorState.ui.noticeBad =

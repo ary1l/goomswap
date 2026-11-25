@@ -16,8 +16,7 @@ More pictures of the editor, some of them mockups of the newest build, are in [i
 - Rules: "when this, wear that" without code (a buff up, low MP, a spell on you, a mode...), made in `/gcedit`;
   **Convert** turns your job file's own `if`s into rules with the same result ([Rules](docs/rules.md)).
 - No text editor needed: sets, rules, modes, settings (lists and keybinds as controls) and new job files are all
-  done in `/gcedit`, in a Simple view or the Full one. Each Save keeps the job `.lua` (what you share) and a
-  `<JOB>.goom.lua` data file (the same sets, rules and options as data) in step.
+  done in `/gcedit`, in a Simple view or the Full one.
 - `/gcimport` reads a Windower GearSwap job file's sets into a GoomSwap draft; **Adopt** makes a plain LuAshitacast
   file a GoomSwap one, its code kept.
 - Packer: `/lac gear` (the Packer plugin) fetches every set's gear, your Packer lists and the items GoomSwap wears.
