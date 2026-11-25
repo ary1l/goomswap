@@ -102,7 +102,7 @@ return profile;
 ]]
         state.ui.codeOpen = { true }
         M.Draw()
-        clicks['Convert 1 if into rules##conv_go'] = true
+        clicks['Convert 1 into rules##conv_go'] = true
         M.Draw()
         eq(state.document.convert ~= nil, true, 'staged')
         eq(staged.Rules.value[1].wear, 'Fealty')

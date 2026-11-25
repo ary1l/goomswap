@@ -2257,7 +2257,9 @@ local function body()
     imgui.SameLine(0, 0)
     local set = (editorState.selection.setName ~= nil)
             and editorState.document.model.byName[editorState.selection.setName] or nil
-    imgui.BeginChild('##gcedit_mid', { sizes.middle, 0 }, 0)
+    -- the Rules page takes the width up to the window's edge: the right pane is about the open set
+    local rulesPage = editorState.selection.rules and (ctx.rules ~= nil)
+    imgui.BeginChild('##gcedit_mid', { rulesPage and 0 or sizes.middle, 0 }, 0)
     local gridWidth = xy(imgui.GetContentRegionAvail())
     local spacing = 8
     local style = imgui.GetStyle and imgui.GetStyle()
@@ -2283,14 +2285,15 @@ local function body()
         editorInspect.DrawPinned(imgui, palette, editorState, itemTooltip, inspectorHeight, draw_icon)
     end
     imgui.EndChild()
+    local middleChanged = false
+    if not rulesPage then
     imgui.SameLine(0, 0)
-    local middle, middleChanged = editorPanels.Splitter(imgui, palette, 'details', availableHeight, sizes.middle, 744)
+    local middle
+    middle, middleChanged = editorPanels.Splitter(imgui, palette, 'details', availableHeight, sizes.middle, 744)
     if middleChanged then
         editorState.preferences.middle = editorPanels.Resolve(availableWidth, sizes.left, middle).middle
         editorState.preferences.dirty = true
     end
-    if editorState.ui.resizing and not imgui.IsMouseDown(0) then save_preferences() end
-    editorState.ui.resizing = leftChanged or middleChanged or (editorState.ui.resizing and imgui.IsMouseDown(0))
     imgui.SameLine(0, 0)
     imgui.BeginChild('##gcedit_right', { 0, 0 }, CHILD_BORDERS)
     local nf = fill_list().n
@@ -2352,6 +2355,9 @@ local function body()
         end
     end
     imgui.EndChild()
+    end
+    if editorState.ui.resizing and not imgui.IsMouseDown(0) then save_preferences() end
+    editorState.ui.resizing = leftChanged or middleChanged or (editorState.ui.resizing and imgui.IsMouseDown(0))
     if editorState.ui.openSetChooser then
         imgui.OpenPopup('##gcedit_copy')
         editorState.ui.openSetChooser = nil

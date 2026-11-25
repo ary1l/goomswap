@@ -754,11 +754,16 @@ return function(o)
     -- What Convert changes, each `if` in turn: its code (first line; all of it on hover) and the rules it becomes,
     -- or why it stays code.
     local function draw_changes(plan, text)
+        local std = 0
         for _, h in ipairs(plan.handlers) do
-            if #h.items > 0 then
+            local shown = {}
+            for _, it in ipairs(h.items) do
+                if it.standard then std = std + 1 else shown[#shown + 1] = it end
+            end
+            if #shown > 0 then
                 imgui.TextColored(palette.blue, h.name)
                 imgui.Indent(16)
-                for _, it in ipairs(h.items) do
+                for _, it in ipairs(shown) do
                     local code = string.sub(text, it.s, it.e)
                     local first = string.match(code, '^[^\n]*') or ''
                     local more = select(2, string.gsub(code, '\n', '\n'))
@@ -786,6 +791,10 @@ return function(o)
                 imgui.Unindent(16)
             end
         end
+        if std > 0 then
+            imgui.TextColored(palette.dim, std .. ' more ' .. ((std == 1) and 'is' or 'are') .. " GoomSwap's standard lines "
+                .. '(your idle / engaged steps, the named-set step, the WS check): they stay as they are.')
+        end
     end
     local function paragraph(text, col)
         imgui.PushTextWrapPos(0)
@@ -797,7 +806,7 @@ return function(o)
         local text = (doc ~= nil) and (doc.model ~= nil) and doc.model.text or nil
         if text == nil then return end
         imgui.Separator()
-        imgui.TextColored(palette.blue, 'CONVERT YOUR CODE')
+        imgui.TextColored(palette.blue, 'CODE THAT CAN BECOME RULES')
         editorState.ui.codeOpen = editorState.ui.codeOpen or { false }
         if doc.convert ~= nil then
             local conv = doc.convert
@@ -811,11 +820,11 @@ return function(o)
                     end
                 end
             end
-            paragraph('Done, not saved yet. ' .. ((plan ~= nil) and (n .. ((n == 1) and ' if comes' or ' ifs come')
-                .. ' out of your handlers (line' .. ((#lines == 1) and ' ' or 's ') .. table.concat(lines, ', ') .. ') and '
-                .. rules .. ((rules == 1) and ' rule takes' or ' rules take') .. ' their place: the list above. '
-                .. 'They put on the same gear at the same moments as that code did. ') or '')
-                .. 'Save + reload writes the job file (a backup first); Undo convert takes it back.', palette.warn)
+            paragraph('Converted, not saved yet: ' .. ((plan ~= nil) and (n .. ((n == 1) and ' piece' or ' pieces')
+                .. ' of code (line' .. ((#lines == 1) and ' ' or 's ') .. table.concat(lines, ', ') .. ') became the '
+                .. rules .. ((rules == 1) and ' rule' or ' rules') .. ' above. ') or '')
+                .. 'What you wear stays the same. Press Save + reload to keep it (a backup is made first), or Undo convert.',
+                palette.warn)
             for _, l in ipairs(conv.lines) do
                 if not string.match(l, '^Handle') then paragraph('  ' .. l) end -- Adopt's own steps
             end
@@ -827,7 +836,7 @@ return function(o)
             end
             if plan ~= nil then
                 imgui.SameLine()
-                imgui.Checkbox('Show what changed##conv_each', editorState.ui.codeOpen)
+                imgui.Checkbox('Show each##conv_each', editorState.ui.codeOpen)
                 if editorState.ui.codeOpen[1] then draw_changes(plan, conv.text) end
             end
             return
@@ -843,10 +852,17 @@ return function(o)
                 if it.ok then ok = ok + 1 elseif it.standard then std = std + 1 else no = no + 1 end
             end
         end
-        paragraph('Convert takes the ifs in your job file\'s handlers (HandleDefault, HandleMidcast...) that it can say as '
-            .. 'rules, takes them out of the code and adds those rules to the list above. The rules put on the same gear '
-            .. 'at the same moments, so nothing changes in game; you change them here from then on. Ifs it can\'t say stay '
-            .. 'code. Nothing is written until Save + reload, and Undo convert takes it back before that.')
+        local example = nil
+        for _, h in ipairs(c.plan.handlers) do
+            for _, it in ipairs(h.items) do
+                if it.ok and (example == nil) then example = R.Say(it.rules[1]) end
+            end
+        end
+        if ok > 0 then
+            paragraph('Your job file still picks some gear with code. ' .. ok .. ((ok == 1) and ' piece of it' or ' pieces of it')
+                .. ' can become rules, like: ' .. example .. '. Convert moves them into the rules above, so you can see '
+                .. 'and change them here. What you wear stays the same. Nothing is saved until Save + reload.', palette.text)
+        end
         if c.adoptable then
             paragraph('This file does not load GoomSwap (a plain LuAshitacast file). Adopt adds it: GoomSwap loads at '
                 .. 'the top and its layers go on at the end of HandleDefault; your code and set names stay.', palette.warn)
@@ -854,17 +870,18 @@ return function(o)
                 stage_convert(c, true)
             end
         elseif ok > 0 then
-            if button('Convert ' .. ok .. ((ok == 1) and ' if' or ' ifs') .. ' into rules##conv_go', 'primary', true) then
+            if button('Convert ' .. ok .. ' into rules##conv_go', 'primary', true) then
                 stage_convert(c, false)
             end
         else
-            paragraph((no > 0) and 'None of your ifs can be said as rules yet (Show what changes: why).'
-                or 'No ifs in your handlers: nothing to convert.')
+            paragraph((no > 0) and ('Nothing in your job file\'s code can become rules yet: ' .. no
+                .. ((no == 1) and ' piece stays' or ' pieces stay') .. ' code (Show each: why).')
+                or 'Your job file has no gear code left to convert.')
         end
-        if no + ok + std > 0 then
-            imgui.SameLine()
-            imgui.Checkbox('Show what changes (' .. ok .. ' convert, ' .. no .. ' stay code'
-                .. ((std > 0) and (', ' .. std .. ' standard') or '') .. ')##conv_each', editorState.ui.codeOpen)
+        if no + ok > 0 then
+            if ok > 0 then imgui.SameLine() end
+            imgui.Checkbox('Show each' .. ((no > 0) and (' (' .. no .. ' stay code)') or '') .. '##conv_each',
+                editorState.ui.codeOpen)
             if editorState.ui.codeOpen[1] then draw_changes(c.plan, text) end
         end
     end
