@@ -349,6 +349,9 @@ local settingsFiles = gFunc.LoadFile('common\\gceditsettings.lua')({
     state = function() return editorState end,
 })
 ctx.settingsFiles = settingsFiles -- the job file's own settings are written by Save (gceditsets)
+ctx.simple = gFunc.LoadFile('common\\gceditsimple.lua')(editorState) -- Simple view (labels, fewer buttons)
+ctx.newjob = gFunc.LoadFile('common\\gceditnewjob.lua')({ imgui = imgui, palette = palette, set_tip = set_tip,
+    feedback = feedback }) -- the file menu's New job file
 -- the Rules page (gcinclude.Rules), in ctx: this chunk is at Lua's 200-local limit
 ctx.rules = gFunc.LoadFile('common\\gceditrules.lua')({ imgui = imgui, palette = palette, set_tip = set_tip,
     editorState = editorState, files = settingsFiles, setFile = setFile, feedback = feedback, ctx = ctx })
@@ -1716,6 +1719,7 @@ local function draw_job_files()
         if imgui.IsItemHovered() then set_tip(file.path) end
     end
     imgui.EndChild()
+    ctx.newjob.Draw()
     if target then imgui.CloseCurrentPopup() end
     imgui.EndPopup()
     if target then gcedit.SwitchFile(target); return true end
@@ -2016,7 +2020,18 @@ local function body()
     if imgui.SmallButton('Settings##gcsettings') then editorState.ui.settingsOpen = { true } end
     if imgui.IsItemHovered() then set_tip('GoomSwap settings: this character (char.lua) or every character.') end
     imgui.SameLine()
-    if imgui.SmallButton(editorState.preferences.density .. '##density') then imgui.OpenPopup('##density_options') end
+    local simple = ctx.simple.On()
+    if imgui.SmallButton((simple and 'Simple view' or 'Full view') .. '##gcview') then
+        ctx.simple.Set(not simple)
+        save_preferences()
+        simple = not simple
+    end
+    if imgui.IsItemHovered() then
+        set_tip(simple and 'Simple: sets say what they are for, fewer buttons (the rest under ...). Click: Full view.'
+            or 'Full: every button and tab. Click: Simple view.')
+    end
+    imgui.SameLine()
+    if (not simple) and imgui.SmallButton(editorState.preferences.density .. '##density') then imgui.OpenPopup('##density_options') end
     if imgui.BeginPopup('##density_options') then
         imgui.TextUnformatted('Display density')
         for _, name in ipairs({ 'Compact', 'Comfortable' }) do
@@ -2048,8 +2063,10 @@ local function body()
         end
         imgui.EndPopup()
     end
-    imgui.SameLine()
-    theme_menu()
+    if not simple then
+        imgui.SameLine()
+        theme_menu()
+    end
     local n = dirty_count()
     imgui.SameLine(0, 14)
     if n > 0 then
@@ -2065,8 +2082,10 @@ local function body()
     end
     -- the file's actions at the right edge, apart from the view's (on a line of their own when they don't fit)
     local d = editorPanels.Density(editorState.preferences.density)
-    local need = text_w('Backups') + text_w('Unused gear') + text_w('Rescan bags') + text_w('Reload file')
-        + text_w(editorState.document.inactive and 'Save file' or 'Save + reload') + 10 * d.padding[1] + 4 * d.spacing[1]
+    local need = simple and (text_w('...') + text_w(editorState.document.inactive and 'Save file' or 'Save + reload')
+            + 4 * d.padding[1] + d.spacing[1])
+        or (text_w('Backups') + text_w('Unused gear') + text_w('Rescan bags') + text_w('Reload file')
+        + text_w(editorState.document.inactive and 'Save file' or 'Save + reload') + 10 * d.padding[1] + 4 * d.spacing[1])
     imgui.SameLine()
     local avail = imgui.GetContentRegionAvail()
     avail = (type(avail) == 'number') and avail or (avail.x or avail[1])
@@ -2075,35 +2094,63 @@ local function body()
     elseif (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil) then
         imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - need)
     end
-    if imgui.Button('Backups##gcedit') then editorState.ui.backups = { open = true } end
-    if imgui.IsItemHovered() then
-        set_tip('Every Save keeps a dated copy of the file: see what each changed, and put one back.')
+    -- Simple view: the file's tools under ... (each opens what its Full view button does)
+    local tools = { backups = false, cleanup = false, rescan = false, reload = false }
+    if simple then
+        if imgui.Button('...##gcedit_more') then imgui.OpenPopup('##gcedit_tools') end
+        if imgui.IsItemHovered() then set_tip('Backups, Unused gear, Rescan bags, Reload file, display density, theme.') end
+        if imgui.BeginPopup('##gcedit_tools') then
+            tools.backups = imgui.Selectable('Backups##gct_b', false)
+            tools.cleanup = imgui.Selectable('Unused gear##gct_u', false)
+            tools.rescan = imgui.Selectable('Rescan bags##gct_r', false)
+            tools.reload = imgui.Selectable('Reload file##gct_l', false)
+            imgui.Separator()
+            for _, name in ipairs({ 'Compact', 'Comfortable' }) do
+                if imgui.Selectable(name .. ((editorState.preferences.density == name) and ' (now)' or '') .. '##gct_d' .. name, false) then
+                    editorState.preferences.density = name
+                    editorState.preferences.dirty = true
+                    save_preferences()
+                end
+            end
+            imgui.Separator()
+            theme_menu()
+            imgui.EndPopup()
+        end
+    else
+        tools.backups = imgui.Button('Backups##gcedit')
+        if imgui.IsItemHovered() then
+            set_tip('Every Save keeps a dated copy of the file: see what each changed, and put one back.')
+        end
+        imgui.SameLine()
+        tools.cleanup = imgui.Button('Unused gear##gcedit')
+        if imgui.IsItemHovered() then
+            set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap names: '
+                .. 'to store or move off a wardrobe. Read only.')
+        end
+        imgui.SameLine()
+        tools.rescan = imgui.Button('Rescan bags##gcedit')
+        if imgui.IsItemHovered() then set_tip('Read your bags again (after moving gear). Keeps your unsaved changes.') end
+        imgui.SameLine()
+        tools.reload = imgui.Button('Reload file##gcedit')
+        if imgui.IsItemHovered() then
+            set_tip('Read the file and your bags again (after editing it in a text editor or moving gear).')
+        end
     end
+    if tools.backups then editorState.ui.backups = { open = true } end
     ctx.draw_backups()
-    imgui.SameLine()
-    if imgui.Button('Unused gear##gcedit') then editorState.ui.cleanup = { open = true } end
-    if imgui.IsItemHovered() then
-        set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap names: '
-            .. 'to store or move off a wardrobe. Read only.')
-    end
+    if tools.cleanup then editorState.ui.cleanup = { open = true } end
     ctx.draw_cleanup()
-    imgui.SameLine()
-    if imgui.Button('Rescan bags##gcedit') then
+    if tools.rescan then
         rescan()
         feedback('Bags rescanned: ' .. #editorState.inventory.items .. ' items. Unsaved edits kept.')
     end
-    if imgui.IsItemHovered() then set_tip('Read your bags again (after moving gear). Keeps your unsaved changes.') end
-    imgui.SameLine()
-    if imgui.Button('Reload file##gcedit') then
+    if tools.reload then
         if n > 0 then
             editorState.ui.confirm = 'reload'
         else
             gcedit.Reload()
             return
         end
-    end
-    if imgui.IsItemHovered() then
-        set_tip('Read the file and your bags again (after editing it in a text editor or moving gear).')
     end
     imgui.SameLine()
     -- a draft saves as it is too
@@ -2245,10 +2292,16 @@ local function body()
     imgui.SameLine(0, 0)
     imgui.BeginChild('##gcedit_right', { 0, 0 }, CHILD_BORDERS)
     local nf = fill_list().n
-    local tabs = { { 'Result', 'action' }, { 'Gear', 'gear' }, { 'Summary', 'summary' } }
-    if set and cmp_of(set) then tabs[#tabs + 1] = { 'Compare', 'compare' } end
-    tabs[#tabs + 1] = { 'Related', 'over' }
-    tabs[#tabs + 1] = { nf > 0 and ('To fill (' .. nf .. ')') or 'To fill', 'fill' }
+    local tabs
+    if ctx.simple.On() then -- Gear, What goes on (Result; Related one click away), Stats; To fill when there is some
+        tabs = { { 'Gear', 'gear' }, { 'What goes on', 'action' }, { 'Stats', 'summary' } }
+        if nf > 0 then tabs[#tabs + 1] = { 'To fill (' .. nf .. ')', 'fill' } end
+    else
+        tabs = { { 'Result', 'action' }, { 'Gear', 'gear' }, { 'Summary', 'summary' } }
+        if set and cmp_of(set) then tabs[#tabs + 1] = { 'Compare', 'compare' } end
+        tabs[#tabs + 1] = { 'Related', 'over' }
+        tabs[#tabs + 1] = { nf > 0 and ('To fill (' .. nf .. ')') or 'To fill', 'fill' }
+    end
     editorState.selection.tab = editorPanels.Tabs(imgui, palette, editorState.selection.tab, tabs)
     imgui.Separator()
     if editorState.selection.tab == 'compare' then
@@ -2280,6 +2333,13 @@ local function body()
             editorUI.Stats.Controls(imgui, palette, editorState)
             editorUI.Stats.DrawSummary(imgui, palette, set.name, set_stats(set))
         elseif editorState.selection.tab == 'action' then
+            if ctx.simple.On() then -- Related and Compare live here in Simple view
+                if imgui.SmallButton('Sets that go on with it (Related)##simple_rel') then editorState.selection.tab = 'over' end
+                if cmp_of(set) then
+                    imgui.SameLine()
+                    if imgui.SmallButton('Compare##simple_cmp') then editorState.selection.tab = 'compare' end
+                end
+            end
             imgui.PushTextWrapPos(0)
             draw_layers(set)
             imgui.PopTextWrapPos()

@@ -148,6 +148,8 @@ function state.Decode(text)
             if width and width == width and width >= 80 and width <= 4000 then preferences[key] = width end
         elseif key == 'density' and (value == 'Compact' or value == 'Comfortable') then
             preferences.density = value
+        elseif (key == 'view') and ((value == 'simple') or (value == 'full')) then
+            preferences.view = value -- Simple or Full view (nil: Simple for a new job file, else Full)
         elseif (key == 'start') and ((value == 'on') or (value == 'saved') or (value == 'off')) then
             preferences.start = value -- Getting started: shown, shown and saved once, done or hidden
         elseif key == 'recent' then -- the sets opened last, newest first (tab between names)
@@ -167,6 +169,7 @@ function state.Encode(preferences)
         lines[#lines + 1] = 'recent\t' .. table.concat(preferences.recent, '\t')
     end
     if preferences.start ~= nil then lines[#lines + 1] = 'start\t' .. preferences.start end
+    if preferences.view ~= nil then lines[#lines + 1] = 'view\t' .. preferences.view end
     return table.concat(lines, '\n') .. '\n'
 end
 

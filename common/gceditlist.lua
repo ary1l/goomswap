@@ -848,9 +848,13 @@ local function draw_sets()
                     -- a set inside a set under its parent's heading: indented, by its key; moved elsewhere: its name
                     local parent = (set.parentName ~= nil) and editorState.document.model.byName[set.parentName] or nil
                     local nested = (parent ~= nil) and (parent.group == set.group)
-                    if (set.rowVer ~= editorState.document.revision) or (set.rowNested ~= nested) then
-                        set.rowNested = nested
+                    local simple = (ctx.simple ~= nil) and ctx.simple.On() or false
+                    if (set.rowVer ~= editorState.document.revision) or (set.rowNested ~= nested)
+                        or (set.rowSimple ~= simple) then
+                        set.rowNested, set.rowSimple = nested, simple
                         local label = nested and ('    ' .. set.key) or set.name
+                        local plain = simple and (not nested) and ctx.simple.Label(set.name) or nil
+                        if plain ~= nil then label = plain .. '  (' .. set.name .. ')' end -- Simple view: what it is for
                         if editorState.document.deleted[set.name] then
                             label = label .. ' (delete)'
                         elseif set.new then

@@ -72,13 +72,14 @@ them. Add per job as in [Job file](#job-file) below; replace in `OnLoad`: `gcinc
 ```lua
 gcinclude.SIRSkip = T{'Phalanx'};   -- top: adds to the list
 gcinclude.CureObi = true;           -- top: cure obi
+profile.Packer = { 'Echo Drops', { Name = 'Grape Daifuku +1', Quantity = 12 } }; -- /lac gear
 profile.OnLoad = function()
     gcinclude.WeaponModes = {'None', 'Savage', 'Leaden'};
     gcinclude.DefaultWeapons = 'Savage';          -- or { Main = 'Burtgang', Sub = 'Aegis' }
     gcinclude.WeaponRoles = { melee = 'Savage', ranged = 'Leaden' };
     gcinclude.SubModes = {'None', 'Duban'};      -- optional: /sw picks; items in Weapon_ sets are picks already
     gcinclude.AlwaysDualWield = true;
-    gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Grape Daifuku +1'] = 'stack' };
+    gcinclude.Rules = { { on = 'Default', when = { buff = 'Cover' }, wear = 'Fealty' } }; -- /gcedit RULES
     gcinclude.MeleeModes = {'Default', 'Acc'};    -- own /mset list (NukeModes: /nukeset)
     gcinclude.settings.RefreshGearMPP = 50;
     gcinclude.Initialize();

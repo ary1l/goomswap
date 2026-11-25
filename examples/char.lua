@@ -22,8 +22,8 @@ return {
         -- Keybinds = { { 'F7', 'wm' }, { 'F9', 'mset' } },
     },
 
-    -- Optional supplies belong OUTSIDE settings, alongside it.
-    -- Uncomment the whole block you want. These apply to every job.
+    -- Optional supplies belong OUTSIDE settings, alongside it: /lac gear (Packer plugin) fetches them on every job.
+    -- Uncomment the whole block you want (or use /gcedit Settings). A count, 'stack' or 'all'.
     -- Packer = {
     --     ['Echo Drops'] = 'stack',
     --     ['Holy Water'] = 'stack',

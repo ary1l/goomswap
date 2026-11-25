@@ -13,7 +13,13 @@ More pictures of the editor, some of them mockups of the newest build, are in [i
 
 - Weapon modes, TP and Aftermath protection, defense modes, idle Regen/Refresh, and status-specific gear.
 - Precast/midcast layers, TH, spell-element gear, magic burst, Moonshade and action safety checks.
-- Bellhop packer (asks only for what's missing and reachable; never twice across reloads).
+- Rules: "when this, wear that" without code (a buff up, low MP, a spell on you, a mode...), made in `/gcedit`;
+  **Convert** turns your job file's own `if`s into rules with the same result ([Rules](docs/rules.md)).
+- No text editor needed: sets, rules, modes, settings (lists and keybinds as controls) and new job files are all
+  done in `/gcedit`, in a Simple view or the Full one.
+- `/gcimport` reads a Windower GearSwap job file's sets into a GoomSwap draft; **Adopt** makes a plain LuAshitacast
+  file a GoomSwap one, its code kept.
+- Packer: `/lac gear` (the Packer plugin) fetches every set's gear, your Packer lists and the items GoomSwap wears.
 - `/gcbar` status bar and `/gchud` multibox controls; colours follow goomui's preset.
 - `/gcgear` worn-gear grid (equipmon-style icons, ammo, encumbrance) marking `/lock`, TP holds, Aminon/Hoxne, gear
   that needs RP and swaps that didn't go on; hover a slot for the set that put it on, a box's name in the `/gchud`
@@ -33,19 +39,23 @@ More pictures of the editor, some of them mockups of the newest build, are in [i
 **Ashita v4**
 
 1. Copy `common/` and `examples/` into `Ashita-V4beta-main/config/addons/luashitacast/`.
-2. Copy `examples/<JOB>.lua` into your character's LuAshitacast profile folder. Add `examples/char.lua` there if you
-   want per-character settings or a Packer list.
+2. Copy `examples/<JOB>.lua` into your character's LuAshitacast profile folder (or, once one job file loads, make the
+   others in `/gcedit`: the file name menu, **New job file**). Add `examples/char.lua` there if you want
+   per-character settings.
 3. Load LuAshitacast and your job file: `/addon load luashitacast`, then `/lac load`.
-4. Load Ashita's `debuff` addon (`/addon load debuff`): it provides `/cancel`, which GoomSwap uses to drop Sneak or
+4. Optional: Ashita's Packer plugin (`/load packer`) for `/lac gear`, which puts your sets' gear and Packer items in
+   your bags (`/gcedit` Settings, **Get gear now**).
+5. Load Ashita's `debuff` addon (`/addon load debuff`): it provides `/cancel`, which GoomSwap uses to drop Sneak or
    Stoneskin before recasting them and to cancel Stoneskin while you are asleep.
-5. Einherjar: a separate addon, not part of this repository (`/ejenter`).
-6. Sequencer and PacketFlow are recommended for multiboxing and action timing: [Sequencer](https://github.com/ThornyFFXI/Sequencer),
+6. Einherjar: a separate addon, not part of this repository (`/ejenter`).
+7. Sequencer and PacketFlow are recommended for multiboxing and action timing: [Sequencer](https://github.com/ThornyFFXI/Sequencer),
    [PacketFlow](https://github.com/ThornyFFXI/PacketFlow). [Multisend](https://github.com/ThornyFFXI/Multisend)
    (`/load multisend`) lets your boxes tell each other about incoming Cures and buffs (received sets).
 
 ## First use
 
-1. Load the matching example job file. `/lac newlua` can create the profile folder and an empty job file.
+1. Load the matching example job file. `/lac newlua` can create the profile folder and an empty job file. Coming
+   from GearSwap: put your job file in your character's luashitacast folder and run `/gcimport <file>`.
 2. Run `/gcbuild` to create `<JOB>.proposed.lua` with gear you own, or open `/gcedit` and choose **Keep only my gear**.
 3. Use the editor's **To fill** and **Gear** tabs to fill empty or missing slots. **Use worn** copies your current gear
    into a set.
@@ -114,6 +124,8 @@ rename its other sets (`Tp_Malignance`, `Weapon_MalignanceAcc`) yourself.
 | `/gcbar` `/gchud` `/gcgear` | Status bar, multibox HUD, worn-gear grid |
 | `/checksets` | Validate sets |
 | `/gcbuild` `/gcedit [set]` | Build or edit job sets |
+| `/gcimport <file> [JOB]` | A GearSwap job file's sets as a draft to edit and save |
+| `/lac gear` | Fetch every set's gear and your Packer items (Packer plugin) |
 | `/gchelp` | In-game command help |
 
 See [all commands and keys](docs/commands.md).
@@ -127,6 +139,7 @@ See [all commands and keys](docs/commands.md).
 - [Status bar and HUD](docs/bar.md)
 - [Building a job file](docs/gcbuild.md)
 - [Set editor](docs/gcedit.md)
+- [Rules, Convert, Adopt](docs/rules.md)
 
 ## Troubleshooting
 

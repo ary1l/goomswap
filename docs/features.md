@@ -38,12 +38,15 @@ needed (one still dresses the other slots). `/lock` or `/aminon` on Main stops i
 
 ## Items
 
-- **Packer** (Bellhop), on load and `/packer`: `PackerItems` → `char.lua` `Packer` → `gcinclude.Packer`
-  (a number = target count, `'stack'` = a full stack, `false` drops an earlier entry). Default: a stack of Grape Daifuku +1.
-  - Asks only for what's missing, from bags reachable here, that fits in free slots.
-  - Requests in flight live in the character folder's `goomswap-packer.txt`: no reload asks twice. One Bellhop never
-    sent clears after 20 s; `/packer reset` forgets the rest (only once Bellhop has stopped).
-  - Job change: items only the old job listed go back (`PackerPutAway = false` keeps them).
+- **Packer**: `/lac gear` (LuAshitacast, with the Packer plugin loaded: `/load packer`) gathers the gear of every
+  set in the job file and the job's `profile.Packer` list into your inventory and wardrobes; the Packer plugin sorts
+  the rest by its own config. LuAshitacast reads only the sets' own slots, so at load GoomSwap adds to that list, in
+  memory (the file is not written): `char.lua`'s `Packer` (else the shared file's), sets inside sets (`Buffs`),
+  GoomSwap's own sets and `char.lua`'s `sets`, and the items its commands and layers wear that you own (Warp and
+  Dimensional rings, Hoxne Ampulla, obis, Moonshade, capacity capes). Counts: a number, `'all'`, or (in `char.lua`)
+  `'stack'`, which becomes the item's stack size. `/gcedit` Settings edits the lists (**Get gear now**). The Bellhop
+  packer (`/packer`, `PackerItems`, `PackerPutAway`, `gcinclude.Packer`) is gone; Settings offers to move an old list
+  into Packer.
 - **`/gce`:** waits the item's delay (`EnchantDelays`, `EnchantWindow`), retries 5x, then frees the slot. Rings: Ring2.
 - **Einherjar:** a separate Ashita addon, not part of this repository (`/ejenter`, `/ejlamps`, `/ejexit`).
 - Asleep under Stoneskin: `/cancel Stoneskin` (Ashita's `debuff` addon), twice at most per sleep.

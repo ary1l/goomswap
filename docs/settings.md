@@ -20,7 +20,7 @@ return {
         Keybinds = {}, -- disable GoomSwap's default bindings
         RefreshGearMPP = 50,
     },
-    Packer = { ['Grape Daifuku +1'] = 'stack' },
+    Packer = { ['Grape Daifuku +1'] = 'stack' }, -- /lac gear on every job (Packer plugin)
     sets = {
         Doomed = { Ring1 = 'Purity Ring', Waist = 'Gishdubar Sash' },
     },
@@ -36,7 +36,7 @@ settings. A job's own gear table remains in that job file.
 | Every character | `goomswap-shared.lua`, inside `settings` ([below](#every-character-goomswap-sharedlua)) |
 | Every job on one character | `char.lua`, inside `settings` |
 | One job | `gcinclude.settings.X = value` before `gcinclude.Initialize()` (`/gcedit` → Settings → **This job**) |
-| One job's packer/style | `gcinclude.Packer`, `gcinclude.LockstyleSet` |
+| One job's packer/style | `profile.Packer` (LuAshitacast's list, `/lac gear`), `gcinclude.LockstyleSet` |
 
 Keep character files and customized job files when applying shared-code updates.
 Existing personal edits in shared code need a one-time move into char.lua; updates
@@ -72,7 +72,7 @@ More, by area:
 | Casting | `SIRSkip` `THSkip` `ElementGear` `ElementSkills` `OrpheusPoints` `MBWindow` `MBSkills` |
 | Idle | `AutoGear` `PetDTGearHPP` |
 | Weapon skills | `WScheck` `WSdistance` `MoonshadeSlot` `MoonshadeSkip` `ElementalWS` |
-| Items | `PackerItems` `PackerPutAway` `EnchantDelays` `EnchantWindow` |
+| Items | `EnchantDelays` `EnchantWindow` (Packer: beside `settings`, see above) |
 | Hoxne | `HoxneItem` `HoxneLockSlots` `HoxneAutoUse` |
 | Received sets | `ReceivedSets` `ReceivedWindow` `MyBoxes` |
 | Bar and HUD | `DisplayBar` `DisplayBarX` `DisplayBarY` `HUDOwners` `HUDAbbr` `WeaponClass` `Theme` |

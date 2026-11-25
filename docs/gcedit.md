@@ -4,6 +4,27 @@
 
 Edits your loaded job file. Changes stay in memory until you confirm a save. `/gcedit Savage Blade` opens a set.
 
+## Simple and Full view
+
+**Simple view** / **Full view** (top bar) switches between them; kept per job, and a new job file (the example, a
+draft) starts in Simple. Simple: each set says what it is for beside its name (`Tp_Default`: *Fighting*,
+`Idle_Refresh`: *Standing: low MP*), the top bar keeps Settings and Save (Backups, Unused gear, Rescan bags, Reload
+file, density and theme are under **...**), and the right pane has **Gear**, **What goes on** (the Result, with
+**Related** and **Compare** one click away) and **Stats**, plus **To fill** while something is left. Full view is
+everything below, as before.
+
+## Rules
+
+**RULES**, at the top of the set list: "when this, wear that" without code, and **Convert** for your job file's own
+`if`s. See [Rules](rules.md).
+
+## New job file
+
+The file name menu (top bar) ends with **New job file**: pick a job, then **From my gear** (the example with only what
+you own, as a draft to fill: `/gcbuild`), **The example** as it is, or **Empty sets** (the example's set names,
+handlers and rules, no gear). The last two write `<JOB>.lua` in your character folder when it has none; on your
+current job it loads at once. A GearSwap file: `/gcimport <file>` ([Rules](rules.md) for its logic).
+
 A new job file (still the example as is, or a `/gcbuild` draft) gets a **Getting started** list at the top: your own
 gear (**Keep only my gear**), what is left **To fill**, a `/wm` weapon mode (or `/mw` `/sw` picks), one **Save +
 reload**, and the status bar (`/gcbar`). Each step ticks itself; the list goes once all are done, or with **Hide**
@@ -90,11 +111,15 @@ Pick **Save to**, change a value, **Save**; **Clear** takes it out of that file.
 written at once; **This job** changes wait for the editor's Save, like set edits, as `gcinclude.settings.X = value;`
 lines (a new one goes just before `gcinclude.Initialize()`). Below the settings, **Only in <job file>** edits that
 file's own options the same way: `DefaultWeapons`, `WeaponRoles`, `MainModes` `SubModes` `RangeModes`,
-`WeaponItemMap`, `AlwaysDualWield`, `NukeModes`, `Packer`, `SIRSkip` `THSkip`, `CureObi`, `SafeAmmo`, `RangeAmmo`,
+`WeaponItemMap`, `AlwaysDualWield`, `NukeModes`, `Packer` (`profile.Packer`, with **Get gear now**: `/lac gear`), `SIRSkip` `THSkip`, `CureObi`, `SafeAmmo`, `RangeAmmo`,
 `CORmsg`, `LockstyleSet` (`WeaponModes` and `MeleeModes` are shown; Weapon_ sets and the headings' **+ /wm mode**,
 **+ /mset mode** change them).
-A value written as code, or set in more than one place in the file, is left for you to edit there. True/false are checkboxes, numbers and text are boxes, tables are Lua
-(`{ 'Ninjutsu' }`). Hover a setting for what it does, an example typed the way its box takes it, and its value in
+A value written as code, or set in more than one place in the file, is left for you to edit there. True/false are
+checkboxes, numbers and text are boxes; lists of names (`SIRSkip`, `HUDOwners`, `MainModes`...) are chips (**x**
+takes one out, a box adds one), name -> value tables (`HUDAbbr`, `ElementalWS`, `WeaponRoles`...) are rows,
+**Keybinds** are modifier ticks, a key and a command, and **Packer** lists are items with a count, a stack or all
+(**Packer (every job)** for char.lua or the shared file, **Packer** under the job file's own options, with **Get gear
+now**). Other tables (`ElementGear`, `OrpheusPoints`...) are Lua in their box. Hover a setting for what it does, an example typed the way its box takes it, and its value in
 each file; an empty box shows the example greyed. Numbers keep to their range (HP/MP % 0-100, TP 0-3000).
 Settings most never change (item names like `HoxneItem`, game data, timing windows) show with **Show all**, when a
 file sets one, or in a search; job options only some jobs read (`NukeModes`, `CORmsg`) show on those jobs. A value the engine would refuse on load is refused here. `/lac reload` applies it everywhere;
@@ -246,6 +271,6 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 
 **Save + reload** shows a review (before/after per set, new, deleted and renamed sets, weapon and melee modes);
 cancelling writes nothing. Saving checks the file didn't change on disk and still parses, writes a dated backup,
-then reloads (reopening the editor if ticked). Code-defined sets need a text editor; everything outside the gear
-definitions is kept as written. The newest ten editor backups per file are kept (`EditorBackupKeep` in
+then reloads (reopening the editor if ticked). A set written as code (built by a function, not a table of slots) is shown, not
+edited; everything outside the gear definitions, rules and the settings you change is kept as written. The newest ten editor backups per file are kept (`EditorBackupKeep` in
 char.lua's `settings`, `0` keeps all). Widths and density live in the job's `.gcedit-ui` file.
