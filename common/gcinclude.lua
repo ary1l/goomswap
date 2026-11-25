@@ -35,7 +35,7 @@ end
 gcinclude.AliasList = T{'gcmessages','wsdistance','dt','mdt','th','kite','mset','wsset','nukeset','burst','weapon',
     'death','sir','tankset','proc','pupmode','wm','mw','sw','rw','ammoset','aminon','gchud','lock','unlock',
     'hoxne','gchelp','gckey','def','gce','checksets','gcperf','smartswap','autogear','gcbar','forcestring','songlock',
-    'siphon','warpring','mea','holla','dem','capacity','jubilee','abyproc','dw','dynamisrp','gcbuild','gcedit',
+    'siphon','warpring','mea','holla','dem','capacity','jubilee','abyproc','dw','dynamisrp','gcbuild','gcimport','gcedit',
     'gcconfig','idleset','gcgear'}
 -- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 gcinclude.ExitItems = { ontic = 'ontic extremity', shard = 'v. con. shard', }
@@ -2141,7 +2141,7 @@ function gcinclude.Help()
         'holds  : /capacity /jubilee /dynamisrp /abyproc [on|off]',
         'items  : /gce <item> | cancel, /warpring /mea /holla /dem',
         'checks : failing actions cancel, reason in chat',
-        'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcbuild [JOB] (the example with your gear, as <JOB>.proposed.lua), /gcedit [set|last [slot]] (set editor window, Ashita; last: the set your last action used)',
+        'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcbuild [JOB] (the example with your gear, as <JOB>.proposed.lua), /gcimport <file> [JOB] (a GearSwap file\'s sets, the same way), /gcedit [set|last [slot]] (set editor window, Ashita; last: the set your last action used)',
         'bar    : /gcbar [on|off|pos x y|reset|scale N|theme name]',
         'grid   : /gcgear [on|off|pos x y|reset|scale N|alpha N|bg on|off] (worn gear 4x4: locks, holds, RP)',
         'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
@@ -3033,18 +3033,19 @@ end
 
 -- After /gcbuild: the draft opens in the set editor; its Save writes it as this job's file (the old one
 -- backed up) and reloads. Another job's draft is only written: LAC loads that job's file on the job change.
-function gcinclude.EditorDraft(job, proposed, dir)
+function gcinclude.EditorDraft(job, proposed, dir, cmd)
+    cmd = cmd or '/gcbuild'
     local now = gcinclude.JobName(AshitaCore:GetMemoryManager():GetPlayer():GetMainJob())
     local file = job .. '.proposed.lua'
     if (now ~= job) then
-        gcinclude.Say('Next: on ' .. job .. ', open ' .. file .. ', fill the commented slots, save it as ' .. job
-            .. '.lua; or run /gcbuild there to finish it in the set editor.')
+        gcinclude.Say('Next: change to ' .. job .. ' and run ' .. cmd .. ' there: ' .. file
+            .. ' opens in the set editor, and its Save makes it your ' .. job .. '.lua.')
         return
     end
     if not loadEditor() then return end
     if gcinclude.Editor.IsOpen() then
         if gcinclude.Editor.Dirty() then
-            gcinclude.Err('/gcbuild: the set editor has unsaved changes: save or close it, then /gcbuild again.')
+            gcinclude.Err(cmd .. ': the set editor has unsaved changes: save or close it, then ' .. cmd .. ' again.')
             return
         end
         gcinclude.Editor.Close()

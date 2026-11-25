@@ -2158,7 +2158,7 @@ local function body()
         editorState.ui.draftLine = editorState.ui.draftLine
             or (
                 string.format(
-                    'Draft from /gcbuild (%s). To fill lists the gaps.\nSave writes it as %s%s and loads it.',
+                    'Draft (%s). To fill lists the gaps.\nSave writes it as %s%s and loads it.',
                     string.match(editorState.document.sourcePath, '[^\\/]+$'),
                     editorState.document.file,
                     (read_file(editorState.document.path) ~= nil) and ' (the old one is kept as a .gcedit.bak)' or ''

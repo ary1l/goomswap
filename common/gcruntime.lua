@@ -466,6 +466,17 @@ do
                         gcinclude.EditorDraft(job, proposed, dir)
                     end
                 end
+            elseif args[1] == 'gcimport' then -- a GearSwap job file's sets as a draft (common/gcgsimport.lua)
+                local ok, mod = pcall(gFunc.LoadFile, 'common\\gcgsimport.lua')
+                local okF, setFile = pcall(gFunc.LoadFile, 'common\\gcsetfile.lua')
+                if not ok or (type(mod) ~= 'table') or not okF then
+                    gcinclude.Err('/gcimport: common\\gcgsimport.lua failed to load')
+                else
+                    local rest = {}
+                    for i = 2, #args do rest[#rest + 1] = args[i] end
+                    local job, proposed, dir = mod.Run(rest, gcinclude.Say, gcinclude.Err, setFile)
+                    if (job ~= nil) then gcinclude.EditorDraft(job, proposed, dir, '/gcimport') end
+                end
             elseif args[1] == 'gcedit' then -- the set editor window (common/gcedit.lua, Ashita, loaded on use)
                 local words = {}
                 for i = 2, #args do

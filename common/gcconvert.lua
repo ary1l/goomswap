@@ -258,7 +258,7 @@ local function parser(toks)
                     next_tok()
                     local name = next_tok()
                     local f = funcbody(t.s)
-                    return { k = 'localfunc', name = name.v, s = t.s, e = f.e }
+                    return { k = 'localfunc', name = name.v, body = f.body, s = t.s, e = f.e }
                 end
                 local names = { next_tok().v }
                 while is(',') do
