@@ -73,6 +73,30 @@ return {
         M.Draw()
         eq(staged.Rules.remove, true, 'none left: the line goes')
     end },
+    { 'code: plan, convert, undo', function()
+        staged = {}
+        fileValue = nil
+        state.document.model.text = [[
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+profile.HandleDefault = function()
+    if (gcinclude.BuffCount('Cover') > 0) then gFunc.EquipSet(sets.Fealty) end
+    gcinclude.CheckDefault();
+end
+return profile;
+]]
+        state.ui.codeOpen = { true }
+        M.Draw()
+        clicks['Convert 1 if into rules##conv_go'] = true
+        M.Draw()
+        eq(state.document.convert ~= nil, true, 'staged')
+        eq(staged.Rules.value[1].wear, 'Fealty')
+        eq(#state.document.convert.splices, 1)
+        clicks['Undo convert##conv_undo'] = true
+        M.Draw()
+        eq(state.document.convert, nil, 'undone')
+        eq(staged.Rules.remove, true, 'rules back to none')
+    end },
     { 'settings widgets draw', function()
         local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, function() end)
         eq(W.List('a', { 'Stun' }), nil)

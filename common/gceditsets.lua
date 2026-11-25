@@ -318,6 +318,15 @@ local function save()
             'Not saved: no gcinclude.Initialize() line to register new weapon modes.', true
         return
     end
+    -- Rules page: Convert's / Adopt's splices, read against this same text (the handlers, apart from the sets)
+    local conv = editorState.document.convert
+    if conv ~= nil then
+        if conv.text ~= disk then
+            editorState.ui.notice, editorState.ui.noticeBad = 'Not saved: the file changed since Convert read it.', true
+            return
+        end
+        for _, sp in ipairs(conv.splices) do splices[#splices + 1] = { sp[1], sp[2], sp[3] } end
+    end
     local text = setFile.Apply(disk, splices)
     -- Settings, This job: each staged gcinclude.<name> line, on the text with the edits above
     for name, e in pairs((text ~= nil) and editorState.document.jobSettings or {}) do

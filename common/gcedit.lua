@@ -633,7 +633,7 @@ end
 
 local function dirty_count()
     local n = #editorState.document.newSets + #editorState.document.newModes
-        + ((editorState.document.wmOrder ~= nil) and 1 or 0)
+        + ((editorState.document.wmOrder ~= nil) and 1 or 0) + ((editorState.document.convert ~= nil) and 1 or 0)
     for _ in pairs(editorState.document.jobSettings or {}) do
         n = n + 1
     end
@@ -1189,6 +1189,11 @@ local function draw_save_review()
                 or (' = ' .. string.gsub(settingsFiles.JobText(e, ''), '%s*\n%s*', ' '))))
             end
         end
+    end
+    local conv = editorState.document.convert
+    if conv ~= nil then -- Rules page: Convert / Adopt, taken out of (or put into) the handlers' code
+        imgui.TextColored(palette.blue, conv.title or 'Code made into rules')
+        for _, l in ipairs(conv.lines or {}) do imgui.TextColored(palette.dim, '  ' .. l) end
     end
     if editorState.document.sourcePath then
         imgui.TextWrapped('This draft replaces the job file. The previous file is backed up.')
@@ -2635,7 +2640,7 @@ function gcedit.Reload()
         editorState.ui.sugg, editorState.ui.confirm, editorState.document.newModes, editorState.document.deleted =
         model, {}, {}, nil, nil, nil, {}, {}
     editorState.document.renames, editorState.document.renameRefs, editorState.document.wmOrder = {}, {}, nil
-    editorState.document.jobSettings = nil
+    editorState.document.jobSettings, editorState.document.convert = nil, nil
     editorState.history.entries, editorState.history.revision, editorState.cache.cover, editorState.cache.view =
         {}, nil, nil, nil
     editorState.document.revision = editorState.document.revision + 1

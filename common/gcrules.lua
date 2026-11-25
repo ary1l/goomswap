@@ -15,7 +15,8 @@
 -- wear: a set by name, with its weapon and /mset versions as gcinclude.ByName wears them (exact = true: that set
 -- only, as gFunc.EquipSet). item: slot -> item. layer: 'job' (the default: where a job file's own `if` goes, under
 -- GoomSwap's layers) or 'top' (over them; still under /lock, holds, Incapacitated, Sleeping, Doomed, SmartSwap and
--- Dispelga's Daybreak). stop: cancel the action (Precast, Ability, Weaponskill, Item, Preshot only: LAC's
+-- Dispelga's Daybreak). at: a spot in the job file's code (`gcinclude.RulesAt('Midcast 1')`, left by /gcedit's
+-- Convert where `if`s were), so the rule goes on exactly there; layer is then not used. stop: cancel the action (Precast, Ability, Weaponskill, Item, Preshot only: LAC's
 -- CancelAction). off: kept, not used. note: your words, shown in /gcedit.
 --
 -- Values: a text key takes 'Exact', { 'A', 'B' } (any of them), or { is = .., isnt = .., has = .., start = ..,
@@ -86,6 +87,7 @@ R.KEYS = {
     { key = 'pethpp', label = "Pet's HP %", kind = 'number' },
     { key = 'pettp', label = "Pet's TP", kind = 'number' },
     { key = 'petname', label = "Pet's name", kind = 'text' },
+    { key = 'petstatus', label = "Pet's status", kind = 'text', values = { 'Idle', 'Engaged' } },
     { key = 'mode', label = 'Mode (/wm, /mset...)', kind = 'mode' },
     { key = 'toggle', label = 'Toggle (/dt, /kite...)', kind = 'toggle' },
     { key = 'burst', label = 'Magic burst (a live skillchain)', kind = 'bool', phases = SPELL },
@@ -244,6 +246,7 @@ function TEST.pet(c, v) return (c.get('pet') ~= nil) == (v == true) end
 function TEST.pethpp(c, v) local p = c.get('pet'); return (p ~= nil) and R.MatchNumber(p.HPP, v) end
 function TEST.pettp(c, v) local p = c.get('pet'); return (p ~= nil) and R.MatchNumber(p.TP, v) end
 function TEST.petname(c, v) local p = c.get('pet'); return (p ~= nil) and R.MatchText(p.Name, v) end
+function TEST.petstatus(c, v) local p = c.get('pet'); return (p ~= nil) and R.MatchText(p.Status, v) end
 function TEST.mode(c, v)
     if (type(v) ~= 'table') or (c.api.cycle == nil) then return false end
     for name, want in pairs(v) do
@@ -390,7 +393,7 @@ end
 -- rules: gcinclude.Rules. The compiled form: [phase] = { job = { ... }, top = { ... } }, each entry a rule or a
 -- group ({ group = { rules }, test }), in file order; and the problems (one line each: the rule is left out).
 function R.Compile(rules)
-    local out, problems = {}, {}
+    local out, problems = { at = {} }, {}
     for _, p in ipairs(R.PHASES) do out[p] = { job = {}, top = {} } end
     if rules == nil then return out, problems end
     if type(rules) ~= 'table' then return out, { 'gcinclude.Rules must be a list of rules' } end
@@ -404,6 +407,8 @@ function R.Compile(rules)
             problems[#problems + 1] = where .. ": on must be one of " .. table.concat(R.PHASES, ', ')
         elseif (rule.layer ~= nil) and (rule.layer ~= 'job') and (rule.layer ~= 'top') then
             problems[#problems + 1] = where .. ": layer must be 'job' or 'top'"
+        elseif (rule.at ~= nil) and (type(rule.at) ~= 'string') then
+            problems[#problems + 1] = where .. ': at must be a spot name'
         else
             local entry, err
             if type(rule.first) == 'table' then
@@ -428,6 +433,11 @@ function R.Compile(rules)
             end
             if entry == nil then
                 problems[#problems + 1] = err
+            elseif rule.at ~= nil then -- run by the job file's gcinclude.RulesAt(at), in its place
+                entry.phase = rule.on
+                out.at[rule.at] = out.at[rule.at] or {}
+                local list = out.at[rule.at]
+                list[#list + 1] = entry
             else
                 local list = out[rule.on][(rule.layer == 'top') and 'top' or 'job']
                 list[#list + 1] = entry
@@ -467,9 +477,7 @@ local function apply(entry, c, api)
     end
     return false
 end
-function R.Run(compiled, phase, layer, api)
-    local list = compiled and compiled[phase] and compiled[phase][layer]
-    if (list == nil) or (#list == 0) then return false, 0 end
+local function run_list(list, phase, api)
     local c, n = context(api, phase), 0
     for _, entry in ipairs(list) do
         if entry.test(c) then
@@ -488,6 +496,17 @@ function R.Run(compiled, phase, layer, api)
         end
     end
     return false, n
+end
+function R.Run(compiled, phase, layer, api)
+    local list = compiled and compiled[phase] and compiled[phase][layer]
+    if (list == nil) or (#list == 0) then return false, 0 end
+    return run_list(list, phase, api)
+end
+-- The rules at a spot in the job file's code (gcinclude.RulesAt), each read in its own phase.
+function R.RunAt(compiled, at, api)
+    local list = compiled and compiled.at and compiled.at[at]
+    if (list == nil) or (#list == 0) then return false, 0 end
+    return run_list(list, list[1].phase, api)
 end
 
 -- == The builder's rows (gceditrules): a `when` as { key, op, value, sub } rows and back. A text key's ops are is,
@@ -608,7 +627,7 @@ function R.RowsToWhen(rows, any)
 end
 
 -- == Rules as Lua text: one rule a line (a `first` group: one choice a line), keys in reading order. ==
-local RULE_ORDER = { 'on', 'when', 'first', 'wear', 'exact', 'item', 'layer', 'stop', 'off', 'note' }
+local RULE_ORDER = { 'on', 'at', 'when', 'first', 'wear', 'exact', 'item', 'layer', 'stop', 'off', 'note' }
 local function inline(v, quote, key)
     if type(v) == 'string' then return quote(v) end
     if type(v) ~= 'table' then return tostring(v) end

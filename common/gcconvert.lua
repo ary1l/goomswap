@@ -1,0 +1,1320 @@
+-- Convert: a job file's own `if`s (in its handlers) into gcinclude.Rules, when the rules wear exactly what the code
+-- did. The file is read as text and parsed (a Lua parser for what job files hold), never run.
+--
+-- An `if` converts when every condition maps to a rule condition (gcrules.KEYS), every branch only wears (a set by
+-- name, gFunc.EquipSet of a set, gFunc.Equip of an item) or cancels, and the order holds: rules go on where the
+-- handler's code ends (HandleDefault: at gcinclude.CheckDefault()), so an `if` converts only when no code after it
+-- in that handler can wear anything (TH, CheckCancels and other `if`s that convert too are fine). elseif chains
+-- become `first` groups (or plain rules when their branches can't overlap); nested `if`s join their parent's
+-- conditions. Anything else stays code, with the reason.
+--
+-- Pure: Plan(text) -> { handlers = { { name, phase, items = { { line, ok, why, rules, s, e } } } }, rules, removals }.
+local C = {}
+local R = gFunc.LoadFile('common\\gcrules.lua')
+
+-- == Tokens ==
+local KEYWORDS = {}
+for w in string.gmatch('and break do else elseif end false for function goto if in local nil not or repeat return '
+    .. 'then true until while', '%a+') do KEYWORDS[w] = true end
+
+local function long_close(s, i) -- [[ ... ]] / [==[ ... ]==] at i: the index after it, nil when it isn't one
+    local eq = string.match(s, '^%[(=*)%[', i)
+    if eq == nil then return nil end
+    local close = string.find(s, ']' .. eq .. ']', i + #eq + 2, true)
+    return (close ~= nil) and (close + #eq + 2) or (#s + 1)
+end
+
+function C.Tokens(s)
+    local toks, i, n = {}, 1, #s
+    while i <= n do
+        local c = string.sub(s, i, i)
+        if string.match(c, '%s') then
+            i = i + 1
+        elseif string.sub(s, i, i + 1) == '--' then
+            local after = long_close(s, i + 2)
+            if after ~= nil then
+                i = after
+            else
+                local nl = string.find(s, '\n', i, true)
+                i = (nl ~= nil) and nl or (n + 1)
+            end
+        elseif string.match(c, '[%a_]') then
+            local w = string.match(s, '^[%w_]+', i)
+            toks[#toks + 1] = { t = KEYWORDS[w] and 'kw' or 'name', v = w, s = i, e = i + #w - 1 }
+            i = i + #w
+        elseif string.match(c, '%d') or ((c == '.') and string.match(string.sub(s, i + 1, i + 1), '%d')) then
+            local num = string.match(s, '^0[xX]%x+', i) or string.match(s, '^%d*%.?%d+[eE][%+%-]?%d+', i)
+                or string.match(s, '^%d*%.?%d*', i)
+            toks[#toks + 1] = { t = 'num', v = tonumber(num), s = i, e = i + #num - 1 }
+            i = i + #num
+        elseif (c == "'") or (c == '"') then
+            local j, out = i + 1, {}
+            while j <= n do
+                local d = string.sub(s, j, j)
+                if d == '\\' then
+                    local nx = string.sub(s, j + 1, j + 1)
+                    local map = { n = '\n', t = '\t', r = '\r', ['\\'] = '\\', ["'"] = "'", ['"'] = '"' }
+                    out[#out + 1] = map[nx] or nx
+                    j = j + 2
+                elseif d == c then
+                    break
+                else
+                    out[#out + 1] = d
+                    j = j + 1
+                end
+            end
+            toks[#toks + 1] = { t = 'str', v = table.concat(out), s = i, e = j }
+            i = j + 1
+        elseif (c == '[') and (long_close(s, i) ~= nil) then
+            local after = long_close(s, i)
+            local eq = string.match(s, '^%[(=*)%[', i)
+            toks[#toks + 1] = { t = 'str', v = string.sub(s, i + #eq + 2, after - #eq - 3), s = i, e = after - 1 }
+            i = after
+        else
+            local three, two = string.sub(s, i, i + 2), string.sub(s, i, i + 1)
+            local op = (three == '...') and three
+                or ((two == '..') or (two == '==') or (two == '~=') or (two == '<=') or (two == '>=') or (two == '::')) and two
+                or c
+            toks[#toks + 1] = { t = 'op', v = op, s = i, e = i + #op - 1 }
+            i = i + #op
+        end
+    end
+    toks[#toks + 1] = { t = 'eof', v = '<eof>', s = n + 1, e = n + 1 }
+    return toks
+end
+
+-- == Parser: statements and expressions, positions kept (s: first char, e: last char). ==
+local function parser(toks)
+    local P, pos = {}, 1
+    local function peek(k) return toks[pos + (k or 0)] end
+    local function next_tok()
+        local t = toks[pos]
+        pos = pos + 1
+        return t
+    end
+    local function is(v, t) local x = toks[pos]; return (x.v == v) and ((t == nil) or (x.t == t)) end
+    local function expect(v)
+        local t = next_tok()
+        if t.v ~= v then error({ parse = "expected '" .. v .. "' near '" .. tostring(t.v) .. "'", at = t.s }) end
+        return t
+    end
+    local block, expr
+
+    local function funcbody(start)
+        expect('(')
+        while not is(')') do next_tok() end
+        expect(')')
+        local body = block()
+        local fin = expect('end')
+        return { k = 'func', body = body, s = start, e = fin.e }
+    end
+    local function args()
+        local t = peek()
+        if t.v == '(' and t.t == 'op' then
+            next_tok()
+            local list = {}
+            if not is(')') then
+                list[#list + 1] = expr()
+                while is(',') do
+                    next_tok()
+                    list[#list + 1] = expr()
+                end
+            end
+            local close = expect(')')
+            return list, close.e
+        elseif t.v == '{' and t.t == 'op' then
+            local tbl = P.table()
+            return { tbl }, tbl.e
+        elseif t.t == 'str' then
+            next_tok()
+            return { { k = 'str', v = t.v, s = t.s, e = t.e } }, t.e
+        end
+        error({ parse = 'expected arguments', at = t.s })
+    end
+    function P.table()
+        local open = expect('{')
+        local node = { k = 'table', items = {}, fields = {}, s = open.s }
+        while not is('}') do
+            if is('[') and (peek().t == 'op') then
+                next_tok()
+                local key = expr()
+                expect(']')
+                expect('=')
+                local v = expr()
+                if key.k == 'str' then node.fields[key.v] = v else node.computed = true end
+            elseif (peek().t == 'name') and (peek(1).v == '=') and (peek(1).t == 'op') then
+                local key = next_tok().v
+                next_tok()
+                node.fields[key] = expr()
+            else
+                node.items[#node.items + 1] = expr()
+            end
+            if is(',') or is(';') then next_tok() else break end
+        end
+        node.e = expect('}').e
+        return node
+    end
+    local function primary()
+        local t = peek()
+        if t.t == 'name' then
+            next_tok()
+            return { k = 'name', v = t.v, s = t.s, e = t.e }
+        elseif t.v == '(' and t.t == 'op' then
+            next_tok()
+            local inner = expr()
+            local close = expect(')')
+            return { k = 'paren', a = inner, s = t.s, e = close.e }
+        end
+        error({ parse = "unexpected '" .. tostring(t.v) .. "'", at = t.s })
+    end
+    local function suffixed()
+        local node = primary()
+        while true do
+            local t = peek()
+            if t.v == '.' and t.t == 'op' then
+                next_tok()
+                local name = next_tok()
+                node = { k = 'index', obj = node, key = { k = 'str', v = name.v }, s = node.s, e = name.e }
+            elseif t.v == '[' and t.t == 'op' then
+                next_tok()
+                local key = expr()
+                local close = expect(']')
+                node = { k = 'index', obj = node, key = key, s = node.s, e = close.e }
+            elseif t.v == ':' and t.t == 'op' then
+                next_tok()
+                local name = next_tok()
+                local list, e = args()
+                node = { k = 'call', fn = node, method = name.v, args = list, s = node.s, e = e }
+            elseif ((t.v == '(' or t.v == '{') and t.t == 'op') or (t.t == 'str') then
+                local list, e = args()
+                node = { k = 'call', fn = node, args = list, s = node.s, e = e }
+            else
+                return node
+            end
+        end
+    end
+    local function simple()
+        local t = peek()
+        if t.t == 'num' then next_tok(); return { k = 'num', v = t.v, s = t.s, e = t.e } end
+        if t.t == 'str' then next_tok(); return { k = 'str', v = t.v, s = t.s, e = t.e } end
+        if t.t == 'kw' and (t.v == 'true' or t.v == 'false') then next_tok(); return { k = 'bool', v = (t.v == 'true'), s = t.s, e = t.e } end
+        if t.t == 'kw' and t.v == 'nil' then next_tok(); return { k = 'nil', s = t.s, e = t.e } end
+        if t.v == '...' then next_tok(); return { k = 'vararg', s = t.s, e = t.e } end
+        if t.v == '{' and t.t == 'op' then return P.table() end
+        if t.t == 'kw' and t.v == 'function' then next_tok(); return funcbody(t.s) end
+        return suffixed()
+    end
+    local BIN = { ['or'] = { 1, 1 }, ['and'] = { 2, 2 }, ['<'] = { 3, 3 }, ['>'] = { 3, 3 }, ['<='] = { 3, 3 },
+        ['>='] = { 3, 3 }, ['~='] = { 3, 3 }, ['=='] = { 3, 3 }, ['..'] = { 5, 4 }, ['+'] = { 6, 6 }, ['-'] = { 6, 6 },
+        ['*'] = { 7, 7 }, ['/'] = { 7, 7 }, ['%'] = { 7, 7 }, ['^'] = { 10, 9 } }
+    local UNARY = 8
+    local function sub(limit)
+        local node
+        local t = peek()
+        if (t.t == 'kw' and t.v == 'not') or (t.t == 'op' and (t.v == '-' or t.v == '#')) then
+            next_tok()
+            local a = sub(UNARY)
+            node = { k = 'un', op = t.v, a = a, s = t.s, e = a.e }
+        else
+            node = simple()
+        end
+        while true do
+            local op = peek()
+            local pr = ((op.t == 'op') or (op.t == 'kw')) and BIN[op.v] or nil
+            if (pr == nil) or (pr[1] <= limit) then break end
+            next_tok()
+            local b = sub(pr[2])
+            node = { k = 'bin', op = op.v, a = node, b = b, s = node.s, e = b.e }
+        end
+        return node
+    end
+    expr = function() return sub(0) end
+
+    local function stat()
+        local t = peek()
+        if t.v == ';' and t.t == 'op' then next_tok(); return nil end
+        if t.t == 'kw' then
+            if t.v == 'if' then
+                next_tok()
+                local node = { k = 'if', branches = {}, s = t.s }
+                local cond = expr()
+                expect('then')
+                node.branches[1] = { cond = cond, body = block() }
+                while is('elseif', 'kw') do
+                    next_tok()
+                    local c = expr()
+                    expect('then')
+                    node.branches[#node.branches + 1] = { cond = c, body = block() }
+                end
+                if is('else', 'kw') then
+                    next_tok()
+                    node.elseBody = block()
+                end
+                node.e = expect('end').e
+                return node
+            elseif t.v == 'local' then
+                next_tok()
+                if is('function', 'kw') then
+                    next_tok()
+                    local name = next_tok()
+                    local f = funcbody(t.s)
+                    return { k = 'localfunc', name = name.v, s = t.s, e = f.e }
+                end
+                local names = { next_tok().v }
+                while is(',') do
+                    next_tok()
+                    names[#names + 1] = next_tok().v
+                end
+                local exprs = {}
+                if is('=') then
+                    next_tok()
+                    exprs[1] = expr()
+                    while is(',') do
+                        next_tok()
+                        exprs[#exprs + 1] = expr()
+                    end
+                end
+                local last = (#exprs > 0) and exprs[#exprs].e or toks[pos - 1].e
+                return { k = 'local', names = names, exprs = exprs, s = t.s, e = last }
+            elseif t.v == 'return' then
+                next_tok()
+                local e = t.e
+                local list = {}
+                if not (is('end', 'kw') or is('else', 'kw') or is('elseif', 'kw') or is('until', 'kw') or (peek().t == 'eof')
+                    or is(';')) then
+                    list[1] = expr()
+                    while is(',') do
+                        next_tok()
+                        list[#list + 1] = expr()
+                    end
+                    e = list[#list].e
+                end
+                if is(';') then e = next_tok().e end
+                return { k = 'return', exprs = list, s = t.s, e = e }
+            elseif t.v == 'while' then
+                next_tok(); expr(); expect('do'); local b = block()
+                return { k = 'loop', body = b, s = t.s, e = expect('end').e }
+            elseif t.v == 'for' then
+                next_tok()
+                while not is('do', 'kw') do next_tok() end
+                next_tok()
+                local b = block()
+                return { k = 'loop', body = b, s = t.s, e = expect('end').e }
+            elseif t.v == 'repeat' then
+                next_tok(); local b = block(); expect('until'); local c = expr()
+                return { k = 'loop', body = b, s = t.s, e = c.e }
+            elseif t.v == 'do' then
+                next_tok(); local b = block()
+                return { k = 'do', body = b, s = t.s, e = expect('end').e }
+            elseif t.v == 'function' then
+                next_tok()
+                local name = next_tok()
+                local target = { k = 'name', v = name.v, s = name.s, e = name.e }
+                while is('.') or is(':') do
+                    next_tok()
+                    local field = next_tok()
+                    target = { k = 'index', obj = target, key = { k = 'str', v = field.v }, s = target.s, e = field.e }
+                end
+                local f = funcbody(t.s)
+                return { k = 'assign', targets = { target }, exprs = { f }, s = t.s, e = f.e }
+            elseif t.v == 'break' or t.v == 'goto' then
+                next_tok()
+                if t.v == 'goto' then next_tok() end
+                return { k = 'other', s = t.s, e = t.e }
+            end
+        end
+        if t.v == '::' then
+            next_tok(); next_tok(); expect('::')
+            return nil
+        end
+        local first = suffixed()
+        if is('=') or is(',') then
+            local targets = { first }
+            while is(',') do
+                next_tok()
+                targets[#targets + 1] = suffixed()
+            end
+            expect('=')
+            local exprs = { expr() }
+            while is(',') do
+                next_tok()
+                exprs[#exprs + 1] = expr()
+            end
+            return { k = 'assign', targets = targets, exprs = exprs, s = t.s, e = exprs[#exprs].e }
+        end
+        return { k = 'callstat', call = first, s = first.s, e = first.e }
+    end
+    block = function()
+        local list = {}
+        while true do
+            local t = peek()
+            if (t.t == 'eof') or ((t.t == 'kw') and (t.v == 'end' or t.v == 'else' or t.v == 'elseif' or t.v == 'until')) then
+                return list
+            end
+            local st = stat()
+            if st ~= nil then list[#list + 1] = st end
+        end
+    end
+    function P.chunk()
+        local b = block()
+        if peek().t ~= 'eof' then error({ parse = "unexpected '" .. tostring(peek().v) .. "'", at = peek().s }) end
+        return b
+    end
+    return P
+end
+
+-- The file as statements; nil and why (with where) when it doesn't parse.
+function C.Parse(text)
+    local ok, r = pcall(function() return parser(C.Tokens(text)).chunk() end)
+    if ok then return r end
+    if type(r) == 'table' then return nil, r.parse, r.at end
+    return nil, tostring(r)
+end
+
+-- == Meaning: what an expression reads ==
+local function path_of(e) -- 'gData.GetPlayer', 'sets.Idle'; nil for anything but names and . / ['x'] indexes
+    if e == nil then return nil end
+    if e.k == 'paren' then return path_of(e.a) end
+    if e.k == 'name' then return e.v end
+    if e.k == 'index' and e.key.k == 'str' then
+        local base = path_of(e.obj)
+        return (base ~= nil) and (base .. '.' .. e.key.v) or nil
+    end
+    return nil
+end
+local function unparen(e)
+    while (e ~= nil) and (e.k == 'paren') do e = e.a end
+    return e
+end
+
+local GETTERS = { ['gData.GetPlayer'] = 'player', ['gData.GetAction'] = 'action', ['gData.GetActionTarget'] = 'target',
+    ['gData.GetEnvironment'] = 'env', ['gData.GetPet'] = 'pet', ['gData.GetPetAction'] = 'petAction',
+    ['gData.GetTarget'] = 'curtarget' }
+local FIELD_KEY = {
+    player = { Status = 'status', HPP = 'hpp', MPP = 'mpp', TP = 'tp', SubJob = 'sub', MainJobSync = 'level',
+        IsMoving = 'moving' },
+    action = { Name = 'name', Skill = 'skill', Element = 'element', Type = 'type' },
+    target = { HPP = 'targethpp', Distance = 'distance', Type = 'target' },
+    env = { DayElement = 'day', WeatherElement = 'weather', Area = 'zone', Time = 'time' },
+    pet = { HPP = 'pethpp', TP = 'pettp', Name = 'petname', Status = 'petstatus' },
+}
+local CYCLE_SHORT = {}
+for short, full in pairs(R.CYCLES) do CYCLE_SHORT[full] = short end
+local TOGGLE_SHORT = {}
+for short, full in pairs(R.TOGGLES) do TOGGLE_SHORT[full] = short end
+
+-- scope: { vars = { [name] = meaning }, aliases = { [name] = 'gcinclude.ByName' }, lists = { [name] = { 'a' } } }
+local meaning
+local function canon(scope, p) -- a path with file-level aliases resolved (ByName -> gcinclude.ByName)
+    if p == nil then return nil end
+    local head, rest = string.match(p, '^([%w_]+)(.*)$')
+    local a = scope.aliases[head]
+    if a ~= nil then return a .. rest end
+    return p
+end
+local function call_path(scope, call)
+    if call.method ~= nil then return nil end
+    return canon(scope, path_of(call.fn))
+end
+local function is_party_me(e) -- AshitaCore:GetMemoryManager():GetParty():GetMemberName(0)
+    e = unparen(e)
+    if (e == nil) or (e.k ~= 'call') or (e.method ~= 'GetMemberName') then return false end
+    local a = e.args[1]
+    if (a == nil) or (a.k ~= 'num') or (a.v ~= 0) then return false end
+    local p = e.fn
+    if (p.k ~= 'call') or (p.method ~= 'GetParty') then return false end
+    p = p.fn
+    return (p.k == 'call') and (p.method == 'GetMemoryManager') and (path_of(p.fn) == 'AshitaCore')
+end
+local function literal_list(scope, e)
+    e = unparen(e)
+    if e == nil then return nil end
+    if (e.k == 'call') and (#e.args == 1) and (e.args[1].k == 'table') and (path_of(e.fn) == 'T') then e = e.args[1] end
+    if e.k == 'name' then return scope.lists[e.v] end
+    if (e.k ~= 'table') or e.computed or (next(e.fields) ~= nil) then return nil end
+    local out = {}
+    for _, x in ipairs(e.items) do
+        if x.k ~= 'str' then return nil end
+        out[#out + 1] = x.v
+    end
+    return out
+end
+meaning = function(scope, e)
+    e = unparen(e)
+    if e == nil then return nil end
+    if e.k == 'str' or e.k == 'num' or e.k == 'bool' then return { kind = 'lit', v = e.v } end
+    if e.k == 'nil' then return { kind = 'nil' } end
+    if e.k == 'name' then
+        local v = scope.vars[e.v]
+        if v ~= nil then return v end
+        return nil
+    end
+    if e.k == 'bin' and e.op == 'or' then -- gData.GetActionTarget() or {}: the getter
+        local m = meaning(scope, e.a)
+        local b = unparen(e.b)
+        if (m ~= nil) and (b.k == 'table') and (#b.items == 0) and (next(b.fields) == nil) then return m end
+        return nil
+    end
+    if e.k == 'bin' and e.op == '+' then -- BuffCount('A') + BuffCount('B'): up when any of them is
+        local a, b = meaning(scope, e.a), meaning(scope, e.b)
+        if (a ~= nil) and (b ~= nil) and (a.kind == 'buffcount') and (b.kind == 'buffcount') then
+            local names = {}
+            for _, x in ipairs(a.names) do names[#names + 1] = x end
+            for _, x in ipairs(b.names) do names[#names + 1] = x end
+            return { kind = 'buffcount', names = names }
+        end
+        return nil
+    end
+    if e.k == 'index' and e.key.k == 'str' then
+        local base = meaning(scope, e.obj)
+        if (base ~= nil) and (base.kind == 'player') and (e.key.v == 'Name') then return { kind = 'me' } end
+        if (base ~= nil) and FIELD_KEY[base.kind] ~= nil then return { kind = 'field', base = base.kind, field = e.key.v } end
+        return nil
+    end
+    if e.k == 'call' then
+        if is_party_me(e) then return { kind = 'me' } end
+        local p = call_path(scope, e)
+        if (p ~= nil) and GETTERS[p] then return { kind = GETTERS[p] } end
+        if (p == 'gcinclude.BuffCount') or (p == 'gData.GetBuffCount') then
+            local a = e.args[1]
+            if (a ~= nil) and ((a.k == 'str') or (a.k == 'num')) and (#e.args == 1) then
+                return { kind = 'buffcount', names = { a.v } }
+            end
+            return nil
+        end
+        if (p == 'gcdisplay.GetCycle') and (e.args[1] ~= nil) and (e.args[1].k == 'str') then
+            return { kind = 'cycle', name = e.args[1].v }
+        end
+        if (p == 'gcdisplay.GetToggle') and (e.args[1] ~= nil) and (e.args[1].k == 'str') then
+            return { kind = 'toggle', name = e.args[1].v }
+        end
+        if p == 'gcinclude.BurstWanted' then return { kind = 'flag', key = 'burst' } end
+        if p == 'gcinclude.CanDualWield' then return { kind = 'flag', key = 'dualwield' } end
+        if (p == 'gcinclude.Family') and (#e.args == 1) then
+            local m = meaning(scope, e.args[1])
+            if (m ~= nil) and (m.kind == 'field') and (m.base == 'action') and (m.field == 'Name') then
+                return { kind = 'family' }
+            end
+        end
+        return nil
+    end
+    return nil
+end
+C.Meaning = meaning
+
+-- == Conditions ==
+local MAGIC = '[%^%$%(%)%%%.%[%]%*%+%-%?]'
+local function cond_of(scope, e) end -- forward
+local NEG_NUM = { lt = 'ge', le = 'gt', gt = 'le', ge = 'lt', eq = 'ne', ne = 'eq' }
+local FLIP = { ['<'] = '>', ['>'] = '<', ['<='] = '>=', ['>='] = '<=', ['=='] = '==', ['~='] = '~=' }
+local NUM_OP = { ['<'] = 'lt', ['<='] = 'le', ['>'] = 'gt', ['>='] = 'ge', ['=='] = 'eq', ['~='] = 'ne' }
+
+local function single(when) -- the one key of a when table, or nil
+    local k = next(when)
+    if (k == nil) or (next(when, k) ~= nil) then return nil end
+    return k
+end
+-- `a and b` as one when table; nil and why when they can't be said together.
+local function both(a, b)
+    if a.any ~= nil and b.any ~= nil then return nil, 'two sets of "or" joined by "and"' end
+    local out = {}
+    for k, v in pairs(a) do out[k] = v end
+    for k, v in pairs(b) do
+        local cur = out[k]
+        if cur == nil then
+            out[k] = v
+        else
+            local meta = R.KEY[k] or {}
+            if (meta.kind == 'number') and (type(cur) == 'table') and (type(v) == 'table') then
+                local m = {}
+                for op, x in pairs(cur) do m[op] = x end
+                for op, x in pairs(v) do
+                    if m[op] ~= nil and m[op] ~= x then return nil, k .. ' compared twice' end
+                    m[op] = x
+                end
+                out[k] = m
+            elseif (meta.kind == 'mode') or (meta.kind == 'toggle') then
+                local m = {}
+                for s, x in pairs(cur) do m[s] = x end
+                for s, x in pairs(v) do
+                    if m[s] ~= nil then return nil, k .. ' ' .. s .. ' checked twice' end
+                    m[s] = x
+                end
+                out[k] = m
+            elseif (k == 'buff') and (type(cur) == 'string' or #cur == 1) and (type(v) == 'string' or #v == 1) then
+                out.buff = nil -- two buffs that must both be up
+                local x, y = (type(cur) == 'table') and cur[1] or cur, (type(v) == 'table') and v[1] or v
+                local all = out.allbuffs or {}
+                if type(all) == 'string' then all = { all } end
+                all[#all + 1], all[#all + 2] = x, y
+                out.allbuffs = all
+            elseif (k == 'nobuff') then
+                local list = {}
+                for _, x in ipairs((type(cur) == 'table') and cur or { cur }) do list[#list + 1] = x end
+                for _, x in ipairs((type(v) == 'table') and v or { v }) do list[#list + 1] = x end
+                out.nobuff = list
+            elseif (k == 'any') then
+                return nil, 'two sets of "or" joined by "and"'
+            elseif (type(cur) == 'table') and (type(v) == 'table') and (cur[1] == nil) and (v[1] == nil) then
+                local m = {}
+                for f, x in pairs(cur) do m[f] = x end
+                for f, x in pairs(v) do
+                    if m[f] ~= nil then return nil, k .. ' checked twice the same way' end
+                    m[f] = x
+                end
+                out[k] = m
+            elseif (type(cur) ~= 'table' or cur[1] ~= nil) and (type(v) == 'table') and (v[1] == nil) and (v.is == nil) then
+                local m = { is = cur }
+                for f, x in pairs(v) do m[f] = x end
+                out[k] = m
+            elseif (type(v) ~= 'table' or v[1] ~= nil) and (type(cur) == 'table') and (cur[1] == nil) and (cur.is == nil) then
+                local m = { is = v }
+                for f, x in pairs(cur) do m[f] = x end
+                out[k] = m
+            else
+                return nil, k .. ' checked twice'
+            end
+        end
+    end
+    return out
+end
+C.Both = both
+
+-- `a or b`: one key's alternatives joined (name has 'a' or has 'b'), else any = { a, b }.
+local function either(a, b)
+    local ka, kb = single(a), single(b)
+    if (ka ~= nil) and (ka == kb) and (ka ~= 'any') then
+        local va, vb = a[ka], b[kb]
+        local meta = R.KEY[ka] or {}
+        local function list(v) return (type(v) == 'table') and v or { v } end
+        if (meta.kind == 'list') and (ka == 'buff') then
+            local out = {}
+            for _, x in ipairs(list(va)) do out[#out + 1] = x end
+            for _, x in ipairs(list(vb)) do out[#out + 1] = x end
+            return { buff = out }
+        end
+        if (meta.kind == 'text') then
+            local ta = (type(va) == 'string' or va[1] ~= nil) and { is = va } or va
+            local tb = (type(vb) == 'string' or vb[1] ~= nil) and { is = vb } or vb
+            local fa, fb = single(ta), single(tb)
+            if (fa ~= nil) and (fa == fb) and (fa ~= 'isnt') then
+                local out = {}
+                for _, x in ipairs(list(ta[fa])) do out[#out + 1] = x end
+                for _, x in ipairs(list(tb[fb])) do out[#out + 1] = x end
+                return { [ka] = (fa == 'is') and out or { [fa] = out } }
+            end
+        end
+    end
+    local alts = {}
+    for _, w in ipairs({ a, b }) do
+        if (single(w) == 'any') then
+            for _, x in ipairs(w.any) do alts[#alts + 1] = x end
+        else
+            alts[#alts + 1] = w
+        end
+    end
+    return { any = alts }
+end
+
+-- `not x`: the opposite, for one condition; nil when it has none.
+local function negate(w)
+    local k = single(w)
+    if k == nil then return nil end
+    local v = w[k]
+    local meta = R.KEY[k] or {}
+    if k == 'buff' then return { nobuff = v } end
+    if k == 'nobuff' then return { buff = v } end
+    if meta.kind == 'bool' then return { [k] = not v } end
+    if meta.kind == 'toggle' then
+        local s = single(v)
+        if s == nil then return nil end
+        return { toggle = { [s] = not v[s] } }
+    end
+    if meta.kind == 'mode' then
+        local s = single(v)
+        if s == nil then return nil end
+        local x = v[s]
+        if (type(x) == 'string') or (type(x) == 'table' and x[1] ~= nil) then return { mode = { [s] = { isnt = x } } } end
+        if (type(x) == 'table') and (single(x) == 'isnt') then return { mode = { [s] = x.isnt } } end
+        return nil
+    end
+    if meta.kind == 'number' then
+        local op = single(v)
+        if op == nil then return nil end
+        return { [k] = { [NEG_NUM[op]] = v[op] } }
+    end
+    if meta.kind == 'text' then
+        if k == 'target' then
+            if v == 'me' then return { target = 'other' } end
+            if v == 'other' then return { target = 'me' } end
+            return nil
+        end
+        if (type(v) == 'string') or (v[1] ~= nil) then return { [k] = { isnt = v } } end
+        if single(v) == 'isnt' then return { [k] = v.isnt } end
+        return nil
+    end
+    return nil
+end
+C.Negate = negate
+
+-- A comparison `a op b` as a when table.
+local function compare(scope, op, ea, eb)
+    local a, b = meaning(scope, ea), meaning(scope, eb)
+    if (a == nil) or (b == nil) then return nil, 'compares something rules cannot read' end
+    if (a.kind == 'lit') or (a.kind == 'nil') or (a.kind == 'me') and (b.kind == 'field') then a, b, op = b, a, FLIP[op] end
+    if (op ~= '==') and (op ~= '~=') and NUM_OP[op] == nil then return nil, 'an unknown comparison' end
+    local eq = (op == '==')
+    local textOk = (op == '==') or (op == '~=')
+    local function text(key, v) if eq then return { [key] = v } end return { [key] = { isnt = v } } end
+    if a.kind == 'field' then
+        if (a.base == 'target') and (a.field == 'Name') and (b.kind == 'me') and textOk then
+            return { target = eq and 'me' or 'other' }
+        end
+        local key = (FIELD_KEY[a.base] or {})[a.field]
+        if key == nil then return nil, a.base .. '.' .. a.field .. ' is not read by rules' end
+        local meta = R.KEY[key]
+        if (a.base == 'action') and (a.field == 'Element') and (b.kind == 'field') and (b.base == 'env') and textOk then
+            local which = (b.field == 'WeatherElement') and 'weather' or ((b.field == 'DayElement') and 'day' or nil)
+            if which == nil then return nil, 'compares the element with ' .. b.field end
+            if not eq then return nil, 'element not equal to the ' .. which end
+            return { element = which }
+        end
+        if (a.base == 'target') and (a.field == 'Name') and (b.kind == 'me') and textOk then
+            return { target = eq and 'me' or 'other' }
+        end
+        if b.kind ~= 'lit' then return nil, a.field .. ' compared with something that is not a value' end
+        if meta.kind == 'number' then
+            if type(b.v) ~= 'number' then return nil, a.field .. ' compared with text' end
+            return { [key] = { [NUM_OP[op]] = b.v } }
+        end
+        if meta.kind == 'bool' then
+            if (type(b.v) ~= 'boolean') or not textOk then return nil, a.field .. ' compared with a non-boolean' end
+            return { [key] = (b.v == eq) }
+        end
+        if (not textOk) or (type(b.v) ~= 'string') then return nil, a.field .. ' compared as a number' end
+        if key == 'target' then
+            if not eq then return nil, 'target type "not"' end
+            return { target = b.v }
+        end
+        return text(key, b.v)
+    end
+    if a.kind == 'family' then
+        if (b.kind ~= 'lit') or (type(b.v) ~= 'string') or not textOk then return nil, 'family compared oddly' end
+        return text('family', b.v)
+    end
+    if a.kind == 'buffcount' then
+        if (b.kind ~= 'lit') or (type(b.v) ~= 'number') then return nil, 'buff count compared with a non-number' end
+        local n, up = b.v, nil
+        if ((op == '>') and (n == 0)) or ((op == '>=') and (n == 1)) or ((op == '~=') and (n == 0)) then up = true end
+        if ((op == '==') and (n == 0)) or ((op == '<') and (n == 1)) or ((op == '<=') and (n == 0)) then up = false end
+        if up == nil then return nil, 'a buff count other than up / not up' end
+        local v = (#a.names == 1) and a.names[1] or a.names
+        if up then return { buff = v } end
+        return { nobuff = v }
+    end
+    if a.kind == 'cycle' then
+        if (b.kind ~= 'lit') or (type(b.v) ~= 'string') or not textOk then return nil, 'a mode compared oddly' end
+        local s = CYCLE_SHORT[a.name] or a.name
+        return { mode = { [s] = eq and b.v or { isnt = b.v } } }
+    end
+    if a.kind == 'toggle' then
+        if (b.kind ~= 'lit') or (type(b.v) ~= 'boolean') or not textOk then return nil, 'a toggle compared oddly' end
+        local s = TOGGLE_SHORT[a.name] or a.name
+        return { toggle = { [s] = (b.v == eq) } }
+    end
+    if (a.kind == 'pet') and (b.kind == 'nil') and textOk then return { pet = not eq } end
+    if (a.kind == 'flag') and (b.kind == 'lit') and (type(b.v) == 'boolean') and textOk then
+        return { [a.key] = (b.v == eq) }
+    end
+    if (a.kind == 'petAction') and (b.kind == 'nil') then return nil, 'a pet action check (stays with the handler)' end
+    if (b.kind == 'nil') and (a.kind == 'player' or a.kind == 'action' or a.kind == 'target' or a.kind == 'env') then
+        if eq then return nil, 'checks for a missing ' .. a.kind end
+        return {} -- x ~= nil: a guard; a rule reading a missing one is false anyway
+    end
+    return nil, 'compares something rules cannot read'
+end
+
+-- string.contains(spell.Name, 'x'), string.find(..., 'x', 1, true), spell.Name:contains('x'), T{...}:contains(x)
+local function call_cond(scope, e)
+    local p = call_path(scope, e)
+    local function text_arg(subject, lit, plain)
+        local m = meaning(scope, subject)
+        if (m == nil) or (lit == nil) or (lit.k ~= 'str') then return nil, 'a text search rules cannot read' end
+        local key = nil
+        if (m.kind == 'field') then key = (FIELD_KEY[m.base] or {})[m.field] end
+        if m.kind == 'family' then key = 'family' end
+        if (key == nil) or (R.KEY[key].kind ~= 'text') then return nil, 'a text search in something rules cannot read' end
+        if (not plain) and string.find(lit.v, MAGIC) then return nil, "a pattern ('" .. lit.v .. "') rules match only as plain text" end
+        return { [key] = { has = lit.v } }
+    end
+    if (p == 'string.contains') and (#e.args == 2) then return text_arg(e.args[1], e.args[2], false) end
+    if (p == 'string.find') and (#e.args >= 2) then
+        local plain = (#e.args == 4) and (e.args[3].k == 'num') and (e.args[3].v == 1) and (e.args[4].k == 'bool')
+            and (e.args[4].v == true)
+        if (#e.args ~= 2) and not plain then return nil, 'string.find with other arguments' end
+        return text_arg(e.args[1], e.args[2], plain)
+    end
+    if (p == 'string.match') and (#e.args == 2) then return text_arg(e.args[1], e.args[2], false) end
+    if e.method == 'contains' and (#e.args == 1) then
+        local list = literal_list(scope, e.fn)
+        if list ~= nil then -- T{'Cure', 'Cura'}:contains(family)
+            local m = meaning(scope, e.args[1])
+            local key = nil
+            if (m ~= nil) and (m.kind == 'field') then key = (FIELD_KEY[m.base] or {})[m.field] end
+            if (m ~= nil) and (m.kind == 'family') then key = 'family' end
+            if (key == nil) or (R.KEY[key].kind ~= 'text') then return nil, 'a list check on something rules cannot read' end
+            -- T{}:contains compares as written; a list in rules too
+            return { [key] = list }
+        end
+        return text_arg(e.fn, e.args[1], false) -- spell.Name:contains('x')
+    end
+    local m = meaning(scope, e)
+    if m ~= nil then
+        if m.kind == 'flag' then return { [m.key] = true } end
+        if m.kind == 'toggle' then return { toggle = { [TOGGLE_SHORT[m.name] or m.name] = true } } end
+    end
+    return nil, 'calls ' .. tostring(p or (e.method and (':' .. e.method)) or 'a function')
+end
+
+cond_of = function(scope, e)
+    e = unparen(e)
+    if e.k == 'bin' then
+        if e.op == 'and' then
+            local a, why = cond_of(scope, e.a)
+            if a == nil then return nil, why end
+            local b, whyb = cond_of(scope, e.b)
+            if b == nil then return nil, whyb end
+            return both(a, b)
+        elseif e.op == 'or' then
+            local a, why = cond_of(scope, e.a)
+            if a == nil then return nil, why end
+            local b, whyb = cond_of(scope, e.b)
+            if b == nil then return nil, whyb end
+            if (next(a) == nil) or (next(b) == nil) then return nil, '"or" with a check that is always true' end
+            return either(a, b)
+        elseif (NUM_OP[e.op] ~= nil) then
+            return compare(scope, e.op, e.a, e.b)
+        end
+        return nil, 'uses ' .. e.op
+    end
+    if (e.k == 'un') and (e.op == 'not') then
+        local a, why = cond_of(scope, e.a)
+        if a == nil then return nil, why end
+        local n = negate(a)
+        if n == nil then return nil, '"not" of something rules cannot turn around' end
+        return n
+    end
+    if e.k == 'call' then return call_cond(scope, e) end
+    if e.k == 'name' or e.k == 'index' then
+        local m = meaning(scope, e)
+        if m == nil then return nil, 'reads ' .. tostring(path_of(e) or 'a value') .. ', which rules cannot' end
+        if m.kind == 'flag' then return { [m.key] = true } end
+        if m.kind == 'toggle' then return { toggle = { [TOGGLE_SHORT[m.name] or m.name] = true } } end
+        if (m.kind == 'field') and (FIELD_KEY[m.base] or {})[m.field] == 'moving' then return { moving = true } end
+        if (m.kind == 'pet') then return { pet = true } end
+        if (m.kind == 'env') or (m.kind == 'player') or (m.kind == 'action') or (m.kind == 'target') then return {} end
+        if m.kind == 'petAction' then return nil, 'a pet action check (stays with the handler)' end
+        return nil, 'reads ' .. tostring(path_of(e)) .. ' as true or false'
+    end
+    if e.k == 'bool' then return nil, 'a fixed true/false' end
+    return nil, 'an expression rules cannot read'
+end
+C.Cond = function(scope, e) return cond_of(scope, e) end
+
+-- == Bodies: what a branch wears ==
+local SLOT = {}
+for _, s in ipairs(R.SLOTS) do SLOT[string.lower(s)] = s end
+local function set_name_of(scope, arg)
+    arg = unparen(arg)
+    if arg == nil then return nil end
+    if arg.k == 'str' then return arg.v end
+    local p = path_of(arg)
+    if p ~= nil then
+        local name = string.match(p, '^sets%.(.+)$') or string.match(p, '^profile%.Sets%.(.+)$')
+        if (name ~= nil) and not string.find(name, '.', 1, true) then return name end
+    end
+    if (arg.k == 'call') and (call_path(scope, arg) == 'gcinclude.FindSet') and (#arg.args == 1) and (arg.args[1].k == 'str') then
+        return arg.args[1].v
+    end
+    return nil
+end
+local function item_of(e)
+    e = unparen(e)
+    if e.k == 'str' then return e.v end
+    if (e.k == 'table') and not e.computed and (#e.items == 0) and (e.fields.Name ~= nil) and (e.fields.Name.k == 'str') then
+        local out = {}
+        for k, v in pairs(e.fields) do
+            if v.k == 'str' or v.k == 'num' or v.k == 'bool' then
+                out[k] = v.v
+            elseif v.k == 'table' then
+                local list = {}
+                for _, x in ipairs(v.items) do
+                    if x.k ~= 'str' then return nil end
+                    list[#list + 1] = x.v
+                end
+                out[k] = list
+            else
+                return nil
+            end
+        end
+        return out
+    end
+    return nil
+end
+
+-- A statement in a branch as rule actions: { wear, exact } / { item = { slot, item } } / { stop } / { localvar };
+-- nil and why when it is something else.
+local function action_of(scope, st)
+    if st.k == 'callstat' then
+        local call = st.call
+        local p = call_path(scope, call)
+        if p == 'gFunc.EquipSet' and (#call.args == 1) then
+            local name = set_name_of(scope, call.args[1])
+            if name == nil then return nil, 'wears a set built in code' end
+            return { wear = name, exact = true }
+        end
+        if p == 'gcinclude.ByName' and (#call.args == 1) then
+            if call.args[1].k ~= 'str' then return nil, 'wears a set named in code' end
+            return { wear = call.args[1].v }
+        end
+        if p == 'gFunc.Equip' and (#call.args == 2) then
+            local slot = (call.args[1].k == 'str') and SLOT[string.lower(call.args[1].v)] or nil
+            local item = item_of(call.args[2])
+            if (slot == nil) or (item == nil) then return nil, 'equips an item named in code' end
+            return { item = { slot, item } }
+        end
+        if p == 'gFunc.CancelAction' and (#call.args == 0) then return { stop = true } end
+        return nil, 'calls ' .. tostring(p or 'a function')
+    end
+    return nil, (st.k == 'local') and 'sets a variable' or ('has ' .. st.k .. ' code')
+end
+
+local function copy(v)
+    if type(v) ~= 'table' then return v end
+    local o = {}
+    for k, x in pairs(v) do o[k] = copy(x) end
+    return o
+end
+
+-- A block's statements as rules (in order) under the conditions `when`; nil and why when one can't be.
+local convert_if
+local function block_rules(scope, body, when, phase, out)
+    local inner = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists }
+    local pending = nil -- consecutive wears/items under the same conditions join one rule
+    local function flush()
+        if pending ~= nil then out[#out + 1] = pending end
+        pending = nil
+    end
+    for i, st in ipairs(body) do
+        if st.k == 'if' then
+            flush()
+            local ok, why = convert_if(inner, st, when, phase, out)
+            if not ok then return nil, why end
+        elseif st.k == 'local' then
+            for j, name in ipairs(st.names) do
+                local m = (st.exprs[j] ~= nil) and meaning(inner, st.exprs[j]) or nil
+                if m == nil then return nil, 'sets local ' .. name .. ' to something rules cannot read' end
+                inner.vars[name] = m
+            end
+        elseif st.k == 'return' then
+            if (i ~= #body) or (#st.exprs > 0) then return nil, 'returns early' end
+            if (pending == nil or not pending.stop) and not (out[#out] and out[#out].stop) then
+                return nil, 'returns early: the code after it would be skipped'
+            end
+        else
+            local a, why = action_of(inner, st)
+            if a == nil then return nil, why end
+            if a.stop then
+                if not R.STOPPABLE[phase] then return nil, 'cancels the action where LuAshitacast cannot' end
+                pending = pending or { on = phase, when = copy(when) }
+                pending.stop = true
+            elseif a.wear then
+                flush()
+                pending = { on = phase, when = copy(when), wear = a.wear, exact = a.exact or nil }
+            else
+                if (pending == nil) or (pending.item ~= nil and pending.item[a.item[1]] ~= nil) or pending.stop then
+                    flush()
+                    pending = { on = phase, when = copy(when) }
+                end
+                pending.item = pending.item or {}
+                pending.item[a.item[1]] = a.item[2]
+            end
+        end
+    end
+    flush()
+    return out
+end
+
+-- Branch conditions that can't overlap: all one text key compared with different values ('is').
+local function exclusive(conds)
+    local key = nil
+    local seen = {}
+    for _, w in ipairs(conds) do
+        local k = single(w)
+        if (k == nil) or (k == 'any') then return false end
+        local meta = R.KEY[k] or {}
+        if (meta.kind ~= 'text') or (k == 'target') then return false end
+        if (key ~= nil) and (k ~= key) then return false end
+        key = k
+        local v = w[k]
+        if type(v) ~= 'string' and not (type(v) == 'table' and v[1] ~= nil) then return false end
+        for _, x in ipairs((type(v) == 'table') and v or { v }) do
+            if seen[x] then return false end
+            seen[x] = true
+        end
+    end
+    return key ~= nil, key, seen
+end
+
+convert_if = function(scope, st, when, phase, out)
+    local conds = {}
+    for i, br in ipairs(st.branches) do
+        local c, why = cond_of(scope, br.cond)
+        if c == nil then return nil, why end
+        conds[i] = c
+    end
+    -- one-member branches (a single rule each, no nested code): a `first` group, or plain rules when they can't overlap
+    local members, simple = {}, true
+    for i, br in ipairs(st.branches) do
+        local rules, why = block_rules(scope, br.body, {}, phase, {})
+        if rules == nil then return nil, why end
+        if #rules ~= 1 then simple = false end
+        members[i] = rules
+    end
+    local elseRules = nil
+    if st.elseBody ~= nil then
+        local why
+        elseRules, why = block_rules(scope, st.elseBody, {}, phase, {})
+        if elseRules == nil then return nil, why end
+        if #elseRules ~= 1 then simple = false end
+    end
+    local excl, key, values = exclusive(conds)
+    if (#st.branches == 1) and (elseRules == nil) then -- a plain if
+        local w, why = both(when, conds[1])
+        if w == nil then return nil, why end
+        return block_rules(scope, st.branches[1].body, w, phase, out)
+    end
+    if excl then -- skill chains: each branch on its own, the else as "none of them"
+        for i, br in ipairs(st.branches) do
+            local w, why = both(when, conds[i])
+            if w == nil then return nil, why end
+            if block_rules(scope, br.body, w, phase, out) == nil then return nil, 'a branch' end
+        end
+        if st.elseBody ~= nil then
+            local list = {}
+            for v in pairs(values) do list[#list + 1] = v end
+            table.sort(list)
+            local w, why = both(when, { [key] = { isnt = list } })
+            if w == nil then return nil, why end
+            if block_rules(scope, st.elseBody, w, phase, out) == nil then return nil, 'the else branch' end
+        end
+        return out
+    end
+    if simple then
+        local group = { on = phase, when = (next(when) ~= nil) and copy(when) or nil, first = {} }
+        for i in ipairs(st.branches) do
+            local m = members[i][1]
+            m.on = nil
+            local w, why = both(conds[i], m.when or {})
+            if w == nil then return nil, why end
+            m.when = (next(w) ~= nil) and w or nil
+            group.first[#group.first + 1] = m
+        end
+        if elseRules ~= nil then
+            local m = elseRules[1]
+            m.on = nil
+            if (m.when ~= nil) and (next(m.when) == nil) then m.when = nil end
+            group.first[#group.first + 1] = m
+        end
+        for _, m in ipairs(group.first) do
+            if m.stop then return nil, 'a group that cancels' end
+        end
+        out[#out + 1] = group
+        return out
+    end
+    -- else: each branch with the earlier ones turned around
+    local prior = {}
+    for i, br in ipairs(st.branches) do
+        local w, why = both(when, conds[i])
+        if w == nil then return nil, why end
+        for _, p in ipairs(prior) do
+            w, why = both(w, p)
+            if w == nil then return nil, why end
+        end
+        if block_rules(scope, br.body, w, phase, out) == nil then return nil, 'a branch' end
+        local n = negate(conds[i])
+        if n == nil then return nil, 'an elseif chain whose conditions rules cannot turn around' end
+        prior[#prior + 1] = n
+    end
+    if st.elseBody ~= nil then
+        local w = when
+        for _, p in ipairs(prior) do
+            local why
+            w, why = both(w, p)
+            if w == nil then return nil, why end
+        end
+        if block_rules(scope, st.elseBody, w, phase, out) == nil then return nil, 'the else branch' end
+    end
+    return out
+end
+
+-- == The plan ==
+local HANDLERS = { HandleDefault = 'Default', HandlePrecast = 'Precast', HandleMidcast = 'Midcast',
+    HandleAbility = 'Ability', HandleWeaponskill = 'Weaponskill', HandlePreshot = 'Preshot', HandleMidshot = 'Midshot',
+    HandleItem = 'Item' }
+C.HANDLERS = HANDLERS
+-- Calls after an `if` that wear nothing a rule could lose to (TH: re-worn over rules), or are the rules' own place.
+local NEUTRAL = { ['gcinclude.CheckTH'] = true, ['gcinclude.CheckCancels'] = true, ['gcinclude.DoCORmsg'] = true }
+
+local function line_of(text, pos)
+    local n = 1
+    for _ in string.gmatch(string.sub(text, 1, pos - 1), '\n') do n = n + 1 end
+    return n
+end
+
+-- The first `return` in a statement that leaves the handler without cancelling the action (a return right after
+-- gFunc.CancelAction() is fine: a cancelled action's rules don't run either); nil when there is none.
+local function early_return(scope, list)
+    for i, st in ipairs(list or {}) do
+        if st.k == 'return' then
+            local cancelled = false
+            for j = 1, i - 1 do
+                if (list[j].k == 'callstat') and (call_path(scope, list[j].call) == 'gFunc.CancelAction') then cancelled = true end
+            end
+            if not cancelled then return st end
+        elseif st.k == 'if' then
+            for _, br in ipairs(st.branches) do
+                local r = early_return(scope, br.body)
+                if r ~= nil then return r end
+            end
+            local r = early_return(scope, st.elseBody)
+            if r ~= nil then return r end
+        elseif (st.k == 'loop') or (st.k == 'do') then
+            local r = early_return(scope, st.body)
+            if r ~= nil then return r end
+        end
+    end
+    return nil
+end
+-- An `if` on gData.GetPetAction(): HandleDefault's pet action branch (rules skip idle ones during a pet action too).
+local function pet_branch(scope, st)
+    if st.k ~= 'if' then return false end
+    local c = unparen(st.branches[1].cond)
+    local m = (c.k == 'bin') and meaning(scope, c.a) or meaning(scope, c)
+    return (m ~= nil) and (m.kind == 'petAction')
+end
+
+-- File-level: aliases (local ByName, Family = gcinclude.ByName, gcinclude.Family) and literal lists (local X = T{...}).
+local function file_scope(chunk)
+    local scope = { vars = {}, aliases = {}, lists = {} }
+    for _, st in ipairs(chunk) do
+        if st.k == 'local' then
+            for j, name in ipairs(st.names) do
+                local e = st.exprs[j]
+                local p = path_of(e)
+                if (p ~= nil) and string.match(p, '^gcinclude%.[%w_]+$') then scope.aliases[name] = p end
+                local list = (e ~= nil) and literal_list(scope, e) or nil
+                if list ~= nil then scope.lists[name] = list end
+            end
+        end
+    end
+    return scope
+end
+
+-- text: the job file. The plan: each handler's top-level `if`s, converted or not (why); the rules in order; and the
+-- splices Convert makes (each converted `if` out). Consecutive converted `if`s are a run; the last run of a
+-- handler, with nothing after it that wears gear (up to HandleDefault's CheckDefault, or the handler's end), goes
+-- where rules go by themselves. Any other run leaves one line where it was, `gcinclude.RulesAt('<Phase> <n>')`, and
+-- its rules carry at = that spot, so they go on exactly where the code did (before a named set, after an early
+-- return...).
+function C.Plan(text)
+    local chunk, err, at = C.Parse(text)
+    if chunk == nil then return nil, 'the file does not parse here: ' .. tostring(err) .. (at and (' (line ' .. line_of(text, at) .. ')') or '') end
+    local scope = file_scope(chunk)
+    local plan = { handlers = {}, rules = {}, removals = {}, splices = {} }
+    local used = {}
+    for spot in string.gmatch(text, "gcinclude%.RulesAt%(%s*'([^']+)'") do used[spot] = true end
+    for _, st in ipairs(chunk) do
+        if (st.k == 'assign') and (#st.targets == 1) and (st.exprs[1] ~= nil) and (st.exprs[1].k == 'func') then
+            local name = string.match(path_of(st.targets[1]) or '', '^profile%.(Handle%a+)$')
+            local phase = name and HANDLERS[name]
+            if phase ~= nil then
+                local h = { name = name, phase = phase, items = {} }
+                plan.handlers[#plan.handlers + 1] = h
+                local hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists }
+                local body = st.exprs[1].body
+                local stopAt = #body + 1 -- the place rules go by themselves: HandleDefault's CheckDefault, else the end
+                for i, s in ipairs(body) do
+                    if (phase == 'Default') and (s.k == 'callstat') and (call_path(hs, s.call) == 'gcinclude.CheckDefault') then
+                        stopAt = i
+                    end
+                end
+                local runs, cur, returned = {}, nil, false
+                local function close() if cur ~= nil then runs[#runs + 1] = cur end cur = nil end
+                for i, s in ipairs(body) do
+                    if i >= stopAt then break end
+                    if s.k == 'local' then
+                        for j, n in ipairs(s.names) do
+                            hs.vars[n] = (s.exprs[j] ~= nil) and meaning(hs, s.exprs[j]) or nil
+                        end
+                    elseif s.k == 'if' then
+                        local snapshot = { vars = setmetatable({}, { __index = hs.vars }), aliases = hs.aliases, lists = hs.lists }
+                        for k, v in pairs(hs.vars) do snapshot.vars[k] = v end
+                        local rules, why = convert_if(snapshot, s, {}, phase, {})
+                        local item = { line = line_of(text, s.s), s = s.s, e = s.e, ok = (rules ~= nil), why = why,
+                            rules = rules }
+                        h.items[#h.items + 1] = item
+                        if item.ok then
+                            cur = cur or { items = {}, returnedBefore = returned }
+                            cur.items[#cur.items + 1] = item
+                        else
+                            close()
+                        end
+                    else
+                        close()
+                    end
+                    if (s.k ~= 'local') and not ((phase == 'Default') and pet_branch(hs, s)) and (early_return(hs, { s }) ~= nil) then
+                        returned = true -- what follows runs only when this didn't return
+                    end
+                end
+                close()
+                -- the last run goes by itself when nothing after it, up to the rules' place, wears gear
+                local last = runs[#runs]
+                if (last ~= nil) and not last.returnedBefore then
+                    local after = last.items[#last.items]
+                    local clear = true
+                    for i, s in ipairs(body) do
+                        if (i < stopAt) and (s.s > after.e) and (s.k ~= 'local') then
+                            if s.k == 'callstat' then
+                                if not NEUTRAL[call_path(hs, s.call)] then clear = false end
+                            elseif not ((s.k == 'return') and (i == #body)) then
+                                clear = false
+                            end
+                        end
+                    end
+                    last.free = clear
+                end
+                local n = 0
+                for _, run in ipairs(runs) do
+                    local spot = nil
+                    if not run.free then
+                        repeat
+                            n = n + 1
+                            spot = phase .. ' ' .. n
+                        until not used[spot]
+                        used[spot] = true
+                    end
+                    for k, item in ipairs(run.items) do
+                        item.spot = spot
+                        for _, r in ipairs(item.rules) do
+                            r.at = spot
+                            plan.rules[#plan.rules + 1] = r
+                        end
+                        local sp = C.Removal(text, item.s, item.e)
+                        if (k == 1) and (spot ~= nil) then -- the spot's line, where the first if was
+                            local ls = item.s
+                            while (ls > 1) and (string.sub(text, ls - 1, ls - 1) ~= '\n') do ls = ls - 1 end
+                            local ind = string.match(string.sub(text, ls, item.s - 1), '^[ \t]*$') and string.sub(text, ls, item.s - 1) or ''
+                            local call = "gcinclude.RulesAt('" .. spot .. "');"
+                            if sp[1] == ls then sp[3] = ind .. call .. '\n' else sp[3] = call .. ' ' end
+                        end
+                        plan.removals[#plan.removals + 1] = { item.s, item.e }
+                        plan.splices[#plan.splices + 1] = sp
+                    end
+                end
+            end
+        end
+    end
+    return plan
+end
+
+-- The splice taking a statement (s..e) out: its whole lines when nothing else is on them (a trailing ';' and
+-- comment go too), else just the statement.
+function C.Removal(text, s, e)
+    local ls = s
+    while (ls > 1) and (string.sub(text, ls - 1, ls - 1) ~= '\n') do ls = ls - 1 end
+    local le = e + 1
+    local rest = string.match(text, '^[ \t]*;?[ \t]*()', le)
+    local tail = string.match(text, '^%-%-[^\n]*()', rest) or rest
+    local nl = string.sub(text, tail, tail)
+    if string.match(string.sub(text, ls, s - 1), '^[ \t]*$') and ((nl == '\n') or (nl == '') or (nl == '\r')) then
+        local finish = tail
+        if string.sub(text, finish, finish) == '\r' then finish = finish + 1 end
+        if string.sub(text, finish, finish) == '\n' then finish = finish + 1 end
+        return { ls, finish, '' }
+    end
+    local finish = string.match(text, '^[ \t]*;?()', le)
+    return { s, finish, '' }
+end
+
+-- == Adopt: a plain LuAshitacast job file (no GoomSwap) made a GoomSwap one, its own code kept: GoomSwap loads at the
+-- top, starts in OnLoad, stops in OnUnload, takes /lac fwd commands in HandleCommand and adds its layers at the end of
+-- HandleDefault. Its sets keep their names; GoomSwap's own sets (Dt, TH, Idle_Regen...) work once you make them. ==
+function C.IsGoomSwap(text) return string.find(text or '', 'gcinclude.lua', 1, true) ~= nil end
+-- The splices and what each does (lines); nil and why when it can't.
+function C.Adopt(text)
+    if C.IsGoomSwap(text) then return nil, 'it already loads GoomSwap' end
+    local chunk, err = C.Parse(text)
+    if chunk == nil then return nil, 'the file does not parse: ' .. tostring(err) end
+    local splices, lines, profileAt, returnAt = {}, {}, nil, nil
+    local funcs = {}
+    for _, st in ipairs(chunk) do
+        if (st.k == 'local') and (st.names[1] == 'profile') then profileAt = st.e end
+        if (st.k == 'assign') and (#st.targets == 1) and (st.exprs[1] ~= nil) and (st.exprs[1].k == 'func') then
+            local name = string.match(path_of(st.targets[1]) or '', '^profile%.([%w_]+)$')
+            if name ~= nil then funcs[name] = st.exprs[1] end
+        end
+        if st.k == 'return' then returnAt = st.s end
+    end
+    if profileAt == nil then return nil, 'no `local profile = {}` line' end
+    if returnAt == nil then return nil, 'no `return profile` at the end' end
+    local function line_after(pos)
+        local nl = string.find(text, '\n', pos, true)
+        return (nl ~= nil) and (nl + 1) or (#text + 1)
+    end
+    local at = line_after(profileAt)
+    splices[#splices + 1] = { at, at, "gcinclude = gFunc.LoadFile('common\\\\gcinclude.lua');\n" }
+    lines[#lines + 1] = 'GoomSwap loaded at the top (gcinclude)'
+    local function before_end(f, call)
+        local endAt = f.e - 2 -- the function's closing `end`
+        local ls = endAt
+        while (ls > 1) and (string.sub(text, ls - 1, ls - 1) ~= '\n') do ls = ls - 1 end
+        local ind = string.match(string.sub(text, ls, endAt - 1), '^([ \t]*)$')
+        if ind == nil then -- `end` shares its line: the call goes just before it
+            splices[#splices + 1] = { endAt, endAt, call .. ' ' }
+        else
+            splices[#splices + 1] = { ls, ls, ind .. '    ' .. call .. '\n' }
+        end
+    end
+    local adds = {}
+    local WANT = {
+        { 'OnLoad', 'gcinclude.Initialize();', 'OnLoad starts GoomSwap (gcinclude.Initialize)' },
+        { 'OnUnload', 'gcinclude.Unload();', 'OnUnload stops it (gcinclude.Unload)' },
+        { 'HandleDefault', 'gcinclude.CheckDefault();', "HandleDefault ends with GoomSwap's layers (gcinclude.CheckDefault)" },
+    }
+    for _, w in ipairs(WANT) do
+        if funcs[w[1]] ~= nil then
+            before_end(funcs[w[1]], w[2])
+        else
+            adds[#adds + 1] = 'profile.' .. w[1] .. ' = function()\n    ' .. w[2] .. '\nend\n'
+        end
+        lines[#lines + 1] = w[3]
+    end
+    local hc = funcs.HandleCommand
+    if hc ~= nil then
+        local param = string.match(text, '^function%s*%(%s*([%a_][%w_]*)', hc.s)
+        if param == nil then return nil, 'HandleCommand takes no arguments: GoomSwap\'s commands need them' end
+        before_end(hc, 'gcinclude.HandleCommands(' .. param .. ');')
+    else
+        adds[#adds + 1] = 'profile.HandleCommand = function(args)\n    gcinclude.HandleCommands(args);\nend\n'
+    end
+    lines[#lines + 1] = "HandleCommand passes GoomSwap's commands on (/wm, /gcedit...)"
+    if #adds > 0 then
+        local ls = returnAt
+        while (ls > 1) and (string.sub(text, ls - 1, ls - 1) ~= '\n') do ls = ls - 1 end
+        splices[#splices + 1] = { ls, ls, table.concat(adds, '\n') .. '\n' }
+    end
+    return { splices = splices, lines = lines }
+end
+
+return C

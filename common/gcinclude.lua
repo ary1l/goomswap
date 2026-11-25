@@ -922,11 +922,33 @@ function gcinclude.RunRules(phase, layer)
     local c = gcinclude.RulesCompiled
     local list = (c ~= nil) and (c[phase] ~= nil) and c[phase][layer] or nil
     if (list == nil) or (#list == 0) then return false, 0 end
+    -- an action the job file (CheckCancels, a bailout) already cancelled: its gear doesn't go on, rules' neither
+    if (phase ~= 'Default') and (phase ~= 'Pet') and (gState ~= nil) and (gState.PlayerAction ~= nil)
+        and (gState.PlayerAction.Block == true) then
+        return true, 0
+    end
     local t0 = (gcinclude.Perf ~= nil) and perfNow() or nil
     local stopped, n = gcrules.Run(c, phase, layer, rulesApi)
     gcinclude.PerfAdd('rules', t0)
     return stopped, n
 end
+-- The rules at a spot in the job file's code (/gcedit's Convert leaves `gcinclude.RulesAt('Midcast 1')` where the
+-- `if`s it turned into rules were): they go on right there. true when one stopped the action.
+function gcinclude.RulesAt(at)
+    local c = gcinclude.RulesCompiled
+    if (c == nil) or (c.at == nil) or (c.at[at] == nil) then return false end
+    local list = c.at[at]
+    local phase = list[1].phase
+    if (phase ~= 'Default') and (phase ~= 'Pet') and (gState ~= nil) and (gState.PlayerAction ~= nil)
+        and (gState.PlayerAction.Block == true) then
+        return true
+    end
+    local t0 = (gcinclude.Perf ~= nil) and perfNow() or nil
+    local stopped = gcrules.RunAt(c, at, rulesApi)
+    gcinclude.PerfAdd('rules', t0)
+    return stopped
+end
+
 -- The handler names LAC calls, and the rule phase each one runs.
 local RULE_PHASE = { HandlePrecast = 'Precast', HandleMidcast = 'Midcast', HandleAbility = 'Ability',
     HandleWeaponskill = 'Weaponskill', HandlePreshot = 'Preshot', HandleMidshot = 'Midshot', HandleItem = 'Item' }
