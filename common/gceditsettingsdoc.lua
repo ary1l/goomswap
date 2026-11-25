@@ -115,4 +115,51 @@ local jobOnly = {
     NukeModes = { RDM = true, BLM = true, SCH = true, GEO = true, WHM = true, DRK = true },
 }
 
-return { settings = settings, job = job, advanced = advanced, limits = limits, jobOnly = jobOnly }
+-- Plain names the Settings panel shows (the real key on hover), and the category each setting sits in.
+local names = {
+    Messages = 'Chat line on mode changes', AutoGear = 'Auto idle sets', WScheck = 'WS range check',
+    WSdistance = 'WS range (yalms)', RegenGearHPP = 'Regen gear below HP %', RefreshGearMPP = 'Refresh gear below MP %',
+    DTGearHPP = 'DT gear below HP %', PetDTGearHPP = 'Pet DT gear below pet HP %', MoonshadeTP = 'Moonshade below TP',
+    MoonshadeSlot = 'Moonshade ear', MoonshadeSkip = 'Weapon skills without Moonshade', DisplayBar = 'Bar on load',
+    DisplayBarX = 'Bar position X', DisplayBarY = 'Bar position Y', warp_Ring = '/warpring ring', mea_Ring = '/mea ring',
+    dem_Ring = '/dem ring', holla_Ring = '/holla ring', WeaponTPGuard = 'Keep weapons from TP',
+    IdleWeapons = "Idle sets' weapons win out of combat", AftermathHold = 'Keep weapons during Aftermath',
+    HoldExempt = 'Always swap weapons for', SmartSwap = 'SmartSwap', SmartSwapTP = 'SmartSwap from TP',
+    KeepWeaponsFor = 'Spells that keep your weapons', EditorIgnoreSuggestions = 'Hidden set suggestions',
+    EditorBackupKeep = 'Backups kept per job file', EditorGroups = 'Set list headings', EditorHidden = 'Hidden headings',
+    EditorSort = 'Heading sort order', EditorOrder = 'Your set order', EnchantWindow = 'Enchanted item wait (s)',
+    EnchantDelays = 'Enchanted item waits', ReceivedSets = 'Sets for spells on their way to you',
+    ReceivedWindow = 'Received set time (s)', MyBoxes = 'Your boxes (Multisend)', ElementReport = 'Chat line for element gear',
+    OrpheusPoints = "Orpheus's Sash curve", ElementGear = 'Obi, Orpheus and element gear', MBWindow = 'Magic burst window (s)',
+    MBSkills = 'Skills that magic burst', ElementSkills = 'Skills that get element gear', ElementalWS = 'Elemental weapon skills',
+    CombatWindow = 'Combat window (s)', SIRSkip = 'Spells /sir skips', THSkip = 'Spells /th skips', HoxneItem = 'Hoxne item',
+    HoxneLockSlots = 'Hoxne locked slots', HoxneAutoUse = 'Use the Ampulla by itself', Keybinds = 'Keys',
+    XIRollSet = 'Set at a roll of 11', HUDOwners = 'HUD owners (your mains)', Theme = 'Colour theme',
+    HUDAbbr = 'Short names you can type', WeaponClass = 'Weapon colours', LockstyleSet = 'Lockstyle set',
+    CapacityCapes = 'Capacity capes', JubileeSlot = 'Jubilee Ring slot', SleepCancelStoneskin = 'Cancel Stoneskin when asleep',
+    -- the job file's own
+    WeaponModes = '/wm modes', DefaultWeapons = 'Weapons on load', WeaponRoles = '/wm melee, ranged, caster, tank',
+    MainModes = '/mw picks', SubModes = '/sw picks', RangeModes = '/rw picks', WeaponItemMap = 'Pick names for exact items',
+    AlwaysDualWield = 'Always dual wield', MeleeModes = '/mset modes', NukeModes = '/nukeset modes',
+    ['profile.Packer'] = 'Packer', CureObi = 'Obi on cures', SafeAmmo = 'Ammo when a shot is stopped',
+    RangeAmmo = 'Ammo per range weapon', CORmsg = 'Lucky / unlucky roll messages',
+}
+local categories = {
+    { 'Common', { 'DTGearHPP', 'RefreshGearMPP', 'RegenGearHPP', 'WeaponTPGuard', 'MoonshadeTP', 'Messages', 'LockstyleSet',
+        'DisplayBar', 'AutoGear' } },
+    { 'Idle & defense', { 'AutoGear', 'RegenGearHPP', 'RefreshGearMPP', 'DTGearHPP', 'PetDTGearHPP', 'IdleWeapons',
+        'CombatWindow', 'XIRollSet', 'SleepCancelStoneskin', 'HoxneItem', 'HoxneLockSlots', 'HoxneAutoUse' } },
+    { 'Weapons', { 'WeaponTPGuard', 'AftermathHold', 'HoldExempt', 'SmartSwap', 'SmartSwapTP', 'KeepWeaponsFor' } },
+    { 'Casting', { 'SIRSkip', 'THSkip', 'ElementGear', 'ElementSkills', 'OrpheusPoints', 'MBWindow', 'MBSkills',
+        'ElementReport', 'ReceivedSets', 'ReceivedWindow', 'MyBoxes' } },
+    { 'Weapon skills', { 'WScheck', 'WSdistance', 'MoonshadeTP', 'MoonshadeSlot', 'MoonshadeSkip', 'ElementalWS' } },
+    { 'Items & Packer', { 'Packer', 'EnchantDelays', 'EnchantWindow', 'warp_Ring', 'mea_Ring', 'dem_Ring', 'holla_Ring',
+        'CapacityCapes', 'JubileeSlot' } },
+    { 'Keys', { 'Keybinds' } },
+    { 'Bar & HUD', { 'DisplayBar', 'DisplayBarX', 'DisplayBarY', 'HUDOwners', 'HUDAbbr', 'WeaponClass', 'Theme' } },
+    { 'Editor', { 'EditorBackupKeep', 'EditorIgnoreSuggestions', 'EditorGroups', 'EditorHidden', 'EditorSort',
+        'EditorOrder' } },
+}
+
+return { settings = settings, job = job, advanced = advanced, limits = limits, jobOnly = jobOnly, names = names,
+    categories = categories }

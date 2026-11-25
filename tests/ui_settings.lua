@@ -53,17 +53,24 @@ local function frame()
     if twice ~= nil then error('drawn twice in one frame: ' .. twice, 2) end
 end
 return {
-    { 'every target draws', function()
+    { 'every target and every category draws; a search too', function()
         for _, t in ipairs({ 'own', 'shared', 'job' }) do
             state.ui.settingsTarget = t
-            state.ui.settingsAll = { true }
+            for _, c in ipairs({ 'Common', 'Idle & defense', 'Weapons', 'Casting', 'Weapon skills', 'Items & Packer',
+                'Keys', 'Bar & HUD', 'Editor', 'job options', 'All (advanced)' }) do
+                state.ui.settingsCat = c
+                frame()
+            end
+            state.ui.settingsFind = { 'skip' }
             frame()
+            state.ui.settingsFind = { '' }
         end
     end },
-    { 'targets name the character and the job', function()
-        state.ui.settingsTarget = 'own'
+    { 'the switch names the character and the job', function()
+        state.ui.settingsTarget, state.ui.settingsCat = 'own', 'Common'
         frame()
-        eq(drawn['Jirachi: every job (char.lua)##set_target_own'], true)
-        eq(drawn['Jirachi: WHM only (WHM.lua)##set_target_job'], true)
+        eq(drawn['Jirachi - all jobs##set_target_own'], true)
+        eq(drawn['Jirachi - WHM##set_target_job'], true)
+        eq(drawn['WHM options##set_cat_WHM options'], true, 'the job options category')
     end },
 }

@@ -73,6 +73,23 @@ return function(imgui, palette, set_tip)
     end
     W.Button = button
     -- a key as a key cap: its name on a rounded fill with an edge
+    -- text on a rounded fill (a tag): where a value comes from, a state
+    function W.Pill(text, fg, bg)
+        local dl = nil
+        if imgui.GetWindowDrawList ~= nil then
+            dl = imgui.GetWindowDrawList()
+            if (type(dl) ~= 'userdata') and (type(dl) ~= 'table') then dl = nil end
+        end
+        if (dl ~= nil) and (imgui.GetCursorScreenPos ~= nil) and (imgui.GetColorU32 ~= nil) then
+            local x, y = vec(imgui.GetCursorScreenPos())
+            local w, h = vec(imgui.CalcTextSize(text))
+            if (x ~= nil) and (y ~= nil) and (w ~= nil) and (h ~= nil) and (w > 0) then
+                P1[1], P1[2], P2[1], P2[2] = x - 5, y - 1, x + w + 5, y + h + 1
+                dl:AddRectFilled(P1, P2, u32(bg or palette.cell or palette.btn), 8)
+            end
+        end
+        imgui.TextColored(fg or palette.dim, text)
+    end
     local function keycap(text)
         local dl = nil
         if imgui.GetWindowDrawList ~= nil then
