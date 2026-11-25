@@ -1183,7 +1183,7 @@ local function draw_save_review()
                 imgui.TextUnformatted('  gcinclude.Rules: ' .. #e.value .. ((#e.value == 1) and ' rule' or ' rules'))
                 for i, rule in ipairs(e.value) do
                     imgui.TextColored(palette.dim, '    ' .. i .. '. ' .. tostring(rule.on) .. ': '
-                        .. ctx.rules.R.Words(rule) .. ((rule.layer == 'top') and ' (over everything)' or '')
+                        .. ctx.rules.R.Say(rule) .. ((rule.layer == 'top') and ' (over everything)' or '')
                         .. (rule.off and ' (off)' or ''))
                 end
             else

@@ -381,6 +381,134 @@ function R.Words(rule)
     return R.WhenWords(rule.when) .. ' -> ' .. R.WearWords(rule)
 end
 
+-- == A rule as a sentence, for the editor: "When a Cure on you, MP at most 50%: wear Cure_LowMP". ==
+local function either_of(v, sep)
+    if type(v) ~= 'table' then return tostring(v) end
+    local out = {}
+    for _, x in ipairs(v) do out[#out + 1] = tostring(x) end
+    if #out <= 1 then return out[1] or '' end
+    return table.concat(out, ', ', 1, #out - 1) .. ' ' .. (sep or 'or') .. ' ' .. out[#out]
+end
+local NUM_SAY = { lt = 'under', le = 'at most', gt = 'over', ge = 'at least', eq = 'exactly', ne = 'not' }
+local function num_say(what, v, unit)
+    if type(v) ~= 'table' then return what .. ' ' .. tostring(v) .. (unit or '') end
+    local out = {}
+    for _, op in ipairs({ 'gt', 'ge', 'lt', 'le', 'eq', 'ne' }) do
+        if v[op] ~= nil then out[#out + 1] = NUM_SAY[op] .. ' ' .. tostring(v[op]) .. (unit or '') end
+    end
+    return what .. ' ' .. table.concat(out, ' and ')
+end
+-- a text value: 'X' / { 'A', 'B' } / { is, isnt, has, start, ends }, each part through fmt(words, negated)
+local function text_say(v, fmt)
+    if (type(v) == 'string') or ((type(v) == 'table') and (v[1] ~= nil)) then return fmt(either_of(v), false) end
+    if type(v) ~= 'table' then return fmt(tostring(v), false) end
+    local out = {}
+    if v.is ~= nil then out[#out + 1] = fmt(either_of(v.is), false) end
+    if v.isnt ~= nil then out[#out + 1] = fmt(either_of(v.isnt), true) end
+    if v.has ~= nil then out[#out + 1] = 'its name has "' .. either_of(v.has, '" or "') .. '"' end
+    if v.start ~= nil then out[#out + 1] = 'its name starts with "' .. either_of(v.start, '" or "') .. '"' end
+    if v.ends ~= nil then out[#out + 1] = 'its name ends with "' .. either_of(v.ends, '" or "') .. '"' end
+    return table.concat(out, ', ')
+end
+local SAY = {
+    status = function(v) return text_say(v, function(w, n) return (n and 'not ' or '') .. string.lower(w) end) end,
+    hpp = function(v) return num_say('HP', v, '%') end,
+    mpp = function(v) return num_say('MP', v, '%') end,
+    tp = function(v) return num_say('TP', v) end,
+    moving = function(v) return v and 'moving' or 'standing still' end,
+    combat = function(v) return v and 'in combat' or 'out of combat' end,
+    sub = function(v) return text_say(v, function(w, n) return (n and 'sub job not ' or 'sub job ') .. w end) end,
+    level = function(v) return num_say('level', v) end,
+    name = function(v) return text_say(v, function(w, n) return (n and 'not ' or '') .. w end) end,
+    family = function(v) return text_say(v, function(w, n) return (n and 'not a ' or 'a ') .. w .. ' spell' end) end,
+    skill = function(v) return text_say(v, function(w, n) return (n and 'not ' or '') .. w end) end,
+    type = function(v) return text_say(v, function(w, n) return (n and 'not a ' or 'a ') .. w end) end,
+    element = function(v)
+        local out = {}
+        for _, x in ipairs((type(v) == 'table' and v[1] ~= nil) and v or { v }) do
+            if x == 'weather' then out[#out + 1] = "its element matches the weather"
+            elseif x == 'day' then out[#out + 1] = "its element matches the day"
+            elseif type(x) == 'string' then out[#out + 1] = 'a ' .. x .. ' spell'
+            else out[#out + 1] = text_say(x, function(w, n) return (n and 'not a ' or 'a ') .. w .. ' spell' end) end
+        end
+        return table.concat(out, ' or ')
+    end,
+    target = function(v)
+        local WORD = { me = 'on you', other = 'on someone else', PC = 'on a player', NPC = 'on an NPC',
+            Party = 'on your party', Alliance = 'on your alliance', Monster = 'on a monster' }
+        local out = {}
+        for _, x in ipairs((type(v) == 'table') and v or { v }) do out[#out + 1] = WORD[x] or ('on ' .. tostring(x)) end
+        return table.concat(out, ' or ')
+    end,
+    targethpp = function(v) return num_say("target's HP", v, '%') end,
+    distance = function(v) return num_say('target', v, ' yalms away') end,
+    day = function(v) return text_say(v, function(w, n) return (n and 'not ' or '') .. w .. 'sday' end) end,
+    weather = function(v) return text_say(v, function(w, n)
+        if w == 'None' then return n and 'not clear weather' or 'clear weather' end
+        return (n and 'not in ' or 'in ') .. w .. ' weather' end) end,
+    zone = function(v) return text_say(v, function(w, n) return (n and 'not in ' or 'in ') .. w end) end,
+    time = function(v) return num_say('time', v) end,
+    buff = function(v) return either_of(v) .. ' up' end,
+    allbuffs = function(v) return either_of(v, 'and') .. ' up' end,
+    nobuff = function(v)
+        if (type(v) == 'table') and (#v > 1) then return 'none of ' .. either_of(v, 'or') .. ' up' end
+        return either_of(v) .. ' not up'
+    end,
+    pet = function(v) return v and 'you have a pet' or 'no pet' end,
+    pethpp = function(v) return num_say("pet's HP", v, '%') end,
+    pettp = function(v) return num_say("pet's TP", v) end,
+    petname = function(v) return text_say(v, function(w, n) return (n and 'pet not ' or 'pet ') .. w end) end,
+    petstatus = function(v) return text_say(v, function(w, n) return (n and 'pet not ' or 'pet ') .. string.lower(w) end) end,
+    burst = function(v) return v and 'a magic burst' or 'not a magic burst' end,
+    dualwield = function(v) return v and 'you can dual wield' or 'you cannot dual wield' end,
+}
+function R.SayWhen(when)
+    if (type(when) ~= 'table') or (next(when) == nil) then return nil end
+    local order = {}
+    for i, k in ipairs({ 'name', 'family', 'skill', 'type', 'element', 'target', 'targethpp', 'distance', 'burst', 'buff',
+        'allbuffs', 'nobuff', 'status', 'hpp', 'mpp', 'tp', 'moving', 'combat', 'mode', 'toggle', 'pet', 'pethpp', 'pettp',
+        'petname', 'petstatus', 'day', 'weather', 'zone', 'time', 'sub', 'level', 'dualwield', 'any' }) do order[k] = i end
+    local keys = {}
+    for k in pairs(when) do keys[#keys + 1] = k end
+    table.sort(keys, function(a, b) return (order[a] or 999) < (order[b] or 999) end)
+    local out = {}
+    for _, k in ipairs(keys) do
+        local v = when[k]
+        if k == 'any' then
+            local alts = {}
+            for _, alt in ipairs(v) do alts[#alts + 1] = R.SayWhen(alt) or 'always' end
+            out[#out + 1] = '(' .. table.concat(alts, ') or (') .. ')'
+        elseif ((k == 'toggle') or (k == 'mode')) and (type(v) == 'table') then
+            out[#out + 1] = R.WhenWords({ [k] = v })
+        elseif SAY[k] ~= nil then
+            out[#out + 1] = SAY[k](v)
+        else
+            out[#out + 1] = R.WhenWords({ [k] = v })
+        end
+    end
+    return table.concat(out, ', ')
+end
+function R.SayWear(rule)
+    local out = {}
+    if type(rule.wear) == 'string' then
+        out[#out + 1] = 'wear ' .. rule.wear .. ((not rule.exact) and ' (with its versions)' or '')
+    end
+    if type(rule.item) == 'table' then
+        for _, slot in ipairs(R.SLOTS) do
+            local it = rule.item[slot]
+            if it ~= nil then out[#out + 1] = slot .. ': ' .. tostring((type(it) == 'table') and it.Name or it) end
+        end
+    end
+    if rule.stop then out[#out + 1] = 'stop the action' end
+    return (#out > 0) and table.concat(out, ', ') or 'nothing'
+end
+-- 'When ...: wear ...' (no conditions: 'Always: ...')
+function R.Say(rule)
+    if type(rule) ~= 'table' then return '?' end
+    local w = R.SayWhen(rule.when)
+    return ((w ~= nil) and ('When ' .. w) or 'Always') .. ': ' .. R.SayWear(rule)
+end
+
 -- One rule (or a `first` group's member): its test and what it does; nil and why when it can't be used.
 local function compile_one(rule, where, phase)
     local test, err = compile_when(rule.when, where)
