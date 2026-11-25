@@ -810,8 +810,17 @@ local function set_action_entries(set, part)
     return false
 end
 
+-- The Rules page's buttons (primary, accent, plain, danger, ghost): one look across the editor.
+local function sbutton(label, kind)
+    if (ctx.rules ~= nil) and (ctx.rules.Button ~= nil) then return ctx.rules.Button(label, kind, true) end
+    return imgui.Button(label)
+end
+local function badge(text, fg, bg)
+    imgui.SameLine(0, 12)
+    pill(text, fg, bg)
+end
 local function draw_set_actions(set)
-    if imgui.Button('More...##set_actions') then imgui.OpenPopup('##set_actions_menu') end
+    if sbutton('More...##set_actions', 'ghost') then imgui.OpenPopup('##set_actions_menu') end
     local discarded = false
     if imgui.BeginPopup('##set_actions_menu') then
         discarded = set_action_entries(set)
@@ -847,13 +856,13 @@ local function draw_set(set)
         imgui.TextColored(palette.dim, string.upper(set.group) .. ' >')
         imgui.SameLine()
     end
-    imgui.TextColored(palette.blue, set.bracket and ("['" .. set.name .. "']") or set.name)
-    if by_name(set) then tag('worn by name', palette.blue) end
+    imgui.TextColored(palette.text, set.bracket and ("['" .. set.name .. "']") or set.name)
+    if by_name(set) then badge('worn by name', palette.blue, palette.invBg) end
     if (editorState.document.renames or {})[set.name] then
-        tag('renamed to ' .. editorState.document.renames[set.name] .. ' on Save', palette.warn)
+        badge('renamed to ' .. editorState.document.renames[set.name] .. ' on Save', palette.warn, palette.warnBg)
     end
     if set.new then
-        tag('new: written on Save', palette.warn)
+        badge('new: written on Save', palette.warn, palette.warnBg)
         local mode = pending_weapon_mode(set)
         if mode then
             local plan = registration_plan()
@@ -866,32 +875,28 @@ local function draw_set(set)
     local unfinished = status.unfinished
     if #unfinished > 0 then
         imgui.SameLine(0, 12)
+        imgui.PushStyleColor(ImGuiCol_Button, palette.rpBg)
         imgui.PushStyleColor(ImGuiCol_Text, palette.rp)
-        if imgui.SmallButton('Needs RP: ' .. #unfinished .. '##rp') then
+        if imgui.SmallButton(#unfinished .. ' need RP##rp') then
             imgui.OpenPopup('##rp_details')
         end
-        imgui.PopStyleColor()
+        imgui.PopStyleColor(2)
         if imgui.IsItemHovered() then
             set_tip(#unfinished .. ' slot' .. ((#unfinished == 1) and '' or 's') .. ' below their rank cap:\n'
                 .. table.concat(unfinished, '\n') .. '\nClick: where else they are used.')
         end
     end
-    if (set.code == nil) and (status.armor ~= nil) then -- how many of the 16 slots it names, at the strip's right
-        local filled = (status.armor or 0) + (status.weapons or 0)
-        local t = filled .. ' of 16 slots'
-        imgui.SameLine()
-        local avail = (imgui.GetContentRegionAvail ~= nil) and xy(imgui.GetContentRegionAvail()) or nil
-        if (avail ~= nil) and (avail > text_w(t) + 8) and (imgui.SetCursorPosX ~= nil) then
-            imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - text_w(t))
-            imgui.TextColored(palette.dim, t)
-            if imgui.IsItemHovered() then
-                set_tip(status.armor .. ' of 12 armor slots, ' .. (status.weapons or 0) .. ' of 4 weapon slots name '
-                    .. 'gear here; the rest keep what earlier sets put on.')
-            end
-        else
-            imgui.NewLine()
+    local filled = (set.code == nil) and (status.armor ~= nil) and ((status.armor or 0) + (status.weapons or 0)) or nil
+    local function slots_line() -- '15 of 16 slots', on the line under the name
+        if filled == nil then return end
+        imgui.TextColored(palette.dim, filled .. ' of 16 slots')
+        if imgui.IsItemHovered() then
+            set_tip(status.armor .. ' of 12 armor slots, ' .. (status.weapons or 0) .. ' of 4 weapon slots name '
+                .. 'gear here; the rest keep what earlier sets put on.')
         end
-        -- a slot meter under the strip: how much of the 16 this set fills
+    end
+    local function meter() -- under the strip: how much of the 16 this set fills
+        if filled == nil then return end
         local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil
         if (dl ~= nil) and (imgui.GetCursorScreenPos ~= nil) and (imgui.GetColorU32 ~= nil) then
             local x, y = xy(imgui.GetCursorScreenPos())
@@ -955,15 +960,16 @@ local function draw_set(set)
             when =
                 'In the standard BLU profile, this layers over Midcast for spells in the physical Blue Magic list. Later spell-specific sets and overlays can replace its slots.'
         end
-        imgui.TextColored(
-            palette.blue,
-            cardText.Fit(
-                'Used for: ' .. short:gsub('^When ', ''):gsub('^While ', '') .. '  (?)',
-                ctx.CELL_W * ctx.GRID_COLUMNS + 8, text_w
-            )
-        )
+        local room = ctx.CELL_W * ctx.GRID_COLUMNS + 8 - text_w('Used for ') - text_w('    15 of 16 slots')
+        imgui.TextColored(palette.dim, 'Used for')
         if imgui.IsItemHovered() then set_tip(wrap(when, 68)) end
+        imgui.SameLine(0, 4)
+        imgui.TextColored(palette.blue, cardText.Fit(short:gsub('^When ', ''):gsub('^While ', ''), room, text_w))
+        if imgui.IsItemHovered() then set_tip(wrap(when, 68)) end
+        if filled ~= nil then imgui.SameLine(0, 16) end
     end
+    slots_line()
+    meter()
     if set.note ~= nil then -- the job file's own note on the set (Foe = { -- Lullaby keeps your weapons)
         imgui.TextColored(palette.dim, cardText.Fit('Note: ' .. set.note, ctx.CELL_W * ctx.GRID_COLUMNS + 8, text_w))
         if imgui.IsItemHovered() then set_tip(wrap('From the job file, beside ' .. set.name .. ':\n' .. set.note, 68)) end
@@ -1051,7 +1057,7 @@ local function draw_set(set)
         if imgui.SmallButton('Stop##gcedit_cmp') then editorState.ui.cmp = nil end
     end
     if editorState.history.entries and #editorState.history.entries > 0 then
-        if imgui.Button('Undo edit##gcedit') then
+        if sbutton('Undo edit##gcedit', 'ghost') then
             local u = table.remove(editorState.history.entries)
             if editorState.document.model.byName[u.set] and not editorState.document.deleted[u.set] then
                 editorState.document.edits[u.set] = editorState.document.edits[u.set] or {}
@@ -1065,12 +1071,13 @@ local function draw_set(set)
         end
         editorPanels.SameLineIfFits(imgui, 140)
     end
-    if imgui.Button('Use worn##gcedit') then
+    if sbutton('Use worn##gcedit', 'plain') then
         use_worn(set)
         feedback('Copied worn gear into ' .. set.name .. ' (unsaved).')
     end
+    if imgui.IsItemHovered() then set_tip('Put what you wear right now into this set (not saved until Save).') end
     editorPanels.SameLineIfFits(imgui, 140)
-    if imgui.Button('Copy from##gcedit') then
+    if sbutton('Copy from...##gcedit', 'plain') then
         editorState.ui.copyFind[1], editorState.ui.pickMode = '', 'copy'
         editorState.ui.openSetChooser = true
     end
@@ -1078,7 +1085,7 @@ local function draw_set(set)
         set_tip('Fill this set from another (Dt, Idle...), then change only what differs.')
     end
     editorPanels.SameLineIfFits(imgui, 140)
-    if imgui.Button('Compare##gcedit') then
+    if sbutton('Compare...##gcedit', 'plain') then
         editorState.ui.copyFind[1], editorState.ui.pickMode = '', 'compare'
         editorState.ui.openSetChooser = true
     end
@@ -1086,7 +1093,7 @@ local function draw_set(set)
     editorPanels.SameLineIfFits(imgui, 140)
     local wmode = (ctx.weapon_set_mode ~= nil) and ctx.weapon_set_mode(set) or nil
     if wmode ~= nil then -- a /wm mode's set: its _1h and /mset weapon sets, and the layers over Tp_Default...
-        if imgui.Button('Weapon sets...##gcws_open') then editorState.ui.requestWeaponSets = wmode end
+        if sbutton('Weapon sets...##gcws_open', 'plain') then editorState.ui.requestWeaponSets = wmode end
         if imgui.IsItemHovered() then
             set_tip('Every set /wm ' .. wmode .. ' can have (Weapon_' .. wmode .. '_1h, its /mset weapon sets, '
                 .. 'Tp_' .. wmode .. ' over Tp_Default...): tick the missing ones and make them.')

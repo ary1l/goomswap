@@ -908,36 +908,36 @@ local function draw_sets()
                     -- issues as numbers: (empty slots, not owned), each coloured; hover a number for what it counts
                     local gaps = empty_armor(set)
                     if set.code ~= nil then
-                        tag('code', palette.dim)
+                        imgui.SameLine(0, 10)
+                        pill('code', palette.dim, palette.chipBg)
                     elseif (set.count == 0) and (editorState.document.edits[set.name] == nil) and (gaps == nil) then
-                        tag('empty', palette.dim)
+                        imgui.SameLine(0, 10)
+                        pill('empty', palette.dim, palette.chipBg)
                     end
                     local nGap = ((gaps ~= nil) and (#gaps > 0)) and #gaps or nil
                     local no = not_owned(set)
                     local cmd = (grp.hint ~= nil) and row_cmd(set) or nil
                     if (nGap ~= nil) or (no ~= nil) then
-                        local function part(text, color, tip)
-                            imgui.SameLine(0, 0)
-                            imgui.TextColored(color, text)
+                        local function part(text, color, tip, bg) -- a small pill per count
+                            imgui.SameLine(0, 10)
+                            pill(text, color, bg)
                             if (tip ~= nil) and imgui.IsItemHovered() then set_tip(tip) end
                         end
-                        imgui.SameLine()
-                        imgui.TextColored(palette.dim, '(')
                         if nGap ~= nil then
                             part(
                                 tostring(nGap),
                                 (set.name == 'Tp_Default') and palette.dim or palette.warn,
-                                nGap .. ' empty: ' .. table.concat(gaps, ' ') .. '\n(' .. BASE[set.name] .. ')'
+                                nGap .. ' empty: ' .. table.concat(gaps, ' ') .. '\n(' .. BASE[set.name] .. ')',
+                                (set.name == 'Tp_Default') and palette.chipBg or palette.warnBg
                             )
                         end
                         if no ~= nil then
-                            if nGap ~= nil then part(', ', palette.dim) end
                             part(
                                 tostring(#no),
-                                palette.bad, #no .. ' not owned (that slot does nothing):\n' .. table.concat(no, '\n')
+                                palette.bad, #no .. ' not owned (that slot does nothing):\n' .. table.concat(no, '\n'),
+                                palette.badBg
                             )
                         end
-                        part(')', palette.dim)
                     end
                     if #status.unfinished > 0 then -- a piece in it needs RP: a small dot, the pieces on hover
                         imgui.SameLine(0, 6)
