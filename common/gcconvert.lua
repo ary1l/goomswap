@@ -500,7 +500,6 @@ meaning = function(scope, e)
     end
     return nil
 end
-C.Meaning = meaning
 
 -- == Conditions ==
 local function deep(v)
@@ -842,7 +841,6 @@ cond_of = function(scope, e)
     if e.k == 'bool' then return nil, 'a fixed true/false' end
     return nil, 'an expression rules cannot read'
 end
-C.Cond = function(scope, e) return cond_of(scope, e) end
 
 -- == Bodies: what a branch wears ==
 local SLOT = {}

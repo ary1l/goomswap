@@ -985,7 +985,6 @@ return function(o)
         imgui.Spacing()
         draw_changes(c.plan, text, 'ok')
     end
-    M.DrawCode = draw_code
 
     -- == The page ==
     -- Left: what to show (all rules, one moment's, or your code); right: the builder (when open), then the cards.

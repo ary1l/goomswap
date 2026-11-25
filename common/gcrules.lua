@@ -693,7 +693,6 @@ local function moment(when, phase, whatOverride)
     end
     return head, false
 end
-R.Moment = moment
 -- A rule as a sentence: 'When you cast Absorb-TP: put on Absorb_TP'. phase: for a `first` group's choice (no `on`).
 function R.Say(rule, phase)
     if type(rule) ~= 'table' then return '?' end
