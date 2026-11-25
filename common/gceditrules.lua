@@ -80,37 +80,97 @@ return function(o)
     M.Serialize = rules_text
 
     -- == The list ==
-    local function chip(text, col)
-        imgui.TextColored(col, '[' .. text .. ']')
+    -- == Looks: buttons by what they do, and labels on a rounded fill (as the editor's other pills) ==
+    local function vec(a, b)
+        if type(a) == 'table' then return a.x or a[1], a.y or a[2] end
+        if type(a) == 'number' then return a, b end
+        return nil, nil
+    end
+    local CLEAR = { 0, 0, 0, 0 }
+    -- kind: 'primary' (Save rule, Convert: the save blue), 'accent' (Edit, + Rule: blue text on the tab blue),
+    -- 'plain' (moves, cancel), 'danger' (take out: grey until hovered, then red).
+    local KINDS = {
+        primary = function() return palette.save, palette.saveHi, palette.saveHi, nil end,
+        accent = function() return palette.selBg, palette.save, palette.save, palette.blue end,
+        plain = function() return palette.btn, palette.btnHi, palette.btnHi, nil end,
+        danger = function() return palette.btn, palette.red, palette.redHi, nil end,
+        ghost = function() return CLEAR, palette.btnHi, palette.btnHi, palette.dim end,
+    }
+    local function button(label, kind, big, off)
+        local b, h, a, t = KINDS[kind or 'plain']()
+        local disabled = off and (imgui.BeginDisabled ~= nil)
+        if disabled then imgui.BeginDisabled() end
+        imgui.PushStyleColor(ImGuiCol_Button, b)
+        imgui.PushStyleColor(ImGuiCol_ButtonHovered, h)
+        imgui.PushStyleColor(ImGuiCol_ButtonActive, a)
+        if t ~= nil then imgui.PushStyleColor(ImGuiCol_Text, t) end
+        local hit = big and imgui.Button(label) or imgui.SmallButton(label)
+        imgui.PopStyleColor((t ~= nil) and 4 or 3)
+        if disabled then imgui.EndDisabled() end
+        return hit and not off
+    end
+    M.Button = button
+    -- text on a rounded fill; plain coloured text when this ImGui has no draw list
+    local PA, PB = { 0, 0 }, { 0, 0 }
+    local function pill(text, fg, bg)
+        local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil
+        if (type(dl) == 'userdata' or type(dl) == 'table') and (imgui.GetColorU32 ~= nil) then
+            local x, y = vec(imgui.GetCursorScreenPos())
+            local w, ht = vec(imgui.CalcTextSize(text))
+            if (x ~= nil) and (y ~= nil) and (w ~= nil) and (ht ~= nil) then
+                PA[1], PA[2], PB[1], PB[2] = x - 4, y - 1, x + w + 4, y + ht + 1
+                dl:AddRectFilled(PA, PB, imgui.GetColorU32(bg), 7)
+            end
+        end
+        imgui.TextColored(fg, text)
+    end
+    local function chip(text, fg, bg)
+        imgui.SameLine(0, 10)
+        pill(text, fg, bg or palette.chipBg)
     end
     local function short(text, n)
         if #text <= n then return text end
         return string.sub(text, 1, n - 3) .. '...'
     end
+    local function xw(a) -- an ImGui vector's x: two numbers or a table, by Ashita version
+        if type(a) == 'table' then return a.x or a[1] or 0 end
+        return a or 0
+    end
+    -- text cut with ... to the room left on this line (the whole of it on hover)
+    local function fit(text)
+        local avail = xw(imgui.GetContentRegionAvail()) - 8
+        if (avail <= 0) or (xw(imgui.CalcTextSize(text)) <= avail) then return text end
+        local lo, hi = 0, #text
+        while lo < hi do -- the most characters that fit, with the dots
+            local mid = math.floor((lo + hi + 1) / 2)
+            if xw(imgui.CalcTextSize(string.sub(text, 1, mid) .. '...')) <= avail then lo = mid else hi = mid - 1 end
+        end
+        return string.sub(text, 1, lo) .. '...'
+    end
     local function row_buttons(list, i, group)
         local id = (group ~= nil) and (tostring(group) .. '_' .. i) or tostring(i)
         local items = (group ~= nil) and list[group].first or list
-        imgui.SameLine()
-        if imgui.SmallButton('Edit##rule_edit_' .. id) then
+        imgui.SameLine(0, 8)
+        if button('Edit##rule_edit_' .. id, 'accent') then
             M.Edit(group or i, (group ~= nil) and i or nil)
         end
-        imgui.SameLine()
-        if imgui.SmallButton('^##rule_up_' .. id) and (i > 1) then
+        imgui.SameLine(0, 3)
+        if button('Up##rule_up_' .. id, 'plain', false, i <= 1) then
             local out = copy(list)
             local arr = (group ~= nil) and out[group].first or out
             arr[i], arr[i - 1] = arr[i - 1], arr[i]
             M.Stage(out)
         end
         if imgui.IsItemHovered() then set_tip('Earlier: a later rule wins the slots both wear.') end
-        imgui.SameLine()
-        if imgui.SmallButton('v##rule_down_' .. id) and (i < #items) then
+        imgui.SameLine(0, 3)
+        if button('Down##rule_down_' .. id, 'plain', false, i >= #items) then
             local out = copy(list)
             local arr = (group ~= nil) and out[group].first or out
             arr[i], arr[i + 1] = arr[i + 1], arr[i]
             M.Stage(out)
         end
-        imgui.SameLine()
-        if imgui.SmallButton('x##rule_del_' .. id) then
+        imgui.SameLine(0, 3)
+        if button('x##rule_del_' .. id, 'danger') then
             local out = copy(list)
             if group ~= nil then
                 table.remove(out[group].first, i)
@@ -137,57 +197,54 @@ return function(o)
         if imgui.IsItemHovered() then set_tip(rule.off and 'Off: kept, not used. Tick to use it.' or 'On. Untick to keep it without using it.') end
         imgui.SameLine()
         imgui.TextColored(palette.dim, i .. '.')
+        if type(rule.first) ~= 'table' then row_buttons(list, i) end -- first, so a long rule can't push them off
         imgui.SameLine()
+        imgui.SameLine(0, 10)
         imgui.TextColored(palette.blue, R.PHASE_LABEL[rule.on] or tostring(rule.on))
-        imgui.SameLine()
         if rule.at ~= nil then
-            chip('at ' .. rule.at, palette.blue)
+            chip('at ' .. rule.at, palette.blue, palette.selBg)
             if imgui.IsItemHovered() then
                 set_tip('Goes on where gcinclude.RulesAt(\'' .. rule.at .. '\') is in the job file\'s code: Convert left it '
                     .. 'where the if was, so the order stays the same.')
             end
         elseif rule.layer == 'top' then
-            chip('over everything', palette.warn)
+            chip('over everything', palette.warn, palette.warnBg)
             if imgui.IsItemHovered() then set_tip(TOP_NOTE) end
         else
-            chip('job layer', palette.dim)
+            chip('job layer', palette.dim, palette.chipBg)
             if imgui.IsItemHovered() then set_tip(JOB_NOTE) end
         end
         if type(rule.first) == 'table' then
             imgui.SameLine()
-            imgui.TextUnformatted('first of these' .. ((rule.when ~= nil) and (', when ' .. R.WhenWords(rule.when)) or '') .. ':')
-            if rule.note then
-                imgui.SameLine()
-                imgui.TextColored(palette.dim, '-- ' .. rule.note)
-            end
-            imgui.SameLine()
-            if imgui.SmallButton('x##rule_delg_' .. i) then
+            if button('x##rule_delg_' .. i, 'danger') then
                 local out = copy(list)
                 table.remove(out, i)
                 M.Stage(out)
             end
+            if imgui.IsItemHovered() then set_tip('Take out the whole group.') end
+            imgui.SameLine()
+            local head = 'first of these' .. ((rule.when ~= nil) and (', when ' .. R.WhenWords(rule.when)) or '') .. ':'
+                .. ((rule.note ~= nil) and ('  -- ' .. rule.note) or '')
+            imgui.TextUnformatted(fit(head))
+            if imgui.IsItemHovered() then set_tip(head) end
             imgui.Indent(28)
             for j, m in ipairs(rule.first) do
                 imgui.TextColored(palette.dim, j .. ')')
+                row_buttons(list, j, i)
                 imgui.SameLine()
                 local words = R.WhenWords(m.when) .. '  ->  ' .. R.WearWords(m)
-                imgui.TextUnformatted(short(words, 90))
+                imgui.TextUnformatted(fit(words))
                 if imgui.IsItemHovered() then set_tip(words) end
-                row_buttons(list, j, i)
             end
-            if imgui.SmallButton('+ choice##rule_addc_' .. i) then M.Edit(i, #rule.first + 1) end
+            if button('+ choice##rule_addc_' .. i, 'ghost') then M.Edit(i, #rule.first + 1) end
             imgui.Unindent(28)
             return
         end
         imgui.SameLine()
         local words = R.WhenWords(rule.when) .. '  ->  ' .. R.WearWords(rule)
-        imgui.TextUnformatted(short(words, 90))
-        if imgui.IsItemHovered() then set_tip(words .. ((rule.note ~= nil) and ('\n\n' .. rule.note) or '')) end
-        if rule.note then
-            imgui.SameLine()
-            imgui.TextColored(palette.dim, '-- ' .. short(rule.note, 40))
-        end
-        row_buttons(list, i)
+            .. ((rule.note ~= nil) and ('  -- ' .. rule.note) or '')
+        imgui.TextUnformatted(fit(words))
+        if imgui.IsItemHovered() then set_tip(words) end
     end
 
     -- The RULES row at the top of the set list.
@@ -345,7 +402,7 @@ return function(o)
             end
         end
         imgui.SameLine()
-        if imgui.SmallButton('x##' .. id .. '_x') then return true end
+        if button('x##' .. id .. '_x', 'danger') then return true end
         return false
     end
 
@@ -440,7 +497,7 @@ return function(o)
                 if draw_row(e, i, r) then gone = i end
             end
             if gone ~= nil then table.remove(e.rows, gone) end
-            if imgui.SmallButton('+ condition##rb_add') then
+            if button('+ condition##rb_add', 'ghost') then
                 e.rows[#e.rows + 1] = row_state({ key = 'buff', op = 'is' })
             end
             imgui.Unindent(70)
@@ -484,10 +541,10 @@ return function(o)
             imgui.InputTextWithHint('##rb_item_' .. i, 'an item, as the game shows it', it.buf, 96)
             imgui.PopItemWidth()
             imgui.SameLine()
-            if imgui.SmallButton('x##rb_ix_' .. i) then goneItem = i end
+            if button('x##rb_ix_' .. i, 'danger') then goneItem = i end
         end
         if goneItem ~= nil then table.remove(e.items, goneItem) end
-        if imgui.SmallButton('+ one item##rb_additem') then
+        if button('+ one item##rb_additem', 'ghost') then
             e.items[#e.items + 1] = { slot = 'Head', buf = { '' } }
         end
         if imgui.IsItemHovered() then set_tip('One piece in one slot, without a set (Pixie Hairpin +1 on Noctohelix).') end
@@ -505,10 +562,10 @@ return function(o)
         elseif e.member == nil then
             imgui.TextColored(palette.dim, 'Layer')
             imgui.SameLine(70)
-            if imgui.SmallButton(((not e.top[1]) and '> ' or '') .. 'Job layer##rb_job') then e.top[1] = false end
+            if button('Job layer##rb_job', (not e.top[1]) and 'accent' or 'plain') then e.top[1] = false end
             if imgui.IsItemHovered() then set_tip(JOB_NOTE) end
             imgui.SameLine()
-            if imgui.SmallButton((e.top[1] and '> ' or '') .. 'Over everything##rb_top') then e.top[1] = true end
+            if button('Over everything##rb_top', e.top[1] and 'accent' or 'plain') then e.top[1] = true end
             if imgui.IsItemHovered() then set_tip(TOP_NOTE) end
             if e.top[1] then
                 imgui.PushTextWrapPos(0)
@@ -549,7 +606,7 @@ return function(o)
         -- save
         local off = (rule == nil) and (imgui.BeginDisabled ~= nil)
         if off then imgui.BeginDisabled() end
-        if imgui.Button('Save rule##rb_save') and (rule ~= nil) then
+        if button('Save rule##rb_save', 'primary', true) and (rule ~= nil) then
             local out = copy(M.List() or {})
             if e.member ~= nil then
                 rule.on = nil
@@ -567,7 +624,7 @@ return function(o)
         end
         if off then imgui.EndDisabled() end
         imgui.SameLine()
-        if imgui.Button('Cancel##rb_cancel') then editorState.ui.ruleEdit = nil end
+        if button('Cancel##rb_cancel', 'plain', true) then editorState.ui.ruleEdit = nil end
     end
 
     -- == The job file's own code: what Convert turns into rules, and Adopt for a plain LuAshitacast file ==
@@ -624,7 +681,7 @@ return function(o)
             imgui.TextColored(palette.warn, doc.convert.title .. ': unsaved.')
             imgui.SameLine()
             local lines = doc.convert.lines
-            if imgui.SmallButton('Undo convert##conv_undo') then
+            if button('Undo convert##conv_undo', 'plain') then
                 M.Stage(doc.convert.prior)
                 doc.convert = nil
                 feedback('Convert undone (rule edits made since are undone too).')
@@ -649,9 +706,11 @@ return function(o)
                 .. 'GoomSwap loads at the top and its layers go on at the end of HandleDefault; your code and set '
                 .. 'names stay.')
             imgui.PopTextWrapPos()
-            if imgui.Button('Adopt' .. ((ok > 0) and (' and convert ' .. ok) or '') .. '##conv_adopt') then stage_convert(c, true) end
+            if button('Adopt' .. ((ok > 0) and (' and convert ' .. ok) or '') .. '##conv_adopt', 'primary', true) then
+                stage_convert(c, true)
+            end
         elseif ok > 0 then
-            if imgui.Button('Convert ' .. ok .. ((ok == 1) and ' if' or ' ifs') .. ' into rules##conv_go') then
+            if button('Convert ' .. ok .. ((ok == 1) and ' if' or ' ifs') .. ' into rules##conv_go', 'primary', true) then
                 stage_convert(c, false)
             end
             if imgui.IsItemHovered() then
@@ -703,7 +762,7 @@ return function(o)
             imgui.TextColored(palette.warn, 'gcinclude.Rules is ' .. tostring(how) .. ' in the file: edit it there.')
             return
         end
-        if imgui.Button('+ Rule##rules_add') then M.Edit(nil) end
+        if button('+ Rule##rules_add', 'accent', true) then M.Edit(nil) end
         if (o.extraButtons ~= nil) then o.extraButtons() end
         if how == 'staged' then
             imgui.SameLine()

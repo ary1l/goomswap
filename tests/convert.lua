@@ -106,6 +106,6 @@ return profile;
         for _, r in ipairs(plan.rules) do words[#words + 1] = R.Words(r) end
         eq(table.concat(words, ' | '), 'skill Healing Magic -> Heal (only) | skill Dark Magic -> Dark (only) | '
             .. 'mpp < 50, skill Dark Magic -> Low (only) | skill is not "Dark Magic or Healing Magic" -> Other (only) | '
-            .. 'first of: 1) toggle dt true -> A (only); 2) hpp < 50 -> B (only)')
+            .. 'first of: 1) /dt on -> A (only); 2) hpp < 50 -> B (only)')
     end },
 }

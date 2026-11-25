@@ -340,6 +340,19 @@ function R.WhenWords(when)
             local alts = {}
             for _, alt in ipairs(when.any) do alts[#alts + 1] = '(' .. R.WhenWords(alt) .. ')' end
             out[#out + 1] = table.concat(alts, ' or ')
+        elseif ((k == 'toggle') or (k == 'mode')) and (type(when[k]) == 'table') then -- /dt on, /nukeset Macc
+            local subs = {}
+            for sub in pairs(when[k]) do subs[#subs + 1] = tostring(sub) end
+            table.sort(subs)
+            for _, sub in ipairs(subs) do
+                local v = when[k][sub]
+                local slash = (R.CYCLES[sub] or R.TOGGLES[sub]) and ('/' .. sub) or sub
+                if k == 'toggle' then
+                    out[#out + 1] = slash .. ((v == true) and ' on' or ' off')
+                else
+                    out[#out + 1] = slash .. ' ' .. value_words(v)
+                end
+            end
         else
             out[#out + 1] = k .. ' ' .. value_words(when[k])
         end
