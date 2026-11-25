@@ -4,7 +4,8 @@
 
 A rule wears a set (or single items) when its conditions hold: Fealty while Cover is up, a body piece under 40% MP
 on nukes, Self_Cure when a cure lands on you. Rules are data in the job file (`gcinclude.Rules`), made and changed in
-`/gcedit` (**RULES**, at the top of the set list): no code, no text editor.
+`/gcedit`: **Rules** in the top bar (or the blue **RULES** button over the set list) opens them; it also says how many
+of your job file's `if`s Convert can turn into rules (**Rules (0) - 5 to convert**). No code, no text editor.
 
 ## In the editor
 

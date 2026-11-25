@@ -96,7 +96,7 @@ return function(o)
         danger = function() return palette.btn, palette.red, palette.redHi, nil end,
         ghost = function() return CLEAR, palette.btnHi, palette.btnHi, palette.dim end,
     }
-    local function button(label, kind, big, off)
+    local function button(label, kind, big, off, size)
         local b, h, a, t = KINDS[kind or 'plain']()
         local disabled = off and (imgui.BeginDisabled ~= nil)
         if disabled then imgui.BeginDisabled() end
@@ -105,7 +105,9 @@ return function(o)
         imgui.PushStyleColor(ImGuiCol_ButtonActive, a)
         if t ~= nil then imgui.PushStyleColor(ImGuiCol_Text, t) end
         local hit
-        if big then hit = imgui.Button(label) else hit = imgui.SmallButton(label) end -- one or the other, never both
+        if size ~= nil then hit = imgui.Button(label, size)
+        elseif big then hit = imgui.Button(label)
+        else hit = imgui.SmallButton(label) end -- one of them, never two
         imgui.PopStyleColor((t ~= nil) and 4 or 3)
         if disabled then imgui.EndDisabled() end
         return hit and not off
@@ -259,18 +261,40 @@ return function(o)
     end
 
     -- The RULES row at the top of the set list.
+    -- How many ifs Convert could take from the open file (nothing staged); read once per file text.
+    local convertible -- set below, with the Convert section
+    local function summary()
+        local n = M.Count()
+        local k = (convertible ~= nil) and convertible() or 0
+        return n, k
+    end
+    local function rules_tip(n, k)
+        return 'Rules: when this, wear that, without code (a buff up, low MP, a spell on you, a mode...), saved in the '
+            .. 'job file. ' .. ((n > 0) and (n .. ((n == 1) and ' rule' or ' rules') .. ' now. ') or 'None yet. ')
+            .. ((k > 0) and (k .. ((k == 1) and ' if' or ' ifs') .. ' in your job file can be made into rules: Convert, '
+            .. 'on the Rules page.') or '')
+    end
+    local LIST_W = { -1, 0 }
+    -- The RULES button at the top of the set list: the whole width, blue.
     function M.ListButton()
-        local n, sel = M.Count(), editorState.selection.rules == true
-        if sel then imgui.PushStyleColor(ImGuiCol_Text, palette.blue) end
-        if imgui.Selectable('RULES  ' .. ((n > 0) and (n .. ((n == 1) and ' rule' or ' rules')) or '(none yet)')
-            .. '##gcedit_rules_row', sel) then
+        local n, k = summary()
+        local sel = editorState.selection.rules == true
+        local label = 'RULES  ' .. ((n > 0) and (n .. ((n == 1) and ' rule' or ' rules')) or 'none yet')
+            .. ((k > 0) and ('  -  ' .. k .. ' to convert') or '')
+        if button(label .. '##gcedit_rules_row', sel and 'primary' or 'accent', true, false, LIST_W) then
             editorState.selection.rules = true
         end
-        if sel then imgui.PopStyleColor() end
-        if imgui.IsItemHovered() then
-            set_tip('When this, wear that, without code: a buff up, low MP, a spell on you, a mode... '
-                .. 'Saved in the job file as gcinclude.Rules.')
+        if imgui.IsItemHovered() then set_tip(rules_tip(n, k)) end
+    end
+    -- The Rules button in the top bar: opens the page, or (open already) goes back to the set.
+    function M.TopButton()
+        local n, k = summary()
+        local sel = editorState.selection.rules == true
+        local label = 'Rules' .. ((n > 0) and (' (' .. n .. ')') or '') .. ((k > 0) and (' - ' .. k .. ' to convert') or '')
+        if button(label .. '##gcedit_rules_top', sel and 'primary' or 'accent') then
+            editorState.selection.rules = not sel
         end
+        if imgui.IsItemHovered() then set_tip(rules_tip(n, k) .. (sel and '\n\nClick: back to the set.' or '')) end
     end
 
     -- == The builder ==
@@ -664,6 +688,19 @@ return function(o)
             editorState.ui.convertPlan = c
         end
         return c
+    end
+    convertible = function()
+        local doc = editorState.document
+        if (doc == nil) or (doc.convert ~= nil) or (doc.model == nil) or (doc.model.text == nil) then return 0 end
+        local c = plan_of(doc.model.text)
+        if c.plan == nil then return 0 end
+        local k = 0
+        for _, h in ipairs(c.plan.handlers) do
+            for _, it in ipairs(h.items) do
+                if it.ok then k = k + 1 end
+            end
+        end
+        return k
     end
     local function stage_convert(c, adopt)
         local doc = editorState.document

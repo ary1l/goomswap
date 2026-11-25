@@ -2020,6 +2020,8 @@ local function body()
     if imgui.SmallButton('Settings##gcsettings') then editorState.ui.settingsOpen = { true } end
     if imgui.IsItemHovered() then set_tip('GoomSwap settings: this character (char.lua) or every character.') end
     imgui.SameLine()
+    ctx.rules.TopButton() -- the Rules page (and how many ifs Convert could take)
+    imgui.SameLine()
     local simple = ctx.simple.On()
     if imgui.SmallButton((simple and 'Simple view' or 'Full view') .. '##gcview') then
         ctx.simple.Set(not simple)

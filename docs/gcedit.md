@@ -15,8 +15,9 @@ everything below, as before.
 
 ## Rules
 
-**RULES**, at the top of the set list: "when this, wear that" without code, and **Convert** for your job file's own
-`if`s. See [Rules](rules.md).
+**Rules** in the top bar (or **RULES** over the set list; a second click on the top bar's goes back to the set):
+"when this, wear that" without code, and **Convert** for your job file's own `if`s; the button says how many it can
+take. See [Rules](rules.md).
 
 ## New job file
 
