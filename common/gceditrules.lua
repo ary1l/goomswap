@@ -279,8 +279,15 @@ return function(o)
     function M.ListButton()
         local n, k = summary()
         local sel = editorState.selection.rules == true
-        local label = 'RULES  ' .. ((n > 0) and (n .. ((n == 1) and ' rule' or ' rules')) or 'none yet')
-            .. ((k > 0) and ('  -  ' .. k .. ' to convert') or '')
+        -- the longest label that fits the pane: the set list is often narrow
+        local rules = (n > 0) and (n .. ((n == 1) and ' rule' or ' rules')) or 'none yet'
+        local labels = (k > 0) and { 'RULES  ' .. rules .. '  -  ' .. k .. ' to convert', 'RULES  ' .. n .. '  +' .. k
+            .. ' to convert', 'RULES ' .. n .. ' +' .. k } or { 'RULES  ' .. rules, 'RULES ' .. n }
+        local avail = xw(imgui.GetContentRegionAvail()) - 16
+        local label = labels[#labels]
+        for _, l in ipairs(labels) do
+            if xw(imgui.CalcTextSize(l)) <= avail then label = l break end
+        end
         if button(label .. '##gcedit_rules_row', sel and 'primary' or 'accent', true, false, LIST_W) then
             editorState.selection.rules = true
         end
