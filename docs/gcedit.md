@@ -6,12 +6,14 @@ Edits your loaded job file. Changes stay in memory until you confirm a save. `/g
 
 ## Simple and Full view
 
-**Simple view** / **Full view** (top bar) switches between them; kept per job, and a new job file (the example, a
-draft) starts in Simple. Simple: each set says what it is for beside its name (`Tp_Default`: *Fighting*,
-`Idle_Refresh`: *Standing: low MP*), the top bar keeps Settings and Save (Backups, Unused gear, Rescan bags, Reload
-file, density and theme are under **...**), and the right pane has **Gear**, **What goes on** (the Result, with
-**Related** and **Compare** one click away) and **Stats**, plus **To fill** while something is left. Full view is
-everything below, as before.
+The top bar: your character and job, the job file (its menu opens your other job files and **New job file**), the save
+state, then **Rules**, **Settings**, **...** and **Save + reload**. **...** holds the view (**Simple** / **Full**),
+density, theme, **Backups**, **Unused gear**, **Rescan bags**, **Reload file** and Diagnostics.
+
+**Simple** / **Full** (under **...**) is kept per job; a new job file (the example, a draft) starts in Simple. Simple:
+each set says what it is for beside its name (`Tp_Default`: *Fighting*, `Idle_Refresh`: *Standing: low MP*), and the
+right pane has **Gear**, **What goes on** (the Result, with **Related** and **Compare** one click away) and
+**Stats**, plus **To fill** while something is left. Full view is everything below.
 
 ## Rules
 
@@ -106,12 +108,15 @@ EditorOrder = { Melee = { 'Tp_Default', 'Tp_Chango' } },    -- 'own': these firs
 
 ## Settings
 
-**Settings** (top bar) lists every GoomSwap setting, its value now and where it comes from: **default**, **every
-character** (the shared file), **this character** (`char.lua`) or **this job** (the job file open in the editor).
-Pick **Save to**, change a value, **Save**; **Clear** takes it out of that file. `char.lua` and the shared file are
-written at once; **This job** changes wait for the editor's Save, like set edits, as `gcinclude.settings.X = value;`
-lines (a new one goes just before `gcinclude.Initialize()`). Below the settings, **Only in <job file>** edits that
-file's own options the same way: `DefaultWeapons`, `WeaponRoles`, `MainModes` `SubModes` `RangeModes`,
+**Settings** (top bar) lists every GoomSwap setting by a plain name (`DT gear below HP`; hover it for what it does
+and its key, `DTGearHPP`), its value, and a tag for where it comes from: **default**, **Everyone** (the shared
+file), your character (`char.lua`) or your character on this job (the job file open in the editor). **Applies to**
+at the top picks where a change goes: **<Name> - all jobs** (`char.lua`), **<Name> - <JOB>** (the job file) or
+**Everyone**. Categories on the left (Common, Idle & defense, Weapons, Casting, Weapon skills, Items & Packer, Keys,
+Bar & HUD, Editor, **<JOB> options**, **All (advanced)**); **find a setting** searches all of them. Change a value,
+**Save**; **Clear** takes it out of that file. `char.lua` and the shared file are written at once; changes for
+**<Name> - <JOB>** wait for the editor's Save, like set edits, as `gcinclude.settings.X = value;` lines (a new one
+goes just before `gcinclude.Initialize()`). **<JOB> options** edits the job file's own options the same way: `DefaultWeapons`, `WeaponRoles`, `MainModes` `SubModes` `RangeModes`,
 `WeaponItemMap`, `AlwaysDualWield`, `NukeModes`, `Packer` (`profile.Packer`, with **Get gear now**: `/lac gear`), `SIRSkip` `THSkip`, `CureObi`, `SafeAmmo`, `RangeAmmo`,
 `CORmsg`, `LockstyleSet` (`WeaponModes` and `MeleeModes` are shown; Weapon_ sets and the headings' **+ /wm mode**,
 **+ /mset mode** change them).
@@ -122,8 +127,8 @@ takes one out, a box adds one), name -> value tables (`HUDAbbr`, `ElementalWS`, 
 (**Packer (every job)** for char.lua or the shared file, **Packer** under the job file's own options, with **Get gear
 now**). Other tables (`ElementGear`, `OrpheusPoints`...) are Lua in their box. Hover a setting for what it does, an example typed the way its box takes it, and its value in
 each file; an empty box shows the example greyed. Numbers keep to their range (HP/MP % 0-100, TP 0-3000).
-Settings most never change (item names like `HoxneItem`, game data, timing windows) show with **Show all**, when a
-file sets one, or in a search; job options only some jobs read (`NukeModes`, `CORmsg`) show on those jobs. A value the engine would refuse on load is refused here. `/lac reload` applies it everywhere;
+Settings most never change (item names like `HoxneItem`, game data, timing windows) show under **All (advanced)**,
+when a file sets one, or in a search; job options only some jobs read (`NukeModes`, `CORmsg`) show on those jobs. A value the engine would refuse on load is refused here. `/lac reload` applies it everywhere;
 a job file's own setting still wins. Details: [Settings](settings.md).
 
 ## Find your way
@@ -145,15 +150,19 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   text.
 - Search the set list by a set's name or an item (`nyame`: every set wearing a Nyame piece, as edited), or fold its
   headings; for your main sets at the top, make a heading of your own and move them into it
-  ([Headings](#headings)). **Unsaved sets**, **Issues**, **Missing**, **Needs RP** and **Unused** filter it; the `?`
-  after the filters shows the colours as your theme draws them.
-- Set colours (GoomSwap's own; a theme recolours them but keeps them apart): amber unsaved, red missing gear,
-  then green (all 16 slots, or a ready overlay) and teal (all 12 armor slots; weapons left out on purpose). A
-  violet dot after a name: a piece in it needs RP (hover: which). Over the list, one line names the pieces that need
-  RP and in how many sets (click: only those sets), and **On you now** shows the sets wearing something on you, the
-  most slots first (click one to open it); their rows get a green dot.
+  ([Headings](#headings)). The chips over it filter it: **Unsaved**, **Issues**, **Missing**, **Needs RP**,
+  **Unused** (and **Show hidden**); a chip fills in blue while on. The `?` after them shows the colours as your theme
+  draws them.
+- Each row: a dot before the name for its state (GoomSwap's own colours; a theme recolours them but keeps them
+  apart): amber unsaved, red missing gear, then green (all 16 slots, or a ready overlay) and teal (all 12 armor
+  slots; weapons left out on purpose). After the name, small tags: empty slots (amber) and pieces not owned (red),
+  each a count (hover: which), **code** or **empty**, and a violet dot when a piece in it needs RP. The number at
+  the right end is how many of the 16 slots it names (MELEE and WEAPONS show the command that puts it on there).
+  Over the list, one line names the pieces that need RP and in how many sets (click: only those sets), and **On you
+  now** shows the sets wearing something on you, the most slots first (click one to open it); their dots get a green
+  ring.
 - Drag dividers to resize (double-click resets). Density is remembered per job.
-- **Theme** (top bar): the editor's colours. Same as the bar (default), **Match goomui** (the theme goomui saved for
+- **Theme** (under **...**): the editor's colours. Same as the bar (default), **Match goomui** (the theme goomui saved for
   this character), GoomSwap's own, or any of the 30 presets; hover one to preview. Kept per character
   (`gcedit-theme.txt`); the bar keeps its own.
 - **Rescan bags** refreshes ownership and keeps edits. Storage Slip gear counts as owned and shows its slip.
@@ -161,10 +170,13 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   first, each with the sets that differ from the file now; **Compare** shows them slot by slot (then -> now).
   **Restore** puts one back: the file is backed up first, then replaced and reloaded. Not with unsaved edits.
 - **Recent** (over the slots): the sets you opened last, newest first; a click opens one. Kept per job.
-- The set you're editing sits in a strip under it: an accent bar, its heading (`IDLE > Town`), its name and badges
-  (Needs RP), how many of the 16 slots it names, and what it is used for. Related marks its row the same way.
+- The set you're editing has its title under it: its heading and name (`Idle > Town`), its tags as pills (**2 need
+  RP**: click for where else those pieces are; worn by name, renamed, new), one line with what it is used for and how
+  many of the 16 slots it names, and a meter of those slots. Under it: **Undo edit** / **Redo** (after an edit),
+  **Use worn**, **Copy from...**, **Compare...** (and **Weapon sets...** on a `/wm` set), **More...** (Revert,
+  Rename, Delete).
 
-![On you now, the RP line and dots in the set list; the set you're editing in its strip (mockup of the current build)](gcedit_list.png)
+![The main view: the set list (state dots, tags, slot counts, filter chips), the open set (title, slot cards, the Neck card hovered) and What goes on (mockup of the current build)](gcedit_list.png)
 
 - **Unused gear** lists, by bag, the gear in your Inventory and Wardrobes that nothing of this character names:
   none of its job files, char.lua, the shared settings file, GoomSwap's own sets or its code (Moonshade, obis,
@@ -179,10 +191,11 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 
 | On a card | Means |
 |---|---|
-| Blue outline | The slot being edited |
+| Blue outline | The slot being edited, or hovered (here or its row in What goes on) |
+| No fill | The set leaves this slot alone |
 | Amber fill, Unsaved | A pending change |
 | Violet rank | Unfinished RP |
-| Green / amber bag marker | Equippable bag / move it to Inventory or a wardrobe |
+| Bag tag (top right): green / amber | Equippable bag / move it to Inventory or a wardrobe |
 | Missing | No copy owned |
 | Not in this set | A commented-out placeholder |
 | Unchanged / Replaced: source | The set leaves the slot alone / a later layer of the selected Result wins |

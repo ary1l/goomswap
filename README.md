@@ -5,7 +5,7 @@ abilities, weapon skills, combat modes, defense and utility gear.
 
 For **Ashita v4** (LuAshitacast). Start from an example job file and the in-game set editor (`/gcedit`).
 
-![The set editor (v3.30): the set list, the open set's slots with icons and bags, and Related: every set that goes on with it, in order (character name pixelated)](docs/gcedit_editor.png)
+![The set editor (in game, before the v3.30 layout clean-up): the set list, the open set's slots with icons and bags, and Related: every set that goes on with it, in order (character name pixelated)](docs/gcedit_editor.png)
 
 More pictures of the editor, some of them mockups of the newest build, are in [its docs](docs/gcedit.md).
 
