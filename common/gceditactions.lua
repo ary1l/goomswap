@@ -113,6 +113,7 @@ function actionModel.New(context)
         if fn ~= nil then
             return ({
                 WearWeaponLayer = 'Weapon mode',
+                ruleEquip = 'Rule',
                 ApplyElementGear = 'Element bonus',
                 EquipIdle = 'Idle gear',
                 EquipMode = 'Combat mode',
@@ -137,6 +138,13 @@ function actionModel.New(context)
         end
         local first = (L.why or {})[1]
         local R = {
+            ruleWear = function() -- gcinclude.Rules
+                local w = (gearEngine ~= nil) and gearEngine.RuleWhy or {}
+                return 'a rule in your job file: ' .. tostring(w[by] or w[inner or ''] or 'gcinclude.Rules')
+            end, ruleEquip = function()
+                local w = (gearEngine ~= nil) and gearEngine.RuleWhy or {}
+                return 'a rule in your job file: ' .. tostring(w['ruleEquip()'] or 'gcinclude.Rules')
+            end,
             CheckCommonDebuffs = function()
                 if (by == 'Sleeping') or (engine == 'Sleeping') then return 'you are asleep' end
                 if (by == 'Doomed') or (engine == 'Doomed') then return 'Doom or Bane is on you' end
