@@ -108,6 +108,41 @@ return {
         return true
     end
 
+    -- == The return table's own keys beside settings (Packer: kept on every job, /lac gear). ==
+    function S.Top(which, key) return layer(which)[key] end
+    -- key set to value in which ('own' or 'shared'; S.REMOVE: taken out), written at once after a backup; the engine's
+    -- Packer list (char.lua's, else the shared file's) follows.
+    function S.WriteTop(which, key, value)
+        local e, path = o.engine(), path_of(which)
+        if path == nil then return false, 'no character folder yet' end
+        local old = o.readFile(path)
+        local text, err = F.SetCharTop(old or ((which == 'own') and e.CharConfigTemplate or SHARED_TEMPLATE), key,
+            function(ind)
+                if value == S.REMOVE then return nil end
+                return G.SerializeValue(value, F.QuoteText, F.FormatKey, ind)
+            end)
+        if text == nil then return false, tostring(err) end
+        if (loadstring or load)(text) == nil then return false, 'the file would not load after the change' end
+        if (old ~= nil) and (backedUp[path] == nil) then
+            local backup, berr = F.Backups.Path(path, function(p) return ashita.fs.exists(p) end)
+            local ok, werr = false, berr
+            if backup ~= nil then ok, werr = F.Write(backup, old) end
+            if not ok then return false, 'backup failed: ' .. tostring(werr) end
+            backedUp[path] = backup
+        end
+        local ok, werr = F.Write(path, text)
+        if not ok then
+            if old ~= nil then F.Write(path, old) end
+            return false, tostring(werr)
+        end
+        layer(which)[key] = (value ~= S.REMOVE) and value or nil
+        if key == 'Packer' then
+            e.CharPacker = layer('own').Packer or layer('shared').Packer
+            if e.FillPacker ~= nil then e.FillPacker(true) end
+        end
+        return true
+    end
+
     -- == This job: the job file open in the editor, its own `gcinclude.settings.X` and `gcinclude.X` lines. Changes
     -- are staged on the document (document.jobSettings) and written by its Save, like set edits (gceditsets). ==
     local function value_of(text) -- Lua data, no code run (T{...} allowed): the value, and whether it read

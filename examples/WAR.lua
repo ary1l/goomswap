@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 
 -- WAR example: swap in your own gear.
 -- Sets named after an ability, spell, skill or weapon skill (['Berserk'], ['Savage Blade'])
@@ -247,8 +246,7 @@ local sets = {
 };
 profile.Sets = sets;
 
--- LuAshitacast's own list, for /lac gear and /lac validate (Packer plugin). GoomSwap's /packer (Bellhop) reads
--- gcinclude.Packer at the top of this file instead.
+-- Kept in your bags for this job by /lac gear (the Packer plugin), with every set's gear; /gcedit Settings edits it.
 profile.Packer = {
     {Name = 'Thr. Tomahawk', Quantity = 'all'},
     {Name = 'Red Curry Bun', Quantity = 'all'},

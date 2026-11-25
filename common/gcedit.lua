@@ -1173,7 +1173,8 @@ local function draw_save_review()
         table.sort(names)
         for _, name in ipairs(names) do
             local e = staged[name]
-            imgui.TextUnformatted('  gcinclude.' .. name .. (e.remove and ': taken out'
+            imgui.TextUnformatted('  ' .. (string.match(name, '^profile%.') and '' or 'gcinclude.') .. name
+                .. (e.remove and ': taken out'
                 or (' = ' .. string.gsub(settingsFiles.JobText(e, ''), '%s*\n%s*', ' '))))
         end
     end

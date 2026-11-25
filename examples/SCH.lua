@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 gcinclude.settings.SmartSwap = false; -- always swap to the casting weapons: TP isn't used on this job
 gcinclude.settings.WeaponTPGuard = 0; -- no 1000+ TP weapon hold either (nukes, Dark, Divine swap too)
 gcinclude.CureObi = true; -- Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts); false = never
@@ -426,8 +425,7 @@ local sets = {
 };
 profile.Sets = sets;
 
--- LuAshitacast's own list, for /lac gear and /lac validate (Packer plugin). GoomSwap's /packer (Bellhop) reads
--- gcinclude.Packer at the top of this file instead.
+-- Kept in your bags for this job by /lac gear (the Packer plugin), with every set's gear; /gcedit Settings edits it.
 profile.Packer = {
     {Name = 'Tropical Crepe', Quantity = 'all'},
     {Name = 'Rolan. Daifuku', Quantity = 'all'},

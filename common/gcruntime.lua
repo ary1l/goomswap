@@ -73,10 +73,6 @@ do
                 'Dia', 'Dia II', 'Dia III', 'Diaga', 'Blink', 'Ice Spikes', 'Blaze Spikes', 'Shock Spikes',
                 { Spells = T{ 'Cure', 'Cura' }, Worn = T{ 'Daybreak', "Bunzi's Rod" } },
             },
-            -- kept in inventory on every job: { ['Echo Drops'] = 'stack', ['Holy Water'] = 12 }; a job adds its own
-            -- with gcinclude.Packer (/packer)
-            PackerItems = { ['Grape Daifuku +1'] = 'stack' },
-            PackerPutAway = true, -- on a job change, /packer puts back (Bellhop) what only the previous job's list kept
             -- set names hidden from /gcedit's Related tab, e.g. T{'Singing'}
             EditorIgnoreSuggestions = T{},
             -- newest dated /gcedit backups kept per job file, after a successful save; 0 = keep all
@@ -304,7 +300,7 @@ end
 do
     -- Command routing and aliases. Public gcinclude entry points are installed unchanged.
     local commands = {}
-    function commands.Install(gcinclude, gcpacker)
+    function commands.Install(gcinclude)
         function gcinclude.CycleDefense(arg)
             local want = string.lower(tostring(arg or ''))
             if want ~= '' then -- /def off|none, or a set by name (dt, mdt, aminon)
@@ -431,12 +427,6 @@ do
                 end -- a Weapon_<mode>Acc: you asked, swaps at any TP
                 toggle = 'Melee mode'
                 status = gcinclude.ModeLabel('MeleeSet', gcdisplay.GetCycle('MeleeSet'))
-            elseif args[1] == 'packer' then
-                if args[2] == 'reset' then
-                    gcpacker.Reset(gcinclude)
-                else
-                    gcinclude.RunPacker(false)
-                end
             elseif args[1] == 'wsset' then
                 gcinclude.PickCycle('WsSet', args[2])
                 toggle = 'WS Set'
@@ -1601,8 +1591,8 @@ return {
         -- Keybinds = { { 'F7', 'wm' }, { 'F9', 'mset' } },
     },
 
-    -- Optional supplies belong OUTSIDE settings, alongside it.
-    -- Uncomment the whole block you want. These apply to every job.
+    -- Optional supplies belong OUTSIDE settings, alongside it: /lac gear (Packer plugin) fetches them on every job.
+    -- Uncomment the whole block you want. A count, 'stack' or 'all'.
     -- Packer = {
     --     ['Echo Drops'] = 'stack',
     --     ['Holy Water'] = 'stack',

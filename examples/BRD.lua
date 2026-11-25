@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 gcinclude.settings.WeaponTPGuard = 0; -- songs and JAs always get their weapons: worth the TP
 
 local sets = {

@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 gcinclude.THFullTime = true; -- /th keeps the TH set on the whole fight (THF default anyway; false = only until the mob is tagged)
 
 local sets = {

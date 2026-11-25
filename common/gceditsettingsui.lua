@@ -10,6 +10,71 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     local DOC, JOB = DOCS.settings, DOCS.job -- [key] = { what it does, an example as typed }; job: its own list
     local ADVANCED, LIMITS, JOB_ONLY = DOCS.advanced, DOCS.limits, DOCS.jobOnly
     local BOX_W = 340
+    local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip)
+    -- Settings drawn as controls, not Lua text: names as chips, name -> value rows, keybinds. Anything else (or a
+    -- value of another shape) keeps its Lua box.
+    local LIST = { SIRSkip = true, THSkip = true, MBSkills = true, ElementSkills = true, HoldExempt = true,
+        MoonshadeSkip = true, CapacityCapes = true, HUDOwners = true, MyBoxes = true, EditorIgnoreSuggestions = true,
+        HoxneLockSlots = true, MainModes = true, SubModes = true, RangeModes = true, NukeModes = true }
+    local MAP = { HUDAbbr = true, WeaponClass = true, ElementalWS = true, ReceivedSets = true, WeaponRoles = true,
+        RangeAmmo = true }
+    local NUMBER_MAP = { EnchantDelays = true }
+    -- Settings GoomSwap no longer reads: shown (when a file sets one) to clear, or move.
+    local RETIRED = {
+        PackerItems = 'No longer read: the Bellhop packer is gone. Its items belong in Packer (below), which /lac gear '
+            .. '(the Packer plugin) fetches on every job.',
+        PackerPutAway = 'No longer read: the Bellhop packer is gone. The Packer plugin sorts what /lac gear leaves out '
+            .. 'by its own config.',
+    }
+    local function is_list(v)
+        if type(v) ~= 'table' then return v == nil end
+        for k, x in pairs(v) do
+            if (type(k) ~= 'number') or (type(x) ~= 'string') then return false end
+        end
+        return true
+    end
+    local function is_map(v, number)
+        if type(v) ~= 'table' then return v == nil end
+        for k, x in pairs(v) do
+            if (type(k) ~= 'string') or (type(x) ~= (number and 'number' or 'string')) then return false end
+        end
+        return true
+    end
+    local function widget_kind(key, v)
+        if key == 'Keybinds' then
+            if type(v) ~= 'table' then return (v == nil) and 'keys' or nil end
+            for _, b in ipairs(v) do
+                if (type(b) ~= 'table') or (type(b[1]) ~= 'string') or (type(b[2]) ~= 'string') then return nil end
+            end
+            return 'keys'
+        end
+        if LIST[key] and is_list(v) then return 'list' end
+        if MAP[key] and is_map(v) then return 'map' end
+        if NUMBER_MAP[key] and is_map(v, true) then return 'nmap' end
+        return nil
+    end
+    local function draw_widget(kind, id, v)
+        if kind == 'list' then return W.List(id, v) end
+        if kind == 'map' then return W.Map(id, v) end
+        if kind == 'nmap' then return W.Map(id, v, { number = true, valueHint = 'seconds' }) end
+        if kind == 'keys' then return W.Keybinds(id, v) end
+        return nil
+    end
+    local function item_known(name) -- the game's spelling of an item's name, nil when there is none
+        local r = AshitaCore:GetResourceManager():GetItemByName(name, 0)
+        return (r ~= nil) and (r.Name[1] or name) or nil
+    end
+    local function stack_of(name)
+        local r = AshitaCore:GetResourceManager():GetItemByName(name, 0)
+        return (r ~= nil) and (r.StackSize or 1) or 1
+    end
+    local function packer_form(v) -- char.lua's map, else LAC's list
+        if type(v) ~= 'table' then return 'map' end
+        for k in pairs(v) do
+            if type(k) == 'number' then return 'list' end
+        end
+        return 'map'
+    end
 
     local function job_name() return files.JobFile() or 'the job file' end
     local function target_name(t)
@@ -172,7 +237,42 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         return ed.text[1] ~= ed.base
     end
 
+    local function retired_row(key, target)
+        local which = (target == 'job') and nil or target
+        local here = (which ~= nil) and files.Layer(which)[key]
+        imgui.TextColored(palette.warn, key)
+        if imgui.IsItemHovered() then set_tip(RETIRED[key]) end
+        imgui.SameLine(200)
+        imgui.TextColored(palette.dim, (here ~= nil) and ('set in ' .. target_name(which) .. ', not used') or 'not used')
+        if here == nil then return end
+        if (key == 'PackerItems') and (type(here) == 'table') then
+            imgui.SameLine()
+            if imgui.SmallButton('Move to Packer##retired_' .. key) then
+                local packer = files.Top(which, 'Packer')
+                local merged = {}
+                for k, x in pairs(packer or {}) do merged[k] = x end
+                for name, n in pairs(here) do
+                    if type(name) == 'string' then
+                        if packer_form(merged) == 'list' then
+                            merged[#merged + 1] = { Name = name, Quantity = n }
+                        elseif merged[name] == nil then
+                            merged[name] = n
+                        end
+                    end
+                end
+                local ok, err = files.WriteTop(which, 'Packer', merged)
+                if ok then ok, err = files.Write(which, { [key] = files.REMOVE }) end
+                feedback(ok and ('PackerItems moved into Packer in ' .. target_name(which) .. '.')
+                    or ('Not moved: ' .. tostring(err) .. '.'))
+            end
+            if imgui.IsItemHovered() then set_tip('Its items go into Packer in the same file, then it is taken out.') end
+        end
+        imgui.SameLine()
+        if imgui.SmallButton('Clear##retired_clear_' .. key) then save(which, key, files.REMOVE) end
+    end
+
     local function row(key, target)
+        if RETIRED[key] then return retired_row(key, target) end
         local ui = editorState.ui
         local v, from
         if target == 'job' then v, from = files.GetForJob(key) else v, from = files.Get(key) end
@@ -199,6 +299,22 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         imgui.SameLine(200)
         -- a T{} default: this job's line is written T{...} (its methods: HoldExempt:contains)
         local tMeta = (type(default) == 'table') and (getmetatable(default) ~= nil)
+        local kind = ed.editable and widget_kind(key, v) or nil
+        if kind ~= nil then -- a control under its name; the line keeps where it comes from and Clear
+            imgui.TextColored(((from == 'own') or (from == 'job')) and palette.ok
+                or ((from == 'shared') and palette.blue or palette.dim), FROM[from])
+            local has
+            if target == 'job' then has = (files.Job('settings.' .. key) ~= nil) else has = (files.Layer(target)[key] ~= nil) end
+            if has then
+                imgui.SameLine()
+                if imgui.SmallButton('Clear##set_clear_' .. key) then save(target, key, files.REMOVE) end
+            end
+            imgui.Indent(24)
+            local nv = draw_widget(kind, 'w_' .. target .. '_' .. key, v)
+            imgui.Unindent(24)
+            if nv ~= nil then save(target, key, nv, tMeta) end
+            return
+        end
         local changed = value_box('set_' .. key, ed, check, v, DOC[key] and DOC[key][2],
             function(b) save(target, key, b, tMeta) end)
         if imgui.IsItemHovered() then set_tip(ed.tip) end
@@ -238,11 +354,83 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         end
     end
 
+    -- The job file's own Packer list (profile.Packer, LAC's): rows of items and counts, staged for Save; and Get gear.
+    local function packer_job_row(entry)
+        local name = entry[1]
+        local v, how = files.Job(name)
+        imgui.TextUnformatted('Packer')
+        if imgui.IsItemHovered() then set_tip(entry[2]) end
+        imgui.SameLine(200)
+        imgui.TextColored((how == 'staged') and palette.warn or ((v ~= nil) and palette.ok or palette.dim),
+            (how == 'staged') and 'unsaved' or ((v ~= nil) and 'this job' or 'not set'))
+        local engine = gcinclude
+        local ready, why = false, 'GoomSwap is not loaded'
+        if (engine ~= nil) and (engine.PackerReady ~= nil) then ready, why = engine.PackerReady() end
+        imgui.SameLine()
+        if imgui.BeginDisabled ~= nil and not ready then imgui.BeginDisabled() end
+        if imgui.SmallButton('Get gear now##packer_get') and ready then
+            if engine.GetGear() then feedback('/lac gear: the Packer plugin is fetching your sets\' gear and this list.') end
+        end
+        if imgui.EndDisabled ~= nil and not ready then imgui.EndDisabled() end
+        if imgui.IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled or 0) then
+            set_tip(ready and ('/lac gear: every set\'s gear, this list, char.lua\'s Packer and the items GoomSwap '
+                .. 'wears, into your wardrobes and inventory.' .. ((how == 'staged') and ' Save first: the list here '
+                .. 'is not saved yet.' or '')) or ('Get gear needs ' .. tostring(why) .. '.'))
+        end
+        if (how == 'code') or string.match(how or '', '^set in') then
+            imgui.TextColored(palette.dim, '(' .. how .. ' in the file: edit it there)')
+            return
+        end
+        imgui.Indent(24)
+        local nv = W.Packer('w_job_packer', v, 'list', { known = item_known, stackOf = stack_of })
+        imgui.Unindent(24)
+        if nv ~= nil then files.StageJob(name, nv) end
+        -- the Bellhop list this file still has: offered into this one
+        local old, oldHow = files.Job('Packer')
+        if (old ~= nil) and (oldHow == 'file' or oldHow == 'staged') then
+            imgui.TextColored(palette.warn, 'gcinclude.Packer (the Bellhop list) is no longer read.')
+            imgui.SameLine()
+            if imgui.SmallButton('Move into Packer##packer_move') then
+                local merged = {}
+                for _, x in ipairs((type(v) == 'table') and v or {}) do merged[#merged + 1] = x end
+                for item, n in pairs((type(old) == 'table') and old or {}) do
+                    if type(item) == 'string' and (n ~= false) then
+                        if (n == 'stack') or (n == true) then n = stack_of(item) end
+                        merged[#merged + 1] = (n == 1) and item or { Name = item, Quantity = n }
+                    end
+                end
+                files.StageJob(name, merged)
+                files.StageJob('Packer', files.REMOVE)
+                feedback('gcinclude.Packer moved into Packer: written by Save.')
+            end
+            if imgui.IsItemHovered() then set_tip('Its items join this list (a stack as its size) and its line goes, on Save.') end
+        end
+    end
+
     -- A job-file-only option (gcinclude.<name>): staged for Save.
     local function job_row(entry)
         local ui = editorState.ui
         local name, desc, example, unset, readonly = entry[1], entry[2], entry[3], entry[4], entry[5]
+        if name == 'profile.Packer' then return packer_job_row(entry) end
         local v, how = files.Job(name)
+        local kind = (not readonly) and (how ~= 'code') and not string.match(how or '', '^set in')
+            and widget_kind(name, v) or nil
+        if kind ~= nil then
+            imgui.TextUnformatted(name)
+            if imgui.IsItemHovered() then set_tip(desc .. '\n\nNot set: ' .. tostring(unset or 'nothing')) end
+            imgui.SameLine(200)
+            imgui.TextColored((how == 'staged') and palette.warn or ((v ~= nil) and palette.ok or palette.dim),
+                (how == 'staged') and 'unsaved' or ((v ~= nil) and 'this job' or 'not set'))
+            if v ~= nil then
+                imgui.SameLine()
+                if imgui.SmallButton('Clear##job_clear_' .. name) then files.StageJob(name, files.REMOVE) end
+            end
+            imgui.Indent(24)
+            local nv = draw_widget(kind, 'w_job_' .. name, v)
+            imgui.Unindent(24)
+            if nv ~= nil then files.StageJob(name, nv) end
+            return
+        end
         local now = text_of(v)
         local id = 'job_' .. name
         local ed = ui.settingsEdit[id]
@@ -346,6 +534,29 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local function shown(name) return (find == '') or (string.find(string.lower(name), find, 1, true) ~= nil) end
         for _, key in ipairs(keys()) do
             if shown(key) and ((find ~= '') or wanted(key)) then row(key, ui.settingsTarget) end
+        end
+        if (ui.settingsTarget ~= 'job') and shown('Packer') then
+            imgui.Separator()
+            local which = ui.settingsTarget
+            imgui.TextUnformatted('Packer (every job)')
+            if imgui.IsItemHovered() then
+                set_tip('Items /lac gear (the Packer plugin) fetches on every job of '
+                    .. ((which == 'own') and 'this character' or 'every character') .. ', with each job file\'s own '
+                    .. 'Packer and every set\'s gear: a count, a stack or all you have. char.lua\'s list replaces the '
+                    .. 'shared one. Saved at once.')
+            end
+            if (which == 'shared') and (files.Top('own', 'Packer') ~= nil) then
+                imgui.SameLine()
+                imgui.TextColored(palette.warn, '(char.lua has its own: it wins)')
+            end
+            local cur = files.Top(which, 'Packer')
+            imgui.Indent(24)
+            local nv = W.Packer('w_top_packer_' .. which, cur, packer_form(cur), { known = item_known, stackOf = stack_of })
+            imgui.Unindent(24)
+            if nv ~= nil then
+                local ok, err = files.WriteTop(which, 'Packer', (next(nv) ~= nil) and nv or files.REMOVE)
+                feedback(ok and ('Packer saved in ' .. target_name(which) .. '.') or ('Packer not saved: ' .. tostring(err) .. '.'))
+            end
         end
         imgui.Separator()
         imgui.TextColored(palette.blue, 'Only in ' .. job_name() .. ' (written by Save)')

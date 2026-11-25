@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 -- gcinclude.CureObi = true; -- uncomment: Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts)
 
 -- RUN example: swap in your own gear.
@@ -388,8 +387,7 @@ local sets = {
 };
 profile.Sets = sets;
 
--- LuAshitacast's own list, for /lac gear and /lac validate (Packer plugin). GoomSwap's /packer (Bellhop) reads
--- gcinclude.Packer at the top of this file instead.
+-- Kept in your bags for this job by /lac gear (the Packer plugin), with every set's gear; /gcedit Settings edits it.
 profile.Packer = {
     {Name = 'Om. Sandwich', Quantity = 'all'},
     {Name = 'Black Curry Bun', Quantity = 'all'},

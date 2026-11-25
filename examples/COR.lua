@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
-gcinclude.Packer = { ['Trump Card'] = 99, ['Trump Card Case'] = 1 }; -- Ashita: keep cards and one unopened case in Inventory (/packer + Bellhop)
 gcinclude.settings.WeaponTPGuard = 0; -- rolls, Quick Draw and JAs always get their weapons: worth the TP
 
 local sets = {
@@ -414,11 +413,10 @@ local sets = {
 
 profile.Sets = sets;
 
--- LuAshitacast's own list, for /lac gear and /lac validate (Packer plugin). GoomSwap's /packer (Bellhop) reads
--- gcinclude.Packer at the top of this file instead.
+-- Kept in your bags for this job by /lac gear (the Packer plugin), with every set's gear; /gcedit Settings edits it.
 profile.Packer = {
-    'trump card',
-    'trump card case',
+    { Name = 'Trump Card', Quantity = 99 },
+    'Trump Card Case',
 };
 
 local ByName, Family = gcinclude.ByName, gcinclude.Family;

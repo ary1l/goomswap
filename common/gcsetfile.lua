@@ -1138,7 +1138,41 @@ local function set_char_setting(text, key, valueFor)
     return apply(text, out)
 end
 
--- == A job file's own settings: `gcinclude.<name> = <value>` statements (name 'settings.X' or 'X'). ==
+-- The text with the return table's own key (beside settings: Packer, sets) set to valueFor(indent) (nil: taken out).
+local function set_char_top(text, key, valueFor)
+    local r = string.find(code_only(text), '%f[%w_]return%s*{')
+    if r == nil then return nil, 'no `return {` table' end
+    local open = string.find(text, '{', r, true)
+    local entries, close = scan_table(text, open)
+    if close == nil then return nil, 'its table never closes' end
+    local hit = nil
+    for _, e in ipairs(entries) do
+        if e.key == key then hit = e end
+    end
+    local ind = (#entries > 0) and indent_at(text, entries[1].start) or (indent_at(text, open) .. '    ')
+    local value = valueFor((hit ~= nil) and indent_at(text, hit.start) or ind)
+    if hit == nil then
+        if value == nil then return text end
+        local at = (#entries > 0) and (entries[#entries].sep and (entries[#entries].sep + 1) or entries[#entries].vend) or (open + 1)
+        local comma = ((#entries > 0) and (entries[#entries].sep == nil)) and ',' or ''
+        return apply(text, { { at, at, comma .. '\n' .. ind .. key .. ' = ' .. value .. ',' } })
+    end
+    if value ~= nil then return apply(text, { { hit.vstart, hit.vend, value } }) end
+    local first, finish = hit.start, hit.sep and (hit.sep + 1) or hit.vend
+    local ls, le = line_start(text, first), line_end(text, finish)
+    if string.match(string.sub(text, ls, first - 1), '^%s*$') and string.match(string.sub(text, finish, le - 1), '^%s*$') then
+        first, finish = ls, le
+    end
+    return apply(text, { { first, finish, '' } })
+end
+
+-- == A job file's own settings: `gcinclude.<name> = <value>` statements (name 'settings.X' or 'X'), and the profile's
+-- own `profile.Packer = <value>` (name 'profile.Packer': LAC's Packer list, read when /lac gear runs). ==
+-- The statement's owner and name: 'profile.Packer' as it is, anything else under gcinclude.
+local function owned_name(name)
+    if string.match(name, '^profile%.') then return name end
+    return 'gcinclude.' .. name
+end
 
 -- The end (the index after it) of a data value at i: a string, a number, true/false/nil, or a table ({...}, T{...})
 -- with nothing but a ';' or a comment after it on its line. nil: the value is code.
@@ -1168,8 +1202,8 @@ end
 
 local function job_lines(s, name)
     local code, out = code_only(s), {}
-    local dotted = string.gsub(name, '%.', '%%s*%%.%%s*')
-    for at, v in string.gmatch(code, '()%f[%w_]gcinclude%s*%.%s*' .. dotted .. '%s*=()') do
+    local dotted = string.gsub(owned_name(name), '%.', '%%s*%%.%%s*')
+    for at, v in string.gmatch(code, '()%f[%w_]' .. dotted .. '%s*=()') do
         if string.sub(code, v, v) ~= '=' then -- '==' is a test
             local vstart = string.match(s, '^[ \t]*()', v)
             out[#out + 1] = { at = at, vstart = vstart, vend = data_value_end(s, vstart) }
@@ -1193,10 +1227,10 @@ end
 local function set_job_setting(s, name, value)
     local function text_at(i) return (type(value) == 'function') and value(indent_at(s, i)) or value end
     local lines = job_lines(s, name)
-    if #lines > 1 then return nil, 'gcinclude.' .. name .. ' is set in ' .. #lines .. ' places: edit it in the file' end
+    if #lines > 1 then return nil, owned_name(name) .. ' is set in ' .. #lines .. ' places: edit it in the file' end
     local hit = lines[1]
     if hit ~= nil then
-        if hit.vend == nil then return nil, 'gcinclude.' .. name .. ' is code in the file: edit it there' end
+        if hit.vend == nil then return nil, owned_name(name) .. ' is code in the file: edit it there' end
         if value ~= nil then return apply(s, { { hit.vstart, hit.vend, text_at(hit.at) } }) end
         local finish = string.match(s, '^[ \t]*;()', hit.vend) or hit.vend
         local ls, le = line_start(s, hit.at), line_end(s, finish)
@@ -1213,11 +1247,11 @@ local function set_job_setting(s, name, value)
         local nl = string.find(code, '\n', p, true) or (#code + 1)
         local ind = string.match(string.sub(code, p, nl - 1), '^([ \t]*)gcinclude%.Initialize%s*%(%s*%)')
         if ind ~= nil then
-            return apply(s, { { p, p, ind .. 'gcinclude.' .. name .. ' = ' .. text_at(p) .. ';\n' } })
+            return apply(s, { { p, p, ind .. owned_name(name) .. ' = ' .. text_at(p) .. ';\n' } })
         end
         p = nl + 1
     end
-    return nil, 'no gcinclude.Initialize() line to put gcinclude.' .. name .. ' before'
+    return nil, 'no gcinclude.Initialize() line to put ' .. owned_name(name) .. ' before'
 end
 
 -- Lua text for a string: single quotes, or double ones when it has an apostrophe and no double quote (as it reads).
@@ -1328,6 +1362,7 @@ return {
     ReadString = read_string,
     Quote = q,
     SetCharSetting = set_char_setting,
+    SetCharTop = set_char_top,
     slots = SCREEN,
     Parse = parse_file,
     ChildName = child_name,

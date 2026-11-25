@@ -15,7 +15,7 @@ gcauto = runtime.NewAuto()
 gcaction = gFunc.LoadFile('common\\gcaction.lua')
 gcauto.Bind(gcinclude) -- bound now, not in SetVariables: the handlers are wrapped at
 gcaction.Bind(gcinclude) -- Initialize, before InitStep's player wait ends (/item then hit a nil 'inc')
-local gcpacker = gFunc.LoadFile('common\\gcpacker.lua') -- Bellhop packer, separate from the gear/action engine
+local gcpackerlist = gFunc.LoadFile('common\\gcpackerlist.lua') -- what /lac gear (Packer plugin) gets on top of the sets
 local hudOk, hudModule = pcall(gFunc.LoadFile, 'common\\gchud.lua')
 if (hudOk == true) and (type(hudModule) == 'table') then
     gchud = hudModule
@@ -32,7 +32,7 @@ else
 end
 
 gcinclude.AliasList = T{'gcmessages','wsdistance','dt','mdt','th','kite','mset','wsset','nukeset','burst','weapon',
-    'death','sir','tankset','proc','packer','pupmode','wm','mw','sw','rw','ammoset','aminon','gchud','lock','unlock',
+    'death','sir','tankset','proc','pupmode','wm','mw','sw','rw','ammoset','aminon','gchud','lock','unlock',
     'hoxne','gchelp','gckey','def','gce','checksets','gcperf','smartswap','autogear','gcbar','forcestring','songlock',
     'siphon','warpring','mea','holla','dem','capacity','jubilee','abyproc','dw','dynamisrp','gcbuild','gcedit',
     'gcconfig','idleset','gcgear'}
@@ -1127,37 +1127,61 @@ function gcinclude.NoteSet(set)
     if (type(name) == 'string') then table.insert(gcinclude.WornSets, name) end
 end
 
--- Items to keep in Inventory. Each layer adds or replaces a name; false removes it.
--- gcpacker handles inventory counts and in-flight Bellhop requests.
-function gcinclude.PackerList()
-    local want, order = {}, {}
-    local function add(name, n)
-        if (type(name) ~= 'string') then return end
-        local k = string.lower(name)
-        if (want[k] == nil) then order[#order + 1] = k end
-        want[k] = { name = name, n = n }
+-- LuAshitacast's Packer list (profile.Packer), for /lac gear and /lac validate (the Packer plugin). Filled once per
+-- load, in memory: char.lua's Packer, sets inside sets (Buffs), GoomSwap's own sets and the items its commands and
+-- layers wear, the ones you own (gcpackerlist.lua). The job file itself is never written here.
+local PACKER_BAGS = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 } -- every container (gceditbags BAGS)
+function gcinclude.PackerItems()
+    local s, j = gcinclude.settings, gcinclude
+    local items = gcpackerlist.Names({ s.warp_Ring, s.mea_Ring, s.dem_Ring, s.holla_Ring, s.HoxneItem, s.CapacityCapes,
+        s.XIRollSet, s.ElementGear, j.SafeAmmo, j.RangeAmmo })
+    for _, name in ipairs({ 'Moonshade Earring', 'Daybreak', 'Jubilee Ring' }) do items[#items + 1] = name end
+    return items
+end
+function gcinclude.FillPacker(again) -- again: char.lua's Packer changed (the editor's Settings)
+    if gProfile == nil then return end
+    if gProfile.GcPackerFilled == true then
+        if again ~= true then return end
+        gProfile.Packer, gProfile.GcPackerFilled = gcinclude.FilePacker, nil
     end
-    for name, n in pairs(gcinclude.settings.PackerItems or {}) do add(name, n) end
-    for name, n in pairs(gcinclude.CharPacker or {}) do add(name, n) end -- char.lua, else goomswap-shared.lua
-    for name, n in pairs(gcinclude.Packer or {}) do add(name, n) end -- the job file
-    local list, res = {}, AshitaCore:GetResourceManager()
-    for _, k in ipairs(order) do
-        local w = want[k]
-        if (w.n ~= false) then
-            local r = res:GetItemByName(w.name, 0)
-            if (r == nil) then
-                gcinclude.Err('/packer: no item named ' .. w.name)
-            else
-                local n = ((w.n == 'stack') or (w.n == true)) and (r.StackSize or 1) or tonumber(w.n)
-                if (n ~= nil) and (n > 0) then list[#list + 1] = { name = r.Name[1], id = r.Id, n = n } end
+    local res, inv = AshitaCore:GetResourceManager(), AshitaCore:GetMemoryManager():GetInventory()
+    local owned = nil
+    local function owns(name)
+        if owned == nil then
+            owned = {}
+            for _, c in ipairs(PACKER_BAGS) do
+                for i = 0, (inv:GetContainerCountMax(c) or 0) do
+                    local it = inv:GetContainerItem(c, i)
+                    if (it ~= nil) and (it.Id ~= 0) and (it.Id ~= 65535) then
+                        local r = res:GetItemById(it.Id)
+                        if (r ~= nil) and (r.Name ~= nil) and (r.Name[1] ~= nil) then owned[string.lower(r.Name[1])] = true end
+                    end
+                end
             end
         end
+        return owned[string.lower(name)] == true
     end
-    return list
+    local function stack_of(name)
+        local r = res:GetItemByName(name, 0)
+        return (r ~= nil) and (r.StackSize or 1) or 1
+    end
+    gcinclude.FilePacker = gProfile.Packer -- as the job file has it
+    gProfile.Packer = gcpackerlist.Build({ file = gProfile.Packer, char = gcinclude.CharPacker, sets = gProfile.Sets,
+        engineSets = gcinclude.sets, items = gcinclude.PackerItems(), stackOf = stack_of, owns = owns })
+    gProfile.GcPackerFilled = true
 end
-
-function gcinclude.RunPacker(quiet)
-    return gcpacker.Run(gcinclude, quiet)
+-- /lac gear: the Packer plugin collects every set's gear plus the list above. false and why when it can't run.
+function gcinclude.PackerReady()
+    local pm = AshitaCore:GetPluginManager()
+    if (pm == nil) or (not pm:IsLoaded('Packer')) then return false, 'the Packer plugin is not loaded (/load packer)' end
+    return true
+end
+function gcinclude.GetGear()
+    local ok, why = gcinclude.PackerReady()
+    if not ok then gcinclude.Err('/lac gear: ' .. why); return false end
+    gcinclude.FillPacker()
+    AshitaCore:GetChatManager():QueueCommand(1, '/lac gear')
+    return true
 end
 
 function gcinclude.WearChildren(names, keys)
@@ -2711,11 +2735,10 @@ checkDefault = function()
 end
 
 function gcinclude.Unload()
-    gcinclude.Stopped = true -- a pending InitStep retry or delayed packer run of this load does nothing now
+    gcinclude.Stopped = true -- a pending InitStep retry of this load does nothing now
     gcinclude.ClearKeybinds()
     gcauto.Stop()
     ashita.events.unregister('d3d_present', 'gcinclude_tick')
-    gcpacker.Stop()
     if (gchud ~= nil) then gchud.Stop() end
     if (gcgear ~= nil) then gcgear.Stop() end
     gcinclude.UnlockSlots(nil)
@@ -2948,9 +2971,7 @@ function gcinclude.InitStep(tries)
     gcinclude.ApplyLockstyle()
     gcauto.Start()
     ashita.events.register('d3d_present', 'gcinclude_tick', gcinclude.Tick)
-    gcpacker.Start(gcinclude);
-    -- job change: fetch what inventory lacks
-    (function() if (gcinclude.Stopped ~= true) then gcinclude.RunPacker(true) end end):once(3)
+    gcinclude.FillPacker() -- what /lac gear gets on top of the sets
     if (gchud ~= nil) then gchud.Start() end
     if (gcgear ~= nil) then gcgear.Start() end
     if (GcEditReopen == nil) and (gcinclude.UnchangedExample() ~= nil) then -- a new user's first load: say what to do
@@ -3056,7 +3077,7 @@ function gcinclude.Initialize()
 end
 
 -- Install cohesive services after their private host dependencies are defined.
-runtime.Commands.Install(gcinclude, gcpacker)
+runtime.Commands.Install(gcinclude)
 runtime.Weapons.Install(gcinclude, {slotOf = slotOf, thFullTime = thFullTime})
 runtime.Elements.Install(gcinclude, {slotOf = slotOf})
 enchantRuntime = runtime.Enchants.Install(gcinclude, {slotOf = slotOf, carriedId = carriedId})
