@@ -12,7 +12,7 @@ of your job file's `if`s Convert can turn into rules (**Rules  +5 to convert**).
 - **Left**: what to show: **All rules** or one moment's (Casting, Not acting...), and **Your code**: **Can become
   rules** (Convert) and **Stays code** (each `if` that stays, with why).
 - **Each rule is a card**: what it does as a sentence (`When you cast Absorb-TP: put on Absorb_TP`), its tags
-  (moment, **over everything**, **code spot 1**), and **Edit**, **Up** / **Down** (a later rule wins the slots both
+  (moment, **over everything**, where it goes on in your code: **before skill set**), and **Edit**, **Up** / **Down** (a later rule wins the slots both
   wear), **Off** (kept, not used), **Delete**.
 - **+ New rule** opens the builder over the cards, in three steps:
   1. **When**: not acting (idle, fighting, resting), your pet's move, starting a spell, casting, a job ability, a
@@ -81,23 +81,36 @@ everything. `off = true`: kept, not used. A rule the engine can't use is left ou
 
 **Your code** on the Rules page lists every `if` in your job file's handlers: **Can become rules** shows each with
 the rules it becomes, **Stays code** each that stays and why. **Convert N into rules** stages them for Save (a
-backup first; **Undo convert** takes it back):
+backup first; **Undo convert** takes it back).
+
+**Checked on your file.** Before Convert is offered, the editor runs your job file's handlers and the converted ones
+side by side, over 400 random game states each (spells, buffs, modes, HP/MP, targets, weather...), and compares
+what they wear, slot by slot (it takes a moment, a little each frame; the page says *Checking...*). A part of your
+code whose result differs stays code, with what differed. Your sets are your file's own; GoomSwap's own steps
+(`CheckDefault`, `CheckTH`...) are stand-ins, the same on both sides. If your file can't be run there, the page says
+so and Convert works without the check.
+
+What converts:
 
 - Conditions on the values above, joined by `and` / `or` / `not`; locals read from `gData` or `gcinclude.BuffCount`
-  (sums of buff counts too); `T{...}:contains(...)`; plain-text searches (`string.contains`, `string.find(..., 1,
-  true)`, `:contains`).
+  (sums of buff counts too), or holding a condition (`local roll = string.find(ability.Name, 'Roll', 1, true) ~=
+  nil`); `T{...}:contains(...)`; plain-text searches (`string.contains`, `string.find(..., 1, true)`, `:contains`).
 - Branches that only wear sets (`gFunc.EquipSet(sets.X)`, `ByName('X')`), items (`gFunc.Equip`) or cancel.
   `elseif` chains become **first of** groups, or plain rules when their branches can't overlap (a chain on the spell's
   skill); nested `if`s join their parent's conditions.
-- Order is kept. The last run of `if`s in a handler goes where rules go by themselves (`HandleDefault`: at
-  `gcinclude.CheckDefault()`); any other run leaves one line where it was, `gcinclude.RulesAt('Midcast 1')`, and its
-  rules go on right there (the page marks them **code spot 1**; hover it for what that means).
+- Order is kept. A run of `if`s goes where rules go by themselves (`HandleDefault`: at `gcinclude.CheckDefault()`,
+  else after the handler) when nothing after it can put on the same slots and the check finds the same gear (it
+  reads which slots each set has). Otherwise it leaves one line where it was, `gcinclude.RulesAt('Midcast 1')`, and
+  its rules go on right there: their tag says what comes next in your code, **before skill set** (`ByName(spell.Skill)`),
+  **before named set** (the set named after the spell), **after line 12** (a line that can stop the handler
+  first). Your later code still wins those slots, as before.
 - Stays code: names built in code (`'Tank_' .. tank`), engine calls (`CheckBlockedAmmo`), pet action branches, math
   on counts, two `has` that must both hold. `gData.GetBuffCount` becomes GoomSwap's buff check, which also counts a
   buff that just landed.
 
-`tests/convert_sim.lua` checks Convert on every example: the original handlers and the converted ones wear the same
-gear, slot by slot, over thousands of random game states.
+`tests/convert_sim.lua` runs the same check (`common/gcconvertcheck.lua`) on every example and on the examples as
+they were before their Convert, again with other random states, and makes sure it catches a rule that wears the
+wrong set.
 
 ## Adopt: a plain LuAshitacast file
 

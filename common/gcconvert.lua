@@ -503,6 +503,12 @@ end
 C.Meaning = meaning
 
 -- == Conditions ==
+local function deep(v)
+    if type(v) ~= 'table' then return v end
+    local o = {}
+    for k, x in pairs(v) do o[k] = deep(x) end
+    return o
+end
 local MAGIC = '[%^%$%(%)%%%.%[%]%*%+%-%?]'
 local function cond_of(scope, e) end -- forward
 local NEG_NUM = { lt = 'ge', le = 'gt', gt = 'le', ge = 'lt', eq = 'ne', ne = 'eq' }
@@ -659,6 +665,20 @@ C.Negate = negate
 
 -- A comparison `a op b` as a when table.
 local function compare(scope, op, ea, eb)
+    -- string.find(spell.Name, 'helix', 1, true) ~= nil: the call as a condition (== nil: turned around)
+    local ua, ub = unparen(ea), unparen(eb)
+    if ((op == '~=') or (op == '==')) and (ua ~= nil) and (ub ~= nil) and ((ua.k == 'nil') ~= (ub.k == 'nil')) then
+        local other = (ua.k == 'nil') and ub or ua
+        if other.k == 'call' then
+            local c = cond_of(scope, other)
+            if c ~= nil then
+                if op == '~=' then return c end
+                local n = negate(c)
+                if n ~= nil then return n end
+                return nil, '"== nil" of something rules cannot turn around'
+            end
+        end
+    end
     local a, b = meaning(scope, ea), meaning(scope, eb)
     if (a == nil) or (b == nil) then return nil, 'compares something rules cannot read' end
     if (a.kind == 'lit') or (a.kind == 'nil') or (a.kind == 'me') and (b.kind == 'field') then a, b, op = b, a, FLIP[op] end
@@ -810,6 +830,7 @@ cond_of = function(scope, e)
     if e.k == 'name' or e.k == 'index' then
         local m = meaning(scope, e)
         if m == nil then return nil, 'reads ' .. tostring(path_of(e) or 'a value') .. ', which rules cannot' end
+        if m.kind == 'cond' then return deep(m.cond) end -- local roll = string.find(ability.Name, 'Roll', 1, true) ~= nil
         if m.kind == 'flag' then return { [m.key] = true } end
         if m.kind == 'toggle' then return { toggle = { [TOGGLE_SHORT[m.name] or m.name] = true } } end
         if (m.kind == 'field') and (FIELD_KEY[m.base] or {})[m.field] == 'moving' then return { moving = true } end
@@ -1075,6 +1096,150 @@ local HANDLERS = { HandleDefault = 'Default', HandlePrecast = 'Precast', HandleM
 C.HANDLERS = HANDLERS
 -- Calls after an `if` that wear nothing a rule could lose to (TH: re-worn over rules), or are the rules' own place.
 local NEUTRAL = { ['gcinclude.CheckTH'] = true, ['gcinclude.CheckCancels'] = true, ['gcinclude.DoCORmsg'] = true }
+-- What the same-gear check (gcconvertcheck) runs as the game would, or that only reads: code between a run and the
+-- rules' own place made only of these can have its run moved there, when the check finds the same gear.
+local CHECKED = { ['gcinclude.ByName'] = true, ['gcinclude.EquipSet'] = true, ['gcinclude.FindSet'] = true,
+    ['gcinclude.FindFilled'] = true, ['gcinclude.Family'] = true, ['gcinclude.BuffCount'] = true,
+    ['gcinclude.BurstWanted'] = true, ['gcinclude.CanDualWield'] = true, ['gcinclude.RangedAcc'] = true,
+    ['gcinclude.IsWeaponValue'] = true, ['gFunc.EquipSet'] = true, ['gFunc.Equip'] = true, ['gFunc.Combine'] = true,
+    ['gFunc.Message'] = true, ['gFunc.Echo'] = true, ['gFunc.Error'] = true, ['gFunc.CancelAction'] = true,
+    T = true, tostring = true, tonumber = true, type = true, pairs = true, ipairs = true, next = true, select = true,
+    print = true }
+local READ_METHOD = { contains = true, find = true, match = true, lower = true, upper = true, sub = true, gsub = true,
+    format = true, len = true }
+local function checked_call(p)
+    return CHECKED[p] or NEUTRAL[p] or string.match(p, '^gData%.Get') or string.match(p, '^gcdisplay%.Get')
+        or string.match(p, '^string%.') or string.match(p, '^table%.') or string.match(p, '^math%.')
+end
+-- == Which slots code can wear: a run moves only past code that can't touch its slots ==
+local ALL = { all = true } -- any slot (a set built in code, a name not known here)
+local function union(a, b)
+    if a.all or b.all then return ALL end
+    local o = {}
+    for k in pairs(a) do o[k] = true end
+    for k in pairs(b) do o[k] = true end
+    return o
+end
+local function overlap(a, b)
+    if a.all then return next(b) ~= nil end
+    if b.all then return next(a) ~= nil end
+    for k in pairs(a) do if b[k] then return true end end
+    return false
+end
+-- The file's sets: lower name -> its slots (ALL when not a plain table of slots).
+local function set_table(chunk)
+    local out = {}
+    local function slots_of(v)
+        v = unparen(v)
+        if (v == nil) or (v.k ~= 'table') or v.computed then return ALL end
+        local o = {}
+        for k in pairs(v.fields) do
+            local sl = SLOT[string.lower(k)]
+            if sl ~= nil then o[sl] = true end
+        end
+        return o
+    end
+    local function take(t)
+        for name, v in pairs(t.fields) do out[string.lower(name)] = slots_of(v) end
+        if t.computed then out.__unknown = true end
+    end
+    local function is_sets(p) return (p == 'sets') or (p == 'profile.Sets') end
+    for _, st in ipairs(chunk) do
+        if st.k == 'local' then
+            for j, n in ipairs(st.names) do
+                local e = unparen(st.exprs[j])
+                if (n == 'sets') and (e ~= nil) and (e.k == 'table') then take(e) end
+            end
+        elseif st.k == 'assign' then
+            for j, t in ipairs(st.targets) do
+                local e, p = st.exprs[j], path_of(t)
+                local u = unparen(e)
+                if is_sets(p) and (u ~= nil) and (u.k == 'table') then
+                    take(u)
+                elseif (t.k == 'index') and (t.key ~= nil) and (t.key.k == 'str') and is_sets(path_of(t.obj)) then
+                    out[string.lower(t.key.v)] = slots_of(e)
+                end
+            end
+        end
+    end
+    return out
+end
+local function name_slots(T, name, versions) -- a set by name; versions: its _<mode> sets too (worn by name)
+    if T.__unknown then return ALL end
+    local l = string.lower(name)
+    local o = T[l]
+    if o == nil then return ALL end -- not in this file (char.lua's sets...): could be anything
+    if versions then
+        for k, v in pairs(T) do
+            if (k ~= '__unknown') and (string.sub(k, 1, #l + 1) == l .. '_') then o = union(o, v) end
+        end
+    end
+    return o
+end
+local function rule_slots(T, r)
+    if r.stop then return ALL end
+    local o = {}
+    if type(r.wear) == 'string' then o = union(o, name_slots(T, r.wear, not r.exact)) end
+    if type(r.item) == 'table' then
+        local it = {}
+        for slot in pairs(r.item) do it[slot] = true end
+        o = union(o, it)
+    end
+    for _, m in ipairs((type(r.first) == 'table') and r.first or {}) do o = union(o, rule_slots(T, m)) end
+    return o
+end
+-- The slots node's code can wear (the file's own functions it calls too).
+local function wears(scope, node, funcs, T, seen)
+    if type(node) ~= 'table' then return {} end
+    local acc = {}
+    if (node.k == 'call') and (node.method == nil) then
+        local p = canon(scope, path_of(node.fn))
+        if (p == 'gFunc.EquipSet') or (p == 'gcinclude.EquipSet') then
+            local nm = set_name_of(scope, node.args[1])
+            acc = (nm ~= nil) and name_slots(T, nm, false) or ALL
+        elseif p == 'gcinclude.ByName' then
+            local a = unparen(node.args[1])
+            acc = ((a ~= nil) and (a.k == 'str')) and name_slots(T, a.v, true) or ALL
+        elseif p == 'gFunc.Equip' then
+            local a = unparen(node.args[1])
+            local sl = (a ~= nil) and (a.k == 'str') and SLOT[string.lower(a.v)] or nil
+            acc = (sl ~= nil) and { [sl] = true } or ALL
+        elseif (p ~= nil) and (funcs[p] ~= nil) and not seen[p] then
+            seen[p] = true
+            acc = wears(scope, funcs[p].body, funcs, T, seen)
+        end
+    end
+    for _, v in pairs(node) do
+        if acc.all then return ALL end
+        if type(v) == 'table' then acc = union(acc, wears(scope, v, funcs, T, seen)) end
+    end
+    return acc
+end
+
+-- Every call in node (and in the file's own functions it calls) is one of those.
+local function only_checked(scope, node, funcs, seen)
+    if type(node) ~= 'table' then return true end
+    if node.k == 'call' then
+        if node.method ~= nil then
+            if not (READ_METHOD[node.method] or string.match(node.method, '^Get')) then return false end
+        else
+            local p = canon(scope, path_of(node.fn))
+            if p == nil then return false end
+            if not checked_call(p) then
+                local f = funcs[p]
+                if f == nil then return false end
+                if not seen[p] then
+                    seen[p] = true
+                    if not only_checked(scope, f.body, funcs, seen) then return false end
+                end
+            end
+        end
+    end
+    for _, v in pairs(node) do
+        if (type(v) == 'table') and not only_checked(scope, v, funcs, seen) then return false end
+    end
+    return true
+end
 
 local function line_of(text, pos)
     local n = 1
@@ -1137,11 +1302,28 @@ end
 -- where rules go by themselves. Any other run leaves one line where it was, `gcinclude.RulesAt('<Phase> <n>')`, and
 -- its rules carry at = that spot, so they go on exactly where the code did (before a named set, after an early
 -- return...).
-function C.Plan(text)
+-- opts (from gcconvertcheck): free = { [line of a run's first if] = true }: those runs go where rules go by
+-- themselves (the check found the same gear); skip = { [handler] = why }: that handler's ifs stay code.
+function C.Plan(text, opts)
+    opts = opts or {}
     local chunk, err, at = C.Parse(text)
     if chunk == nil then return nil, 'the file does not parse here: ' .. tostring(err) .. (at and (' (line ' .. line_of(text, at) .. ')') or '') end
     local scope = file_scope(chunk)
-    local plan = { handlers = {}, rules = {}, removals = {}, splices = {} }
+    local plan = { handlers = {}, rules = {}, removals = {}, splices = {}, runs = {} }
+    local setSlots = set_table(chunk)
+    local funcs = {} -- the file's own functions, by the name a call uses: what they call counts too
+    for _, st in ipairs(chunk) do
+        if st.k == 'localfunc' then funcs[st.name] = st end
+        if (st.k == 'assign') and (#st.targets == 1) and (st.exprs[1] ~= nil) and (st.exprs[1].k == 'func') then
+            local p = path_of(st.targets[1])
+            if p ~= nil then funcs[p] = st.exprs[1] end
+        end
+        if st.k == 'local' then
+            for j, n in ipairs(st.names) do
+                if (st.exprs[j] ~= nil) and (st.exprs[j].k == 'func') then funcs[n] = st.exprs[j] end
+            end
+        end
+    end
     local used = {}
     for spot in string.gmatch(text, "gcinclude%.RulesAt%(%s*'([^']+)'") do used[spot] = true end
     for _, st in ipairs(chunk) do
@@ -1165,12 +1347,20 @@ function C.Plan(text)
                     if i >= stopAt then break end
                     if s.k == 'local' then
                         for j, n in ipairs(s.names) do
-                            hs.vars[n] = (s.exprs[j] ~= nil) and meaning(hs, s.exprs[j]) or nil
+                            local m = (s.exprs[j] ~= nil) and meaning(hs, s.exprs[j]) or nil
+                            if (m == nil) and (s.exprs[j] ~= nil) and (#s.names == #s.exprs) then
+                                local c = cond_of(hs, s.exprs[j]) -- a local holding a condition: read as that condition
+                                if c ~= nil then m = { kind = 'cond', cond = c } end
+                            end
+                            hs.vars[n] = m
                         end
                     elseif s.k == 'if' then
                         local snapshot = { vars = setmetatable({}, { __index = hs.vars }), aliases = hs.aliases, lists = hs.lists }
                         for k, v in pairs(hs.vars) do snapshot.vars[k] = v end
                         local rules, why = convert_if(snapshot, s, {}, phase, {})
+                        if (rules ~= nil) and (opts.skip ~= nil) and (opts.skip[name] ~= nil) then
+                            rules, why = nil, opts.skip[name]
+                        end
                         local item = { line = line_of(text, s.s), s = s.s, e = s.e, ok = (rules ~= nil), why = why,
                             rules = rules }
                         if rules == nil then -- GoomSwap's own steps every job file has: stay, nothing to fix
@@ -1210,6 +1400,25 @@ function C.Plan(text)
                     end
                     last.free = clear
                 end
+                -- a run can be moved to the rules' own place when nothing before it may return, and everything after
+                -- it up to there is code the same-gear check runs as the game does
+                for _, run in ipairs(runs) do
+                    local after = run.items[#run.items]
+                    local movable = not run.returnedBefore
+                    local mine = {} -- the slots the run's rules can wear
+                    for _, item in ipairs(run.items) do
+                        for _, r in ipairs(item.rules) do mine = union(mine, rule_slots(setSlots, r)) end
+                    end
+                    if mine.all then movable = false end
+                    for i, s in ipairs(body) do
+                        if movable and (i < stopAt) and (s.s > after.e) and ((not only_checked(hs, s, funcs, {}))
+                            or overlap(mine, wears(hs, s, funcs, setSlots, {}))) then
+                            movable = false
+                        end
+                    end
+                    run.movable = movable
+                    if movable and (opts.free ~= nil) and opts.free[run.items[1].line] then run.free = true end
+                end
                 local gone = {} -- this handler's removed ranges, for the unused locals below
                 for _, run in ipairs(runs) do
                     for _, item in ipairs(run.items) do gone[#gone + 1] = { item.s, item.e } end
@@ -1224,6 +1433,8 @@ function C.Plan(text)
                         until not used[spot]
                         used[spot] = true
                     end
+                    plan.runs[#plan.runs + 1] = { handler = name, phase = phase, line = run.items[1].line, spot = spot,
+                        movable = run.movable, free = run.free }
                     for k, item in ipairs(run.items) do
                         item.spot = spot
                         for _, r in ipairs(item.rules) do
@@ -1258,7 +1469,7 @@ function C.Plan(text)
                         if (s.k == 'local') and (#s.exprs == #s.names) then
                             local pure, used = true, false
                             for j, nm in ipairs(s.names) do
-                                if meaning(hs, s.exprs[j]) == nil then pure = false end
+                                if (meaning(hs, s.exprs[j]) == nil) and (cond_of(hs, s.exprs[j]) == nil) then pure = false end
                                 local before = kept(fs, s.s - 1)
                                 local after = kept(s.e + 1, fe)
                                 local pat = '%f[%w_]' .. nm .. '%f[^%w_]'
@@ -1276,6 +1487,126 @@ function C.Plan(text)
         end
     end
     return plan
+end
+
+-- What each code spot in the file comes just before: { ['Midcast 1'] = { short = 'skill set', long = "the set named
+-- after the spell's skill", line = 441 } }. The rules marked with a spot go on there, so that code still wins the
+-- slots both wear.
+local WHAT = { Precast = 'spell', Midcast = 'spell', Ability = 'ability', Weaponskill = 'weapon skill', Item = 'item',
+    Preshot = 'shot', Midshot = 'shot', Pet = "pet's move", Default = 'action' }
+local WEAR_CALL = { ['gFunc.EquipSet'] = true, ['gcinclude.EquipSet'] = true, ['gcinclude.ByName'] = true,
+    ['gFunc.Equip'] = true }
+function C.Spots(text)
+    local out = {}
+    if (text == nil) or not string.find(text, 'RulesAt', 1, true) then return out end
+    local chunk = C.Parse(text)
+    if chunk == nil then return out end
+    local scope = file_scope(chunk)
+    local setSlots, funcs = set_table(chunk), {}
+    for _, st in ipairs(chunk) do
+        if st.k == 'localfunc' then funcs[st.name] = st end
+        if (st.k == 'assign') and (#st.targets == 1) and (st.exprs[1] ~= nil) and (st.exprs[1].k == 'func') then
+            local p = path_of(st.targets[1])
+            if p ~= nil then funcs[p] = st.exprs[1] end
+        end
+    end
+    local function first_wear(node) -- the first call in node that wears gear (or calls the file's code that does)
+        if type(node) ~= 'table' then return nil end
+        if (node.k == 'call') and (node.method == nil) then
+            local p = canon(scope, path_of(node.fn))
+            if WEAR_CALL[p] then return node, p end
+            if (p ~= nil) and (funcs[p] ~= nil) and (next(wears(scope, funcs[p].body, funcs, setSlots, {})) ~= nil) then
+                return node, p
+            end
+        end
+        local keys = {}
+        for k, v in pairs(node) do if type(v) == 'table' then keys[#keys + 1] = k end end
+        local function start(t) -- where a part starts (a list: its first statement)
+            if type(t) ~= 'table' then return math.huge end
+            if tonumber(t.s) ~= nil then return t.s end
+            return start(t[1])
+        end
+        table.sort(keys, function(x, y) return start(node[x]) < start(node[y]) end) -- source order
+        for _, k in ipairs(keys) do
+            local c, p = first_wear(node[k])
+            if c ~= nil then return c, p end
+        end
+        return nil
+    end
+    local hs = scope
+    local function has_return(node)
+        if type(node) ~= 'table' then return false end
+        if node.k == 'return' then return true end
+        if node.k == 'func' then return false end -- a function inside: its return is its own
+        for _, v in pairs(node) do if (type(v) == 'table') and has_return(v) then return true end end
+        return false
+    end
+    local function describe(call, p, phase)
+        local scope = hs
+        local line = line_of(text, call.s)
+        local a = unparen(call.args[1])
+        if WEAR_CALL[p] and (p ~= 'gFunc.Equip') and (a ~= nil) then
+            if a.k == 'str' then return a.v, 'the set ' .. a.v, line end
+            local nm = set_name_of(scope, a)
+            if nm ~= nil then return nm, 'the set ' .. nm, line end
+            local m = meaning(scope, a)
+            if (m ~= nil) and (m.kind == 'field') and (m.base == 'action') then
+                if m.field == 'Skill' then return 'skill set', "the set named after the spell's skill (['Healing Magic']...)", line end
+                if m.field == 'Name' then
+                    return 'named set', 'the set named after the ' .. (WHAT[phase] or 'action'), line
+                end
+                if m.field == 'Type' then return 'type set', "the set named after the action's type", line end
+            end
+            if (m ~= nil) and (m.kind == 'family') then return 'family set', "the set named after the spell's family", line end
+            return 'named set', 'a set your code names (line ' .. line .. ')', line
+        end
+        if p == 'gFunc.Equip' then return 'line ' .. line, 'the item your code puts on at line ' .. line, line end
+        return p, p .. ' (line ' .. line .. ')', line
+    end
+    for _, st in ipairs(chunk) do
+        if (st.k == 'assign') and (#st.targets == 1) and (st.exprs[1] ~= nil) and (st.exprs[1].k == 'func') then
+            local name = string.match(path_of(st.targets[1]) or '', '^profile%.(Handle%a+)$')
+            local phase = name and HANDLERS[name]
+            if phase ~= nil then
+                local body = st.exprs[1].body
+                hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists }
+                for i, s in ipairs(body) do
+                    if s.k == 'local' then
+                        for j, n in ipairs(s.names) do hs.vars[n] = (s.exprs[j] ~= nil) and meaning(hs, s.exprs[j]) or nil end
+                    end
+                    if (s.k == 'callstat') and (call_path(scope, s.call) == 'gcinclude.RulesAt') then
+                        local a = unparen(s.call.args[1])
+                        if (a ~= nil) and (a.k == 'str') then
+                            local info = { short = 'end', long = 'the end of ' .. name, line = line_of(text, s.s) }
+                            local found = false
+                            for j = i + 1, #body do
+                                local call, p = first_wear(body[j])
+                                if call ~= nil then
+                                    info.short, info.long, info.line = describe(call, p, phase)
+                                    info.before, found = true, true
+                                    break
+                                end
+                            end
+                            if not found then -- nothing after it wears gear: it is there for a return above it
+                                for j = i - 1, 1, -1 do
+                                    if has_return(body[j]) then
+                                        local ln = line_of(text, body[j].s)
+                                        info.short = 'after line ' .. ln
+                                        info.long = 'after line ' .. ln .. ', which can stop ' .. name .. ' first (then these '
+                                            .. "rules don't go on either)"
+                                        info.line = ln
+                                        break
+                                    end
+                                end
+                            end
+                            out[a.v] = info
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return out
 end
 
 -- The splice taking a statement (s..e) out: its whole lines when nothing else is on them (a trailing ';' and

@@ -8,6 +8,7 @@ return function(o)
         o.imgui, o.palette, o.set_tip, o.editorState, o.files, o.setFile, o.feedback, o.ctx
     local R = gFunc.LoadFile('common\\gcrules.lua')
     local Conv = gFunc.LoadFile('common\\gcconvert.lua')
+    local Check = gFunc.LoadFile('common\\gcconvertcheck.lua') -- the same-gear check, a little each frame
     local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip)
     local M = { R = R }
 
@@ -23,14 +24,44 @@ return function(o)
     local JOB_NOTE = 'Goes on right after your job file\'s own gear for this moment (as if it were one more line of it). '
         .. 'What GoomSwap adds by itself (weapon mode, TH, Hoxne, buff sets, obi, SIR) still goes on after it and wins '
         .. 'the slots both use.'
-    -- 'Midcast 2' -> 'code spot 2': where Convert left gcinclude.RulesAt('Midcast 2')
-    local function spot_label(at) return 'code spot ' .. (string.match(tostring(at), '(%d+)$') or tostring(at)) end
-    local function spot_tip(at)
-        return 'This rule goes on at a fixed point: where its code used to be in your job file. Convert left one line '
-            .. "there, gcinclude.RulesAt('" .. tostring(at) .. "'), which puts on every rule marked " .. spot_label(at)
-            .. ', in the order listed. So the order of your gear stays as it was: what your code puts on after that '
-            .. "point (a set named after the spell, say) still wins over this rule's gear.\n\n"
-            .. 'A rule without a code spot goes on after all of your job file\'s own code (job layer).'
+    -- Where Convert left gcinclude.RulesAt('Midcast 2'), read from the job file (as it will be once a staged Convert
+    -- is saved): what comes right after it, 'before skill set'.
+    local spotCache, planSpots = {}, {}
+    local function spot_info(at, plan, text0)
+        if plan ~= nil then -- a plan not staged yet: its spots in the file as Convert would leave it
+            if planSpots.plan ~= plan then
+                local t = (setFile.Apply ~= nil) and setFile.Apply(text0, plan.splices) or nil
+                local ok, info = pcall(Conv.Spots, t)
+                planSpots = { plan = plan, info = ok and info or {} }
+            end
+            return planSpots.info[tostring(at)]
+        end
+        local doc = editorState.document
+        local text = (doc ~= nil) and (doc.model ~= nil) and doc.model.text or nil
+        if text == nil then return nil end
+        local key = text
+        if doc.convert ~= nil then key = doc.convert end
+        if spotCache.key ~= key then
+            local t = text
+            if (doc.convert ~= nil) and (setFile.Apply ~= nil) then t = setFile.Apply(doc.convert.text, doc.convert.splices) or text end
+            local ok, info = pcall(Conv.Spots, t)
+            spotCache = { key = key, info = ok and info or {} }
+        end
+        return spotCache.info[tostring(at)]
+    end
+    local function spot_label(at, plan, text0)
+        local i = spot_info(at, plan, text0)
+        if i == nil then return 'code spot ' .. (string.match(tostring(at), '(%d+)$') or tostring(at)) end
+        return i.before and ('before ' .. i.short) or i.short
+    end
+    local function spot_tip(at, plan, text0)
+        local i = spot_info(at, plan, text0)
+        local where = (i == nil) and 'where its code used to be in your job file'
+            or (i.before and ('where its code was in your job file: just before ' .. i.long .. ' (line ' .. i.line
+                .. '), so that still wins the slots both wear') or ('where its code was: ' .. i.long))
+        return 'This rule goes on ' .. where .. '. Convert left one line there, gcinclude.RulesAt(\'' .. tostring(at)
+            .. '\'), which puts on the rules marked like this, in the order listed.\n\n'
+            .. 'A rule without this tag goes on after all of your job file\'s own code (job layer).'
     end
 
     local function trim(s) return (string.match(s or '', '^%s*(.-)%s*$')) end
@@ -792,12 +823,23 @@ return function(o)
     end
 
     -- == The job file's own code: what Convert turns into rules, and Adopt for a plain LuAshitacast file ==
+    -- The plan for the file's text: at once the plain one (counts, the list), then the checked one once the same-gear
+    -- check is done (a few ms each frame while the editor is open); Convert waits for it.
     local function plan_of(text)
         local c = editorState.ui.convertPlan
         if (c == nil) or (c.text ~= text) then
             local plan, why = Conv.Plan(text)
             c = { text = text, plan = plan, why = why, adoptable = not Conv.IsGoomSwap(text) }
+            local any = false
+            for _, h in ipairs((plan ~= nil) and plan.handlers or {}) do
+                for _, it in ipairs(h.items) do if it.ok then any = true end end
+            end
+            if any then c.job = Check.Job(text) else c.ready = true end
             editorState.ui.convertPlan = c
+        end
+        if (c.job ~= nil) and c.job.Step(o.checkBudget or 0.004) then
+            if c.job.plan ~= nil then c.plan = c.job.plan else c.checkFailed = c.job.why end
+            c.job, c.ready = nil, true
         end
         return c
     end
@@ -875,9 +917,9 @@ return function(o)
                     if it.ok then
                         for _, r in ipairs(it.rules) do imgui.TextColored(palette.ok, R.Say(r)) end
                         if it.spot ~= nil then
-                            imgui.TextColored(palette.dim, spot_label(it.spot) .. ': these go on where this code was, '
+                            imgui.TextColored(palette.dim, 'Goes on ' .. spot_label(it.spot, plan, text) .. ', where this code was, '
                                 .. 'so the order stays the same.')
-                            if imgui.IsItemHovered() then set_tip(spot_tip(it.spot)) end
+                            if imgui.IsItemHovered() then set_tip(spot_tip(it.spot, plan, text)) end
                         end
                     else
                         imgui.TextColored(palette.warn, 'Stays code: ' .. tostring(it.why))
@@ -926,7 +968,31 @@ return function(o)
         if ok > 0 then
             paragraph('Your job file still picks some gear with code. ' .. ok .. ((ok == 1) and ' piece of it' or ' pieces of it')
                 .. ' can become rules, like: ' .. example .. '. Convert moves them into your rules, so you can see and '
-                .. 'change them here. What you wear stays the same. Nothing is saved until Save + reload.', palette.text)
+                .. 'change them here. Nothing is saved until Save + reload.', palette.text)
+        end
+        if not c.ready then -- the same-gear check is still running: Convert waits for it
+            local job = c.job
+            paragraph('Checking that the converted file wears the same gear as your code... '
+                .. math.floor(((job ~= nil) and job.progress or 0) * 100) .. '%', palette.blue)
+            imgui.Spacing()
+            draw_changes(c.plan, text, 'ok')
+            return
+        end
+        local ck = c.plan.checked
+        if c.checkFailed ~= nil then
+            paragraph('The same-gear check stopped (' .. tostring(c.checkFailed) .. '): Convert works as before, '
+                .. 'without it.', palette.warn)
+        elseif (ck ~= nil) and (ck.unavailable ~= nil) then
+            paragraph('The same-gear check could not run your file here (' .. tostring(ck.unavailable) .. '): Convert '
+                .. 'works as before, without it.', palette.warn)
+        elseif ck ~= nil then
+            paragraph('Checked: with these rules your gear stays the same, slot by slot, in ' .. ck.rounds
+                .. ' random game states for each part of your code.'
+                .. ((ck.freed > 0) and (' ' .. ck.freed .. ((ck.freed == 1) and ' piece goes' or ' pieces go')
+                    .. ' with your other rules, with no line left in the code.') or '')
+                .. ((ck.skippedCount > 0) and (' ' .. ck.skippedCount .. ((ck.skippedCount == 1) and ' part' or ' parts')
+                    .. ' wore something else, so ' .. ((ck.skippedCount == 1) and 'it stays' or 'they stay')
+                    .. ' code (Stays code: why).') or ''), palette.ok)
         end
         if c.adoptable then
             paragraph('This file does not load GoomSwap (a plain LuAshitacast file). Adopt adds it: GoomSwap loads at '

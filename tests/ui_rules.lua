@@ -41,7 +41,7 @@ local F = gFunc.LoadFile('common\\gcsetfile.lua')
 local state = { selection = {}, ui = {}, document = { model = { list = { { name = 'Fealty' } }, byName = { Fealty = {} } } } }
 local msg = nil
 local M = gFunc.LoadFile('common\\gceditrules.lua')({ imgui = imgui, palette = palette, set_tip = function() end,
-    editorState = state, files = files, setFile = F, feedback = function(t) msg = t end, ctx = {} })
+    editorState = state, files = files, setFile = F, feedback = function(t) msg = t end, ctx = {}, checkBudget = 10 })
 local draw = M.Draw
 M.Draw = function() -- one frame: no ID drawn twice
     drawn, twice = {}, nil
@@ -99,6 +99,8 @@ return {
         fileValue = nil
         state.document.model.text = [[
 local profile = {};
+local sets = { Fealty = { Body = 'Caballarius Surcoat +3' } };
+profile.Sets = sets;
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
 profile.HandleDefault = function()
     if (gcinclude.BuffCount('Cover') > 0) then gFunc.EquipSet(sets.Fealty) end
