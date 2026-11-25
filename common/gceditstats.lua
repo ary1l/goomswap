@@ -2,7 +2,7 @@
 local stats = {}
 local aliases, definitions = {}, {}
 local groups = { Core = 1, Attributes = 2, Physical = 3, Magic = 4, Defense = 5, Utility = 6, Skills = 7, Weapons = 8,
-    Pet = 9, Abilities = 10 }
+    Pet = 9, Abilities = 10, Other = 11 }
 local function normalize(value) return (value:lower():gsub('[%s%p]', '')) end -- one value, not gsub's count too
 local function define(name, group, unit, direction, names, weapon)
     local entry = { name = name, group = group, unit = unit or '', direction = direction or 1,
@@ -98,6 +98,9 @@ for _, name in ipairs({ 'Hand-to-hand', 'Dagger', 'Sword', 'Great sword', 'Axe',
     'Polearm', 'Katana', 'Great katana', 'Club', 'Staff', 'Archery', 'Marksmanship', 'Throwing',
     'Parrying', 'Magic accuracy' }) do define(name .. ' skill', 'Skills', '', 1, nil, true) end
 for _, name in ipairs({ 'Shield', 'Guard', 'Evasion', 'Fishing' }) do define(name .. ' skill', 'Skills') end
+-- the same stats as gear texts also write them (retail item descriptions: Portus Annulet, Kara. Cappello +2)
+aliases[normalize('Guarding skill')] = aliases[normalize('Guard skill')]
+aliases[normalize('M. Def. B.')] = aliases[normalize('Magic defense bonus')]
 define('Weapon damage', 'Weapons', '', 1, { 'DMG' }, true)
 define('Weapon delay', 'Weapons', '', 0, { 'Delay' }, true)
 local weaponSlots = { Main = true, Sub = true, Range = true, Ammo = true }
@@ -249,7 +252,25 @@ function stats.Build(items, coverage)
                                 row.value = row.value + value
                                 recognized = true
                             else fragment(line:sub(first, last)) end
-                        else fragment(line:sub(first, last)) end
+                        else
+                            -- a stat with no definition ("Triple Shot"+5%, Zanshin+5): totaled by its name as
+                            -- written, in Other, not rated. A label (':') or a name of under 3 letters stays a note.
+                            local label = name:gsub('"', ''):match('^%s*(.-)%s*$')
+                            if (sign ~= ':') and (#label:gsub('[^%a]', '') >= 3) then
+                                local value = tonumber(number) * ((sign == '-' or innerSign == '-') and -1 or 1)
+                                local unit, group = (percent ~= '') and '%' or '', 'Other'
+                                if scope ~= '' then group, label = 'Pet', scope .. ': ' .. label end
+                                local key = label .. '\0' .. unit
+                                local row = model.values[key]
+                                if not row then
+                                    row = { key = key, name = label, group = group, unit = unit, value = 0,
+                                        order = #definitions + 1, direction = 0 }
+                                    model.values[key] = row
+                                end
+                                row.value = row.value + value
+                                recognized = true
+                            else fragment(line:sub(first, last)) end
+                        end
                         cursor = last + 1
                     end
                     if not recognized then note(item, original, 'Other or unrecognized effect')
@@ -264,7 +285,7 @@ function stats.Build(items, coverage)
         else note(item, 'Base description unavailable', 'Unknown base stats') end
         if item.unknownAugments then
             model.baseOnly = model.baseOnly + 1
-            note(item, 'Exact augment bonuses are unavailable or ambiguous', 'Base stats only')
+            note(item, item.unknownText or 'Exact augment bonuses are unavailable or ambiguous', 'Base stats only')
         else
             for _, augment in ipairs(item.augments or {}) do parse(item, augment) end
         end

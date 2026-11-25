@@ -124,8 +124,8 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 - After a name, its issues as counts: `(2 empty, 1 missing)` (amber, red; hover one for which slots).
 - Set colours (GoomSwap's own; a theme recolours them but keeps them apart): amber unsaved, red missing gear,
   then green (all 16 slots, or a ready overlay) and teal (all 12 armor slots; weapons left out on purpose). A
-  violet dot after a name: a piece in it needs RP (hover: which). Over the list, one line names the pieces that need
-  RP and in how many sets (click: only those sets), and **On you now** shows the sets wearing something on you, the
+  violet dot after a name: a piece in it needs RP (hover: which). The **Needs RP** filter counts the pieces that
+  need RP (hover: which, and in how many sets), and **On you now** shows the sets wearing something on you, the
   most slots first (click one to open it); their rows get a green dot.
 - Drag dividers to resize (double-click resets). Density is remembered per job.
 - **Theme** (top bar): the editor's colours. Same as the bar (default), **Match goomui** (the theme goomui saved for
@@ -191,7 +191,10 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 - **Summary** totals the set's listed gear bonuses including inherited layers (`Idle > Tp_Default > Tp_Acc`);
   untick **Include inherited gear** for the written definition only. **Base: Auto** uses the built-in route; pick a
   base set to change the underlay. Buffs, job code and combat formulas are not simulated (caps are shown over the
-  totals, not applied to them); conditional and unknown effects sit under **Other effects / not totaled**.
+  totals, not applied to them); a stat it has no name for (`"Triple Shot"+5%`) is totaled as written under
+  **Other**, unrated. Conditional effects (set bonuses, latents, Unity Ranking ranges), effects without a number
+  (`Enhances ... effect`) and a piece you own several versions of while the set names none (LuAshitacast keeps
+  the one on, else the first in `EquipBags`: pick one in **Gear**) sit under **Other effects / not totaled**.
 - Over the totals, **caps**: each stat the gear has against its cap, over (wasted) or room left. Haste (gear) 25%
   (256/1024; listed values are rounded, so 25-26% as listed is at the cap), Fast Cast 80%, Snapshot 70% (merits
   and Flurry count too), Quick Magic 10%, Cure potency 50%; damage taken as the game caps it: physical (DT + PDT),

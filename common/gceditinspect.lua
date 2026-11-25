@@ -149,6 +149,11 @@ local function set_stats(set)
             item.unknownAugments = ambiguous or (owned and (owned.unreadable or (owned.progress
                 and owned.progress.unknown)))
                 or (not owned and (value.path ~= nil or value.rank ~= nil or (value.augs and value.augs ~= '')))
+            if ambiguous then -- which copy goes on: LuAshitacast equip.lua (FlagEquippedItems, then LocateItems)
+                item.unknownText = #(editorState.inventory.copiesByName[string.lower(value.name)] or {})
+                    .. ' copies match: LuAshitacast keeps the one on, else the first in EquipBags. Click the slot, '
+                    .. 'pick one in Gear: its augments are totaled.'
+            end
             items[#items + 1] = item
             if equipment.sources[slot] ~= set.name then inherited = inherited + 1 end
         end

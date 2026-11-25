@@ -586,9 +586,9 @@ local function draw_now()
         end
     end
 end
--- The RP line (over the list): the pieces your sets name that need RP, and in how many sets; a click shows only
--- those sets (Needs RP). Worked out once per edit.
-local function draw_rp_line()
+-- The pieces your sets name that need RP, and in how many sets: a count on the Needs RP filter, the pieces on its
+-- hover. Worked out once per edit.
+local function rp_summary()
     local R = editorState.cache.rpLine
     if (R == nil) or (R.rev ~= editorState.document.revision) then
         R = { rev = editorState.document.revision, pieces = {}, sets = 0 }
@@ -606,19 +606,11 @@ local function draw_rp_line()
                 end
             end
         end
-        R.text = (#R.pieces == 1 and '1 piece needs RP: ' or (#R.pieces .. ' pieces need RP: '))
-            .. table.concat(R.pieces, ', ') .. ' (' .. R.sets .. ((R.sets == 1) and ' set)' or ' sets)')
+        R.text = ((#R.pieces == 1) and '1 piece needs RP' or (#R.pieces .. ' pieces need RP')) .. ', in '
+            .. R.sets .. ((R.sets == 1) and ' set:\n' or ' sets:\n') .. table.concat(R.pieces, '\n')
         editorState.cache.rpLine = R
     end
-    if #R.pieces == 0 then return end
-    dot(4, palette.rp)
-    imgui.Dummy({ 9, 1 })
-    imgui.SameLine(0, 2)
-    imgui.PushTextWrapPos(0)
-    imgui.TextColored(palette.rp, R.text)
-    imgui.PopTextWrapPos()
-    if imgui.IsItemHovered() then set_tip('Click: only the sets using them (Needs RP), again: all.') end
-    if imgui.IsItemClicked(0) then editorState.ui.needsRpOnly[1] = not editorState.ui.needsRpOnly[1] end
+    return R
 end
 
 local function draw_sets()
@@ -645,6 +637,7 @@ local function draw_sets()
         if imgui.IsItemHovered() then set_tip('Only sets with unsaved slot edits, new definitions, or deletions.') end
     end
     editorState.ui.unusedOnly = editorState.ui.unusedOnly or { false }
+    local rp = rp_summary()
     for index, filter in ipairs({
         { 'Issues', editorState.ui.issuesOnly },
         { 'Missing', editorState.ui.missingOnly },
@@ -653,13 +646,15 @@ local function draw_sets()
     }) do
         if index > 1 then editorPanels.SameLineIfFits(imgui, 100) end
         if filter[1] == 'Needs RP' then imgui.PushStyleColor(ImGuiCol_Text, palette.rp) end
-        imgui.Checkbox(filter[1] .. '##set_filter', filter[2])
+        local count = ((filter[1] == 'Needs RP') and (#rp.pieces > 0)) and (' (' .. #rp.pieces .. ')') or ''
+        imgui.Checkbox(filter[1] .. count .. '##set_filter', filter[2])
         if filter[1] == 'Needs RP' then imgui.PopStyleColor() end
         if imgui.IsItemHovered() then
             local descriptions = {
                 Issues = 'Sets with empty slots, missing gear, or unfinished RP.',
                 Missing = 'Sets naming gear you do not own.',
-                ['Needs RP'] = 'Sets using gear below its decoded rank cap.',
+                ['Needs RP'] = 'Sets using gear below its decoded rank cap.'
+                    .. ((#rp.pieces > 0) and ('\n\n' .. rp.text) or ''),
                 Unused = 'Sets nothing seems to look for: no built-in trigger by name, not named in your job file, '
                     .. 'not a variant of another set. Check before you delete.',
             }
@@ -688,7 +683,6 @@ local function draw_sets()
         end
     end
     draw_now() -- On you now: the sets wearing something on you
-    draw_rp_line() -- the pieces that need RP, in one line
     local find = string.lower(editorState.ui.find[1] or '')
     -- the groups' rows, rebuilt only when the filter or the set list changes
     local key = find

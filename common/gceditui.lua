@@ -1254,7 +1254,8 @@ local previewHelp = 'Change subtracts the left set from the right set. A positiv
     .. 'Totals add listed gear bonuses. Zero means no listed numeric contribution, not that an unknown slot is empty.\n'
     .. 'Live modes/settings, current worn gear, custom logic, buffs and combat formulas are not simulated; caps are '
     .. 'shown over the totals (over: wasted), not applied to them.\n'
-    .. 'Conditional and unsupported effects are under Other effects / not totaled below the table.'
+    .. 'A stat with no known name is totaled as written under Other, not rated. Conditional and number-less\n'
+    .. 'effects are under Other effects / not totaled below the table.'
 local reasons = {
     ['Conditional or variable effect'] = 'Conditional: ',
     ['Other or unrecognized effect'] = 'Other: ',
