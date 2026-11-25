@@ -437,6 +437,14 @@ function R.Compile(rules)
     return out, problems
 end
 
+-- Whether a rule's conditions hold now (the editor's "Now" line); nil when they can't be read.
+function R.Holds(rule, phase, api)
+    local test = compile_when((type(rule) == 'table') and rule.when or nil, 'rule')
+    if test == nil then return nil end
+    local ok, hit = pcall(test, context(api, phase))
+    return ok and hit or nil
+end
+
 function R.Count(compiled, phase)
     local p = compiled and compiled[phase]
     return (p ~= nil) and (#p.job + #p.top) or 0
@@ -480,6 +488,171 @@ function R.Run(compiled, phase, layer, api)
         end
     end
     return false, n
+end
+
+-- == The builder's rows (gceditrules): a `when` as { key, op, value, sub } rows and back. A text key's ops are is,
+-- isnt, has, start, ends; a number's lt, le, gt, ge, eq, ne; yes/no and list keys take 'is'; mode and toggle rows
+-- name their cycle in sub. any: the rows are alternatives (when = { any = { {...}, {...} } }). ==
+local TEXT_OPS = { 'is', 'isnt', 'has', 'start', 'ends' }
+local NUM_OPS = { 'lt', 'le', 'gt', 'ge', 'eq', 'ne' }
+R.TEXT_OPS, R.NUM_OPS = TEXT_OPS, NUM_OPS
+local function key_rows(k, v, out)
+    local meta = R.KEY[k]
+    if meta == nil then return false end
+    if (meta.kind == 'mode') or (meta.kind == 'toggle') then
+        if type(v) ~= 'table' then return false end
+        local subs = {}
+        for sub in pairs(v) do subs[#subs + 1] = sub end
+        table.sort(subs)
+        for _, sub in ipairs(subs) do out[#out + 1] = { key = k, op = 'is', sub = sub, value = v[sub] } end
+    elseif meta.kind == 'number' then
+        if type(v) == 'number' then
+            out[#out + 1] = { key = k, op = 'eq', value = v }
+        elseif type(v) == 'table' then
+            for _, op in ipairs(NUM_OPS) do
+                if v[op] ~= nil then out[#out + 1] = { key = k, op = op, value = v[op] } end
+            end
+        else
+            return false
+        end
+    elseif (meta.kind == 'bool') or (meta.kind == 'list') then
+        out[#out + 1] = { key = k, op = 'is', value = v }
+    else
+        if (type(v) == 'string') or ((type(v) == 'table') and (v[1] ~= nil)) then
+            out[#out + 1] = { key = k, op = 'is', value = v }
+        elseif type(v) == 'table' then
+            for _, op in ipairs(TEXT_OPS) do
+                if v[op] ~= nil then out[#out + 1] = { key = k, op = op, value = v[op] } end
+            end
+        else
+            return false
+        end
+    end
+    return true
+end
+-- rows, any; nil when the `when` has a shape the builder can't show (it is then edited in the file).
+function R.WhenToRows(when)
+    local rows = {}
+    if when == nil then return rows, false end
+    if type(when) ~= 'table' then return nil end
+    if when.any ~= nil then
+        if next(when, nil) ~= nil then
+            for k in pairs(when) do
+                if k ~= 'any' then return nil end -- all of these and any of those: the file's own shape
+            end
+        end
+        for _, alt in ipairs(when.any) do
+            if type(alt) ~= 'table' then return nil end
+            local n = 0
+            for k, v in pairs(alt) do
+                n = n + 1
+                if (k == 'any') or not key_rows(k, v, rows) then return nil end
+            end
+            if n ~= 1 then return nil end
+        end
+        return rows, true
+    end
+    local keys = {}
+    for k in pairs(when) do keys[#keys + 1] = k end
+    table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+    for _, k in ipairs(keys) do
+        if not key_rows(k, when[k], rows) then return nil end
+    end
+    return rows, false
+end
+local function merge_row(when, r)
+    local meta = R.KEY[r.key]
+    if meta == nil then return end
+    if (meta.kind == 'mode') or (meta.kind == 'toggle') then
+        when[r.key] = when[r.key] or {}
+        if r.sub ~= nil then when[r.key][r.sub] = r.value end
+    elseif meta.kind == 'number' then
+        when[r.key] = (type(when[r.key]) == 'table') and when[r.key] or {}
+        when[r.key][r.op] = r.value
+    elseif (meta.kind == 'bool') or (meta.kind == 'list') then
+        when[r.key] = r.value
+    elseif r.op == 'is' then
+        local cur = when[r.key]
+        if (cur == nil) then
+            when[r.key] = r.value
+        elseif (type(cur) == 'table') and (cur[1] == nil) then -- ops already: is joins them
+            cur.is = r.value
+        else -- two 'is' rows: either of them
+            local both = {}
+            for _, x in ipairs(list_of(cur)) do both[#both + 1] = x end
+            for _, x in ipairs(list_of(r.value)) do both[#both + 1] = x end
+            when[r.key] = both
+        end
+    else
+        local cur = when[r.key]
+        if (type(cur) == 'string') or ((type(cur) == 'table') and (cur[1] ~= nil)) then cur = { is = cur } end
+        cur = cur or {}
+        cur[r.op] = r.value
+        when[r.key] = cur
+    end
+end
+function R.RowsToWhen(rows, any)
+    if (rows == nil) or (#rows == 0) then return nil end
+    if any then
+        local alts = {}
+        for _, r in ipairs(rows) do
+            local w = {}
+            merge_row(w, r)
+            if next(w) ~= nil then alts[#alts + 1] = w end
+        end
+        return { any = alts }
+    end
+    local w = {}
+    for _, r in ipairs(rows) do merge_row(w, r) end
+    return (next(w) ~= nil) and w or nil
+end
+
+-- == Rules as Lua text: one rule a line (a `first` group: one choice a line), keys in reading order. ==
+local RULE_ORDER = { 'on', 'when', 'first', 'wear', 'exact', 'item', 'layer', 'stop', 'off', 'note' }
+local function inline(v, quote, key)
+    if type(v) == 'string' then return quote(v) end
+    if type(v) ~= 'table' then return tostring(v) end
+    local parts = {}
+    for _, x in ipairs(v) do parts[#parts + 1] = inline(x, quote, key) end
+    local keys = {}
+    for k in pairs(v) do
+        if type(k) == 'string' then keys[#keys + 1] = k end
+    end
+    local order = {}
+    for i, k in ipairs(RULE_ORDER) do order[k] = i end
+    local slotAt = {}
+    for i, sl in ipairs(R.SLOTS) do slotAt[sl] = i end
+    table.sort(keys, function(a, b)
+        local x, y = order[a] or slotAt[a] or 99, order[b] or slotAt[b] or 99
+        if x ~= y then return x < y end
+        return a < b
+    end)
+    for _, k in ipairs(keys) do parts[#parts + 1] = key(k) .. ' = ' .. inline(v[k], quote, key) end
+    if #parts == 0 then return '{}' end
+    return '{ ' .. table.concat(parts, ', ') .. ' }'
+end
+R.Inline = inline
+function R.Serialize(rules, ind, quote, key)
+    ind = ind or ''
+    if (type(rules) ~= 'table') or (#rules == 0) then return '{}' end
+    local lines = { '{' }
+    for _, rule in ipairs(rules) do
+        if (type(rule) == 'table') and (type(rule.first) == 'table') then
+            local head = {}
+            for k, v in pairs(rule) do
+                if k ~= 'first' then head[k] = v end
+            end
+            local text = inline(head, quote, key)
+            text = string.sub(text, 1, #text - 2) .. ', first = {'
+            lines[#lines + 1] = ind .. '    ' .. text
+            for _, m in ipairs(rule.first) do lines[#lines + 1] = ind .. '        ' .. inline(m, quote, key) .. ',' end
+            lines[#lines + 1] = ind .. '    } },'
+        else
+            lines[#lines + 1] = ind .. '    ' .. inline(rule, quote, key) .. ','
+        end
+    end
+    lines[#lines + 1] = ind .. '}'
+    return table.concat(lines, '\n')
 end
 
 return R

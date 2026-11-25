@@ -207,7 +207,7 @@ return {
     function S.JobInFile(name) return from_file(name) end
     -- Staged for the job file's Save (S.REMOVE: its line taken out). t: written as T{...} (a T{} default's methods).
     -- Back to what the file has: nothing staged.
-    function S.StageJob(name, v, t)
+    function S.StageJob(name, v, t, textFor) -- textFor(value, indent): its own Lua text (gcinclude.Rules: a rule a line)
         local staged = S.JobStaged()
         local fv, why = from_file(name)
         if v == S.REMOVE then
@@ -215,13 +215,14 @@ return {
         elseif (why == 'file') and same(fv, v) then
             staged[name] = nil
         else
-            staged[name] = { value = v, T = t }
+            staged[name] = { value = v, T = t, text = textFor }
         end
         local d = doc()
         if d ~= nil then d.revision = (d.revision or 0) + 1 end
     end
     -- A staged value as Lua text at an indent (the Save writes it).
     function S.JobText(entry, ind)
+        if entry.text ~= nil then return entry.text(entry.value, ind) end
         return (entry.T and 'T' or '') .. G.SerializeValue(entry.value, F.QuoteText, F.FormatKey, ind)
     end
     -- A setting's value for the job open in the editor: its own line, else S.Get's. Also 'job' as where from.

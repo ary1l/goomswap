@@ -622,6 +622,7 @@ local function draw_rp_line()
 end
 
 local function draw_sets()
+    if ctx.rules ~= nil then ctx.rules.ListButton() end -- RULES: the job file's gcinclude.Rules
     if imgui.Button('+ New set##gcedit') then
         editorState.ui.sugg = nil
         imgui.OpenPopup('##gcedit_new')

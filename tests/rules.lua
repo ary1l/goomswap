@@ -91,6 +91,40 @@ return {
         eq(#p, 4)
         eq(string.find(p[1], 'colour', 1, true) ~= nil, true)
     end },
+    { 'rows: a when to rows and back', function()
+        local function same(a, b) return R.Inline(a, function(x) return "'" .. x .. "'" end, function(k) return k end)
+            == R.Inline(b, function(x) return "'" .. x .. "'" end, function(k) return k end) end
+        for _, w in ipairs({
+            { skill = 'Healing Magic', target = 'me' },
+            { name = { has = 'helix', isnt = 'Helix' }, mpp = { le = 40, gt = 5 } },
+            { name = { 'Cure', 'Cura' }, buff = { 'Haste', 'Flurry' }, moving = true },
+            { mode = { wm = 'Naegling', mset = { 'Acc', 'SubtleBlow' } }, toggle = { dt = true } },
+        }) do
+            local rows, any = R.WhenToRows(w)
+            eq(any, false); eq(same(R.RowsToWhen(rows, any), w), true, R.Inline(w, tostring, tostring))
+        end
+        local w = { any = { { buff = 'Cover' }, { hpp = { lt = 50 } } } }
+        local rows, any = R.WhenToRows(w)
+        eq(any, true); eq(#rows, 2); eq(same(R.RowsToWhen(rows, true), w), true)
+        eq(R.WhenToRows({ buff = 'Cover', any = { { hpp = { lt = 5 } } } }), nil, 'mixed shape')
+        eq(R.WhenToRows({ colour = 'red' }), nil, 'unknown key')
+        local two = R.RowsToWhen({ { key = 'name', op = 'is', value = 'Cure' }, { key = 'name', op = 'is', value = 'Cura' } })
+        eq(two.name[2], 'Cura')
+    end },
+    { 'serialize: one rule a line, groups a choice a line, loads back', function()
+        local rules = {
+            { on = 'Midcast', when = { skill = 'Elemental Magic', mpp = { le = 40 } }, wear = 'Mp_Body', exact = true },
+            { on = 'Midcast', first = { { when = { name = { has = 'storm' } }, wear = 'Storm' }, { wear = 'Enh' } } },
+            { on = 'Midcast', item = { Head = "Pixie Hairpin +1", Body = 'Twilight Cloak' }, note = "it's dark" },
+        }
+        local q = function(x) return (string.find(x, "'", 1, true) and ('"' .. x .. '"')) or ("'" .. x .. "'") end
+        local text = R.Serialize(rules, '    ', q, function(k) return k end)
+        eq(text, "{\n        { on = 'Midcast', when = { mpp = { le = 40 }, skill = 'Elemental Magic' }, wear = 'Mp_Body', exact = true },\n"
+            .. "        { on = 'Midcast', first = {\n            { when = { name = { has = 'storm' } }, wear = 'Storm' },\n            { wear = 'Enh' },\n        } },\n"
+            .. "        { on = 'Midcast', item = { Head = 'Pixie Hairpin +1', Body = 'Twilight Cloak' }, note = \"it's dark\" },\n    }")
+        local back = loadstring('return ' .. text)()
+        eq(back[2].first[2].wear, 'Enh'); eq(back[3].item.Head, 'Pixie Hairpin +1')
+    end },
     { 'words', function()
         eq(R.Words({ on = 'Midcast', when = { skill = 'Healing Magic', mpp = { le = 40 } }, wear = 'X' }),
             'mpp <= 40, skill Healing Magic -> X')

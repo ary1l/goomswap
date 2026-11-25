@@ -349,6 +349,9 @@ local settingsFiles = gFunc.LoadFile('common\\gceditsettings.lua')({
     state = function() return editorState end,
 })
 ctx.settingsFiles = settingsFiles -- the job file's own settings are written by Save (gceditsets)
+-- the Rules page (gcinclude.Rules), in ctx: this chunk is at Lua's 200-local limit
+ctx.rules = gFunc.LoadFile('common\\gceditrules.lua')({ imgui = imgui, palette = palette, set_tip = set_tip,
+    editorState = editorState, files = settingsFiles, setFile = setFile, feedback = feedback, ctx = ctx })
 local function headings_setting()
     return settingsFiles.HeadingPref('EditorGroups')
 end
@@ -1173,9 +1176,18 @@ local function draw_save_review()
         table.sort(names)
         for _, name in ipairs(names) do
             local e = staged[name]
+            if (name == 'Rules') and (not e.remove) and (ctx.rules ~= nil) then -- a rule a line, in words
+                imgui.TextUnformatted('  gcinclude.Rules: ' .. #e.value .. ((#e.value == 1) and ' rule' or ' rules'))
+                for i, rule in ipairs(e.value) do
+                    imgui.TextColored(palette.dim, '    ' .. i .. '. ' .. tostring(rule.on) .. ': '
+                        .. ctx.rules.R.Words(rule) .. ((rule.layer == 'top') and ' (over everything)' or '')
+                        .. (rule.off and ' (off)' or ''))
+                end
+            else
             imgui.TextUnformatted('  ' .. (string.match(name, '^profile%.') and '' or 'gcinclude.') .. name
                 .. (e.remove and ': taken out'
                 or (' = ' .. string.gsub(settingsFiles.JobText(e, ''), '%s*\n%s*', ' '))))
+            end
         end
     end
     if editorState.document.sourcePath then
@@ -2203,7 +2215,9 @@ local function body()
         inspectorHeight = math.min(320, math.max(150, availableHeight * (gridWidth < 500 and 0.40 or 0.32)))
         imgui.BeginChild('##gcedit_grid', { 0, math.max(1, availableHeight - inspectorHeight - 8) }, 0)
     end
-    if set ~= nil then
+    if editorState.selection.rules and (ctx.rules ~= nil) then
+        ctx.rules.Draw()
+    elseif set ~= nil then
         ctx.draw_recent(set)
         draw_set(set)
         m_gceditrelated.draw_upgrade(set) -- a piece changed here that other sets still have: offer it there

@@ -253,6 +253,7 @@ function state.New(profile)
 end
 
 function state.Select(editor, name, slot, tab)
+    editor.selection.rules = false -- a set picked: the middle pane leaves the Rules page
     editor.selection.setName, editor.selection.slot = name, slot
     editor.cache.cover, editor.ui.drag = nil, nil
     editor.selection.tab = tab or (slot and 'gear') or (editor.selection.tab == 'summary' and 'summary') or 'action'
