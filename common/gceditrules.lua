@@ -104,7 +104,8 @@ return function(o)
         imgui.PushStyleColor(ImGuiCol_ButtonHovered, h)
         imgui.PushStyleColor(ImGuiCol_ButtonActive, a)
         if t ~= nil then imgui.PushStyleColor(ImGuiCol_Text, t) end
-        local hit = big and imgui.Button(label) or imgui.SmallButton(label)
+        local hit
+        if big then hit = imgui.Button(label) else hit = imgui.SmallButton(label) end -- one or the other, never both
         imgui.PopStyleColor((t ~= nil) and 4 or 3)
         if disabled then imgui.EndDisabled() end
         return hit and not off

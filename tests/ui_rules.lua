@@ -1,10 +1,19 @@
 -- Smoke test: the Rules page and the Settings widgets draw without errors against a stub ImGui, and the
 -- builder's Save stages the rule it shows. Clicks are scripted by label.
 local clicks = {}
+local drawn, twice = {}, nil -- labels drawn this frame: the same ID twice is an ImGui error
+local function seen(label)
+    if drawn[label] and (twice == nil) then twice = label end
+    drawn[label] = true
+end
 local imgui = setmetatable({}, { __index = function(_, k)
     if (k == 'CalcTextSize') or (k == 'GetContentRegionAvail') then return function() return 100, 20 end end
     if (k == 'SmallButton') or (k == 'Button') or (k == 'Selectable') then
-        return function(label) if clicks[label] then clicks[label] = nil; return true end return false end
+        return function(label)
+            seen(label)
+            if clicks[label] then clicks[label] = nil; return true end
+            return false
+        end
     end
     if (k == 'BeginPopup') then return function() return true end end
     return function() return false end
@@ -33,6 +42,12 @@ local state = { selection = {}, ui = {}, document = { model = { list = { { name 
 local msg = nil
 local M = gFunc.LoadFile('common\\gceditrules.lua')({ imgui = imgui, palette = palette, set_tip = function() end,
     editorState = state, files = files, setFile = F, feedback = function(t) msg = t end, ctx = {} })
+local draw = M.Draw
+M.Draw = function() -- one frame: no ID drawn twice
+    drawn, twice = {}, nil
+    draw()
+    if twice ~= nil then error('drawn twice in one frame: ' .. twice, 2) end
+end
 return {
     { 'empty page, list row, builder, save a rule', function()
         M.ListButton(); M.Draw()
