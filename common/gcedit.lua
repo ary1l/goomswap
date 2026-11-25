@@ -350,6 +350,27 @@ local settingsFiles = gFunc.LoadFile('common\\gceditsettings.lua')({
 })
 ctx.settingsFiles = settingsFiles -- the job file's own settings are written by Save (gceditsets)
 ctx.simple = gFunc.LoadFile('common\\gceditsimple.lua')(editorState) -- Simple view (labels, fewer buttons)
+-- <JOB>.goom.lua beside the job file: its sets, rules and options as data (gcgoomfile.lua), written with every Save and
+-- refreshed when the job file changed outside the editor
+ctx.goom = gFunc.LoadFile('common\\gcgoomfile.lua')
+ctx.goom_write = function(path, text) -- path: the job file; text: what it now holds. true, or false and why
+    local data, why = ctx.goom.Export(text, setFile, { file = string.match(path, '[^\\/]+$'),
+        job = string.match(string.match(path, '[^\\/]+$') or '', '^(%u%u%u)') })
+    if data == nil then return false, why end
+    local out = ctx.goom.Text(data, function(v) return editorGroups.SerializeValue(v, setFile.QuoteText, setFile.FormatKey) end)
+    return fileWriter.Write(ctx.goom.PathFor(path), out)
+end
+ctx.goom_check = function(document, text)
+    local dataPath = ctx.goom.PathFor(document.path)
+    if dataPath == nil then return end
+    local have = read_file(dataPath)
+    if (have ~= nil) and ctx.goom.InStep(have, text) then return end
+    local ok = ctx.goom_write(document.path, text)
+    if ok and (have ~= nil) then
+        feedback(string.match(dataPath, '[^\\/]+$') .. ' brought up to date from ' .. tostring(document.file)
+            .. ' (it changed outside the editor).')
+    end
+end
 ctx.newjob = gFunc.LoadFile('common\\gceditnewjob.lua')({ imgui = imgui, palette = palette, set_tip = set_tip,
     feedback = feedback }) -- the file menu's New job file
 -- the Rules page (gcinclude.Rules), in ctx: this chunk is at Lua's 200-local limit
@@ -493,6 +514,7 @@ local function load_model(document)
     local model, err = setFile.Parse(text)
     if model == nil then return nil, err end
     model.text = text -- the job file's handlers are read from it (scan_job), once, when All sets first needs them
+    if (document.sourcePath == nil) and (ctx.goom_check ~= nil) then ctx.goom_check(document, text) end
     model.byLower = {}
     for _, set in ipairs(model.list) do
         set.group, set.builtin = group_of(set.name, set.parentName)

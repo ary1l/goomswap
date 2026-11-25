@@ -270,6 +270,11 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 
 ## Save
 
+Every Save writes two files: the job file (`WHM.lua`), which LuAshitacast runs and you share as it is, and beside it
+`WHM.goom.lua`, the same sets, rules and options as plain data (GoomSwap's own format). Opening a job file whose
+`.lua` changed outside the editor brings its `.goom.lua` up to date from it. A set or option written as code in the
+`.lua` is named in the data file's `code` list instead of copied.
+
 **Save + reload** shows a review (before/after per set, new, deleted and renamed sets, weapon and melee modes);
 cancelling writes nothing. Saving checks the file didn't change on disk and still parses, writes a dated backup,
 then reloads (reopening the editor if ticked). A set written as code (built by a function, not a table of slots) is shown, not
