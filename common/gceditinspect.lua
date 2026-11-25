@@ -65,6 +65,44 @@ local function exact_owned(value)
     return not ambiguous and owned or nil, ambiguous
 end
 
+-- The picker's stat changes: what a piece changes against the one in the slot now.
+local SHORT_STAT = { ['Damage taken'] = 'DT', ['Physical damage taken'] = 'PDT', ['Magic damage taken'] = 'MDT',
+    ['Damage taken II'] = 'DT II', ['Physical damage taken II'] = 'PDT II', ['Magic damage taken II'] = 'MDT II',
+    ['Accuracy'] = 'Acc', ['Attack'] = 'Atk', ['Ranged accuracy'] = 'R.Acc', ['Ranged attack'] = 'R.Atk',
+    ['Evasion'] = 'Eva', ['Defense'] = 'DEF', ['Magic accuracy'] = 'M.Acc', ['Magic attack bonus'] = 'MAB',
+    ['Magic defense bonus'] = 'MDB', ['Magic evasion'] = 'M.Eva', ['Magic damage'] = 'M.Dmg', ['Fast Cast'] = 'FC',
+    ['Double Attack'] = 'DA', ['Triple Attack'] = 'TA', ['Weapon skill damage'] = 'WSD', ['Critical hit rate'] = 'Crit',
+    ['Spell interruption rate down'] = 'SIRD', ['Dual Wield'] = 'DW', ['Movement speed'] = 'Move' }
+local function piece_stats(slot, value, owned)
+    local item = item_model(value, owned)
+    item.slot = slot
+    item.unknownAugments = (owned ~= nil) and (owned.unreadable or (owned.progress and owned.progress.unknown)) or nil
+    return statModel.Build({ item })
+end
+-- The slot's piece now, as stats (nothing there, a slot word or code: no stats).
+function ctx.slot_stats(set, slot)
+    local v = current(set, slot)
+    if (v == nil) or (v.kind ~= 'item') or is_slot_word(v) or (v.name == nil) then return statModel.Build({}) end
+    return piece_stats(slot, v, owned_for(set, slot))
+end
+-- { { text = 'DT -3%', better = true|false|nil, full = 'Damage taken -3%' }, ... } in the stats' own order.
+function ctx.piece_delta(slot, g, before)
+    local cmp = statModel.Compare(before, piece_stats(slot, g, g))
+    local out, pct = {}, {} -- % stats first (DT, Fast Cast, Haste...): the ones a set is usually built for
+    for _, r in ipairs(cmp.rows) do
+        if r.delta ~= 0 then
+            local d = r.direction or 1
+            local list = (r.unit == '%') and pct or out
+            list[#list + 1] = { text = (SHORT_STAT[r.name] or r.name) .. ' ' .. r.deltaText,
+                full = r.name .. ' ' .. r.deltaText .. '  (' .. r.before .. ' > ' .. r.after .. ')',
+                better = nil }
+            if d ~= 0 then list[#list].better = (d * r.delta) > 0 end -- neutral stats (Enmity): neither
+        end
+    end
+    for i = #pct, 1, -1 do table.insert(out, 1, pct[i]) end
+    return out
+end
+
 local function inspection_target(set, slot, gear, source)
     if gear then return gear, gear, source end
     local value = current(set, slot)
@@ -242,9 +280,10 @@ local function draw_cell(set, slot)
         and PAIR[editorState.ui.drag.slot][slot] -- a picker row dragged here fits
     local other = cmp_of(set)
     local diff = (other ~= nil) and differs(set, other, slot)
+    local lit = (editorState.ui.hoverShown == slot) -- hovered last frame, here or in What goes on
     imgui.PushStyleColor(
         ImGuiCol_Border,
-        (selected or drop) and palette.sel
+        (selected or drop or lit) and palette.sel
             or (
                 changed and palette.warn or diff and palette.aug
                 or ((rp and rp.unfinished) and palette.rp or ((cover ~= nil) and palette.override or palette.edge))
@@ -349,9 +388,20 @@ local function draw_cell(set, slot)
         imgui.TextColored(changed and palette.warn or (cover and palette.override or palette.rp),
             cardText.Fit(status, ctx.CELL_W - 16, text_w))
     end
+    local menuHit = false
+    if lit and (imgui.SetCursorPos ~= nil) then -- hovered: '...' at the bottom right opens the slot's menu
+        local bw = text_w('...') + 10
+        imgui.SetCursorPos({ ctx.CELL_W - bw - 6, ctx.CELL_H - lh - 8 })
+        imgui.PushStyleColor(ImGuiCol_Button, palette.btn)
+        menuHit = imgui.SmallButton('...##gcedit_cellmenu_' .. slot)
+        imgui.PopStyleColor()
+        if imgui.IsItemHovered() then set_tip('This slot\'s menu: inspect, choose gear, undo, clear (or right-click).') end
+        if menuHit then request_context('slot', set, slot) end
+    end
     imgui.EndChild()
     if focusBorder then imgui.PopStyleVar() end
-    if imgui.IsItemClicked(0) then
+    if imgui.IsItemHovered() then editorState.ui.hoverSlot = slot end
+    if imgui.IsItemClicked(0) and not menuHit then
         editorState.selection.slot = slot
         editorState.selection.tab = 'gear'
     end
@@ -520,15 +570,21 @@ local function draw_layer_view(set, V)
         imgui.TableSetupColumn('Slot', 0, 0.6)
         imgui.TableSetupColumn('What was worn', 0, 1.6)
         imgui.TableSetupColumn('Source', 0, 1.6) -- no header row: slot, item, and the set as a tag
+        local rowBg = (imgui.TableSetBgColor ~= nil) and (imgui.GetColorU32 ~= nil) and imgui.GetColorU32(palette.selBg) or nil
         for _, row in ipairs(V.rows) do
             imgui.TableNextRow()
+            if (rowBg ~= nil) and (editorState.ui.hoverShown == row.slot) then -- its card is hovered (or this row)
+                imgui.TableSetBgColor(ImGuiTableBgTarget_RowBg0 or 1, rowBg)
+            end
             imgui.TableNextColumn()
             imgui.TextColored(palette.dim, row.slot)
+            if imgui.IsItemHovered() then editorState.ui.hoverSlot = row.slot end
             imgui.TableNextColumn()
             if row.worn == nil then
                 imgui.TextColored(palette.dim, 'no change')
             else
                 imgui.TextUnformatted(row.worn)
+                if imgui.IsItemHovered() then editorState.ui.hoverSlot = row.slot end
                 if imgui.IsItemClicked(1) and row.worn ~= '(left empty)' then
                     request_context('result', set, row.slot, { kind = 'item', name = row.worn }, row.src)
                 end
@@ -1057,18 +1113,55 @@ local function draw_set(set)
         imgui.SameLine()
         if imgui.SmallButton('Stop##gcedit_cmp') then editorState.ui.cmp = nil end
     end
-    if editorState.history.entries and #editorState.history.entries > 0 then
+    local H = editorState.history
+    -- Redo holds what Undo took back; any other edit since (a new undo entry on top) empties it
+    local redo = H.redo
+    if (redo ~= nil) and ((#(H.entries or NONE) ~= redo.at) or ((H.entries or NONE)[redo.at] ~= redo.top)) then
+        H.redo, redo = nil, nil
+    end
+    local function put(u, value) -- a slot's pending edit back to value (nil: as saved)
+        local doc = editorState.document
+        if (not doc.model.byName[u.set]) or doc.deleted[u.set] then return false end
+        doc.edits[u.set] = doc.edits[u.set] or {}
+        local was = doc.edits[u.set][u.slot]
+        doc.edits[u.set][u.slot] = value
+        if next(doc.edits[u.set]) == nil then doc.edits[u.set] = nil end
+        doc.revision = doc.revision + 1
+        H.revision = doc.revision
+        editorPreferences.Select(editorState, u.set, u.slot)
+        return true, was
+    end
+    local function mark()
+        H.redo.at = #H.entries
+        H.redo.top = H.entries[#H.entries]
+    end
+    if H.entries and #H.entries > 0 then
         if sbutton('Undo edit##gcedit', 'ghost') then
-            local u = table.remove(editorState.history.entries)
-            if editorState.document.model.byName[u.set] and not editorState.document.deleted[u.set] then
-                editorState.document.edits[u.set] = editorState.document.edits[u.set] or {}
-                editorState.document.edits[u.set][u.slot] = u.previous
-                if next(editorState.document.edits[u.set]) == nil then editorState.document.edits[u.set] = nil end
-                editorState.document.revision = editorState.document.revision + 1
-                editorState.history.revision = editorState.document.revision
-                editorPreferences.Select(editorState, u.set, u.slot)
+            local u = table.remove(H.entries)
+            local ok, was = put(u, u.previous)
+            if ok then
+                H.redo = H.redo or { list = {} }
+                H.redo.list[#H.redo.list + 1] = { set = u.set, slot = u.slot, value = was }
+                mark()
                 feedback('Undid the last edit to ' .. u.set .. ' / ' .. u.slot .. '.')
             end
+        end
+        editorPanels.SameLineIfFits(imgui, 140)
+    end
+    if (H.redo ~= nil) and (#H.redo.list > 0) then
+        if sbutton('Redo##gcedit_redo', 'ghost') then
+            local r = table.remove(H.redo.list)
+            local doc = editorState.document
+            local before = doc.edits[r.set] and doc.edits[r.set][r.slot]
+            if put(r, r.value) then
+                H.entries[#H.entries + 1] = { set = r.set, slot = r.slot, previous = before }
+                mark()
+                feedback('Redid the edit to ' .. r.set .. ' / ' .. r.slot .. '.')
+            end
+        end
+        local r = (H.redo ~= nil) and H.redo.list[#H.redo.list] or nil -- the next one (none after the last)
+        if (r ~= nil) and imgui.IsItemHovered() then
+            set_tip('Put back what Undo took out: ' .. r.set .. ' / ' .. r.slot .. '.')
         end
         editorPanels.SameLineIfFits(imgui, 140)
     end

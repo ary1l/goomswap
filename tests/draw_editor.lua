@@ -9,18 +9,29 @@ end
 gFunc = { LoadFile = function(p) return dofile((string.gsub(p, '\\', '/'))) end }
 T = function(t) return t end
 nilf = function() return nil end
+-- two pieces in Wardrobe (bag 8) that fit every slot, so the gear picker has rows
+ITEMS = { [23001] = { Name = { 'Nyame Mail' }, Slots = 0xFFFF, Jobs = 0x7FFFFFFE, Level = 1,
+        Description = { 'DEF:150 HP+68 MP+44 MND+25 Damage taken -9%' } },
+    [23002] = { Name = { 'Ebers Bliaut +2' }, Slots = 0xFFFF, Jobs = 0x7FFFFFFE, Level = 1,
+        Description = { 'DEF:120 HP+60 MP+50 MND+30 Damage taken -10%' } } }
+local inventory = { GetContainerItem = function(_, c, i)
+    if c == 8 and i <= 2 then return { Id = 23000 + i, Count = 1, Extra = string.rep('\0', 24) } end
+end }
 local player = { GetMainJob = function() return 3 end, GetMainJobLevel = function() return 99 end,
     GetSubJob = function() return 5 end, GetSubJobLevel = function() return 49 end }
 
 AshitaCore = setmetatable({
-    GetMemoryManager = function() return setmetatable({ GetPlayer = function() return player end },
+    GetMemoryManager = function() return setmetatable({ GetPlayer = function() return player end,
+        GetInventory = function() return inventory end },
         { __index = function() return function() return stub('mm') end end }) end,
     GetFontManager = function() return { GetVisible = function() return true end } end,
     GetGuiManager = function() return { GetVisible = function() return true end } end,
     GetInstallPath = function() return '/tmp/' end,
-    GetResourceManager = function() return setmetatable({}, { __index = function() return nilf end }) end,
+    GetResourceManager = function() return setmetatable({ GetItemById = function(_, id) return ITEMS[id] end },
+        { __index = function() return nilf end }) end,
 }, { __index = function() return function() return stub('core') end end })
-gState = { PlayerName = 'Me', PlayerId = 1 }; gData = setmetatable({}, { __index = function() return nilf end })
+gState = { PlayerName = 'Me', PlayerId = 1 }; gData = setmetatable({ GetContainerMax = function(c) return (c == 8) and 2 or 0 end },
+    { __index = function() return nilf end })
 gProfile = { FilePath = (arg[1] or 'examples/WHM.lua'), Sets = {} }
 local cbs = {}
 ashita = { fs = { exists = function() return false end, create_directory = function() end },
@@ -33,7 +44,9 @@ local imgui = setmetatable({}, { __index = function(_, k)
     if (k == 'GetContentRegionAvail') or (k == 'GetWindowSize') then return function() return 900, 600 end end
     if (k == 'GetCursorScreenPos') or (k == 'GetWindowPos') or (k == 'GetItemRectMin') or (k == 'GetItemRectMax')
         or (k == 'GetCursorPos') or (k == 'GetMousePos') then return function() return 10, 10 end end
-    if (k == 'GetCursorPosX') or (k == 'GetCursorPosY') or (k == 'GetWindowHeight') or (k == 'GetWindowWidth')
+    if (k == 'GetCursorPosY') then return function() CY = (CY or 0) + 18; return CY end end -- rows have height
+    if (k == 'GetScrollY') then return nil end -- no clipping: every picker row is drawn
+    if (k == 'GetCursorPosX') or (k == 'GetWindowHeight') or (k == 'GetWindowWidth')
         or (k == 'GetTextLineHeight') or (k == 'GetTextLineHeightWithSpacing') or (k == 'GetFontSize')
         or (k == 'GetFrameHeight') or (k == 'GetScrollY') or (k == 'GetScrollMaxY') or (k == 'GetTime') then
         return function() return 16 end end
@@ -46,10 +59,12 @@ local imgui = setmetatable({}, { __index = function(_, k)
         return function(label)
             label = tostring(label); SEEN[label] = true
             local id = string.match(label, '##(.*)$') or label
-            if clicks[id] then clicks[id] = nil; return true end return false end
+            if clicks[label] then clicks[label] = nil; return true end
+            if clicks[id] then clicks[id] = nil; if os.getenv("TRACE") then print("  clicked " .. label) end return true end return false end
     end
     if (k == 'TextColored') then return function(_, t) SEEN[tostring(t)] = true end end
     if (k == 'TextUnformatted') or (k == 'Text') then return function(t) SEEN[tostring(t)] = true end end
+    if (k == 'IsItemHovered') and os.getenv('HOVER') then return function() return true end end -- every tooltip path
     if (k == 'IsItemClicked') then
         return function(b) if (b or 0) == 0 and CLICK_ITEM and CLICK_ITEM > 0 then CLICK_ITEM = CLICK_ITEM - 1
             return CLICK_ITEM == 0 end return false end
@@ -78,6 +93,8 @@ for _, id in ipairs(seq) do
     local n = tonumber(string.match(id, '^item(%d+)$'))
     if n then CLICK_ITEM = n else clicks[id] = true end
     draw(2)
+    if os.getenv("TRACE") then print(id, SEEN[os.getenv("TRACE")] and "seen" or "-", gcedit.Dirty and tostring(gcedit.Dirty())) end
+    if os.getenv('TRACE') then SEEN[os.getenv('TRACE')] = nil end
 end
 print('after: New rule ' .. has('+ New rule##rules_add'))
 for k in pairs(SEEN) do if arg[3] and k:match(arg[3]) then print('  ' .. k) end end

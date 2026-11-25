@@ -1999,8 +1999,10 @@ end
 local function body()
     editorPreferences.TickFeedback(editorState, imgui.GetIO().DeltaTime or 0)
     editorState.ui.frame = (editorState.ui.frame or 0) + 1
+    -- the slot hovered last frame (a card or its row in What goes on): both light up this frame
+    editorState.ui.hoverShown, editorState.ui.hoverSlot = editorState.ui.hoverSlot, nil
     if editorState.history.revision ~= editorState.document.revision then
-        editorState.history.entries = {}
+        editorState.history.entries, editorState.history.redo = {}, nil
         editorState.history.revision = editorState.document.revision
     end
     editorState.cache.head = editorState.cache.head

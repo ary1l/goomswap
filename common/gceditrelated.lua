@@ -1579,6 +1579,17 @@ local function draw_picker(set)
     imgui.Separator()
     imgui.BeginChild('##gcedit_picks', { 0, 0 }, 0)
     local bagX = imgui.GetCursorPosX() + bagColumn
+    -- what each piece changes against the slot's piece now: a column before the bag, when there is room
+    local slotNow = editorState.selection.slot
+    local dkey = set.name .. '\0' .. slotNow .. '\0' .. editorState.document.revision
+    local DC = editorState.cache.pickDelta
+    if (DC == nil) or (DC.key ~= dkey) then
+        DC = { key = dkey, by = {} }
+        editorState.cache.pickDelta = DC
+    end
+    local statW = (ctx.piece_delta ~= nil) and math.min(190, (bagX - imgui.GetCursorPosX()) * 0.45) or 0
+    if statW < 90 then statW = 0 end
+    local statX = bagX - statW
     if editorState.ui.resetPickerScroll then
         imgui.SetScrollY(0)
         editorState.ui.resetPickerScroll = nil
@@ -1614,7 +1625,7 @@ local function draw_picker(set)
         local isNow = selectedCopy ~= nil and selectedCopy.key == g.key
         if g.progress and g.progress.unfinished then imgui.PushStyleColor(ImGuiCol_Text, palette.rp) end
         local label = cardText.Fit(picker.Caption(g, isNow and (changed and 'Pending' or 'Saved')),
-            math.max(30, bagX - imgui.GetCursorPosX() - 10), text_w)
+            math.max(30, statX - imgui.GetCursorPosX() - 10), text_w)
             .. '##pick' .. i
         local picked = imgui.Selectable(label, isNow)
         if g.progress and g.progress.unfinished then imgui.PopStyleColor() end
@@ -1646,6 +1657,28 @@ local function draw_picker(set)
                 })
             )
             profiler.Finish('Item tooltip', tooltipStarted)
+        end
+        if (statW > 0) and not isNow then -- its stat changes: green better, red worse, fitted to the column
+            local parts = DC.by[g.key]
+            if parts == nil then
+                DC.before = DC.before or ctx.slot_stats(set, slotNow)
+                local ok, res = pcall(ctx.piece_delta, slotNow, g, DC.before)
+                parts = ok and res or {}
+                DC.by[g.key] = parts
+            end
+            local used, full = 0, {}
+            for k, p in ipairs(parts) do
+                local w = text_w(p.text) + ((k > 1) and 6 or 0)
+                if used + w > statW - 8 then break end
+                if k == 1 then imgui.SameLine(statX) else imgui.SameLine(0, 6) end
+                imgui.TextColored((p.better == true) and palette.ok or ((p.better == false) and palette.bad or palette.dim),
+                    p.text)
+                if imgui.IsItemHovered() then
+                    for _, q in ipairs(parts) do full[#full + 1] = q.full end
+                    set_tip('Against the piece in ' .. slotNow .. ' now:\n' .. table.concat(full, '\n'))
+                end
+                used = used + w
+            end
         end
         imgui.SameLine(bagX + 5) -- its bag as a tag: green worn here, amber not in a bag you can wear from
         pill(cardText.Fit(picker.BagCaption(row.bags, g.bag), bagWidth - 18, text_w),

@@ -240,6 +240,12 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   optionally with its variants (`X_Acc`). Comments stay. A set found by its own name (`Idle`, an action) is then
   only worn where your code names it; the dialog warns.
 - **Undo edit** steps back through slot changes; **Undo slot** restores the saved definition.
+- **Redo** puts back what Undo edit took out, until you make another edit.
+- Hover a slot card: its row in **What goes on** lights up (and the other way round), and **...** at the card's
+  bottom right opens the slot's menu (the same as a right-click).
+- The gear picker shows what each piece changes against the one in the slot now (`DT -3%  HP +8`): green better,
+  red worse, % stats first; hover for all of them, before > after. Read from the item's description and
+  augments, as Stats does (conditional effects left out).
 - **Result** shows what an action wore, layer by layer: recorded since load, or expected from your sets and modes.
   **Equip order** lists the layers first to last, each with its pieces as icons (green: still worn; faded orange:
   replaced later, by what on hover), the slots in screen order, and why it went on (*Weapon mode DeathPenalty: its
