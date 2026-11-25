@@ -41,6 +41,10 @@ return function(o)
         local list = M.List()
         return (list ~= nil) and #list or 0
     end
+    -- A rule's moment and conditions in words, without what it wears: 'When you cast Cure on yourself'.
+    local function moment_words(on, when)
+        return (string.gsub(R.Say({ on = on, when = when }), ': nothing$', ''))
+    end
     -- The rules that wear a set (its "Used for" line): { short, text }, nil when none do.
     function M.UsesOf(name)
         local list = M.List()
@@ -48,15 +52,14 @@ return function(o)
         local lines = {}
         local function add(rule, on, extra)
             if (type(rule.wear) == 'string') and (string.lower(rule.wear) == string.lower(name)) and not rule.off then
-                lines[#lines + 1] = (R.PHASE_LABEL[on] or tostring(on)) .. ', when ' .. (R.SayWhen(rule.when) or 'always')
-                    .. (extra or '')
+                lines[#lines + 1] = moment_words(on, rule.when) .. (extra or '')
             end
         end
         for _, rule in ipairs(list) do
             if type(rule) == 'table' then
                 if type(rule.first) == 'table' then
                     for _, m in ipairs(rule.first) do
-                        add(m, rule.on, (rule.when ~= nil) and (' (and ' .. (R.SayWhen(rule.when) or '') .. ')') or nil)
+                        add(m, rule.on, (rule.when ~= nil) and (' (in the group: ' .. moment_words(rule.on, rule.when) .. ')') or nil)
                     end
                 else
                     add(rule, rule.on)
@@ -240,8 +243,7 @@ return function(o)
             imgui.TextColored(palette.dim, '(off)')
         end
         if type(rule.first) == 'table' then
-            local w = R.SayWhen(rule.when)
-            sentence(((w ~= nil) and ('When ' .. w .. ', the first of these that fits:') or 'The first of these that fits:')
+            sentence(moment_words(rule.on, rule.when) .. ', the first of these that fits:'
                 .. ((rule.note ~= nil) and ('  -- ' .. rule.note) or ''), rule.off and palette.dim or nil)
             imgui.Indent(30)
             for j, m in ipairs(rule.first) do
@@ -249,7 +251,7 @@ return function(o)
                 row_buttons(list, j, i)
                 imgui.SameLine(0, 10)
                 imgui.PushTextWrapPos(0)
-                imgui.TextUnformatted(R.Say(m))
+                imgui.TextUnformatted(R.Say(m, rule.on))
                 imgui.PopTextWrapPos()
             end
             if button('+ choice##rule_addc_' .. i, 'ghost') then M.Edit(i, #rule.first + 1) end
@@ -369,7 +371,7 @@ return function(o)
     local function key_options(phase)
         local out = {}
         for _, k in ipairs(R.KEYS) do
-            if (k.phases == nil) or k.phases[phase] then out[#out + 1] = { k.key, k.label } end
+            if (k.phases == nil) or k.phases[phase] then out[#out + 1] = { k.key, R.KeyLabel(k.key, phase) } end
         end
         return out
     end
@@ -377,7 +379,7 @@ return function(o)
     local function draw_row(e, i, r)
         local meta = R.KEY[r.key] or { label = r.key, kind = 'text' }
         local id = 'rb_' .. i
-        local pick = W.Pick(id .. '_key', meta.label, key_options(e.phase), 170)
+        local pick = W.Pick(id .. '_key', R.KeyLabel(r.key, e.phase), key_options(e.phase), 170)
         if pick ~= nil and pick ~= r.key then
             r.key, r.value, r.sub = pick, nil, nil
             local m = R.KEY[pick]
@@ -389,7 +391,7 @@ return function(o)
             meta = m
         end
         local tip = meta.hint
-        if imgui.IsItemHovered() and (tip ~= nil) then set_tip(meta.label .. ': ' .. tip) end
+        if imgui.IsItemHovered() and (tip ~= nil) then set_tip(R.KeyLabel(r.key, e.phase) .. ': ' .. tip) end
         imgui.SameLine()
         local values = nil
         if meta.kind == 'bool' then
@@ -515,15 +517,17 @@ return function(o)
         imgui.Separator()
         imgui.TextColored(palette.blue, (e.index == nil) and 'New rule' or ((e.member ~= nil) and ('Rule ' .. e.index
             .. ', choice ' .. e.member) or ('Rule ' .. e.index)))
+        imgui.SameLine()
+        imgui.TextColored(palette.dim, '-  pick the moment (When), what has to be true then (If), and what to put on (Wear).')
         -- when
         imgui.TextColored(palette.dim, 'When')
         imgui.SameLine(70)
         if e.member ~= nil then
-            imgui.TextUnformatted(R.PHASE_LABEL[e.phase] .. ' (its group\'s)')
+            imgui.TextUnformatted(R.PHASE_LONG[e.phase] .. ' (its group\'s)')
         else
             local options = {}
-            for _, p in ipairs(R.PHASES) do options[#options + 1] = { p, R.PHASE_LABEL[p] } end
-            local p = W.Pick('rb_phase', R.PHASE_LABEL[e.phase] or e.phase, options, 230)
+            for _, p in ipairs(R.PHASES) do options[#options + 1] = { p, R.PHASE_LONG[p] } end
+            local p = W.Pick('rb_phase', R.PHASE_LONG[e.phase] or e.phase, options, 330)
             if p ~= nil then e.phase = p end
         end
         -- if
@@ -572,9 +576,11 @@ return function(o)
             local shown = 0
             for _, n in ipairs(set_names()) do
                 if (shown < 8) and string.find(string.lower(n), string.lower(wear), 1, true) then
-                    if shown > 0 then imgui.SameLine() end
+                    if shown == 0 then imgui.TextColored(palette.dim, 'your sets:') end
+                    imgui.SameLine(0, 4)
                     shown = shown + 1
-                    if imgui.SmallButton(n .. '##rb_set_' .. shown) then e.wear[1] = n end
+                    if button(n .. '##rb_set_' .. shown, 'ghost') then e.wear[1] = n end
+                    if imgui.IsItemHovered() then set_tip('Wear your set ' .. n .. '.') end
                 end
             end
             imgui.Unindent(70)
@@ -621,15 +627,19 @@ return function(o)
                 imgui.PopTextWrapPos()
             end
         end
-        local stoppable = R.STOPPABLE[e.phase] == true
-        if (not stoppable) and (imgui.BeginDisabled ~= nil) then imgui.BeginDisabled() end
-        imgui.Checkbox('Stop the action##rb_stop', e.stop)
-        if (not stoppable) and (imgui.EndDisabled ~= nil) then imgui.EndDisabled() end
-        if imgui.IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled or 0) then
-            set_tip(stoppable and 'Cancels the action (LuAshitacast\'s CancelAction), with a line in chat.'
-                or 'Only Precast, Job ability, Weapon skill, Item and Preshot can stop an action (LuAshitacast).')
+        -- cancelling: only where LuAshitacast can (CancelAction), so only offered there
+        if R.STOPPABLE[e.phase] then
+            imgui.Checkbox('Cancel it instead (it is not used)##rb_stop', e.stop)
+            if imgui.IsItemHovered() then
+                set_tip('Rarely needed: when the conditions hold, the spell or ability is not used at all (a line in chat '
+                    .. 'says why). Example: cancel Stun while your MP is under 10%.')
+            end
+            imgui.SameLine()
+        else
+            e.stop[1] = false
+            imgui.TextColored(palette.dim, 'Note')
+            imgui.SameLine(70)
         end
-        imgui.SameLine()
         imgui.PushItemWidth(260)
         imgui.InputTextWithHint('##rb_note', 'a note for yourself (optional)', e.note, 96)
         imgui.PopItemWidth()
@@ -641,7 +651,7 @@ return function(o)
         if rule ~= nil then
             local r2 = rule
             if (e.member ~= nil) and (r2.on == nil) then r2 = copy(rule); r2.on = e.phase end
-            imgui.TextColored(palette.ok, (R.PHASE_LABEL[e.phase] or e.phase) .. ': ' .. R.Say(r2))
+            imgui.TextColored(palette.ok, R.Say(r2, e.phase))
         else
             imgui.TextColored(palette.warn, why)
         end

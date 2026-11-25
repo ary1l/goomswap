@@ -26,8 +26,14 @@
 local R = {}
 
 R.PHASES = { 'Default', 'Pet', 'Precast', 'Midcast', 'Ability', 'Weaponskill', 'Preshot', 'Midshot', 'Item' }
-R.PHASE_LABEL = { Default = 'Idle / engaged', Pet = 'Pet action', Precast = 'Precast', Midcast = 'Midcast',
-    Ability = 'Job ability', Weaponskill = 'Weapon skill', Preshot = 'Preshot', Midshot = 'Midshot', Item = 'Item' }
+R.PHASE_LABEL = { Default = 'Not acting', Pet = 'Pet action', Precast = 'Starting a spell', Midcast = 'Casting',
+    Ability = 'Job ability', Weaponskill = 'Weapon skill', Preshot = 'Starting a shot', Midshot = 'Ranged shot',
+    Item = 'Using an item' }
+-- the builder's When menu: each moment in words, with LuAshitacast's name for it
+R.PHASE_LONG = { Default = 'Not acting: idle, fighting, resting, moving', Pet = 'Your pet uses a move',
+    Precast = 'Starting a spell (precast: Fast Cast gear)', Midcast = 'Casting a spell (midcast: as it lands)',
+    Ability = 'Using a job ability', Weaponskill = 'Using a weapon skill', Preshot = 'Starting a ranged attack (preshot)',
+    Midshot = 'Firing a ranged attack (midshot)', Item = 'Using an item' }
 R.STOPPABLE = { Precast = true, Ability = true, Weaponskill = true, Item = true, Preshot = true } -- LAC gFunc.CancelAction
 local ACTION = { Precast = true, Midcast = true, Ability = true, Weaponskill = true, Preshot = true, Midshot = true,
     Item = true }
@@ -103,6 +109,16 @@ R.KEYS = {
         hint = "The spell lands in a live skillchain of its element (GoomSwap's burst check)." },
     { key = 'dualwield', label = 'Can dual wield', kind = 'bool', hint = 'Your job and sub job can dual wield now.' },
 }
+-- A condition's name in the builder, for the moment it is checked (the action's name: Spell, Ability...).
+local NAME_LABEL = { Precast = 'Spell (exact name)', Midcast = 'Spell (exact name)', Ability = 'Ability',
+    Weaponskill = 'Weapon skill', Item = 'Item', Pet = "Pet's move" }
+function R.KeyLabel(key, phase)
+    if key == 'name' then return NAME_LABEL[phase] or 'Action name' end
+    if key == 'family' then return 'Spell (any tier)' end
+    if key == 'skill' then return 'Magic skill' end
+    local k = R.KEY[key]
+    return (k ~= nil) and k.label or tostring(key)
+end
 R.KEY = {}
 for _, k in ipairs(R.KEYS) do R.KEY[k.key] = k end
 
@@ -501,22 +517,182 @@ end
 function R.SayWear(rule)
     local out = {}
     if type(rule.wear) == 'string' then
-        out[#out + 1] = 'wear ' .. rule.wear .. ((not rule.exact) and ' (with its versions)' or '')
+        out[#out + 1] = 'put on ' .. rule.wear .. ((not rule.exact) and ' (and its /wm, /mset versions)' or '')
     end
     if type(rule.item) == 'table' then
         for _, slot in ipairs(R.SLOTS) do
             local it = rule.item[slot]
-            if it ~= nil then out[#out + 1] = slot .. ': ' .. tostring((type(it) == 'table') and it.Name or it) end
+            if it ~= nil then out[#out + 1] = 'put ' .. tostring((type(it) == 'table') and it.Name or it) .. ' in ' .. slot end
         end
     end
-    if rule.stop then out[#out + 1] = 'stop the action' end
+    if rule.stop then out[#out + 1] = 'cancel it (it is not used)' end
     return (#out > 0) and table.concat(out, ', ') or 'nothing'
 end
--- 'When ...: wear ...' (no conditions: 'Always: ...')
-function R.Say(rule)
+
+-- What the action is, for the sentence: 'Absorb-TP', 'Cure, Cura or Curaga (any tier, Healing Magic)',
+-- 'an Elemental Magic spell'; nil when the rule doesn't say.
+local SPELLS = { Precast = true, Midcast = true }
+local NOUN = { Precast = 'a spell', Midcast = 'a spell', Ability = 'a job ability', Weaponskill = 'a weapon skill',
+    Item = 'an item', Pet = 'a move' }
+local function article(w) return (string.match(w, '^[AEIOUaeiou]') and 'an ' or 'a ') .. w end
+local function what_of(when, phase)
+    local noun = NOUN[phase] or 'an action'
+    local bare = string.match(noun, '^an? (.+)$') or noun
+    local main, extra = nil, {}
+    local name, family = when.name, when.family
+    if name ~= nil then
+        if (type(name) == 'string') or ((type(name) == 'table') and (name[1] ~= nil)) then
+            main = either_of(name)
+        elseif type(name) == 'table' then
+            local parts = {}
+            if name.is ~= nil then parts[#parts + 1] = either_of(name.is) end
+            if name.has ~= nil then parts[#parts + 1] = article(bare) .. ' with "' .. either_of(name.has, '" or "') .. '" in its name' end
+            if name.start ~= nil then parts[#parts + 1] = article(bare) .. ' starting "' .. either_of(name.start, '" or "') .. '"' end
+            if name.ends ~= nil then parts[#parts + 1] = article(bare) .. ' ending "' .. either_of(name.ends, '" or "') .. '"' end
+            if name.isnt ~= nil then
+                if #parts == 0 then parts[#parts + 1] = article(bare) end
+                parts[#parts] = parts[#parts] .. ' other than ' .. either_of(name.isnt)
+            end
+            main = table.concat(parts, ', ')
+        end
+    end
+    if family ~= nil then
+        local f = text_say(family, function(w, n) return n and ('not ' .. w) or w end)
+        if main == nil then main = f; extra[#extra + 1] = 'any tier' else extra[#extra + 1] = 'family ' .. f end
+    end
+    local skill = when.skill
+    if skill ~= nil then
+        local sk = text_say(skill, function(w, n) return (n and 'not ' or '') .. w end)
+        if main == nil then
+            main = ((type(skill) == 'string') and article(sk .. ' ' .. bare)) or (sk .. ' ' .. bare)
+        else
+            extra[#extra + 1] = sk
+        end
+    end
+    if when.type ~= nil then
+        local ty = text_say(when.type, function(w, n) return (n and 'not ' or '') .. w end)
+        if main == nil then main = (type(when.type) == 'string') and article(ty) or ty else extra[#extra + 1] = ty end
+    end
+    if when.element ~= nil then
+        local el = {}
+        for _, x in ipairs((type(when.element) == 'table' and when.element[1] ~= nil) and when.element or { when.element }) do
+            if x == 'weather' then el[#el + 1] = 'element matching the weather'
+            elseif x == 'day' then el[#el + 1] = 'element matching the day'
+            elseif type(x) == 'string' then el[#el + 1] = x
+            else el[#el + 1] = text_say(x, function(w, n) return (n and 'not ' or '') .. w end) end
+        end
+        local e = table.concat(el, ' or ')
+        if (main == nil) and (#el == 1) and not string.find(e, 'matching', 1, true) then main = article(e .. ' ' .. bare)
+        else extra[#extra + 1] = e end
+    end
+    if main == nil and #extra == 0 then return nil end
+    main = main or noun
+    if #extra > 0 then main = main .. ' (' .. table.concat(extra, ', ') .. ')' end
+    return main
+end
+local TARGET_SAY = { me = 'on yourself', other = 'on someone else', PC = 'on a player', NPC = 'on an NPC',
+    Party = 'on your party', Alliance = 'on your alliance', Monster = 'on a monster' }
+-- What has to be true besides what the action is: 'MP is at most 50% and in Light weather'.
+local STATE = {
+    hpp = function(v) return num_say('your HP is', v, '%') end,
+    mpp = function(v) return num_say('your MP is', v, '%') end,
+    tp = function(v) return num_say('your TP is', v) end,
+    targethpp = function(v) return num_say("the target's HP is", v, '%') end,
+    distance = function(v) return num_say('the target is', v, ' yalms away') end,
+    buff = function(v) return either_of(v) .. ((type(v) == 'table' and #v > 1) and ' is up' or ' is up') end,
+    allbuffs = function(v) return either_of(v, 'and') .. ' are all up' end,
+    nobuff = function(v)
+        if (type(v) == 'table') and (#v > 1) then return 'none of ' .. either_of(v, 'or') .. ' is up' end
+        return either_of(v) .. ' is not up'
+    end,
+    burst = function(v) return v and 'it is a magic burst' or 'it is not a magic burst' end,
+    moving = function(v) return v and 'you are moving' or 'you are standing still' end,
+    combat = function(v) return v and 'you are in combat' or 'you are out of combat' end,
+}
+local ACTION_KEYS = { name = true, family = true, skill = true, type = true, element = true, target = true }
+local function state_of(when, skipStatus)
+    local order = {}
+    for i, k in ipairs({ 'targethpp', 'distance', 'burst', 'buff', 'allbuffs', 'nobuff', 'status', 'hpp', 'mpp', 'tp',
+        'moving', 'combat', 'mode', 'toggle', 'pet', 'pethpp', 'pettp', 'petname', 'petstatus', 'day', 'weather', 'zone',
+        'time', 'sub', 'level', 'dualwield', 'any' }) do order[k] = i end
+    local keys = {}
+    for k in pairs(when) do
+        if not ACTION_KEYS[k] and not ((k == 'status') and skipStatus) then keys[#keys + 1] = k end
+    end
+    table.sort(keys, function(a, b) return (order[a] or 999) < (order[b] or 999) end)
+    local out = {}
+    for _, k in ipairs(keys) do
+        local v = when[k]
+        if k == 'any' then
+            local alts = {}
+            for _, alt in ipairs(v) do alts[#alts + 1] = state_of(alt) or R.SayWhen(alt) or 'always' end
+            out[#out + 1] = 'either ' .. table.concat(alts, ', or ')
+        elseif (k == 'toggle') and (type(v) == 'table') then
+            local subs = {}
+            for sub in pairs(v) do subs[#subs + 1] = tostring(sub) end
+            table.sort(subs)
+            for _, sub in ipairs(subs) do out[#out + 1] = '/' .. sub .. ' is ' .. ((v[sub] == true) and 'on' or 'off') end
+        elseif (k == 'mode') and (type(v) == 'table') then
+            local subs = {}
+            for sub in pairs(v) do subs[#subs + 1] = tostring(sub) end
+            table.sort(subs)
+            for _, sub in ipairs(subs) do
+                out[#out + 1] = text_say(v[sub], function(w, n) return '/' .. sub .. (n and ' is not ' or ' is ') .. w end)
+            end
+        elseif STATE[k] ~= nil then
+            out[#out + 1] = STATE[k](v)
+        elseif SAY[k] ~= nil then
+            out[#out + 1] = SAY[k](v)
+        else
+            out[#out + 1] = R.WhenWords({ [k] = v })
+        end
+    end
+    if #out == 0 then return nil end
+    if #out == 1 then return out[1] end
+    return table.concat(out, ', ', 1, #out - 1) .. ' and ' .. out[#out]
+end
+-- The moment and what it is about: 'When you cast Absorb-TP on yourself', 'While fighting'.
+local function moment(when, phase)
+    if phase == 'Default' then
+        local st = when.status
+        if st == 'Engaged' then return 'While fighting', true end
+        if st == 'Idle' then return 'While idle', true end
+        if st == 'Resting' then return 'While resting', true end
+        return 'While not acting (idle, fighting, resting)', false
+    end
+    local what = what_of(when, phase)
+    local head
+    if phase == 'Precast' then head = 'When you start casting ' .. (what or 'a spell')
+    elseif phase == 'Midcast' then head = 'When you cast ' .. (what or 'a spell')
+    elseif (phase == 'Ability') or (phase == 'Weaponskill') or (phase == 'Item') then head = 'When you use ' .. (what or NOUN[phase])
+    elseif phase == 'Preshot' then head = 'When you start a ranged attack' .. (what and (' (' .. what .. ')') or '')
+    elseif phase == 'Midshot' then head = 'When your ranged attack fires' .. (what and (' (' .. what .. ')') or '')
+    elseif phase == 'Pet' then head = 'When your pet uses ' .. (what or 'a move')
+    else head = 'When ' .. (what or 'it happens') end
+    if when.target ~= nil then
+        local t = {}
+        for _, x in ipairs((type(when.target) == 'table') and when.target or { when.target }) do t[#t + 1] = TARGET_SAY[x] or ('on ' .. tostring(x)) end
+        head = head .. ' ' .. table.concat(t, ' or ')
+    end
+    return head, false
+end
+R.Moment = moment
+-- A rule as a sentence: 'When you cast Absorb-TP: put on Absorb_TP'. phase: for a `first` group's choice (no `on`).
+function R.Say(rule, phase)
     if type(rule) ~= 'table' then return '?' end
-    local w = R.SayWhen(rule.when)
-    return ((w ~= nil) and ('When ' .. w) or 'Always') .. ': ' .. R.SayWear(rule)
+    local member = (rule.on == nil) and (phase ~= nil) -- a group's choice
+    phase = rule.on or phase
+    local when = (type(rule.when) == 'table') and rule.when or {}
+    if member and (next(when) == nil) then return 'Otherwise: ' .. R.SayWear(rule) end
+    local head, statusSaid = moment(when, phase)
+    local st = state_of(when, statusSaid)
+    if st ~= nil then head = head .. ((phase == 'Default') and ', when ' or ', while ') .. st end
+    if type(rule.first) == 'table' then -- a group: the first of its choices that fits
+        local parts = {}
+        for i, m in ipairs(rule.first) do parts[#parts + 1] = i .. ') ' .. R.Say(m, phase) end
+        return head .. ', the first that fits: ' .. table.concat(parts, '  ')
+    end
+    return head .. ': ' .. R.SayWear(rule)
 end
 
 -- One rule (or a `first` group's member): its test and what it does; nil and why when it can't be used.
