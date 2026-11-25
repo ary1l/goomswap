@@ -28,6 +28,11 @@ return {
         local out = P.Build({ engineSets = { Doomed = { Waist = { Name = 'Gishdubar Sash', AugPath = 'A' } } } })
         local e = find(out, 'Gishdubar Sash'); eq(e.AugPath, 'A'); eq(e.Quantity, nil)
     end },
+    { 'engine sets: only the pieces you own', function()
+        local out = P.Build({ engineSets = { Doomed = { Ring1 = 'Purity Ring', Waist = 'Gishdubar Sash' } },
+            owns = function(n) return n == 'Gishdubar Sash' end })
+        eq(#out, 1); eq(out[1].Name, 'Gishdubar Sash')
+    end },
     { 'engine items only when owned, once each', function()
         local items = P.Names({ 'Warp Ring', { Dark = 'Anrin Obi' }, 'Warp Ring', { ['Sparrowhawk +2'] = 'Chrono Arrow' } })
         local out = P.Build({ items = items, owns = function(n) return n ~= 'Anrin Obi' end })

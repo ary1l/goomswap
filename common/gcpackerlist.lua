@@ -3,7 +3,7 @@
 -- so at load GoomSwap adds, in memory only (the file is never written), what that misses:
 --   - char.lua's Packer (else goomswap-shared.lua's): items kept on every job, as { ['Echo Drops'] = 'stack' };
 --   - sets inside sets (Buffs = { ['Haste'] = {...} }, Buffs_Ws, Buffs_Midcast);
---   - GoomSwap's own sets (Holy_Water, Sleeping, Doomed) and char.lua's `sets`;
+--   - GoomSwap's own sets (Holy_Water, Sleeping, Doomed) and char.lua's `sets`, the pieces you own;
 --   - the items its commands and layers wear (Warp Ring, obis, Moonshade...), only the ones you own.
 -- LAC counts: a number or 'all'; 'stack' (or true) becomes the item's stack size. The larger count of two entries for
 -- the same item wins (LAC's IntegrateItems). Pure: lookups come in as functions.
@@ -117,12 +117,16 @@ function M.Build(o)
     for _, set in pairs((type(o.sets) == 'table') and o.sets or {}) do
         if type(set) == 'table' then nested(set, out, 1) end -- its own slots: LAC's scan has them
     end
-    if type(o.engineSets) == 'table' then
+    if type(o.engineSets) == 'table' then -- GoomSwap's defaults (Doomed: Purity Ring...): only what you own
+        local mine = {}
         for _, set in pairs(o.engineSets) do
             if type(set) == 'table' then
-                set_entries(set, out)
-                nested(set, out, 2)
+                set_entries(set, mine)
+                nested(set, mine, 2)
             end
+        end
+        for _, e in ipairs(mine) do
+            if (o.owns == nil) or o.owns(e.Name) then out[#out + 1] = e end
         end
     end
     local seen = {}
