@@ -773,6 +773,7 @@ profile.OnLoad = function()
         { on = 'Default', when = { buff = 'Cover' }, wear = 'Fealty', exact = true },
         { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
         { on = 'Default', when = { toggle = { kite = true } }, wear = 'kite', exact = true },
+        { on = 'Midcast', when = { familyset = false, nameset = false }, wear = 'Enmity', exact = true },
     };
     gcinclude.Initialize();
 end
@@ -823,8 +824,8 @@ profile.HandleMidcast = function()
     local spell = gData.GetAction();
     gFunc.EquipSet(sets.Midcast);
     ByName(spell.Skill); -- e.g. ['Enhancing Magic']
-    -- a set named after the spell or its family (['Cure'], ['Protect'], ['Phalanx'], ['Flash']); none: Enmity
-    if not (ByName(spell.Name) or ByName(Family(spell.Name))) then gFunc.EquipSet(sets.Enmity) end
+    -- a set named after the spell or its family (['Cure'], ['Protect'], ['Phalanx'], ['Flash']); none: Enmity (a rule)
+    if not ByName(spell.Name) then ByName(Family(spell.Name)) end
     gcinclude.CheckTH();
 end
 

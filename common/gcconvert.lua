@@ -633,6 +633,16 @@ local function negate(w)
     local k = single(w)
     if k == nil then return nil end
     local v = w[k]
+    if (k == 'any') and (type(v) == 'table') then -- not (A or B): not A and not B
+        local out = {}
+        for _, alt in ipairs(v) do
+            local n = negate(alt)
+            if n == nil then return nil end
+            out = both(out, n)
+            if out == nil then return nil end
+        end
+        return out
+    end
     local meta = R.KEY[k] or {}
     if k == 'buff' then return { nobuff = v } end
     if k == 'nobuff' then return { buff = v } end
@@ -804,6 +814,13 @@ local function call_cond(scope, e)
     if m ~= nil then
         if m.kind == 'flag' then return { [m.key] = true } end
         if m.kind == 'toggle' then return { toggle = { [TOGGLE_SHORT[m.name] or m.name] = true } } end
+    end
+    -- ByName(spell.Name) / ByName(Family(spell.Name)) in a check: whether that set exists (and it wears it, so Convert
+    -- keeps the call itself as code: see keep_of)
+    if ((p == 'gcinclude.ByName') or (p == 'ByName')) and (#e.args == 1) then
+        local m = meaning(scope, e.args[1])
+        if (m ~= nil) and (m.kind == 'field') and (m.base == 'action') and (m.field == 'Name') then return { nameset = true } end
+        if (m ~= nil) and (m.kind == 'family') then return { familyset = true } end
     end
     local asks = { -- what a few engine calls in a check do, plainly
         ['gcinclude.ByName'] = 'Its check puts on a set and asks whether one by that name exists (ByName). A rule '
@@ -1137,8 +1154,9 @@ end
 -- Lines every GoomSwap job file has, which stay as they are (they are GoomSwap's steps, not your own logic).
 C.STANDARD = {
     { 'gcinclude%.EquipMode%(', 'a standard step: your idle / engaged / resting / moving sets' },
-    { 'not%s+ByName%(', "a standard step: the action's own set, else its family's (Cure IV: Cure)" },
-    { 'not%s+gcinclude%.ByName%(', "a standard step: the action's own set, else its family's (Cure IV: Cure)" },
+    -- exactly `if not ByName(x) then ByName(y) end` (gcinclude.ByName too): nothing else in it
+    { '^if%s+not%s+[%w_%.]*ByName%s*%b()%s*then%s+[%w_%.]*ByName%s*%b()%s*;?%s*end$',
+        "a standard step: the action's own set, else its family's (Cure IV: Cure)" },
     { 'CheckWsBailout', 'a standard step: a weapon skill that would fail is stopped' },
     { 'CheckBlockedAmmo', 'a standard step: a shot or weapon skill that would use precious ammo is stopped' },
 }
@@ -1355,6 +1373,56 @@ end
 -- where rules go by themselves. Any other run leaves one line where it was, `gcinclude.RulesAt('<Phase> <n>')`, and
 -- its rules carry at = that spot, so they go on exactly where the code did (before a named set, after an early
 -- return...).
+-- An if whose check calls ByName (it puts on the set it finds, and says whether there was one): the calls stay as
+-- code, in the same order (`not (ByName(a) or ByName(b))` keeps `if not ByName(a) then ByName(b) end`), and the
+-- rest becomes rules on whether those sets exist. nil: no ByName in its checks; false and why: a shape it can't keep.
+local function is_byname(scope, e)
+    if (type(e) ~= 'table') or (e.k ~= 'call') or (e.method ~= nil) then return false end
+    local p = call_path(scope, e)
+    return (p == 'gcinclude.ByName') or (p == 'ByName')
+end
+local function any_byname(scope, node)
+    if type(node) ~= 'table' then return false end
+    if is_byname(scope, node) then return true end
+    for _, v in pairs(node) do
+        if (type(v) == 'table') and any_byname(scope, v) then return true end
+    end
+    return false
+end
+local function byname_chain(scope, e, out) -- ByName calls joined by `or`, under `not` / parentheses only
+    e = unparen(e)
+    if e == nil then return nil end
+    if (e.k == 'un') and (e.op == 'not') then return byname_chain(scope, e.a, out) end
+    if (e.k == 'bin') and (e.op == 'or') then
+        if byname_chain(scope, e.a, out) == nil then return nil end
+        return byname_chain(scope, e.b, out)
+    end
+    if is_byname(scope, e) then
+        out[#out + 1] = e
+        return out
+    end
+    return nil
+end
+local function keep_of(scope, text, st)
+    local found = false
+    for _, br in ipairs(st.branches) do if any_byname(scope, br.cond) then found = true end end
+    if not found then return nil end
+    if (#st.branches ~= 1) or (st.elseBody ~= nil) then
+        return false, 'Its check puts on a set (ByName) in an if / elseif chain. Convert can split that only from a '
+            .. 'plain if.'
+    end
+    local calls = byname_chain(scope, st.branches[1].cond, {})
+    if calls == nil then
+        return false, 'Its check mixes a set lookup (ByName) with other checks. Convert can split it only when the '
+            .. 'check is just ByName calls joined by "or".'
+    end
+    local function src(c) return string.sub(text, c.s, c.e) end
+    local keep = src(calls[#calls])
+    if #calls == 1 then return keep .. ';' end
+    for i = #calls - 1, 1, -1 do keep = 'if not ' .. src(calls[i]) .. ' then ' .. keep .. ' end' end
+    return keep
+end
+
 -- opts (from gcconvertcheck): free = { [line of a run's first if] = true }: those runs go where rules go by
 -- themselves (the check found the same gear); skip = { [handler] = why }: that handler's ifs stay code.
 function C.Plan(text, opts)
@@ -1414,9 +1482,14 @@ function C.Plan(text, opts)
                         if (rules ~= nil) and (opts.skip ~= nil) and (opts.skip[name] ~= nil) then
                             rules, why = nil, opts.skip[name]
                         end
+                        local keep, keepFailed = nil, false
+                        if rules ~= nil then -- a check that puts on a set: that part stays code (keep), the rest rules
+                            local k, kwhy = keep_of(hs, text, s)
+                            if k == false then rules, why, keepFailed = nil, kwhy, true else keep = k end
+                        end
                         local item = { line = line_of(text, s.s), s = s.s, e = s.e, ok = (rules ~= nil), why = why,
-                            rules = rules }
-                        if rules == nil then -- GoomSwap's own steps every job file has: stay, nothing to fix
+                            rules = rules, keep = keep }
+                        if (rules == nil) and not keepFailed then -- GoomSwap's own steps every job file has: stay
                             local code = string.sub(text, s.s, s.e)
                             for _, std in ipairs(C.STANDARD) do
                                 if string.find(code, std[1]) then item.standard, item.why = true, std[2] break end
@@ -1473,8 +1546,10 @@ function C.Plan(text, opts)
                     if movable and (opts.free ~= nil) and opts.free[run.items[1].line] then run.free = true end
                 end
                 local gone = {} -- this handler's removed ranges, for the unused locals below
-                for _, run in ipairs(runs) do
-                    for _, item in ipairs(run.items) do gone[#gone + 1] = { item.s, item.e } end
+                for _, run in ipairs(runs) do -- (an if that keeps code still reads its locals)
+                    for _, item in ipairs(run.items) do
+                        if item.keep == nil then gone[#gone + 1] = { item.s, item.e } end
+                    end
                 end
                 local n = 0
                 for _, run in ipairs(runs) do
@@ -1495,12 +1570,15 @@ function C.Plan(text, opts)
                             plan.rules[#plan.rules + 1] = r
                         end
                         local sp = C.Removal(text, item.s, item.e)
+                        local ls = item.s
+                        while (ls > 1) and (string.sub(text, ls - 1, ls - 1) ~= '\n') do ls = ls - 1 end
+                        local ind = string.match(string.sub(text, ls, item.s - 1), '^[ \t]*$') and string.sub(text, ls, item.s - 1) or ''
                         if (k == 1) and (spot ~= nil) then -- the spot's line, where the first if was
-                            local ls = item.s
-                            while (ls > 1) and (string.sub(text, ls - 1, ls - 1) ~= '\n') do ls = ls - 1 end
-                            local ind = string.match(string.sub(text, ls, item.s - 1), '^[ \t]*$') and string.sub(text, ls, item.s - 1) or ''
                             local call = "gcinclude.RulesAt('" .. spot .. "');"
                             if sp[1] == ls then sp[3] = ind .. call .. '\n' else sp[3] = call .. ' ' end
+                        end
+                        if item.keep ~= nil then -- the set lookup stays, just before the rules' spot
+                            if sp[1] == ls then sp[3] = ind .. item.keep .. '\n' .. sp[3] else sp[3] = item.keep .. ' ' .. sp[3] end
                         end
                         plan.removals[#plan.removals + 1] = { item.s, item.e }
                         plan.splices[#plan.splices + 1] = sp

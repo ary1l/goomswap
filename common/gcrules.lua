@@ -108,6 +108,12 @@ R.KEYS = {
     { key = 'burst', label = 'Magic burst', kind = 'bool', phases = SPELL,
         hint = "The spell lands in a live skillchain of its element (GoomSwap's burst check)." },
     { key = 'dualwield', label = 'Can dual wield', kind = 'bool', hint = 'Your job and sub job can dual wield now.' },
+    { key = 'nameset', label = 'Has a set named after it', kind = 'bool',
+        phases = { Precast = true, Midcast = true, Ability = true, Weaponskill = true, Item = true },
+        hint = 'Your job file has a set named after the spell, ability or weapon skill (Flash, Provoke), checked as it '
+            .. 'happens: a set you add later counts.' },
+    { key = 'familyset', label = 'Has a set for its family', kind = 'bool', phases = { Precast = true, Midcast = true },
+        hint = "Your job file has a set named after the spell's family (Cure for Cure IV), checked as it happens." },
 }
 -- A condition's name in the builder, for the moment it is checked (the action's name: Spell, Ability...).
 local NAME_LABEL = { Precast = 'Spell (exact name)', Midcast = 'Spell (exact name)', Ability = 'Ability',
@@ -285,6 +291,19 @@ function TEST.toggle(c, v)
         if (c.api.toggle(R.TOGGLES[name] or name) == true) ~= (want == true) then return false end
     end
     return true
+end
+-- A set in the job file by the action's name / its family's (gcinclude.FindSet): what ByName(spell.Name) looks for.
+local function has_set(c, name)
+    return (type(name) == 'string') and (c.api.hasSet ~= nil) and (c.api.hasSet(name) == true)
+end
+function TEST.nameset(c, v)
+    local a = c.action()
+    return has_set(c, a and a.Name) == (v == true)
+end
+function TEST.familyset(c, v)
+    local a = c.action()
+    local f = ((a ~= nil) and (type(a.Name) == 'string') and (c.api.family ~= nil)) and c.api.family(a.Name) or nil
+    return has_set(c, f) == (v == true)
 end
 function TEST.burst(c, v) return (c.api.burst ~= nil) and ((c.api.burst() == true) == (v == true)) end
 function TEST.dualwield(c, v) return (c.api.dualWield ~= nil) and ((c.api.dualWield() == true) == (v == true)) end
@@ -502,6 +521,8 @@ local SAY = {
     petname = function(v) return text_say(v, function(w, n) return (n and 'pet not ' or 'pet ') .. w end) end,
     petstatus = function(v) return text_say(v, function(w, n) return (n and 'pet not ' or 'pet ') .. string.lower(w) end) end,
     burst = function(v) return v and 'a magic burst' or 'not a magic burst' end,
+    nameset = function(v) return v and 'a set named after it' or 'no set named after it' end,
+    familyset = function(v) return v and 'a set for its family' or 'no set for its family' end,
     dualwield = function(v) return v and 'you can dual wield' or 'you cannot dual wield' end,
 }
 function R.SayWhen(when)
@@ -509,7 +530,7 @@ function R.SayWhen(when)
     local order = {}
     for i, k in ipairs({ 'name', 'family', 'skill', 'type', 'element', 'target', 'targethpp', 'distance', 'burst', 'buff',
         'allbuffs', 'nobuff', 'status', 'hpp', 'mpp', 'tp', 'moving', 'combat', 'mode', 'toggle', 'pet', 'pethpp', 'pettp',
-        'petname', 'petstatus', 'day', 'weather', 'zone', 'time', 'sub', 'level', 'dualwield', 'any' }) do order[k] = i end
+        'petname', 'petstatus', 'day', 'weather', 'zone', 'time', 'sub', 'level', 'dualwield', 'nameset', 'familyset', 'any' }) do order[k] = i end
     local keys = {}
     for k in pairs(when) do keys[#keys + 1] = k end
     table.sort(keys, function(a, b) return (order[a] or 999) < (order[b] or 999) end)
@@ -623,6 +644,8 @@ local STATE = {
         return either_of(v) .. ' is not up'
     end,
     burst = function(v) return v and 'it is a magic burst' or 'it is not a magic burst' end,
+    nameset = function(v) return v and 'it has a set named after it' or 'it has no set named after it' end,
+    familyset = function(v) return v and 'it has a set for its family' or 'it has no set for its family' end,
     moving = function(v) return v and 'you are moving' or 'you are standing still' end,
     combat = function(v) return v and 'you are in combat' or 'you are out of combat' end,
 }
@@ -631,13 +654,19 @@ local function state_of(when, skipStatus)
     local order = {}
     for i, k in ipairs({ 'targethpp', 'distance', 'burst', 'buff', 'allbuffs', 'nobuff', 'status', 'hpp', 'mpp', 'tp',
         'moving', 'combat', 'mode', 'toggle', 'pet', 'pethpp', 'pettp', 'petname', 'petstatus', 'day', 'weather', 'zone',
-        'time', 'sub', 'level', 'dualwield', 'any' }) do order[k] = i end
+        'time', 'sub', 'level', 'dualwield', 'nameset', 'familyset', 'any' }) do order[k] = i end
     local keys = {}
     for k in pairs(when) do
         if not ACTION_KEYS[k] and not ((k == 'status') and skipStatus) then keys[#keys + 1] = k end
     end
     table.sort(keys, function(a, b) return (order[a] or 999) < (order[b] or 999) end)
     local out = {}
+    if (when.nameset == false) and (when.familyset == false) then -- the usual fallback, in one phrase
+        out[#out + 1] = 'it has no set of its own (by name or family)'
+        local k2 = {}
+        for _, k in ipairs(keys) do if (k ~= 'nameset') and (k ~= 'familyset') then k2[#k2 + 1] = k end end
+        keys = k2
+    end
     for _, k in ipairs(keys) do
         local v = when[k]
         if k == 'any' then

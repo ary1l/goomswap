@@ -903,6 +903,7 @@ local rulesApi = {
     dualWield = function() return gcinclude.CanDualWield() end,
     inCombat = function() return gcinclude.InCombat(gData.GetPlayer()) end,
     family = function(n) return gcinclude.Family(n) end,
+    hasSet = function(n) return gcinclude.FindSet(n) ~= nil end, -- 'has a set named after it / its family'
     wear = function(name, exact, entry) ruleWear(name, exact, entry) end,
     equip = function(slot, item, entry) ruleEquip(slot, item, entry) end,
     cancel = function(entry)

@@ -131,6 +131,7 @@ local function world(state, record, engine)
         buff = function(b) return state.buffs[b] or 0 end, cycle = function(n) return state.cycles[n] or 'None' end,
         toggle = function(n) return state.toggles[n] == true end, burst = function() return state.burst end,
         dualWield = function() return state.dw end, inCombat = function() return false end, family = gc.Family,
+        hasSet = function(n) return find(n) ~= nil end,
         wear = function(name, exact) if exact then wear(find(name)) else byname(name) end end,
         equip = function(slot, item) W.gFunc.Equip(slot, item) end,
         cancel = function() W.cancelled = true end,

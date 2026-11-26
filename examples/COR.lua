@@ -446,6 +446,8 @@ profile.OnLoad = function()
         } },
         { on = 'Midshot', when = { buff = 'Triple Shot' }, wear = 'TripleShot', exact = true },
         { on = 'Midshot', when = { buff = 'Triple Shot', mode = { mset = 'Acc' } }, wear = 'Midshot_Acc', exact = true },
+        { on = 'Ability', at = 'Ability 2', when = { any = { { name = { has = 'Roll' } }, { name = 'Double-Up' } } }, wear = 'Dt', exact = true },
+        { on = 'Ability', at = 'Ability 2', when = { name = { has = 'Roll', isnt = "Bolter's Roll" } }, wear = 'Phantom Roll' },
     };
     gcinclude.Initialize();
 
@@ -479,8 +481,7 @@ end
 profile.HandleAbility = function()
     local ability = gData.GetAction();
     local roll = (string.find(ability.Name, 'Roll', 1, true) ~= nil);
-    if roll or (ability.Name == 'Double-Up') then gFunc.EquipSet(sets.Dt) end -- rolls and Double-Up: DT under the roll gear
-    if roll and (ability.Name ~= 'Bolter\'s Roll') then ByName('Phantom Roll') end -- every roll but Bolter's
+    gcinclude.RulesAt('Ability 2');
     if roll then gcinclude.DoCORmsg(ability.Name) end
     gcinclude.RulesAt('Ability 1');
     ByName(ability.Name); -- a set named after the ability, e.g. ['Bolter\'s Roll'], ['Wild Card']

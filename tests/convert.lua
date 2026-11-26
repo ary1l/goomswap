@@ -84,6 +84,42 @@ return profile;
         eq(plan.handlers[1].items[1].ok, false)
         eq(string.find(plan.handlers[1].items[2].why, 'asks MyThing()', 1, true) ~= nil, true, plan.handlers[1].items[2].why)
     end },
+    { 'a set lookup in a check: the lookup stays, the rest becomes a rule', function()
+        local text = [[
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+local ByName = gcinclude.ByName;
+local Family = gcinclude.Family;
+profile.HandleMidcast = function()
+    local spell = gData.GetAction();
+    if not (ByName(spell.Name) or ByName(Family(spell.Name))) then gFunc.EquipSet(sets.Enmity) end
+end
+return profile;
+]]
+        local plan = assert(C.Plan(text))
+        eq(#plan.rules, 1)
+        local r = plan.rules[1]
+        eq(r.wear, 'Enmity'); eq(r.when.nameset, false); eq(r.when.familyset, false)
+        local out = F.Apply(text, plan.splices)
+        eq(string.find(out, 'if not ByName(spell.Name) then ByName(Family(spell.Name)) end', 1, true) ~= nil, true, out)
+        eq(string.find(out, 'sets.Enmity', 1, true), nil, out)
+        eq(string.find(out, 'local spell = gData.GetAction();', 1, true) ~= nil, true, 'its local stays: ' .. out)
+    end },
+    { 'a set lookup mixed with other checks stays code', function()
+        local text = [[
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+local ByName = gcinclude.ByName;
+profile.HandleMidcast = function()
+    local spell = gData.GetAction();
+    if not ByName(spell.Name) and (gData.GetPlayer().MPP < 50) then gFunc.EquipSet(sets.Enmity) end
+end
+return profile;
+]]
+        local plan = assert(C.Plan(text))
+        eq(#plan.rules, 0)
+        eq(string.find(plan.handlers[1].items[1].why, 'mixes a set lookup', 1, true) ~= nil, true, plan.handlers[1].items[1].why)
+    end },
     { 'a branch that is not gear says so plainly', function()
         local text = [[
 local profile = {};
