@@ -42,7 +42,7 @@ of your job file's `if`s Convert can turn into rules (**Rules  +5 to convert**).
 | Your HP % / MP % / TP | a number: <, <=, >, >=, =, not | `HPP` `MPP` `TP` |
 | Moving, In combat | yes / no | `IsMoving`; GoomSwap's combat window |
 | Sub job, Your level (synced) | WAR... / a number | `SubJob` `MainJobSync` |
-| Action name | is, is not, has, starts with, ends with | `GetAction().Name` (Pet phase: the pet's action) |
+| Action name | is, is not, has, has all of, starts with, ends with | `GetAction().Name` (Pet phase: the pet's action) |
 | Spell family | Cure for Cure IV | GoomSwap's `Family` |
 | Spell skill, Spell element, Action type | the game's names; element also `weather` / `day` (it matches today's) | `Skill` `Element` `Type` |
 | Target | me, other, PC, NPC, Party, Alliance, Monster | `GetActionTarget()` |
@@ -57,7 +57,8 @@ of your job file's `if`s Convert can turn into rules (**Rules  +5 to convert**).
 | In GoomSwap's spell list | `BluMagPhysical`, `BluMagDebuff`, `BluMagStun`, `BluMagBuff`, `BluMagSkill`, `BluMagCure`, `BluMagEnmity`, `BluMagTH` (is / is not) | `gcinclude.<list>:contains(name)`, the engine's own lists |
 | Has a set named after it, Has a set for its family | yes / no: a set in your job file named after the spell / ability / weapon skill (`Flash`), or its family (`Cure` for Cure IV), checked as it happens | GoomSwap's `FindSet` (what `ByName` looks for) |
 
-Text matches as the game writes it: **has**, **starts with** and **ends with** count upper and lower case;
+Text matches as the game writes it: **has**, **has all of**, **starts with** and **ends with** count upper and lower case;
+**has** is any of its texts, **has all of** every one (`helix, Nocto`: a name with both);
 **matches (Lua pattern)** reads the text as `string.find` does (`Evryone. Grudge`: the `.` is any character)
 (`helix` finds Pyrohelix II, not Helix). A value that isn't there (no target, no pet) fails a condition and passes
 its **not**.
@@ -131,7 +132,7 @@ What converts:
 - **Stays code** says, for each, what the line does and why a rule can't do it (*Not gear: it prints the roll's
   lucky and unlucky numbers to chat. A rule only puts on gear or cancels the action.*); it keeps working as code.
   Stays code: names built in code (`'Tank_' .. tank`), engine calls (`CheckBlockedAmmo`), pet action branches, math
-  on counts, two `has` that must both hold. `gData.GetBuffCount` becomes GoomSwap's buff check, which also counts a
+  on counts. Two `has` that must both hold (`helix`, then inside it `Nocto`) become **has all of**. `gData.GetBuffCount` becomes GoomSwap's buff check, which also counts a
   buff that just landed.
 
 `tests/convert_sim.lua` runs the same check (`common/gcconvertcheck.lua`) on every example and on the examples as

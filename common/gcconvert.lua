@@ -594,8 +594,20 @@ local function both(a, b)
                 local m = {}
                 for f, x in pairs(cur) do m[f] = x end
                 for f, x in pairs(v) do
-                    if m[f] ~= nil then return nil, twice(k) end
-                    m[f] = x
+                    if (f == 'has') and (m.has ~= nil) and ((type(x) == 'string') or (type(m.has) == 'string')) then
+                        -- 'helix', then inside it 'Nocto': the name has both (hasall); a list stays has (any of)
+                        local one, keep = x, m.has
+                        if type(x) ~= 'string' then one, keep = m.has, x end
+                        local all = {}
+                        for _, y in ipairs(m.hasall or {}) do all[#all + 1] = y end
+                        if type(keep) == 'string' then all[#all + 1], keep = keep, nil end
+                        all[#all + 1] = one
+                        m.hasall, m.has = all, keep
+                    elseif m[f] ~= nil then
+                        return nil, twice(k)
+                    else
+                        m[f] = x
+                    end
                 end
                 out[k] = m
             elseif (type(cur) ~= 'table' or cur[1] ~= nil) and (type(v) == 'table') and (v[1] == nil) and (v.is == nil) then
@@ -1728,26 +1740,30 @@ function C.Plan(text, opts)
                 end
                 -- a local only the converted ifs read (local power = BuffCount(...) + ...) goes with them
                 if #gone > 0 then
-                    local fs, fe = st.exprs[1].s, st.exprs[1].e
-                    local function kept(a, b) -- the handler's text from a to b, the removed ranges blanked
-                        local t = string.sub(text, a, b)
+                    local function removed(at)
                         for _, g in ipairs(gone) do
-                            if (g[1] >= a) and (g[2] <= b) then
-                                t = string.sub(t, 1, g[1] - a) .. string.rep(' ', g[2] - g[1] + 1) .. string.sub(t, g[2] - a + 2)
-                            end
+                            if (at >= g[1]) and (at <= g[2]) then return true end
                         end
-                        return t
+                        return false
+                    end
+                    -- the code's own uses of nm after `from`, outside the removed ranges (comments and texts aren't uses)
+                    local function read_after(node, nm, from)
+                        if type(node) ~= 'table' then return false end
+                        if (node.k == 'name') and (node.v == nm) and (type(node.s) == 'number') and (node.s > from)
+                            and not removed(node.s) then
+                            return true
+                        end
+                        for _, v in pairs(node) do
+                            if (type(v) == 'table') and read_after(v, nm, from) then return true end
+                        end
+                        return false
                     end
                     for _, s in ipairs(body) do
                         if (s.k == 'local') and (#s.exprs == #s.names) then
                             local pure, used = true, false
                             for j, nm in ipairs(s.names) do
                                 if (meaning(hs, s.exprs[j]) == nil) and (cond_of(hs, s.exprs[j]) == nil) then pure = false end
-                                local before = kept(fs, s.s - 1)
-                                local after = kept(s.e + 1, fe)
-                                local pat = '%f[%w_]' .. nm .. '%f[^%w_]'
-                                if string.find(after, pat) then used = true end
-                                local _ = before
+                                if read_after(body, nm, s.e) then used = true end
                             end
                             if pure and not used then
                                 plan.splices[#plan.splices + 1] = C.Removal(text, s.s, s.e)

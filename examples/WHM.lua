@@ -445,7 +445,6 @@ end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
-    local target = gData.GetActionTarget() or {}; -- {} when LAC has no entity for the target: no Self_ sets
     local family = Family(spell.Name); -- 'Cure IV' -> 'Cure'
     gFunc.EquipSet(sets.Midcast);
     gcinclude.RulesAt('Midcast 1');

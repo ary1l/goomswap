@@ -19,7 +19,7 @@
 -- Convert where `if`s were), so the rule goes on exactly there; layer is then not used. stop: cancel the action (Precast, Ability, Weaponskill, Item, Preshot only: LAC's
 -- CancelAction). off: kept, not used. note: your words, shown in /gcedit.
 --
--- Values: a text key takes 'Exact', { 'A', 'B' } (any of them), or { is = .., isnt = .., has = .., start = ..,
+-- Values: a text key takes 'Exact', { 'A', 'B' } (any of them), or { is = .., isnt = .., has = .., hasall = .., start = ..,
 -- ends = .. } (each a text or a list; has/start/ends match case as written, like string.find). A number key takes
 -- { lt = , le = , gt = , ge = , eq = , ne = } (all must hold). A yes/no key takes true or false.
 -- Pure: game data comes in through an api table (gcinclude.RulesApi), so tests run without the game.
@@ -171,6 +171,12 @@ function R.MatchText(actual, spec)
             end
         end
         if not hit then return false end
+    end
+    if spec.hasall ~= nil then -- every one of these in it (helix and Nocto)
+        if s == nil then return false end
+        for _, v in ipairs(list_of(spec.hasall)) do
+            if (type(v) ~= 'string') or not plain_find(s, v) then return false end
+        end
     end
     for _, field in ipairs({ 'has', 'start', 'ends' }) do
         if spec[field] ~= nil then
@@ -398,15 +404,15 @@ local function value_words(v)
     for _, op in ipairs({ 'lt', 'le', 'gt', 'ge', 'eq', 'ne' }) do
         if v[op] ~= nil then out[#out + 1] = OPS[op] .. ' ' .. tostring(v[op]) end
     end
-    for _, f in ipairs({ 'is', 'isnt', 'has', 'start', 'ends' }) do
+    for _, f in ipairs({ 'is', 'isnt', 'has', 'hasall', 'start', 'ends' }) do
         if v[f] ~= nil then
-            local words = { is = 'is', isnt = 'is not', has = 'has', start = 'starts', ends = 'ends' }
+            local words = { is = 'is', isnt = 'is not', has = 'has', hasall = 'has all of', start = 'starts', ends = 'ends' }
             out[#out + 1] = words[f] .. ' "' .. value_words(v[f]) .. '"'
         end
     end
     local keys = {}
     for k in pairs(v) do
-        if (type(k) == 'string') and not OPS[k] and not ({ is = 1, isnt = 1, has = 1, start = 1, ends = 1 })[k] then
+        if (type(k) == 'string') and not OPS[k] and not ({ is = 1, isnt = 1, has = 1, hasall = 1, start = 1, ends = 1 })[k] then
             keys[#keys + 1] = k
         end
     end
@@ -490,10 +496,10 @@ local function either_of(v, sep)
     return table.concat(out, ', ', 1, #out - 1) .. ' ' .. (sep or 'or') .. ' ' .. out[#out]
 end
 -- Texts each in quotes: '"A"', '"A" or "B"', '"A", "B" or "C"'.
-local function quoted(v)
+local function quoted(v, sep)
     local list = {}
     for _, x in ipairs((type(v) == 'table') and v or { v }) do list[#list + 1] = '"' .. tostring(x) .. '"' end
-    return either_of(list)
+    return either_of(list, sep)
 end
 local NUM_SAY = { lt = 'under', le = 'at most', gt = 'over', ge = 'at least', eq = 'exactly', ne = 'not' }
 local function num_say(what, v, unit)
@@ -528,6 +534,7 @@ local function text_say(v, fmt)
     if v.is ~= nil then out[#out + 1] = fmt(either_of(v.is), false) end
     if v.isnt ~= nil then out[#out + 1] = fmt(either_of(v.isnt), true) end
     if v.has ~= nil then out[#out + 1] = 'its name has ' .. quoted(v.has) end
+    if v.hasall ~= nil then out[#out + 1] = 'its name has ' .. quoted(v.hasall, 'and') end
     if v.start ~= nil then out[#out + 1] = 'its name starts with ' .. quoted(v.start) end
     if v.ends ~= nil then out[#out + 1] = 'its name ends with ' .. quoted(v.ends) end
     if v.pattern ~= nil then out[#out + 1] = 'its name matches the pattern ' .. quoted(v.pattern) end
@@ -670,6 +677,9 @@ local function what_of(when, phase)
             local parts = {}
             if name.is ~= nil then parts[#parts + 1] = either_of(name.is) end
             if name.has ~= nil then parts[#parts + 1] = article(bare) .. ' with ' .. quoted(name.has) .. ' in its name' end
+            if name.hasall ~= nil then
+                parts[#parts + 1] = article(bare) .. ' with ' .. quoted(name.hasall, 'and') .. ' in its name'
+            end
             if name.start ~= nil then parts[#parts + 1] = article(bare) .. ' starting ' .. quoted(name.start) end
             if name.ends ~= nil then parts[#parts + 1] = article(bare) .. ' ending ' .. quoted(name.ends) end
             if name.pattern ~= nil then
@@ -1013,7 +1023,7 @@ end
 -- == The builder's rows (gceditrules): a `when` as { key, op, value, sub } rows and back. A text key's ops are is,
 -- isnt, has, start, ends; a number's lt, le, gt, ge, eq, ne; yes/no and list keys take 'is'; mode and toggle rows
 -- name their cycle in sub. any: the rows are alternatives (when = { any = { {...}, {...} } }). ==
-local TEXT_OPS = { 'is', 'isnt', 'has', 'start', 'ends', 'pattern' }
+local TEXT_OPS = { 'is', 'isnt', 'has', 'hasall', 'start', 'ends', 'pattern' }
 local NUM_OPS = { 'lt', 'le', 'gt', 'ge', 'eq', 'ne' }
 R.TEXT_OPS, R.NUM_OPS = TEXT_OPS, NUM_OPS
 local function key_rows(k, v, out)

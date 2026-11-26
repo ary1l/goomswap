@@ -235,6 +235,39 @@ return profile;
             eq(R.Holds(plan.rules[2], 'Default', api) == true, not v[2], 'day at ' .. v[1])
         end
     end },
+    { 'a name checked inside a name check: the name has both (hasall); a local only its comment names goes', function()
+        local text = [[
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+profile.HandleMidcast = function()
+    local spell = gData.GetAction();
+    local target = gData.GetActionTarget() or {}; -- {} when LAC has no target
+    local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
+    if (spell.Skill == 'Elemental Magic') then
+        if string.contains(spell.Name, 'helix') then
+            gFunc.EquipSet(sets.Helix);
+            if string.contains(spell.Name, 'Nocto') then gFunc.Equip('Head', 'Pixie Hairpin +1') end
+        end
+        if (target.Name == me) then gFunc.EquipSet(sets.Self) end
+    end
+end
+return profile;
+]]
+        local plan = assert(C.Plan(text))
+        eq(#plan.rules, 3)
+        eq(plan.rules[2].when.name.hasall[1], 'helix'); eq(plan.rules[2].when.name.hasall[2], 'Nocto')
+        eq(plan.rules[2].when.name.has, nil)
+        eq(R.Say(plan.rules[2]), 'When you cast a spell with "helix" and "Nocto" in its name (Elemental Magic): put Pixie '
+            .. 'Hairpin +1 in Head')
+        eq(R.MatchText('Noctohelix II', plan.rules[2].when.name), true)
+        eq(R.MatchText('Geohelix', plan.rules[2].when.name), false)
+        eq(R.MatchText('noctohelix', plan.rules[2].when.name), false) -- case as string.contains reads it
+        local out = F.Apply(text, plan.splices)
+        eq(string.find(out, 'local target', 1, true), nil, out)
+        eq(string.find(out, 'local me', 1, true), nil, out)
+        eq(R.MatchText('Fire', { has = { 'Fi', 'Bl' }, hasall = { 'r', 'e' } }), true) -- any of has, all of hasall
+        eq(R.MatchText('Fire', { has = { 'Fi', 'Bl' }, hasall = { 'r', 'z' } }), false)
+    end },
     { 'a branch that is not gear says so plainly', function()
         local text = [[
 local profile = {};

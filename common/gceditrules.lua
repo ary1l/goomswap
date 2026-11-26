@@ -33,7 +33,7 @@ return function(o)
     local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip)
     local M = { R = R }
 
-    local OP_WORDS = { is = 'is', isnt = 'is not', has = 'has', start = 'starts with', ends = 'ends with',
+    local OP_WORDS = { is = 'is', isnt = 'is not', has = 'has', hasall = 'has all of', start = 'starts with', ends = 'ends with',
         pattern = 'matches (Lua pattern)',
         lt = '<', le = '<=', gt = '>', ge = '>=', eq = '=', ne = 'not' }
     local CYCLE_NAMES = { 'wm', 'mset', 'nukeset', 'idleset', 'wsset', 'tankset', 'weapon', 'pupmode', 'hoxne', 'mw',
@@ -601,7 +601,7 @@ return function(o)
                 if op ~= nil then r.op = op end
             elseif meta.kind ~= 'list' then
                 local op = W.Pick(id .. '_op', OP_WORDS[r.op or 'is'], { { 'is', 'is' }, { 'isnt', 'is not' },
-                    { 'has', 'has' }, { 'start', 'starts with' }, { 'ends', 'ends with' },
+                    { 'has', 'has' }, { 'hasall', 'has all of' }, { 'start', 'starts with' }, { 'ends', 'ends with' },
                     { 'pattern', 'matches (Lua pattern)' } }, 120)
                 if op ~= nil then r.op = op end
             end
