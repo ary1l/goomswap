@@ -106,6 +106,10 @@ What converts:
   same read LuAshitacast's `Area` is) when the check searches part of its name; GoomSwap's spell lists
   (`gcinclude.BluMagPhysical:contains(spell.Name)`); a set picked by a check (`gFunc.EquipSet(c and sets.A or sets.B)`
   becomes two rules); a Lua pattern (`string.match(spell.Name, 'Evryone. Grudge')`), kept as a pattern.
+- Your file's own function in a check, when it takes no arguments and only sets locals before `return <check>`
+  (`local function Night() local t = gData.GetEnvironment().Time; return (t >= 17) or (t < 7); end`: *Vana'diel time
+  17:00 or later, or before 7:00*). LuAshitacast's `Time` is the hour plus minutes / 100, so 17.30 is 17:30.
+- `gcinclude.IsWeaponValue(gcdisplay.GetCycle('Weapons'))`: *A /wm weapon is picked*.
 - A check that looks a set up, `if not (ByName(spell.Name) or ByName(Family(spell.Name))) then
   gFunc.EquipSet(sets.Enmity) end`: the lookup stays code (`if not ByName(spell.Name) then ByName(Family(spell.Name))
   end`, it still puts that set on) and the rest becomes a rule, *When you cast a spell, while it has no set of its own

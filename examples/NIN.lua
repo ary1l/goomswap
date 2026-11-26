@@ -355,6 +355,8 @@ profile.OnLoad = function()
         { on = 'Precast', when = { family = 'Utsusemi' }, wear = 'Precast_Utsusemi', exact = true },
         { on = 'Midcast', at = 'Midcast 1', when = { family = { 'Katon', 'Hyoton', 'Huton', 'Doton', 'Raiton', 'Suiton' } }, wear = 'Nuke', exact = true },
         { on = 'Midcast', at = 'Midcast 1', when = { buff = 'Futae', family = { 'Katon', 'Hyoton', 'Huton', 'Doton', 'Raiton', 'Suiton' } }, wear = 'Nuke_Futae', exact = true },
+        { on = 'Default', when = { any = { { time = { ge = 17 } }, { time = { lt = 7 } } }, toggle = { kite = true } }, wear = 'Movement_Night', exact = true },
+        { on = 'Default', when = { time = { ge = 7, lt = 17 }, toggle = { kite = true } }, wear = 'Movement', exact = true },
     };
     gcinclude.Initialize();
 end
@@ -382,7 +384,6 @@ profile.HandleDefault = function()
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
     gcinclude.RulesAt('Default 1');
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(Night() and sets.Movement_Night or sets.Movement) end
     gcinclude.CheckDefault();
 end
 

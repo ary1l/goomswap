@@ -200,6 +200,37 @@ return profile;
         eq(string.find(items[1].why, 'put together while it runs', 1, true) ~= nil, true, items[1].why)
         eq(string.find(items[2].why, 'sets.Buffs.Boost, a set inside another table', 1, true) ~= nil, true, items[2].why)
     end },
+    { "a no-argument function of the file's own reads through (Night: Vana'diel time, LAC's hour + minute / 100)", function()
+        local text = [[
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+local function Night()
+    local t = gData.GetEnvironment().Time;
+    return (t >= 17) or (t < 7);
+end
+local function Odd(x) return x == 1 end
+profile.HandleDefault = function()
+    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(Night() and sets.Movement_Night or sets.Movement) end
+    if Odd(1) then gFunc.EquipSet(sets.Odd) end
+    gcinclude.CheckDefault();
+end
+return profile;
+]]
+        local plan = assert(C.Plan(text))
+        eq(#plan.rules, 2)
+        eq(plan.rules[1].when.any[1].time.ge, 17); eq(plan.rules[1].when.any[2].time.lt, 7)
+        eq(plan.rules[2].when.time.ge, 7); eq(plan.rules[2].when.time.lt, 17)
+        eq(R.Say(plan.rules[2]), "While not acting (idle, fighting, resting), when /kite is on and Vana'diel time 7:00 or later "
+            .. 'and before 17:00: put on Movement')
+        eq(plan.handlers[1].items[2].ok, false) -- Odd(x) takes an argument: stays code
+        local t
+        local api = { toggle = function() return true end, env = function() return { Time = t } end }
+        for _, v in ipairs({ { 6.59, true }, { 7, false }, { 16.59, false }, { 17, true }, { 23.59, true }, { 0, true } }) do
+            t = v[1]
+            eq(R.Holds(plan.rules[1], 'Default', api) == true, v[2], 'night at ' .. v[1])
+            eq(R.Holds(plan.rules[2], 'Default', api) == true, not v[2], 'day at ' .. v[1])
+        end
+    end },
     { 'a branch that is not gear says so plainly', function()
         local text = [[
 local profile = {};

@@ -102,11 +102,15 @@ local function parser(toks)
 
     local function funcbody(start)
         expect('(')
-        while not is(')') do next_tok() end
+        local params = 0
+        while not is(')') do
+            local t = next_tok()
+            if (t.t == 'name') or (t.v == '...') then params = params + 1 end
+        end
         expect(')')
         local body = block()
         local fin = expect('end')
-        return { k = 'func', body = body, s = start, e = fin.e }
+        return { k = 'func', body = body, params = params, s = start, e = fin.e }
     end
     local function args()
         local t = peek()
@@ -258,7 +262,7 @@ local function parser(toks)
                     next_tok()
                     local name = next_tok()
                     local f = funcbody(t.s)
-                    return { k = 'localfunc', name = name.v, body = f.body, s = t.s, e = f.e }
+                    return { k = 'localfunc', name = name.v, body = f.body, params = f.params, s = t.s, e = f.e }
                 end
                 local names = { next_tok().v }
                 while is(',') do
@@ -874,6 +878,24 @@ local function call_cond(scope, e)
         if (m ~= nil) and (m.kind == 'cycle') and (m.name == 'Weapons') then return { wmpick = true } end
     end
     if (p ~= nil) and (asks[p] ~= nil) then return nil, asks[p] end
+    local body = (e.fn ~= nil) and (e.fn.k == 'name') and (e.method == nil) and (#e.args == 0) and (scope.funcs ~= nil)
+        and (scope.vars[e.fn.v] == nil) and scope.funcs[e.fn.v] or nil -- not a handler local by that name
+    if (body ~= nil) and ((scope.depth or 0) < 4) then -- Night(): its locals, then the check it returns
+        local inner = { vars = {}, aliases = scope.aliases, lists = scope.lists, funcs = scope.funcs, depth = (scope.depth or 0) + 1 }
+        for i = 1, #body - 1 do
+            for j, name in ipairs(body[i].names) do
+                local m = (body[i].exprs[j] ~= nil) and meaning(inner, body[i].exprs[j]) or nil
+                if m == nil then
+                    return nil, 'Its check asks ' .. e.fn.v .. '(), your own function, which reads something a rule can\'t ('
+                        .. name .. ').'
+                end
+                inner.vars[name] = m
+            end
+        end
+        local c, why = cond_of(inner, body[#body].exprs[1])
+        if c == nil then return nil, 'Its check asks ' .. e.fn.v .. '(), your own function: ' .. tostring(why) end
+        return c
+    end
     return nil, 'Its check asks ' .. tostring(p or (e.method and (':' .. e.method)) or 'a function') .. '(), which a rule '
         .. 'can\'t ask. A rule only checks game values (spell, buffs, HP/MP, modes...).'
 end
@@ -1063,7 +1085,7 @@ end
 -- A block's statements as rules (in order) under the conditions `when`; nil and why when one can't be.
 local convert_if
 local function block_rules(scope, body, when, phase, out)
-    local inner = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists }
+    local inner = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists, funcs = scope.funcs }
     local pending = nil -- consecutive wears/items under the same conditions join one rule
     local function flush()
         if pending ~= nil then out[#out + 1] = pending end
@@ -1450,10 +1472,25 @@ local function pet_branch(scope, st)
     return (m ~= nil) and (m.kind == 'petAction')
 end
 
--- File-level: aliases (local ByName, Family = gcinclude.ByName, gcinclude.Family) and literal lists (local X = T{...}).
+-- A file function a check can read through: no arguments, only locals, then `return <check>`
+-- (local function Night() local t = gData.GetEnvironment().Time; return (t >= 17) or (t < 7); end).
+local function check_func(f)
+    if (f == nil) or (f.params ~= 0) or (type(f.body) ~= 'table') or (#f.body == 0) then return nil end
+    for i, st in ipairs(f.body) do
+        if i < #f.body then
+            if st.k ~= 'local' then return nil end
+        elseif (st.k ~= 'return') or (#st.exprs ~= 1) then
+            return nil
+        end
+    end
+    return f.body
+end
+-- File-level: aliases (local ByName, Family = gcinclude.ByName, gcinclude.Family), literal lists (local X = T{...})
+-- and functions a check can read through (check_func).
 local function file_scope(chunk)
-    local scope = { vars = {}, aliases = {}, lists = {} }
+    local scope = { vars = {}, aliases = {}, lists = {}, funcs = {} }
     for _, st in ipairs(chunk) do
+        if st.k == 'localfunc' then scope.funcs[st.name] = check_func(st) end
         if st.k == 'local' then
             for j, name in ipairs(st.names) do
                 local e = st.exprs[j]
@@ -1554,7 +1591,7 @@ function C.Plan(text, opts)
             if phase ~= nil then
                 local h = { name = name, phase = phase, items = {} }
                 plan.handlers[#plan.handlers + 1] = h
-                local hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists }
+                local hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists, funcs = scope.funcs }
                 local body = st.exprs[1].body
                 local stopAt = #body + 1 -- the place rules go by themselves: HandleDefault's CheckDefault, else the end
                 for i, s in ipairs(body) do
@@ -1576,7 +1613,7 @@ function C.Plan(text, opts)
                             hs.vars[n] = m
                         end
                     elseif s.k == 'if' then
-                        local snapshot = { vars = setmetatable({}, { __index = hs.vars }), aliases = hs.aliases, lists = hs.lists }
+                        local snapshot = { vars = setmetatable({}, { __index = hs.vars }), aliases = hs.aliases, lists = hs.lists, funcs = hs.funcs }
                         for k, v in pairs(hs.vars) do snapshot.vars[k] = v end
                         local rules, why = convert_if(snapshot, s, {}, phase, {})
                         if (rules ~= nil) and (opts.skip ~= nil) and (opts.skip[name] ~= nil) then
@@ -1800,7 +1837,7 @@ function C.Spots(text)
             local phase = name and HANDLERS[name]
             if phase ~= nil then
                 local body = st.exprs[1].body
-                hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists }
+                hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists, funcs = scope.funcs }
                 for i, s in ipairs(body) do
                     if s.k == 'local' then
                         for j, n in ipairs(s.names) do hs.vars[n] = (s.exprs[j] ~= nil) and meaning(hs, s.exprs[j]) or nil end
@@ -1857,7 +1894,7 @@ function C.NameSteps(text)
             local name = string.match(path_of(st.targets[1]) or '', '^profile%.(Handle%a+)$')
             local phase = name and HANDLERS[name]
             if phase ~= nil then
-                local hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists }
+                local hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists, funcs = scope.funcs }
                 local steps = out[phase] or {}
                 out[phase] = steps
                 local function kind_of(a) -- what a ByName argument names: 'name', 'skill', 'family', 'type' (+ suffix)

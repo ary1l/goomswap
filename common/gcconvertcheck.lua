@@ -186,7 +186,7 @@ local function random_state(lits, rnd, names)
     local name = pick(names)
     if rnd(3) == 1 then name = name .. ' II' end
     local env = (rnd(10) == 1) and nil or { WeatherElement = pick(elements), DayElement = pick(elements), Area = pick(names),
-        Time = rnd(24) }
+        Time = (rnd(24) - 1) + ((rnd(2) == 1) and 0 or ((rnd(60) - 1) / 100)) } -- LAC: hour + minute / 100, 0 to 23.59
     return {
         player = { Status = pick(statuses), HPP = rnd(100), MPP = rnd(100), TP = rnd(3000), IsMoving = rnd(2) == 1,
             SubJob = pick({ 'NIN', 'DNC', 'WHM', 'RDM', 'SCH', 'WAR' }), MainJobSync = 99, Name = 'Me' },

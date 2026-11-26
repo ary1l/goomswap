@@ -504,6 +504,22 @@ local function num_say(what, v, unit)
     end
     return what .. ' ' .. table.concat(out, ' and ')
 end
+-- Vana'diel time as LAC gives it (hour + minute / 100: 17.3 is 17:30), as a clock.
+local TIME_SAY = { ge = '%s or later', gt = 'after %s', lt = 'before %s', le = '%s or earlier', eq = 'exactly %s',
+    ne = 'not exactly %s' }
+local function time_say(v)
+    local function clock(x)
+        x = tonumber(x) or 0
+        local h = math.floor(x)
+        return string.format('%d:%02d', h, math.floor((x - h) * 100 + 0.5))
+    end
+    if type(v) ~= 'table' then return "Vana'diel time exactly " .. clock(v) end
+    local out = {}
+    for _, op in ipairs({ 'gt', 'ge', 'lt', 'le', 'eq', 'ne' }) do
+        if v[op] ~= nil then out[#out + 1] = string.format(TIME_SAY[op], clock(v[op])) end
+    end
+    return "Vana'diel time " .. table.concat(out, ' and ')
+end
 -- a text value: 'X' / { 'A', 'B' } / { is, isnt, has, start, ends }, each part through fmt(words, negated)
 local function text_say(v, fmt)
     if (type(v) == 'string') or ((type(v) == 'table') and (v[1] ~= nil)) then return fmt(either_of(v), false) end
@@ -576,7 +592,7 @@ local SAY = {
         return text_say(v, function(w, n) return (n and 'not in ' or 'in ') .. w end)
     end,
     inlist = list_say,
-    time = function(v) return num_say('time', v) end,
+    time = function(v) return time_say(v) end,
     buff = function(v) return either_of(buff_names(v)) .. ' up' end,
     allbuffs = function(v) return either_of(buff_names(v), 'and') .. ' up' end,
     nobuff = function(v)
