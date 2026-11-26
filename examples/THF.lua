@@ -244,6 +244,11 @@ profile.OnLoad = function()
     gcinclude.Rules = {
         { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
         { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Default', first = {
+            { when = { allbuffs = { 'Sneak Attack', 'Trick Attack' } }, wear = 'SATA', exact = true },
+            { when = { buff = 'Sneak Attack' }, wear = 'SA', exact = true },
+            { when = { buff = 'Trick Attack' }, wear = 'TA', exact = true },
+        } },
     };
     gcinclude.Initialize();
 end
@@ -258,8 +263,6 @@ end
 
 profile.HandleDefault = function()
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
-    local sa = gcinclude.BuffCount('Sneak Attack');
-    local ta = gcinclude.BuffCount('Trick Attack');
 
     local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
@@ -270,13 +273,6 @@ profile.HandleDefault = function()
         gFunc.EquipSet(sets.Movement);
     end
 
-    if (sa == 1) and (ta == 1) then
-        gFunc.EquipSet(sets.SATA);
-    elseif (sa == 1) then
-        gFunc.EquipSet(sets.SA);
-    elseif (ta == 1) then
-        gFunc.EquipSet(sets.TA);
-    end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
     gcinclude.CheckDefault ();

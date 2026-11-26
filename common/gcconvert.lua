@@ -698,6 +698,15 @@ local function negate(w)
 end
 C.Negate = negate
 
+-- Why a value can't be read, naming it when it's one of the file's own locals (suffix, roll...).
+local function unread(e)
+    e = unparen(e) or e
+    if (e ~= nil) and (e.k == 'name') then
+        return 'It checks ' .. e.v .. ', a value your code works out here. A rule only checks game values (spell, buffs, HP/MP, modes...).'
+    end
+    return 'It compares a value a rule can\'t read. A rule only checks game values (spell, buffs, HP/MP, modes...).'
+end
+
 -- A comparison `a op b` as a when table.
 local function compare(scope, op, ea, eb)
     -- string.find(spell.Name, 'helix', 1, true) ~= nil: the call as a condition (== nil: turned around)
@@ -715,7 +724,7 @@ local function compare(scope, op, ea, eb)
         end
     end
     local a, b = meaning(scope, ea), meaning(scope, eb)
-    if (a == nil) or (b == nil) then return nil, 'It compares a value a rule can\'t read. A rule only checks game values (spell, buffs, HP/MP, modes...).' end
+    if (a == nil) or (b == nil) then return nil, unread((a == nil) and ea or eb) end
     if (a.kind == 'lit') or (a.kind == 'nil') or (a.kind == 'me') and (b.kind == 'field') then a, b, op = b, a, FLIP[op] end
     if (op ~= '==') and (op ~= '~=') and NUM_OP[op] == nil then return nil, 'It uses a comparison a rule doesn\'t have.' end
     local eq = (op == '==')
@@ -769,7 +778,8 @@ local function compare(scope, op, ea, eb)
         local n, up = b.v, nil
         if ((op == '>') and (n == 0)) or ((op == '>=') and (n == 1)) or ((op == '~=') and (n == 0)) then up = true end
         if ((op == '==') and (n == 0)) or ((op == '<') and (n == 1)) or ((op == '<=') and (n == 0)) then up = false end
-        if up == nil then return nil, 'It needs a buff count (2 or more, say). A rule only knows a buff is up or not.' end
+        if up == nil then return nil, 'It checks a buff count ' .. op .. ' ' .. n .. '. A rule only knows up (count above 0) or not up. '
+            .. 'For a buff that never shows twice, > 0 means the same and converts.' end
         local v = (#a.names == 1) and a.names[1] or a.names
         if up then return { buff = v } end
         return { nobuff = v }
@@ -793,7 +803,7 @@ local function compare(scope, op, ea, eb)
         if eq then return nil, 'It checks that the ' .. a.kind .. ' is missing. A rule can\'t test for that.' end
         return {} -- x ~= nil: a guard; a rule reading a missing one is false anyway
     end
-    return nil, 'It compares a value a rule can\'t read. A rule only checks game values (spell, buffs, HP/MP, modes...).'
+    return nil, unread(ea)
 end
 
 -- string.contains(spell.Name, 'x'), string.find(..., 'x', 1, true), spell.Name:contains('x'), T{...}:contains(x)
@@ -978,6 +988,23 @@ local function not_gear(p)
     return 'It runs ' .. tostring(p or 'a function') .. '(), which does more than put on gear. A rule only puts on gear '
         .. 'or cancels the action.'
 end
+-- A set whose name is put together while the code runs (FindSet(ws.Name .. '_' .. suffix)): anywhere in an if's
+-- branches, the whole if stays code, whatever its conditions say.
+local NAMED_BY = { ['gcinclude.FindSet'] = true, ['gcinclude.ByName'] = true, ['gcinclude.FindFilled'] = true }
+local function builds_name(scope, node)
+    if type(node) ~= 'table' then return false end
+    if (node.k == 'call') and NAMED_BY[call_path(scope, node) or ''] and (node.args[1] ~= nil) then
+        local a = unparen(node.args[1])
+        if (a ~= nil) and (a.k == 'bin') and (a.op == '..') then return true end
+    end
+    for k, v in pairs(node) do
+        if (k ~= 'cond') and (type(v) == 'table') and builds_name(scope, v) then return true end
+    end
+    return false
+end
+local BUILT = 'It puts on a set whose name is put together while it runs (the action\'s name, a mode, a buff...). '
+    .. 'A rule needs the set\'s name written out.'
+
 -- A statement in a branch as rule actions: { wear, exact } / { item = { slot, item } } / { stop } / { localvar };
 -- nil and why when it is something else.
 local function action_of(scope, st)
@@ -987,7 +1014,7 @@ local function action_of(scope, st)
         if p == 'gFunc.EquipSet' and (#call.args == 1) then
             local name = set_name_of(scope, call.args[1])
             if name == nil then
-                return nil, 'It puts on a set whose name is made while it runs. A rule needs the set\'s name written out.'
+                return nil, BUILT
             end
             return { wear = name, exact = true }
         end
@@ -1112,6 +1139,7 @@ local function exclusive(conds)
 end
 
 convert_if = function(scope, st, when, phase, out)
+    if builds_name(scope, { st.branches, st.elseBody }) then return nil, BUILT end
     local conds = {}
     for i, br in ipairs(st.branches) do
         local c, why = cond_of(scope, br.cond)

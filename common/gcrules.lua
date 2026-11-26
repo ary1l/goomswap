@@ -710,7 +710,11 @@ local STATE = {
     targethpp = function(v) return num_say("the target's HP is", v, '%') end,
     distance = function(v) return num_say('the target is', v, ' yalms away') end,
     buff = function(v) return either_of(buff_names(v)) .. ' is up' end,
-    allbuffs = function(v) return either_of(buff_names(v), 'and') .. ' are all up' end,
+    allbuffs = function(v)
+        v = buff_names(v)
+        local n = (type(v) == 'table') and #v or 1
+        return either_of(v, 'and') .. ((n == 2) and ' are both up' or ((n == 1) and ' is up' or ' are all up'))
+    end,
     nobuff = function(v)
         v = buff_names(v)
         if (type(v) == 'table') and (#v > 1) then return 'none of ' .. either_of(v, 'or') .. ' is up' end
