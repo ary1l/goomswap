@@ -9,8 +9,26 @@ return function(o)
     local R = gFunc.LoadFile('common\\gcrules.lua')
     local Conv = gFunc.LoadFile('common\\gcconvert.lua')
     local Check = gFunc.LoadFile('common\\gcconvertcheck.lua') -- the same-gear check, a little each frame
-    R.BuffName = function(id) -- 'while 581 is up' -> 'while Flurry II is up'
-        return AshitaCore:GetResourceManager():GetString('buffs.names', id)
+    -- 'while 265 is up' -> 'while Flurry is up'. The game gives some buffs one name (265 and 581 are both
+    -- 'Flurry'): those keep their number, 'Flurry (581)', so two choices never read the same.
+    local buffShared = nil
+    R.BuffName = function(id)
+        local res = AshitaCore:GetResourceManager()
+        local name = res:GetString('buffs.names', id)
+        if (type(name) ~= 'string') or (name == '') then return nil end
+        if buffShared == nil then -- every buff's name, once: which names more than one id has
+            buffShared = {}
+            local seen = {}
+            for i = 0, 1023 do
+                local n = res:GetString('buffs.names', i)
+                if (type(n) == 'string') and (n ~= '') then
+                    local k = string.lower(n)
+                    if seen[k] then buffShared[k] = true else seen[k] = true end
+                end
+            end
+        end
+        if buffShared[string.lower(name)] then return name .. ' (' .. tostring(id) .. ')' end
+        return name
     end
     local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip)
     local M = { R = R }
@@ -1003,13 +1021,19 @@ return function(o)
         end
         return ok, no
     end
+    local NAV_ROW = { 0, 0 }
+    -- A row: the label as a selectable short of the right end, and the count there (whatever the font size).
     local function nav_row(label, n, key, tip)
         local sel = (editorState.ui.rulesView or 'all') == key
-        if imgui.Selectable(label .. '##rv_' .. key, sel) then editorState.ui.rulesView = key end
+        local t = (n ~= nil) and tostring(n) or nil
+        local avail = xw(imgui.GetContentRegionAvail())
+        local tw = (t ~= nil) and xw(imgui.CalcTextSize(t)) or 0
+        NAV_ROW[1] = ((avail ~= nil) and (tw ~= nil) and (t ~= nil)) and math.max(20, avail - tw - 8) or 0
+        if imgui.Selectable(label .. '##rv_' .. key, sel, 0, NAV_ROW) then editorState.ui.rulesView = key end
         if (tip ~= nil) and imgui.IsItemHovered() then set_tip(tip) end
-        if n ~= nil then
-            imgui.SameLine(150)
-            imgui.TextColored(palette.dim, tostring(n))
+        if t ~= nil then
+            imgui.SameLine(0, 8)
+            imgui.TextColored(palette.dim, t)
         end
     end
     local function draw_nav(list)
