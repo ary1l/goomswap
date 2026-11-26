@@ -92,7 +92,7 @@ local function world(state, record, engine)
     gc.CheckWsBailout = function() return true end
     gc.CheckTH = function() if state.toggles.TH then wear(find('TH')); W.thWorn = true end end
     gc.RangedAcc = function() return state.cycles.MeleeSet == 'Acc' end
-    gc.IsWeaponValue = function(v) return v ~= 'None' end
+    gc.IsWeaponValue = function(v) return (v ~= nil) and (v ~= 'None') and (v ~= 'Unknown') end -- same as gcinclude's
     gc.CheckDefault = function() if W.onCheckDefault then W.onCheckDefault() end end
     gc.RulesAt = function(at) if W.onRulesAt then return W.onRulesAt(at) end return false end
     W.gc = gc
@@ -132,6 +132,7 @@ local function world(state, record, engine)
         toggle = function(n) return state.toggles[n] == true end, burst = function() return state.burst end,
         dualWield = function() return state.dw end, inCombat = function() return false end, family = gc.Family,
         hasSet = function(n) return find(n) ~= nil end,
+        weaponPick = function() return gc.IsWeaponValue(W.gcdisplay.GetCycle('Weapons')) == true end,
         inList = function(list, name) -- the same lists the file's code reads (the engine's, or empty offline)
             local l = gc[list]
             return (type(l) == 'table') and (l.contains ~= nil) and (l:contains(name) == true)

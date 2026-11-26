@@ -686,6 +686,8 @@ profile.OnLoad = function()
         } },
         { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Dark Magic' }, wear = 'EnfeeblingACC', exact = true },
         { on = 'Midcast', when = { family = 'Refresh', target = 'me' }, wear = 'Self_Refresh', exact = true },
+        { on = 'Default', when = { dualwield = false, status = 'Engaged', wmpick = false }, item = { Sub = 'Genmei Shield' },
+            note = "Tp_Default's Thibron can't go on without dual wield" },
     };
     gcinclude.Initialize();
 end
@@ -713,10 +715,6 @@ profile.HandleDefault = function()
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
     gcinclude.RulesAt('Default 1');
-    -- No Dual Wield + /wm none + engaged: Tp_Default's Thibron can't equip, use Genmei Shield.
-    if (player.Status == 'Engaged') and (not gcinclude.IsWeaponValue(gcdisplay.GetCycle('Weapons'))) and (not gcinclude.CanDualWield()) then
-        gFunc.Equip('Sub', 'Genmei Shield');
-    end
     gcinclude.CheckDefault ();
 end
 

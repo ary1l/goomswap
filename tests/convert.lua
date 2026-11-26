@@ -151,6 +151,36 @@ return profile;
         local p2 = assert(C.Plan(t2))
         eq(p2.handlers[1].items[1].ok, false)
     end },
+    { 'a /wm weapon pick converts; another cycle in IsWeaponValue stays code', function()
+        local text = [[
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+profile.HandleDefault = function()
+    local player = gData.GetPlayer();
+    if (player.Status == 'Engaged') and (not gcinclude.IsWeaponValue(gcdisplay.GetCycle('Weapons'))) and (not gcinclude.CanDualWield()) then
+        gFunc.Equip('Sub', 'Genmei Shield');
+    end
+    if gcinclude.IsWeaponValue(gcdisplay.GetCycle('MeleeSet')) then gFunc.Equip('Ammo', 'Coiste Bodhar') end
+    gcinclude.CheckDefault();
+end
+return profile;
+]]
+        local plan = assert(C.Plan(text))
+        eq(#plan.rules, 1)
+        local w = plan.rules[1].when
+        eq(w.wmpick, false); eq(w.dualwield, false); eq(w.status, 'Engaged')
+        eq(plan.rules[1].item.Sub, 'Genmei Shield')
+        eq(R.Say(plan.rules[1]), 'While fighting, when you cannot dual wield and no /wm weapon is picked: put Genmei Shield in Sub')
+        eq(plan.handlers[1].items[2].ok, false)
+        -- the rule reads the pick the same way the code did
+        local pick
+        local api = { player = function() return { Status = 'Engaged' } end, dualWield = function() return false end,
+            weaponPick = function() return pick end }
+        for _, v in ipairs({ true, false }) do
+            pick = v
+            eq(R.Holds(plan.rules[1], 'Default', api) == true, not v)
+        end
+    end },
     { 'a branch that is not gear says so plainly', function()
         local text = [[
 local profile = {};

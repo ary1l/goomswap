@@ -904,6 +904,7 @@ local rulesApi = {
     inCombat = function() return gcinclude.InCombat(gData.GetPlayer()) end,
     family = function(n) return gcinclude.Family(n) end,
     hasSet = function(n) return gcinclude.FindSet(n) ~= nil end, -- 'has a set named after it / its family'
+    weaponPick = function() return gcinclude.IsWeaponValue(gcdisplay.GetCycle('Weapons')) == true end,
     inList = function(list, name) -- "in GoomSwap's spell list": gcinclude.BluMagPhysical...
         local l = (type(list) == 'string') and rawget(gcinclude, list) or nil
         return (type(l) == 'table') and (type(l.contains) == 'function') and (l:contains(name) == true)

@@ -859,6 +859,10 @@ local function call_cond(scope, e)
         ['gcinclude.IsWeaponValue'] = 'Its check asks whether a weapon pick is set, not None or Unknown '
             .. '(IsWeaponValue). A rule can\'t ask that one.',
     }
+    if (p == 'gcinclude.IsWeaponValue') and (#e.args == 1) then -- IsWeaponValue(gcdisplay.GetCycle('Weapons')): a /wm pick
+        local m = meaning(scope, e.args[1])
+        if (m ~= nil) and (m.kind == 'cycle') and (m.name == 'Weapons') then return { wmpick = true } end
+    end
     if (p ~= nil) and (asks[p] ~= nil) then return nil, asks[p] end
     return nil, 'Its check asks ' .. tostring(p or (e.method and (':' .. e.method)) or 'a function') .. '(), which a rule '
         .. 'can\'t ask. A rule only checks game values (spell, buffs, HP/MP, modes...).'

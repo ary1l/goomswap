@@ -108,6 +108,8 @@ R.KEYS = {
     { key = 'burst', label = 'Magic burst', kind = 'bool', phases = SPELL,
         hint = "The spell lands in a live skillchain of its element (GoomSwap's burst check)." },
     { key = 'dualwield', label = 'Can dual wield', kind = 'bool', hint = 'Your job and sub job can dual wield now.' },
+    { key = 'wmpick', label = 'A /wm weapon is picked', kind = 'bool',
+        hint = "Your /wm pick is a weapon mode, not None or Unknown (GoomSwap's IsWeaponValue)." },
     { key = 'inlist', label = "In GoomSwap's spell list", kind = 'text', phases = { Precast = true, Midcast = true },
         values = { 'BluMagPhysical', 'BluMagDebuff', 'BluMagStun', 'BluMagBuff', 'BluMagSkill', 'BluMagCure',
             'BluMagEnmity', 'BluMagTH' },
@@ -342,6 +344,7 @@ function TEST.familyset(c, v)
     local f = ((a ~= nil) and (type(a.Name) == 'string') and (c.api.family ~= nil)) and c.api.family(a.Name) or nil
     return has_set(c, f) == (v == true)
 end
+function TEST.wmpick(c, v) return (c.api.weaponPick ~= nil) and ((c.api.weaponPick() == true) == (v == true)) end
 function TEST.burst(c, v) return (c.api.burst ~= nil) and ((c.api.burst() == true) == (v == true)) end
 function TEST.dualwield(c, v) return (c.api.dualWield ~= nil) and ((c.api.dualWield() == true) == (v == true)) end
 R.TEST = TEST
@@ -588,6 +591,7 @@ local SAY = {
     petstatus = function(v) return text_say(v, function(w, n) return (n and 'pet not ' or 'pet ') .. string.lower(w) end) end,
     burst = function(v) return v and 'a magic burst' or 'not a magic burst' end,
     nameset = function(v) return v and 'a set named after it' or 'no set named after it' end,
+    wmpick = function(v) return v and 'a /wm weapon picked' or 'no /wm weapon picked' end,
     familyset = function(v) return v and 'a set for its family' or 'no set for its family' end,
     dualwield = function(v) return v and 'you can dual wield' or 'you cannot dual wield' end,
 }
@@ -596,7 +600,7 @@ function R.SayWhen(when)
     local order = {}
     for i, k in ipairs({ 'name', 'family', 'skill', 'type', 'element', 'target', 'targethpp', 'distance', 'burst', 'buff',
         'allbuffs', 'nobuff', 'status', 'hpp', 'mpp', 'tp', 'moving', 'combat', 'mode', 'toggle', 'pet', 'pethpp', 'pettp',
-        'petname', 'petstatus', 'day', 'weather', 'zone', 'time', 'sub', 'level', 'dualwield', 'inlist', 'nameset', 'familyset', 'any' }) do order[k] = i end
+        'petname', 'petstatus', 'day', 'weather', 'zone', 'time', 'sub', 'level', 'dualwield', 'wmpick', 'inlist', 'nameset', 'familyset', 'any' }) do order[k] = i end
     local keys = {}
     for k in pairs(when) do keys[#keys + 1] = k end
     table.sort(keys, function(a, b) return (order[a] or 999) < (order[b] or 999) end)
@@ -714,6 +718,7 @@ local STATE = {
     end,
     burst = function(v) return v and 'it is a magic burst' or 'it is not a magic burst' end,
     nameset = function(v) return v and 'it has a set named after it' or 'it has no set named after it' end,
+    wmpick = function(v) return v and 'a /wm weapon is picked' or 'no /wm weapon is picked' end,
     familyset = function(v) return v and 'it has a set for its family' or 'it has no set for its family' end,
     moving = function(v) return v and 'you are moving' or 'you are standing still' end,
     combat = function(v) return v and 'you are in combat' or 'you are out of combat' end,
@@ -723,7 +728,7 @@ local function state_of(when, skipStatus)
     local order = {}
     for i, k in ipairs({ 'targethpp', 'distance', 'burst', 'buff', 'allbuffs', 'nobuff', 'status', 'hpp', 'mpp', 'tp',
         'moving', 'combat', 'mode', 'toggle', 'pet', 'pethpp', 'pettp', 'petname', 'petstatus', 'day', 'weather', 'zone',
-        'time', 'sub', 'level', 'dualwield', 'inlist', 'nameset', 'familyset', 'any' }) do order[k] = i end
+        'time', 'sub', 'level', 'dualwield', 'wmpick', 'inlist', 'nameset', 'familyset', 'any' }) do order[k] = i end
     local keys = {}
     for k in pairs(when) do
         if not ACTION_KEYS[k] and not ((k == 'status') and skipStatus) then keys[#keys + 1] = k end

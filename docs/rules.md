@@ -53,6 +53,7 @@ of your job file's `if`s Convert can turn into rules (**Rules  +5 to convert**).
 | Mode | `/wm` `/mset` `/nukeset` `/idleset` `/wsset` `/tankset` `/weapon` `/pupmode` `/hoxne` `/mw` `/sw` `/rw` `/ammoset` and its value | `gcdisplay.GetCycle` |
 | Toggle | `/dt` `/mdt` `/kite` `/th` `/sir` `/proc` `/burst` `/aminon` `/death` `/songlock` `/forcestring`, on / off | `gcdisplay.GetToggle` |
 | Magic burst, Can dual wield | yes / no | GoomSwap's `BurstWanted`, `CanDualWield` |
+| A /wm weapon is picked | yes / no | GoomSwap's `IsWeaponValue(gcdisplay.GetCycle('Weapons'))`: the pick isn't None or Unknown |
 | In GoomSwap's spell list | `BluMagPhysical`, `BluMagDebuff`, `BluMagStun`, `BluMagBuff`, `BluMagSkill`, `BluMagCure`, `BluMagEnmity`, `BluMagTH` (is / is not) | `gcinclude.<list>:contains(name)`, the engine's own lists |
 | Has a set named after it, Has a set for its family | yes / no: a set in your job file named after the spell / ability / weapon skill (`Flash`), or its family (`Cure` for Cure IV), checked as it happens | GoomSwap's `FindSet` (what `ByName` looks for) |
 
