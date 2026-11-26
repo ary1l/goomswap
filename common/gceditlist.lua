@@ -905,7 +905,7 @@ local function draw_sets()
                     if imgui.IsItemHovered() and (editorState.ui.dragSet == nil) then
                         local rc = (grp.hint ~= nil) and row_cmd(set) or nil
                         local done = set_completion_tip(set, status)
-                        local plain = (ctx.simple ~= nil) and ctx.simple.Label(set.name) or nil -- what it is for, in words
+                        local plain = (ctx.words ~= nil) and ctx.words.Label(set.name) or nil -- what it is for, in words
                         if plain ~= nil then done = plain .. '\n\n' .. done end
                         local tip = ((rc ~= nil) and (rc.tip ~= nil)) and (rc.tip .. '\n\n' .. done) or done
                         if ctx.set_peek ~= nil then ctx.set_peek(set, tip) else set_tip(tip) end -- its gear too

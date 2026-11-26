@@ -348,7 +348,7 @@ local settingsFiles = gFunc.LoadFile('common\\gceditsettings.lua')({
     state = function() return editorState end,
 })
 ctx.settingsFiles = settingsFiles -- the job file's own settings are written by Save (gceditsets)
-ctx.simple = gFunc.LoadFile('common\\gceditsimple.lua')(editorState) -- plain words for set names (the list's hover)
+ctx.words = gFunc.LoadFile('common\\gceditwords.lua')(editorState) -- plain words for set names (the list's hover)
 ctx.newjob = gFunc.LoadFile('common\\gceditnewjob.lua')({ imgui = imgui, palette = palette, set_tip = set_tip,
     feedback = feedback }) -- the file menu's New job file
 -- the Rules page (gcinclude.Rules), in ctx: this chunk is at Lua's 200-local limit

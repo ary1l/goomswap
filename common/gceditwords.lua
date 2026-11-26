@@ -1,5 +1,4 @@
--- /gcedit: what a set is for, in plain words (Tp_Default: Fighting), shown when you hover a set in the list. (There
--- was a Simple view with these as the names; the editor now has one view.)
+-- /gcedit: what a set is for, in plain words (Tp_Default: Fighting), shown when you hover a set in the list.
 return function(editorState)
     local M = {}
     local NAMES = {

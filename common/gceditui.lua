@@ -136,19 +136,16 @@ do
 local state = {}
 
 function state.Defaults()
-    return { left = 280, middle = 744, density = 'Compact', dirty = false }
+    return { density = 'Compact', dirty = false }
 end
 
 function state.Decode(text)
     local preferences = state.Defaults()
     if not text or text:match('^([^\n]+)') ~= 'GoomSwap editor preferences 1' then return preferences end
     for key, value in text:gmatch('([^\n\t]+)\t([^\n]*)') do
-        if key == 'left' or key == 'middle' then
-            local width = tonumber(value)
-            if width and width == width and width >= 80 and width <= 4000 then preferences[key] = width end
-        elseif key == 'density' and (value == 'Compact' or value == 'Comfortable') then
+        if key == 'density' and (value == 'Compact' or value == 'Comfortable') then
             preferences.density = value
-        elseif key == 'view' then -- the old Simple / Full view: one view now, read and dropped
+        elseif (key == 'view') or (key == 'left') or (key == 'middle') then -- old view and pane widths: dropped
         elseif (key == 'start') and ((value == 'on') or (value == 'saved') or (value == 'off')) then
             preferences.start = value -- Getting started: shown, shown and saved once, done or hidden
         elseif key == 'recent' then -- the sets opened last, newest first (tab between names)
@@ -162,8 +159,8 @@ function state.Decode(text)
 end
 
 function state.Encode(preferences)
-    local lines = { 'GoomSwap editor preferences 1', 'left\t' .. preferences.left, 'middle\t' .. preferences.middle }
-    lines[#lines + 1] = 'density\t' .. (preferences.density == 'Comfortable' and 'Comfortable' or 'Compact')
+    local lines = { 'GoomSwap editor preferences 1',
+        'density\t' .. (preferences.density == 'Comfortable' and 'Comfortable' or 'Compact') }
     if (type(preferences.recent) == 'table') and (#preferences.recent > 0) then
         lines[#lines + 1] = 'recent\t' .. table.concat(preferences.recent, '\t')
     end
@@ -267,7 +264,6 @@ end
 do
 -- Panel geometry and common editor controls. No gear or file operations.
 local panels = {}
-local HANDLE = 8
 local function clamp(value, minimum, maximum)
     return math.max(minimum, math.min(value, maximum))
 end
@@ -341,15 +337,14 @@ function panels.SameLineIfFits(imgui, required)
     if width < required then imgui.NewLine() end
 end
 
--- keep: tabs reached from inside another: stay selected though not listed.
-function panels.Tabs(imgui, colors, selected, entries, keep)
+function panels.Tabs(imgui, colors, selected, entries)
     local available = imgui.GetContentRegionAvail()
     local width = type(available) == 'number' and available or (available.x or available[1])
     local found = false
     for _, entry in ipairs(entries) do
         if entry[2] == selected then found = true end
     end
-    if not found and not (keep ~= nil and keep[selected]) then selected = entries[1][2] end
+    if not found then selected = entries[1][2] end
     local used = 0
     for _, entry in ipairs(entries) do
         local size = imgui.CalcTextSize(entry[1])

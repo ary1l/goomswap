@@ -503,11 +503,6 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     end
 
     -- A setting's row shows: every one with Show all; else not the advanced ones, unless a file sets it (yours to see).
-    local function wanted(key)
-        if editorState.ui.settingsAll[1] or not ADVANCED[key] then return true end
-        if (files.Layer('own')[key] ~= nil) or (files.Layer('shared')[key] ~= nil) then return true end
-        return files.Job('settings.' .. key) ~= nil
-    end
     -- A job option's row shows on the jobs that read it, or when the file sets it.
     local function job_wanted(name)
         local only = JOB_ONLY[name]
