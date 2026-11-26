@@ -9,7 +9,7 @@ Run `/gcconfig` to print its exact path and effective HUD/keybind settings.
 
 It is `config/addons/luashitacast/<Name>_<Id>/char.lua`. Every job on that character uses
 it. Reload the job after editing. A later job-specific override still wins.
-`/gcedit` → **Settings** edits it for you ([Settings](gcedit.md#settings)).
+`/gcedit` → **GoomSwap settings** edits it for you ([Settings](gcedit.md#settings)).
 
 For example:
 
@@ -95,7 +95,7 @@ Exact set names, any case; the editor's **Show ignored** checkbox reveals them f
 `config/addons/luashitacast/goomswap-shared.lua` has the same layout as `char.lua` (`settings`, `Packer`,
 `sets`) and applies to every character. The engine reads the defaults, then this file, then the character's
 `char.lua`: a setting in `char.lua` wins, and a job file wins over both. A `Packer` in `char.lua` replaces the
-shared one. `/gcconfig` prints both paths. `/gcedit` → **Settings** with **Applies to: Everyone** writes it
+shared one. `/gcconfig` prints both paths. `/gcedit` → **GoomSwap settings** with **Applies to: Everyone** writes it
 (and makes it the first time); heading **Share with every character** puts your headings there.
 
 ```lua

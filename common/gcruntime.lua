@@ -1694,13 +1694,13 @@ return {
         end
         engine.Say('Character config: ' .. path)
         engine.Say('Shared by every character: ' .. config.SharedPath()
-            .. (exists(config.SharedPath()) and '' or ' (none yet; /gcedit Settings makes it)'))
+            .. (exists(config.SharedPath()) and '' or ' (none yet; /gcedit, GoomSwap settings makes it)'))
         local owners = engine.settings.HUDOwners
         local binds = engine.settings.Keybinds
         engine.Say('Effective HUDOwners: ' .. (type(owners) == 'table' and #owners > 0
             and table.concat(owners, ', ') or '(none)') .. '; GoomSwap keybinds: '
             .. (type(binds) == 'table' and #binds or 0))
-        engine.Say(exists(path) and 'Edit its settings table (or /gcedit Settings), then reload the job. char.lua wins over the shared file; job files win over both.'
+        engine.Say(exists(path) and 'Edit its settings table (or /gcedit, GoomSwap settings), then reload the job. char.lua wins over the shared file; job files win over both.'
             or 'Run /gcconfig init to create it. Put personal preferences here, outside common/.')
     end
 

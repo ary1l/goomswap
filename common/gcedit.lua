@@ -786,7 +786,7 @@ function wm.draw(r)
     end
     for _, f in ipairs(r.flags) do
         imgui.TextColored(palette.warn, 'gcinclude.' .. f.list .. ' still names ' .. f.text
-            .. ': change it in Settings (Only in ' .. tostring(editorState.document.file) .. ').')
+            .. ': change it in GoomSwap settings (' .. tostring(editorState.document.file) .. ').')
     end
 end
 
@@ -2034,7 +2034,7 @@ local function body()
     end
     local d = editorPanels.Density(editorState.preferences.density)
     local saveLabel = editorState.document.inactive and 'Save file' or 'Save + reload'
-    local need = text_w(ctx.rules.TopLabel()) + text_w('Settings') + text_w('...') + text_w(saveLabel)
+    local need = text_w(ctx.rules.TopLabel()) + text_w('GoomSwap settings') + text_w('Editor') + text_w(saveLabel)
         + 8 * d.padding[1] + 3 * d.spacing[1]
     imgui.SameLine()
     local avail = imgui.GetContentRegionAvail()
@@ -2046,12 +2046,19 @@ local function body()
     end
     ctx.rules.TopButton() -- the Rules page (and how many ifs Convert could take)
     imgui.SameLine()
-    if imgui.Button('Settings##gcsettings') then editorState.ui.settingsOpen = { true } end
-    if imgui.IsItemHovered() then set_tip('GoomSwap settings: for you on every job, on this job, or for everyone.') end
+    if imgui.Button('GoomSwap settings##gcsettings') then editorState.ui.settingsOpen = { true } end
+    if imgui.IsItemHovered() then
+        set_tip('How GoomSwap behaves in game, for every job file that loads it: what an include file\'s settings are '
+            .. 'in GearSwap or LuAshitacast (DT gear below HP, Moonshade TP, keys, the bar...). For you on every job, '
+            .. 'on this job, or for everyone.\n\nThe editor\'s own view, spacing and theme: Editor.')
+    end
     imgui.SameLine()
     local tools = { backups = false, cleanup = false, rescan = false, reload = false }
-    if imgui.Button('...##gcedit_more') then imgui.OpenPopup('##gcedit_tools') end
-    if imgui.IsItemHovered() then set_tip('View, density, theme; Backups, Unused gear, Rescan bags, Reload file.') end
+    if imgui.Button('Editor##gcedit_more') then imgui.OpenPopup('##gcedit_tools') end
+    if imgui.IsItemHovered() then
+        set_tip('This editor itself: its view, spacing and theme; this file\'s Backups, Unused gear, Rescan bags, Reload '
+            .. 'file. (How GoomSwap behaves in game: GoomSwap settings.)')
+    end
     if imgui.BeginPopup('##gcedit_tools') then
         -- either/or choices as switches, each with what the one on does
         imgui.PushTextWrapPos(imgui.GetCursorPosX() + 330)

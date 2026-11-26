@@ -791,14 +791,14 @@ function actionModel.New(context)
     }
     -- What GoomSwap also wears by itself below a threshold (SetRegenRefreshGear), over your sets: { short, sentence }.
     local AUTO_WHEN = {
-        dt = { 'below DTGearHPP% HP', 'GoomSwap also puts it on by itself below DTGearHPP% HP (Settings; 0: never), '
+        dt = { 'below DTGearHPP% HP', 'GoomSwap also puts it on by itself below DTGearHPP% HP (GoomSwap settings; 0: never), '
             .. 'whatever you are doing.' },
         idle_regen = { 'below RegenGearHPP% HP', 'GoomSwap also puts it on by itself below RegenGearHPP% HP '
-            .. '(Settings; 0: never), out of combat and without /dt.' },
+            .. '(GoomSwap settings; 0: never), out of combat and without /dt.' },
         idle_refresh = { 'below RefreshGearMPP% MP', 'GoomSwap also puts it on by itself below RefreshGearMPP% MP '
-            .. '(Settings; 0: never), out of combat and without /dt.' },
+            .. '(GoomSwap settings; 0: never), out of combat and without /dt.' },
         pet_dt = { 'pet below PetDTGearHPP% HP', "GoomSwap puts it on by itself while your pet is below "
-            .. 'PetDTGearHPP% HP (Settings; 0: never).' },
+            .. 'PetDTGearHPP% HP (GoomSwap settings; 0: never).' },
     }
     local STATUS_WORD = { engaged = true, idle = true, resting = true } -- the job analysis' status words
     local EVENT_HANDLER = { Default = 'HandleDefault', Precast = 'HandlePrecast', Midcast = 'HandleMidcast',

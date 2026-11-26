@@ -84,7 +84,7 @@ picks it (F7 cycles). While it is on, its own sets go over their base: `Tp_<Name
 4. Fill `Weapon_Mpu`: Main Mpu Gandring, Sub your offhand.
 5. **Weapon sets...** (over the slots) again: tick `Weapon_Mpu_1h`, `Weapon_Mpu_Acc`... (spelled like your file's,
    `Weapon_MpuAcc` if it joins them) and **Make**. They start as copies of `Weapon_Mpu`; change their Sub.
-6. Optional: right-click `Weapon_Mpu`, **/wm order**, to place it in the cycle; **Settings**, **DefaultWeapons**, to
+6. Optional: right-click `Weapon_Mpu`, **/wm order**, to place it in the cycle; **GoomSwap settings**, **DefaultWeapons**, to
    start in it.
 7. **Save + reload** (another job's file: **Save file**, in effect when you change to that job). The review lists
    the new `/wm` mode.
@@ -100,7 +100,7 @@ box's line in the other boxes' HUD (they read it within a second). The pill take
    - `/wm Malignance` coming out of `gcinclude.WeaponModes`;
    - **Also delete the N sets worn only with /wm Malignance**, ticked (`Weapon_Malignance_1h`, `Tp_Malignance`...);
      untick to keep them. Sets your job file's code names are kept and listed;
-   - in orange, `DefaultWeapons` / `WeaponRoles` still naming it: change those in **Settings**.
+   - in orange, `DefaultWeapons` / `WeaponRoles` still naming it: change those in **GoomSwap settings**.
 2. **Confirm deletion**, then **Save + reload**.
 
 After the reload it is gone from `/wm`, F7, the bar's menu and the HUD. A reload always starts in `DefaultWeapons`'s

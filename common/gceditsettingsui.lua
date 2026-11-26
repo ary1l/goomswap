@@ -591,6 +591,13 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         ui.settingsAll = ui.settingsAll or { false }
         ui.settingsTarget = ui.settingsTarget or 'own'
         ui.settingsCat = ui.settingsCat or 'Common'
+        -- what this window is: GoomSwap's own behaviour, as an include file's settings are; not the editor's look
+        if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
+        imgui.TextColored(palette.text, 'How GoomSwap behaves in game, for every job file that loads it: what an include '
+            .. 'file\'s settings are in GearSwap or LuAshitacast. (The editor\'s own view, spacing and theme: Editor, in '
+            .. 'its top bar.)')
+        if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
+        imgui.Spacing()
         -- Applies to: one switch, the names in it
         imgui.TextColored(palette.dim, 'Applies to')
         local targets = {

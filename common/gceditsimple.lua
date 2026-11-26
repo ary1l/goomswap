@@ -1,5 +1,5 @@
 -- /gcedit's Simple view: the same editor with fewer buttons in sight. Sets show what they are for in plain words
--- beside their names (Tp_Default: Fighting), the top bar keeps Settings and Save (the rest under ...), and the right
+-- beside their names (Tp_Default: Fighting), the top bar keeps GoomSwap settings and Save (the rest under Editor), and the right
 -- pane has Gear, What goes on and Stats (To fill when something is left). Full view is the editor as before. The
 -- choice is kept per job (the .gcedit-ui file); a new job file (the example, a draft) starts in Simple.
 return function(editorState)

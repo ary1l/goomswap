@@ -7,11 +7,12 @@ Edits your loaded job file. Changes stay in memory until you confirm a save. `/g
 ## Simple and Full view
 
 The top bar: your character and job, the job file (its menu opens your other job files and **New job file**), the save
-state, then **Rules**, **Settings**, **...** and **Save + reload**. **...** holds two switches, **View**
+state, then **Rules**, **GoomSwap settings**, **Editor** and **Save + reload**. **Editor** (the editor itself) holds
+two switches, **View**
 (**Simple** | **Full**) and **Spacing** (**Compact** | **Comfortable**), each with a line saying what the one on does;
 then the theme, **Backups**, **Unused gear**, **Rescan bags**, **Reload file** and Diagnostics.
 
-**View** (under **...**) is kept per job; a new job file (the example, a draft) starts in Simple. Simple:
+**View** (under **Editor**) is kept per job; a new job file (the example, a draft) starts in Simple. Simple:
 each set says what it is for beside its name (`Tp_Default`: *Fighting*, `Idle_Refresh`: *Standing: low MP*), and the
 right pane has **Gear**, **What goes on** (the Result, with **Related** and **Compare** one click away) and
 **Stats**, plus **To fill** while something is left. Full view is everything below.
@@ -45,7 +46,7 @@ reload**, and the status bar (`/gcbar`). Each step ticks itself; the list goes o
 | To add | Do |
 |---|---|
 | A set for an action | Name it after the action: `Barrage`, `Cure`, `Savage Blade` |
-| A weapon mode (`/wm`) | Name it `Weapon_<Name>` with Main/Sub; Save adds it to `gcinclude.WeaponModes`. Deleting the set takes it out on Save, with the sets worn only with that mode (`Tp_<Name>`, `Ws_<Name>_Acc`, `Savage Blade_<Name>`, `Weapon_<Name>_1h`...; untick to keep them; ones your code names are kept); a `DefaultWeapons` / `WeaponRoles` still naming it is flagged (change it in **Settings**). `Weapon_<Name>_1h` is used when you can't dual wield, `Weapon_<Name>Acc` (or `Weapon_<Name>_Acc`) with `/mset acc`. **Weapon sets...** (the set's header or right-click; offered when you make one) lists every set the mode can have: its `_1h` and `/mset` weapon sets (made as copies of `Weapon_<Name>`, spelled like your file's) and the layers below; tick the missing ones and **Make**. After **Save + reload** the mode is on the bar and HUD (the weapon pill and its right-click menu), coloured by its Main |
+| A weapon mode (`/wm`) | Name it `Weapon_<Name>` with Main/Sub; Save adds it to `gcinclude.WeaponModes`. Deleting the set takes it out on Save, with the sets worn only with that mode (`Tp_<Name>`, `Ws_<Name>_Acc`, `Savage Blade_<Name>`, `Weapon_<Name>_1h`...; untick to keep them; ones your code names are kept); a `DefaultWeapons` / `WeaponRoles` still naming it is flagged (change it in **GoomSwap settings**). `Weapon_<Name>_1h` is used when you can't dual wield, `Weapon_<Name>Acc` (or `Weapon_<Name>_Acc`) with `/mset acc`. **Weapon sets...** (the set's header or right-click; offered when you make one) lists every set the mode can have: its `_1h` and `/mset` weapon sets (made as copies of `Weapon_<Name>`, spelled like your file's) and the layers below; tick the missing ones and **Make**. After **Save + reload** the mode is on the bar and HUD (the weapon pill and its right-click menu), coloured by its Main |
 | TP or WS gear for one weapon | `Tp_<Name>` / `Ws_<Name>` (`Tp_Chango`): worn over `Tp_Default` / `Ws_Default` while `/wm <Name>` is on; `Tp_Chango_Acc` with `/mset acc` too. **Weapon sets...** on the `Weapon_<Name>` set makes the ones you tick, empty: fill only what differs, and later changes to the base still apply (or tick **Layers start as a copy of their base**). Right-click `Tp_Default` (or `Tp_Acc`, `Dt`, `Idle`, a WS's set): **Copy as a weapon set** makes one full copy |
 | TP or WS gear for a weapon type | `Tp_2h` / `Tp_1h` (and `Ws_`, `Dt_`, `Idle_`...): for a weapon with no set of its own, by its Main ([How sets stack](sets.md#how-sets-stack)) |
 | A Main/Sub/Range pick (`/mw` `/sw` `/rw`) | Nothing: every item in a `Weapon_` set is one. Others go in `gcinclude.SubModes` (etc.) in the file |
@@ -109,7 +110,8 @@ EditorOrder = { Melee = { 'Tp_Default', 'Tp_Chango' } },    -- 'own': these firs
 
 ## Settings
 
-**Settings** (top bar) lists every GoomSwap setting by a plain name (`DT gear below HP`; hover it for what it does
+**GoomSwap settings** (top bar) is GoomSwap's own behaviour, for every job file that loads it: what an include
+file's settings are in GearSwap or LuAshitacast (not the editor's look: that's **Editor**). It lists every GoomSwap setting by a plain name (`DT gear below HP`; hover it for what it does
 and its key, `DTGearHPP`), its value, and a tag for where it comes from: **default**, **Everyone** (the shared
 file), your character (`char.lua`) or your character on this job (the job file open in the editor). **Applies to**
 at the top picks where a change goes: **<Name> - all jobs** (`char.lua`), **<Name> - <JOB>** (the job file) or
@@ -144,7 +146,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   (`Weapon_Naegling_1h`), cut with `...` when the panel is narrow; hover it for the sentence. A `/mset` mode with no `Tp_<mode>` set shows greyed
   (`Tp_Hybrid no set`) with **make**. With no `Weapon_` set WEAPONS lists the file's picks
   (`Main picks (/mw): ...`, from `MainModes` `SubModes` `RangeModes`). A `DefaultWeapons` or
-  `WeaponRoles` naming a weapon or mode nothing offers is flagged there and in **Settings**: the engine skips it at
+  `WeaponRoles` naming a weapon or mode nothing offers is flagged there and in **GoomSwap settings**: the engine skips it at
   load without a word.
 - Hover a set's name (the list, **Related**): its gear as icons, 4x4 in the equipment screen's order (a slot it
   leaves out is blank; rows after its last item are left out, so a weapon set is one row), over the usual hover
@@ -163,7 +165,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   now** shows the sets wearing something on you, the most slots first (click one to open it); their dots get a green
   ring.
 - Drag dividers to resize (double-click resets). Density is remembered per job.
-- **Theme** (under **...**): the editor's colours. Same as the bar (default), **Match goomui** (the theme goomui saved for
+- **Theme** (under **Editor**): the editor's colours. Same as the bar (default), **Match goomui** (the theme goomui saved for
   this character), GoomSwap's own, or any of the 30 presets; hover one to preview. Kept per character
   (`gcedit-theme.txt`); the bar keeps its own.
 - **Rescan bags** refreshes ownership and keeps edits. Storage Slip gear counts as owned and shows its slip.
