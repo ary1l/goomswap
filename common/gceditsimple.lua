@@ -1,7 +1,5 @@
--- /gcedit's Simple view: the same editor with fewer buttons in sight. Sets show what they are for in plain words
--- beside their names (Tp_Default: Fighting), the top bar keeps GoomSwap settings and Save (the rest under Editor), and the right
--- pane has Gear, What goes on and Stats (To fill when something is left). Full view is the editor as before. The
--- choice is kept per job (the .gcedit-ui file); a new job file (the example, a draft) starts in Simple.
+-- /gcedit: what a set is for, in plain words (Tp_Default: Fighting), shown when you hover a set in the list. (There
+-- was a Simple view with these as the names; the editor now has one view.)
 return function(editorState)
     local M = {}
     local NAMES = {
@@ -29,16 +27,6 @@ return function(editorState)
             if n > 0 then return out end
         end
         return nil
-    end
-    function M.On()
-        local p = editorState.preferences or {}
-        if p.view ~= nil then return p.view == 'simple' end
-        local d = editorState.document or {}
-        return ((d.example ~= nil) and (d.example ~= false)) or (d.sourcePath ~= nil)
-    end
-    function M.Set(simple)
-        editorState.preferences.view = simple and 'simple' or 'full'
-        editorState.preferences.dirty = true
     end
     return M
 end

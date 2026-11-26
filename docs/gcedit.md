@@ -4,18 +4,18 @@
 
 Edits your loaded job file. Changes stay in memory until you confirm a save. `/gcedit Savage Blade` opens a set.
 
-## Simple and Full view
+## Layout
 
 The top bar: your character and job, the job file (its menu opens your other job files and **New job file**), the save
 state, then **Rules**, **GoomSwap settings**, **Editor** and **Save + reload**. **Editor** (the editor itself) holds
-two switches, **View**
-(**Simple** | **Full**) and **Spacing** (**Compact** | **Comfortable**), each with a line saying what the one on does;
-then the theme, **Backups**, **Unused gear**, **Rescan bags**, **Reload file** and Diagnostics.
+**Spacing** (**Compact** | **Comfortable**, with a line saying what the one on does), then the theme, **Backups**,
+**Unused gear**, **Rescan bags**, **Reload file** and Diagnostics.
 
-**View** (under **Editor**) is kept per job; a new job file (the example, a draft) starts in Simple. Simple:
-each set says what it is for beside its name (`Tp_Default`: *Fighting*, `Idle_Refresh`: *Standing: low MP*), and the
-right pane has **Gear**, **What goes on** (the Result, with **Related** and **Compare** one click away) and
-**Stats**, plus **To fill** while something is left. Full view is everything below.
+Three panes of fixed width (nothing to drag): your sets on the left (about 34 characters wide), the open set in the
+middle (four slot cards wide; three or two on a narrow window), and the right pane for the rest: **What goes on**,
+**Gear**, **Stats**, **Compare** (while one is picked), **Related**, **To fill**. Sets show their names as in your
+file; hover one for what it is for in plain words (`Tp_Default`: *Fighting*). The Rules page uses the whole width
+(**< Sets** goes back).
 
 ## Rules
 
@@ -164,7 +164,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   Over the list, one line names the pieces that need RP and in how many sets (click: only those sets), and **On you
   now** shows the sets wearing something on you, the most slots first (click one to open it); their dots get a green
   ring.
-- Drag dividers to resize (double-click resets). Density is remembered per job.
+- Spacing is remembered per job.
 - **Theme** (under **Editor**): the editor's colours. Same as the bar (default), **Match goomui** (the theme goomui saved for
   this character), GoomSwap's own, or any of the 30 presets; hover one to preview. Kept per character
   (`gcedit-theme.txt`); the bar keeps its own.
@@ -201,7 +201,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 | Bag tag (top right): green / amber | Equippable bag / move it to Inventory or a wardrobe |
 | Missing | No copy owned |
 | Not in this set | A commented-out placeholder |
-| Unchanged / Replaced: source | The set leaves the slot alone / a later layer of the selected Result wins |
+| Unchanged / Replaced: source | The set leaves the slot alone / a later layer of the selected action (What goes on) wins |
 | Faded piece, *from <set>* | Not in this set: the piece an earlier set puts there and that stays (the layers Summary uses) |
 
 - Click a slot, then pick an item from **Gear**; the header shows **Pending** vs **Saved** (paths, augments).
@@ -226,9 +226,9 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 - Right-click a card or row: inspect, choose, **Set displaced rule** (`Slot = 'displaced'`: another item empties
   the slot, e.g. an instrument displacing ammo), undo, or **Clear slot** (earlier gear stays).
 
-## Summary, Inspect, Compare
+## Stats, Inspect, Compare
 
-- **Summary** totals the set's listed gear bonuses including inherited layers (`Idle > Tp_Default > Tp_Acc`);
+- **Stats** totals the set's listed gear bonuses including inherited layers (`Idle > Tp_Default > Tp_Acc`);
   untick **Include inherited gear** for the written definition only. **Base: Auto** uses the built-in route; pick a
   base set to change the underlay. Buffs, job code and combat formulas are not simulated (caps are shown over the
   totals, not applied to them); conditional and unknown effects sit under **Other effects / not totaled**.
@@ -239,16 +239,16 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   to -87.5% in all); one Damage taken row when the gear has DT only. Hover one: where the cap comes from (BG-Wiki,
   FFXIclopedia).
 
-![Caps over the Summary totals: haste, Fast Cast, damage taken split by PDT/MDT (mockup of the current build)](gcedit_caps.png)
+![Caps over the Stats totals: haste, Fast Cast, damage taken split by PDT/MDT (mockup of the current build)](gcedit_caps.png)
 
 - An item's hover (picker, slot cards) says which sets name it: *In 9 sets: Tp_Default, Midshot... +3*.
 - Hover any item for its stats; elemental resistances show as the element's coloured dot and value, as the game's
   icons do (also in Summary, and as a dot row on the card: one value when they all match, a ring for a penalty). **Inspect item below grid** pins it while you pick. Commented, inherited and
-  Result items can be inspected without adding them.
+  What goes on items can be inspected without adding them.
 - **Compare** shows both sets' stats and the difference (green/red by direction), or **Gear changes** slot by
   slot. **Copy definition...** (confirmed) copies the other set's written slots. Hover any count for details.
 
-## Sets, Result, Related, To fill
+## Sets, What goes on, Related, To fill
 
 - **More**: Revert set, Discard new set, Rename set, Delete set (undoable until Save).
 - **Rename set** is written on Save (a new set is renamed at once): the key and every place your code names it
@@ -262,7 +262,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 - The gear picker shows what each piece changes against the one in the slot now (`DT -3%  HP +8`): green better,
   red worse, % stats first; hover for all of them, before > after. Read from the item's description and
   augments, as Stats does (conditional effects left out).
-- **Result** shows what an action wore, layer by layer: recorded since load, or expected from your sets and modes.
+- **What goes on** shows what an action wore, layer by layer: recorded since load, or expected from your sets and modes.
   **Equip order** lists the layers first to last, each with its pieces as icons (green: still worn; faded orange:
   replaced later, by what on hover), the slots in screen order, and why it went on (*Weapon mode DeathPenalty: its
   weapons go on over the sets before; not fighting, so weapons your idle sets name win*).

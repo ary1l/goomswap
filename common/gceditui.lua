@@ -148,8 +148,7 @@ function state.Decode(text)
             if width and width == width and width >= 80 and width <= 4000 then preferences[key] = width end
         elseif key == 'density' and (value == 'Compact' or value == 'Comfortable') then
             preferences.density = value
-        elseif (key == 'view') and ((value == 'simple') or (value == 'full')) then
-            preferences.view = value -- Simple or Full view (nil: Simple for a new job file, else Full)
+        elseif key == 'view' then -- the old Simple / Full view: one view now, read and dropped
         elseif (key == 'start') and ((value == 'on') or (value == 'saved') or (value == 'off')) then
             preferences.start = value -- Getting started: shown, shown and saved once, done or hidden
         elseif key == 'recent' then -- the sets opened last, newest first (tab between names)
@@ -169,7 +168,6 @@ function state.Encode(preferences)
         lines[#lines + 1] = 'recent\t' .. table.concat(preferences.recent, '\t')
     end
     if preferences.start ~= nil then lines[#lines + 1] = 'start\t' .. preferences.start end
-    if preferences.view ~= nil then lines[#lines + 1] = 'view\t' .. preferences.view end
     return table.concat(lines, '\n') .. '\n'
 end
 
@@ -307,48 +305,24 @@ function panels.WindowSize(width, height)
     return { math.max(1, math.min(1360, (width or 1700) - 32)), math.max(1, math.min(840, (height or 910) - 32)) }
 end
 
-function panels.Resolve(width, left, middle)
-    local usable = math.max(3, width - HANDLE * 2)
-    local scale = math.min(1, usable / 740)
-    local minimumLeft, minimumMiddle, minimumRight = 160 * scale, 320 * scale, 260 * scale
-    left = clamp(left or 280, minimumLeft, usable - minimumMiddle - minimumRight)
-    middle = clamp(middle or 744, minimumMiddle, usable - left - minimumRight)
-    return { left = left, middle = middle, right = usable - left - middle, handle = HANDLE }
+-- Fixed pane widths, no dragging: the set list about 34 characters wide (by the font), the middle four slot cards wide,
+-- the right pane the rest; a narrow window gives the middle three, then two cards before the right pane goes under 380.
+local CARD = 176
+function panels.Layout(width, charW, spacing)
+    local gap = 4
+    spacing = spacing or 8
+    local left = clamp(math.floor((charW or 7) * 34), 230, 300)
+    local function middle_for(cols) return cols * CARD + (cols - 1) * spacing + 30 end
+    local cols = 4
+    while (cols > 2) and ((width - left - middle_for(cols) - 2 * gap) < 380) do cols = cols - 1 end
+    if (width - left - middle_for(cols) - 2 * gap) < 300 then left = 200 end
+    return { left = left, middle = middle_for(cols), gap = gap }
 end
 
 function panels.Grid(width, spacing)
     spacing = spacing or 8
     local columns = clamp(math.floor((width + spacing) / (144 + spacing)), 1, 4)
     return columns, math.max(40, math.floor((width - spacing * (columns - 1)) / columns))
-end
-
-function panels.Splitter(imgui, colors, id, height, value, default)
-    imgui.InvisibleButton('##gcedit_split_' .. id, { HANDLE, height })
-    local hovered, active = imgui.IsItemHovered(), imgui.IsItemActive()
-    if imgui.GetWindowDrawList and imgui.GetColorU32 then
-        local a, b = imgui.GetItemRectMin(), imgui.GetItemRectMax()
-        local x1, y1, x2, y2
-        if type(a) == 'number' then
-            x1, y1 = imgui.GetItemRectMin()
-            x2, y2 = imgui.GetItemRectMax()
-        else
-            x1, y1 = a.x or a[1], a.y or a[2]
-            x2, y2 = b.x or b[1], b.y or b[2]
-        end
-        imgui.GetWindowDrawList():AddRectFilled(
-            { x1 + 3, y1 }, { x2 - 3, y2 }, imgui.GetColorU32((active or hovered) and colors.sel or colors.edge), 1
-        )
-    end
-    if hovered and imgui.SetMouseCursor and ImGuiMouseCursor_ResizeEW then
-        imgui.SetMouseCursor(ImGuiMouseCursor_ResizeEW)
-    end
-    if hovered and imgui.IsMouseDoubleClicked and imgui.IsMouseDoubleClicked(0) then return default, true end
-    if active then
-        local delta = imgui.GetIO().MouseDelta
-        local x = delta.x or delta[1]
-        if x ~= 0 then return value + x, true end
-    end
-    return value, false
 end
 
 -- A collapsing section header in the button greys: blue stays for what is selected.
@@ -367,7 +341,7 @@ function panels.SameLineIfFits(imgui, required)
     if width < required then imgui.NewLine() end
 end
 
--- keep: tabs reached from inside another (Simple view's Related, Compare): stay selected though not listed.
+-- keep: tabs reached from inside another: stay selected though not listed.
 function panels.Tabs(imgui, colors, selected, entries, keep)
     local available = imgui.GetContentRegionAvail()
     local width = type(available) == 'number' and available or (available.x or available[1])

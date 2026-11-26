@@ -348,7 +348,7 @@ local settingsFiles = gFunc.LoadFile('common\\gceditsettings.lua')({
     state = function() return editorState end,
 })
 ctx.settingsFiles = settingsFiles -- the job file's own settings are written by Save (gceditsets)
-ctx.simple = gFunc.LoadFile('common\\gceditsimple.lua')(editorState) -- Simple view (labels, fewer buttons)
+ctx.simple = gFunc.LoadFile('common\\gceditsimple.lua')(editorState) -- plain words for set names (the list's hover)
 ctx.newjob = gFunc.LoadFile('common\\gceditnewjob.lua')({ imgui = imgui, palette = palette, set_tip = set_tip,
     feedback = feedback }) -- the file menu's New job file
 -- the Rules page (gcinclude.Rules), in ctx: this chunk is at Lua's 200-local limit
@@ -2019,7 +2019,6 @@ local function body()
     if draw_job_files() then return end
     -- the left: who, which file, saved or not; the right: Rules, Settings, ... (view, density, theme, the file's
     -- tools) and Save
-    local simple = ctx.simple.On()
     local n = dirty_count()
     imgui.SameLine(0, 10)
     if n > 0 then
@@ -2050,32 +2049,18 @@ local function body()
     if imgui.IsItemHovered() then
         set_tip('How GoomSwap behaves in game, for every job file that loads it: what an include file\'s settings are '
             .. 'in GearSwap or LuAshitacast (DT gear below HP, Moonshade TP, keys, the bar...). For you on every job, '
-            .. 'on this job, or for everyone.\n\nThe editor\'s own view, spacing and theme: Editor.')
+            .. 'on this job, or for everyone.\n\nThe editor\'s own spacing and theme: Editor.')
     end
     imgui.SameLine()
     local tools = { backups = false, cleanup = false, rescan = false, reload = false }
     if imgui.Button('Editor##gcedit_more') then imgui.OpenPopup('##gcedit_tools') end
     if imgui.IsItemHovered() then
-        set_tip('This editor itself: its view, spacing and theme; this file\'s Backups, Unused gear, Rescan bags, Reload '
+        set_tip('This editor itself: its spacing and theme; this file\'s Backups, Unused gear, Rescan bags, Reload '
             .. 'file. (How GoomSwap behaves in game: GoomSwap settings.)')
     end
     if imgui.BeginPopup('##gcedit_tools') then
         -- either/or choices as switches, each with what the one on does
         imgui.PushTextWrapPos(imgui.GetCursorPosX() + 330)
-        imgui.TextColored(palette.dim, 'View')
-        imgui.SameLine(90)
-        local view = ctx.W.Switch('gct_view', {
-            { true, 'Simple', 'Set names say what they are for; right pane: Gear, What goes on, Stats.' },
-            { false, 'Full', 'Set names as in your file; right pane: Result, Gear, Summary, Related, To fill.' },
-        }, simple)
-        if view ~= nil then
-            ctx.simple.Set(view)
-            save_preferences()
-        end
-        imgui.TextColored(palette.dim, simple
-            and 'Simple: sets named by what they are for, Standing (Idle); right pane Gear, What goes on, Stats.'
-            or 'Full: sets named as in your file, Idle; right pane Result, Gear, Summary, Related, To fill.')
-        imgui.Spacing()
         imgui.TextColored(palette.dim, 'Spacing')
         imgui.SameLine(90)
         local dens = editorState.preferences.density or 'Compact'
@@ -2224,28 +2209,22 @@ local function body()
     imgui.Separator()
 
     local availableWidth, availableHeight = xy(imgui.GetContentRegionAvail())
-    local sizes = editorPanels.Resolve(availableWidth, editorState.preferences.left, editorState.preferences.middle)
-    imgui.BeginChild('##gcedit_left', { sizes.left, 0 }, CHILD_BORDERS)
-    draw_sets()
-    imgui.EndChild()
-    imgui.SameLine(0, 0)
-    local left, leftChanged = editorPanels.Splitter(imgui, palette, 'sets', availableHeight, sizes.left, 280)
-    if leftChanged then
-        local nextSizes = editorPanels.Resolve(availableWidth, left, sizes.middle)
-        editorState.preferences.left = nextSizes.left
-        editorState.preferences.middle = nextSizes.middle
-        editorState.preferences.dirty = true
-    end
-    imgui.SameLine(0, 0)
-    local set = (editorState.selection.setName ~= nil)
-            and editorState.document.model.byName[editorState.selection.setName] or nil
-    -- the Rules page takes the width up to the window's edge: the right pane is about the open set
-    local rulesPage = editorState.selection.rules and (ctx.rules ~= nil)
-    imgui.BeginChild('##gcedit_mid', { rulesPage and 0 or sizes.middle, 0 }, 0)
-    local gridWidth = xy(imgui.GetContentRegionAvail())
     local spacing = 8
     local style = imgui.GetStyle and imgui.GetStyle()
     if style and style.ItemSpacing then spacing = style.ItemSpacing.x or style.ItemSpacing[1] or spacing end
+    local set = (editorState.selection.setName ~= nil)
+            and editorState.document.model.byName[editorState.selection.setName] or nil
+    -- fixed panes (no dragging); the Rules page has its own list on the left and takes the whole width
+    local rulesPage = editorState.selection.rules and (ctx.rules ~= nil)
+    local lay = editorPanels.Layout(availableWidth or 1200, text_w('0'), spacing)
+    if not rulesPage then
+        imgui.BeginChild('##gcedit_left', { lay.left, 0 }, CHILD_BORDERS)
+        draw_sets()
+        imgui.EndChild()
+        imgui.SameLine(0, lay.gap)
+    end
+    imgui.BeginChild('##gcedit_mid', { rulesPage and 0 or lay.middle, 0 }, 0)
+    local gridWidth = xy(imgui.GetContentRegionAvail())
     GRID_COLUMNS, CELL_W = editorPanels.Grid(gridWidth, spacing)
     ctx.GRID_COLUMNS, ctx.CELL_W = GRID_COLUMNS, CELL_W
     local inspectorHeight
@@ -2267,35 +2246,16 @@ local function body()
         editorInspect.DrawPinned(imgui, palette, editorState, itemTooltip, inspectorHeight, draw_icon)
     end
     imgui.EndChild()
-    local middleChanged = false
     if not rulesPage then
-    imgui.SameLine(0, 0)
-    local middle
-    middle, middleChanged = editorPanels.Splitter(imgui, palette, 'details', availableHeight, sizes.middle, 744)
-    if middleChanged then
-        editorState.preferences.middle = editorPanels.Resolve(availableWidth, sizes.left, middle).middle
-        editorState.preferences.dirty = true
-    end
-    imgui.SameLine(0, 0)
+    imgui.SameLine(0, lay.gap)
     imgui.BeginChild('##gcedit_right', { 0, 0 }, CHILD_BORDERS)
     local nf = fill_list().n
-    local tabs
-    if ctx.simple.On() then -- Gear, What goes on (Result; Related one click away), Stats; To fill when there is some
-        tabs = { { 'Gear', 'gear' }, { 'What goes on', 'action' }, { 'Stats', 'summary' } }
-        if nf > 0 then tabs[#tabs + 1] = { 'To fill (' .. nf .. ')', 'fill' } end
-    else
-        tabs = { { 'Result', 'action' }, { 'Gear', 'gear' }, { 'Summary', 'summary' } }
-        if set and cmp_of(set) then tabs[#tabs + 1] = { 'Compare', 'compare' } end
-        tabs[#tabs + 1] = { 'Related', 'over' }
-        tabs[#tabs + 1] = { nf > 0 and ('To fill (' .. nf .. ')') or 'To fill', 'fill' }
-    end
-    editorState.selection.tab = editorPanels.Tabs(imgui, palette, editorState.selection.tab, tabs,
-        ctx.simple.On() and { over = true, compare = true } or nil)
-    if ctx.simple.On() and ((editorState.selection.tab == 'over') or (editorState.selection.tab == 'compare')) then
-        if imgui.SmallButton('< back##simple_back') then editorState.selection.tab = 'action' end -- to What goes on
-        imgui.SameLine()
-        imgui.TextColored(palette.blue, (editorState.selection.tab == 'over') and 'Related' or 'Compare')
-    end
+    -- one set of tabs: what the set does in game, picking gear, its stats; Compare while one is picked
+    local tabs = { { 'What goes on', 'action' }, { 'Gear', 'gear' }, { 'Stats', 'summary' } }
+    if set and cmp_of(set) then tabs[#tabs + 1] = { 'Compare', 'compare' } end
+    tabs[#tabs + 1] = { 'Related', 'over' }
+    tabs[#tabs + 1] = { nf > 0 and ('To fill (' .. nf .. ')') or 'To fill', 'fill' }
+    editorState.selection.tab = editorPanels.Tabs(imgui, palette, editorState.selection.tab, tabs)
     imgui.Separator()
     if editorState.selection.tab == 'compare' then
         if set then
@@ -2326,13 +2286,6 @@ local function body()
             editorUI.Stats.Controls(imgui, palette, editorState)
             editorUI.Stats.DrawSummary(imgui, palette, set.name, set_stats(set))
         elseif editorState.selection.tab == 'action' then
-            if ctx.simple.On() then -- Related and Compare live here in Simple view
-                if imgui.SmallButton('Sets that go on with it (Related)##simple_rel') then editorState.selection.tab = 'over' end
-                if cmp_of(set) then
-                    imgui.SameLine()
-                    if imgui.SmallButton('Compare##simple_cmp') then editorState.selection.tab = 'compare' end
-                end
-            end
             imgui.PushTextWrapPos(0)
             draw_layers(set)
             imgui.PopTextWrapPos()
@@ -2344,8 +2297,6 @@ local function body()
     end
     imgui.EndChild()
     end
-    if editorState.ui.resizing and not imgui.IsMouseDown(0) then save_preferences() end
-    editorState.ui.resizing = leftChanged or middleChanged or (editorState.ui.resizing and imgui.IsMouseDown(0))
     if editorState.ui.openSetChooser then
         imgui.OpenPopup('##gcedit_copy')
         editorState.ui.openSetChooser = nil
@@ -2737,7 +2688,7 @@ function gcedit.Show(setName, slot) -- slot: select it too (the /gcgear right-cl
     go_to(hit.name, slot, 'action')
 end
 
--- /gcedit last: the Result tab on that use of the set (a gcaction record's key: 'Weaponskill Leaden Salute').
+-- /gcedit last: the What goes on tab on that use of the set (a gcaction record's key: 'Weaponskill Leaden Salute').
 function gcedit.PickRecord(setName, key)
     if (not editorState.open) or (setName == nil) or (key == nil) then return end
     local hit = editorState.document.model.byLower[string.lower(setName)]

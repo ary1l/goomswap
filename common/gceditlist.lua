@@ -875,13 +875,9 @@ local function draw_sets()
                     -- a set inside a set under its parent's heading: indented, by its key; moved elsewhere: its name
                     local parent = (set.parentName ~= nil) and editorState.document.model.byName[set.parentName] or nil
                     local nested = (parent ~= nil) and (parent.group == set.group)
-                    local simple = (ctx.simple ~= nil) and ctx.simple.On() or false
-                    if (set.rowVer ~= editorState.document.revision) or (set.rowNested ~= nested)
-                        or (set.rowSimple ~= simple) then
-                        set.rowNested, set.rowSimple = nested, simple
+                    if (set.rowVer ~= editorState.document.revision) or (set.rowNested ~= nested) then
+                        set.rowNested = nested
                         local label = nested and ('    ' .. set.key) or set.name
-                        local plain = simple and (not nested) and ctx.simple.Label(set.name) or nil
-                        if plain ~= nil then label = plain .. '  (' .. set.name .. ')' end -- Simple view: what it is for
                         if editorState.document.deleted[set.name] then
                             label = label .. ' (delete)'
                         elseif set.new then
@@ -909,6 +905,8 @@ local function draw_sets()
                     if imgui.IsItemHovered() and (editorState.ui.dragSet == nil) then
                         local rc = (grp.hint ~= nil) and row_cmd(set) or nil
                         local done = set_completion_tip(set, status)
+                        local plain = (ctx.simple ~= nil) and ctx.simple.Label(set.name) or nil -- what it is for, in words
+                        if plain ~= nil then done = plain .. '\n\n' .. done end
                         local tip = ((rc ~= nil) and (rc.tip ~= nil)) and (rc.tip .. '\n\n' .. done) or done
                         if ctx.set_peek ~= nil then ctx.set_peek(set, tip) else set_tip(tip) end -- its gear too
                     end

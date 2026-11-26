@@ -16,7 +16,7 @@ More pictures of the editor, some of them mockups of the newest build, are in [i
 - Rules: "when this, wear that" without code (a buff up, low MP, a spell on you, a mode...), made in `/gcedit`;
   **Convert** turns your job file's own `if`s into rules with the same result ([Rules](docs/rules.md)).
 - No text editor needed: sets, rules, modes, settings (lists and keybinds as controls) and new job files are all
-  done in `/gcedit`, in a Simple view or the Full one.
+  done in `/gcedit`.
 - `/gcimport` reads a Windower GearSwap job file's sets into a GoomSwap draft; **Adopt** makes a plain LuAshitacast
   file a GoomSwap one, its code kept.
 - Packer: `/lac gear` (the Packer plugin) fetches every set's gear, your Packer lists and the items GoomSwap wears.
@@ -61,7 +61,7 @@ More pictures of the editor, some of them mockups of the newest build, are in [i
    into a set.
 4. Choose **Save + reload**. The previous file is backed up; the newest ten editor backups per job are kept
    by default (`EditorBackupKeep = 0` keeps all). Other job files use **Save file** without changing your active job.
-5. Run `/checksets`; the editor's **Result** tab shows what an action actually put on, slot by slot.
+5. Run `/checksets`; the editor's **What goes on** tab shows what an action actually put on, slot by slot.
 
 While a job file is new (still the example, or a `/gcbuild` draft), the editor shows a **Getting started** list of
 these steps, each ticked from what GoomSwap sees, with a button for each. It goes away once every step is done, or
@@ -146,5 +146,5 @@ See [all commands and keys](docs/commands.md).
 - **Changes do not apply:** `/lac reload`.
 - **A slot will not change:** `/unlock`; check TP and Aftermath weapon holds.
 - **A set is empty or gear is missing:** run `/checksets` and inspect the set in `/gcedit`.
-- **An action is cancelled:** read the reason in chat; the editor's Result shows the gear path.
+- **An action is cancelled:** read the reason in chat; the editor's What goes on tab shows the gear path.
 - **Bar or HUD is hidden:** `/gcbar on`, `/gchud on`, or `/gcbar reset`; the gear grid: `/gcgear on`, `/gcgear reset`.

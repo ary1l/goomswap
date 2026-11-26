@@ -1200,6 +1200,9 @@ return function(o)
         imgui.EndChild()
         imgui.SameLine()
         imgui.BeginChild('##rules_main', MAIN_W, 0)
+        if button('< Sets##rules_back', 'ghost', true) then editorState.selection.rules = false end -- the set list
+        if imgui.IsItemHovered() then set_tip('Back to your sets (the Rules button in the top bar does the same).') end
+        imgui.SameLine(0, 6)
         if button('+ New rule##rules_add', 'primary', true) then
             M.Edit(nil)
             if (view == 'code') or (view == 'stays') then editorState.ui.rulesView = 'all'; view = 'all' end

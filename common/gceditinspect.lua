@@ -457,7 +457,7 @@ local function draw_cell(set, slot)
         local inh = (ghost_of(set, slot) == nil) and inherited_of(set, slot) or nil
         set_tip((inh ~= nil)
             and (wrap('Not in this set: ' .. inh.from .. ' puts ' .. inh.name .. ' here, and it stays (the layers '
-                .. 'Summary uses; its Base: picks another). Click: pick gear for this set.', 60))
+                .. 'Stats uses; its Base: picks another). Click: pick gear for this set.', 60))
             or 'This set leaves the slot alone. Gear from an earlier layer stays equipped.')
     elseif imgui.IsItemHovered() and diff then
         local w = current(other, slot)
@@ -468,7 +468,7 @@ end
 
 -- Equipped result: the recorded actions (gcaction.Rec*) that used this set; for the one picked, each slot's
 -- final piece and the set (or engine rule) it came from, then the order the sets went on, then sets it looked for.
--- /gcedit: the Result view's tables (what an action wore, layer by layer).
+-- /gcedit: the What goes on tables (what an action wore, layer by layer).
 local TABLE_FLAGS =
     bit.bor(ImGuiTableFlags_RowBg or 0, ImGuiTableFlags_Borders or 0, ImGuiTableFlags_SizingStretchProp or 0)
 
