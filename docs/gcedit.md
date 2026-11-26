@@ -166,7 +166,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   Over the list, one line names the pieces that need RP and in how many sets (click: only those sets), and **On you
   now** shows the sets wearing something on you, the most slots first (click one to open it); their dots get a green
   ring.
-- Spacing is remembered per job.
+- Spacing is one GoomSwap setting for every job (`EditorSpacing` in char.lua; the **Editor** menu writes it).
 - **Theme** (under **Editor**): the editor's colours. Same as the bar (default), **Match goomui** (the theme goomui saved for
   this character), GoomSwap's own, or any of the 30 presets; hover one to preview. Kept per character
   (`gcedit-theme.txt`); the bar keeps its own.
@@ -298,4 +298,5 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 cancelling writes nothing. Saving checks the file didn't change on disk and still parses, writes a dated backup,
 then reloads (reopening the editor if ticked). A set written as code (built by a function, not a table of slots) is shown, not
 edited; everything outside the gear definitions, rules and the settings you change is kept as written. The newest three editor backups per file are kept (`EditorBackupKeep` in
-char.lua's `settings`, `0` keeps all). Widths and density live in the job's `.gcedit-ui` file.
+char.lua's `settings`, `0` keeps all). Spacing is a GoomSwap setting (`EditorSpacing`); recent sets and Getting started
+last for the game session. Nothing else is written beside the job file.

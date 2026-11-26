@@ -804,7 +804,7 @@ local function draw_sets()
                     editorState.ui.fold[grp.g] = not open
                     ctx.headings.saveFolds()
                 end
-                local pad = editorPanels.Density(editorState.preferences.density).padding[1]
+                local pad = editorPanels.Density(ctx.spacing()).padding[1]
                 arrowW = ((imgui.GetFontSize ~= nil) and imgui.GetFontSize() or 16) + 2 * pad
             else
                 grp.labels = grp.labels
@@ -825,7 +825,7 @@ local function draw_sets()
                 pill(grp.n, palette.dim, palette.chipBg)
             end
             if (grp.hint ~= nil) then -- MELEE / WEAPONS: + /mset mode, + /wm mode at the heading's right end
-                local pad = editorPanels.Density(editorState.preferences.density).padding[1]
+                local pad = editorPanels.Density(ctx.spacing()).padding[1]
                 local label = (grp.hint.mset ~= nil) and '+ /mset mode' or '+ /wm mode'
                 local bw = text_w(label) + 2 * pad
                 imgui.SameLine()

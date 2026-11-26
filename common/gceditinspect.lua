@@ -3,7 +3,7 @@ return function(
     BASE, CHILD_BORDERS, ELEM_ICON, NONE, SCREEN, SJIS, ago, augmentInfo, by_name, cardText, ctx, current,
     descs, draw_icon, drop_new, edit, editorInspect, editorPanels, editorPreferences, editorState, empty_armor,
     feedback, ghost_of, go_to, help, imgui, is_slot_word, itemTooltip, item_id, make_set, owned_for, palette,
-    pending_weapon_mode, pill, profiler, red_button, registration_plan, request_context, rp_uses, save_preferences,
+    pending_weapon_mode, pill, profiler, red_button, registration_plan, request_context, rp_uses,
     set_status, set_tip, statModel, tag, text_w, use_worn, where, wrap, xy
 )
 local BUFF_HOLDERS = { buffs = true, buffs_ws = true, buffs_midcast = true } -- sets the engine reads per buff

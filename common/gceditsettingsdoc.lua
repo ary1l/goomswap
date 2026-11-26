@@ -29,6 +29,7 @@ local settings = {
     SmartSwap = { 'Keeps Main/Sub/Range on for the KeepWeaponsFor spells instead of losing TP to a swap (/smartswap).' },
     SmartSwapTP = { 'SmartSwap acts only at or above this TP.', '1' },
     KeepWeaponsFor = { 'Spells that keep Main/Sub/Range: a name, or Spells (names they start with) while a Worn item is in Main or Sub.', "{ 'Dia II', { Spells = { 'Cure' }, Worn = { 'Daybreak' } } }" },
+    EditorSpacing = { "The set editor's spacing: Compact (tighter rows, more fits) or Comfortable. Its Editor menu sets it too.", 'Comfortable' },
     EditorIgnoreSuggestions = { 'Exact set names /gcedit no longer suggests (Related tab), any case.', "{ 'Singing' }" },
     EditorBackupKeep = { 'Newest dated /gcedit backups kept per job file after a save. 0 = keep all.', '3' },
     EditorGroups = { 'Your /gcedit headings and their order; the heading menus write it.', "{ 'Weapons', 'Idle', { 'Two-handed', 'Tp_Chango' } }" },
@@ -126,7 +127,7 @@ local names = {
     IdleWeapons = "Idle sets' weapons win out of combat", AftermathHold = 'Keep weapons during Aftermath',
     HoldExempt = 'Always swap weapons for', SmartSwap = 'SmartSwap', SmartSwapTP = 'SmartSwap from TP',
     KeepWeaponsFor = 'Spells that keep your weapons', EditorIgnoreSuggestions = 'Hidden set suggestions',
-    EditorBackupKeep = 'Backups kept per job file', EditorGroups = 'Set list headings', EditorHidden = 'Hidden headings',
+    EditorBackupKeep = 'Backups kept per job file', EditorSpacing = 'Editor spacing', EditorGroups = 'Set list headings', EditorHidden = 'Hidden headings',
     EditorSort = 'Heading sort order', EditorOrder = 'Your set order', EnchantWindow = 'Enchanted item wait (s)',
     EnchantDelays = 'Enchanted item waits', ReceivedSets = 'Sets for spells on their way to you',
     ReceivedWindow = 'Received set time (s)', MyBoxes = 'Your boxes (Multisend)', ElementReport = 'Chat line for element gear',
@@ -157,7 +158,7 @@ local categories = {
         'CapacityCapes', 'JubileeSlot' } },
     { 'Keys', { 'Keybinds' } },
     { 'Bar & HUD', { 'DisplayBar', 'DisplayBarX', 'DisplayBarY', 'HUDOwners', 'HUDAbbr', 'WeaponClass', 'Theme' } },
-    { 'Editor', { 'EditorBackupKeep', 'EditorIgnoreSuggestions', 'EditorGroups', 'EditorHidden', 'EditorSort',
+    { 'Editor', { 'EditorSpacing', 'EditorBackupKeep', 'EditorIgnoreSuggestions', 'EditorGroups', 'EditorHidden', 'EditorSort',
         'EditorOrder' } },
 }
 

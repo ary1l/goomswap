@@ -88,13 +88,6 @@ local function request_context(kind, set, slot, gear, source)
     editorState.ui.openContext = true
 end
 
-local function save_preferences()
-    if not editorState.open or not editorState.preferences then return end
-    local ok, err = editorPreferences.Save(
-        editorState.document.path .. '.gcedit-ui', editorState.preferences, fileWriter.Write
-    )
-    if not ok then gearEngine.Err('Could not save editor preferences: ' .. tostring(err)) end
-end
 
 -- Static editor palette: blue focus, amber edits, violet RP; no animated effects.
 -- /gcedit: palette and its colour-preset recolouring (gctheme, shared with goomui).
@@ -348,6 +341,12 @@ local settingsFiles = gFunc.LoadFile('common\\gceditsettings.lua')({
     state = function() return editorState end,
 })
 ctx.settingsFiles = settingsFiles -- the job file's own settings are written by Save (gceditsets)
+-- The editor's spacing: GoomSwap settings' EditorSpacing (char.lua, else the shared file, else Compact); this
+-- session's pick when char.lua couldn't take it (GcEditSpacing).
+ctx.spacing = function()
+    local v = GcEditSpacing or settingsFiles.Get('EditorSpacing')
+    return (v == 'Comfortable') and 'Comfortable' or 'Compact'
+end
 ctx.words = gFunc.LoadFile('common\\gceditwords.lua')(editorState) -- plain words for set names (the list's hover)
 ctx.newjob = gFunc.LoadFile('common\\gceditnewjob.lua')({ imgui = imgui, palette = palette, set_tip = set_tip,
     feedback = feedback }) -- the file menu's New job file
@@ -954,7 +953,7 @@ end
 
 local m_gceditsets = gFunc.LoadFile('common\\gceditsets.lua')(
     ARMOR, BASE, ENGINE, SCREEN, augments_of, ctx, current, edit, editorPreferences, editorState, feedback,
-    fileWriter, gcedit, group_of, imgui, palette, pending_weapon_mode, read_file, save_preferences, setFile,
+    fileWriter, gcedit, group_of, imgui, palette, pending_weapon_mode, read_file, setFile,
     set_tip, xy
 )
 local suggestions, make_set, copy_from, draw_copy_popup, drop_new, empty_armor, use_worn, save, ago, red_button, tag,
@@ -977,7 +976,7 @@ local m_gceditinspect = gFunc.LoadFile('common\\gceditinspect.lua')(
     BASE, CHILD_BORDERS, ELEM_ICON, NONE, SCREEN, SJIS, ago, augmentInfo, by_name, cardText, ctx, current,
     descs, draw_icon, drop_new, edit, editorInspect, editorPanels, editorPreferences, editorState, empty_armor,
     feedback, ghost_of, go_to, help, imgui, is_slot_word, itemTooltip, item_id, make_set, owned_for, palette,
-    pending_weapon_mode, pill, profiler, red_button, registration_plan, request_context, rp_uses, save_preferences,
+    pending_weapon_mode, pill, profiler, red_button, registration_plan, request_context, rp_uses,
     set_status, set_tip, statModel, tag, text_w, use_worn, where, wrap, xy
 )
 local describe, cmp_of, inspection_target, inspect_item, set_stats, ignored_suggestion_names, draw_layers,
@@ -991,7 +990,7 @@ local m_gceditrelated = gFunc.LoadFile('common\\gceditrelated.lua')(
     conds_on, ctx, current, describe, draw_icon, draw_png, edit, editorPanels, editorPreferences,
     editorState, feedback, fits, ghost_of, go_to, group_of, has_set, help, help_icon, ignored_suggestion_names,
     imgui, index_all_items, inspect_item, inspection_target, itemTooltip, make_button, make_set, melee_modes,
-    owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, save_preferences, setFile,
+    owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, setFile,
     set_action_entries, set_tip, tag, text_w, undo_slot, where, wi_from_game, wrap, xy
 )
 local draw_over, draw_picker, fill_list, draw_fill, draw_context_menu, variants_of, rename_problem,
@@ -1399,7 +1398,6 @@ ctx.restore_backup = function(b) -- true when written
     end
     gearEngine.Say('/gcedit: restored ' .. editorState.document.file .. ' from ' .. b.when .. '; reloading')
     ui.saving, ui.notice, ui.noticeBad = true, 'Restored: reloading the job file...', false
-    save_preferences()
     GcEditReopen = nil
     fileWriter.Write(path .. '.gcedit-reopen', tostring(os.time()) .. '\n' .. (editorState.selection.setName or '')
         .. '\n' .. (editorState.selection.slot or ''))
@@ -1538,8 +1536,7 @@ ctx.used_in = function(name)
     return 'In ' .. #list .. ((#list == 1) and ' set: ' or ' sets: ') .. table.concat(shown, ', ')
         .. ((#list > 6) and (' +' .. (#list - 6)) or '')
 end
--- Recent (over the slots): the sets opened last, newest first, kept with the job's editor preferences; a click opens
--- one.
+-- Recent (over the slots): the sets opened last, newest first, for this game session; a click opens one.
 ctx.draw_recent = function(set)
     local p = editorState.preferences
     p.recent = (type(p.recent) == 'table') and p.recent or {}
@@ -1549,7 +1546,6 @@ ctx.draw_recent = function(set)
         end
         table.insert(p.recent, 1, set.name)
         while #p.recent > 7 do table.remove(p.recent) end
-        p.dirty = true
     end
     local shown = 0
     imgui.PushStyleColor(ImGuiCol_Button, palette.chipBg) -- quieter than the strip under it
@@ -1923,8 +1919,7 @@ ctx.draw_start = function()
     if doc.inactive or (p == nil) or (p.start == 'off') then return false end
     if p.start == nil then -- only a new job file starts it: not one you already set up
         if not (doc.example or (doc.sourcePath ~= nil)) then return false end
-        p.start, p.dirty = 'on', true
-        save_preferences()
+        p.start = 'on'
     end
     local steps = start_steps()
     local done = 0
@@ -1932,8 +1927,7 @@ ctx.draw_start = function()
         if st.done then done = done + 1 end
     end
     if done == #steps then
-        p.start, p.dirty = 'off', true
-        save_preferences()
+        p.start = 'off'
         feedback('Getting started: all ' .. #steps .. ' steps done.')
         return false
     end
@@ -1953,8 +1947,7 @@ ctx.draw_start = function()
     imgui.TextColored(palette.dim, done .. ' of ' .. #steps .. ' done')
     start_right('Hide')
     if imgui.SmallButton('Hide##gcstart_hide') then
-        p.start, p.dirty = 'off', true
-        save_preferences()
+        p.start = 'off'
         feedback('Getting started hidden for ' .. tostring(doc.file) .. '.')
     end
     if imgui.IsItemHovered() then set_tip('Not shown again for ' .. tostring(doc.file) .. '.') end
@@ -2031,7 +2024,7 @@ local function body()
     else
         pill('saved', palette.ok, palette.okBg)
     end
-    local d = editorPanels.Density(editorState.preferences.density)
+    local d = editorPanels.Density(ctx.spacing())
     local saveLabel = editorState.document.inactive and 'Save file' or 'Save + reload'
     local need = text_w(ctx.rules.TopLabel()) + text_w('GoomSwap settings') + text_w('Editor') + text_w(saveLabel)
         + 8 * d.padding[1] + 3 * d.spacing[1]
@@ -2063,15 +2056,15 @@ local function body()
         imgui.PushTextWrapPos(imgui.GetCursorPosX() + 330)
         imgui.TextColored(palette.dim, 'Spacing')
         imgui.SameLine(90)
-        local dens = editorState.preferences.density or 'Compact'
+        local dens = ctx.spacing()
         local pickD = ctx.W.Switch('gct_dens', {
             { 'Compact', 'Compact', 'Tighter rows and slot cards: more fits on screen.' },
             { 'Comfortable', 'Comfortable', 'More room between rows, taller slot cards.' },
         }, dens)
-        if pickD ~= nil then
-            editorState.preferences.density = pickD
-            editorState.preferences.dirty = true
-            save_preferences()
+        if pickD ~= nil then -- GoomSwap settings' EditorSpacing, in char.lua: every job, every session
+            local ok, err = settingsFiles.Write('own', { EditorSpacing = pickD })
+            GcEditSpacing = (not ok) and pickD or nil
+            if not ok then feedback('Spacing for this session only (not saved to char.lua: ' .. tostring(err) .. ').') end
         end
         imgui.TextColored(palette.dim, (dens == 'Comfortable') and 'Comfortable: more room between rows, taller slot cards.'
             or 'Compact: tighter rows and slot cards, more fits on screen.')
@@ -2416,9 +2409,10 @@ local function render()
     if (AshitaCore:GetFontManager():GetVisible() == false) or (AshitaCore:GetGuiManager():GetVisible() == false) then
         return
     end
-    local density = editorPanels.Density(editorState.preferences.density)
-    if editorState.cache.density ~= editorState.preferences.density then
-        editorState.cache.density = editorState.preferences.density
+    local spacing = ctx.spacing()
+    local density = editorPanels.Density(spacing)
+    if editorState.cache.density ~= spacing then
+        editorState.cache.density = spacing
         editorState.cache.rowH, editorState.cache.listKey = nil, nil
         editorState.cache.fill, editorState.cache.fillVer, editorState.ui.over = nil, nil, nil
         for _, set in ipairs(editorState.document.model.list) do set.clipH = nil end
@@ -2557,7 +2551,7 @@ function gcedit.Open(include, setName, slot, draft)
         draft = draft ~= nil,
         job = player:GetMainJob(),
         level = player:GetMainJobLevel(),
-        preferences = editorPreferences.Load(path .. '.gcedit-ui'),
+        preferences = editorPreferences.Load(path),
         fold = GcEditFold or settingsFiles.LoadFolds(), -- folded headings: this session's, else the saved ones
     }))
     editorState.document.characterFolder = char_dir() or path:match('^(.*[\\/])') or ''
@@ -2610,14 +2604,13 @@ function gcedit.SwitchFile(target, discard, setName)
     local live = fileWriter.FileKey(target.path) == fileWriter.FileKey(gProfile and gProfile.FilePath)
     local nextState = editorPreferences.New({ path = target.path, job = target.job,
         level = live and AshitaCore:GetMemoryManager():GetPlayer():GetMainJobLevel() or nil,
-        preferences = editorPreferences.Load(target.path .. '.gcedit-ui'), fold = editorState.ui.fold })
+        preferences = editorPreferences.Load(target.path), fold = editorState.ui.fold })
     local model, err = load_model(nextState.document)
     if not model then
         editorState.ui.notice,
             editorState.ui.noticeBad = 'Could not open ' .. target.name .. ': ' .. tostring(err), true
         return false
     end
-    save_preferences()
     nextState.document.model, nextState.document.inactive = model, not live
     nextState.document.characterFolder = editorState.document.characterFolder
     nextState.inventory, nextState.ui.jobFiles = editorState.inventory, editorState.ui.jobFiles
@@ -2697,7 +2690,6 @@ function gcedit.PickRecord(setName, key)
 end
 
 function gcedit.Close()
-    save_preferences()
     ashita.events.unregister('d3d_present', 'gcedit_render')
     set_state(nil)
 end

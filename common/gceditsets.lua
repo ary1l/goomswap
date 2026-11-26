@@ -1,7 +1,7 @@
 -- /gcedit: new sets, copying, Use worn and saving.
 return function(
     ARMOR, BASE, ENGINE, SCREEN, augments_of, ctx, current, edit, editorPreferences, editorState, feedback,
-    fileWriter, gcedit, group_of, imgui, palette, pending_weapon_mode, read_file, save_preferences, setFile,
+    fileWriter, gcedit, group_of, imgui, palette, pending_weapon_mode, read_file, setFile,
     set_tip, xy
 )
 -- What the New set list offers: { name, why } for names the file lacks: the job's example file's sets, the engine's,
@@ -409,11 +409,10 @@ local function save()
         editorState.selection.setName = renames[editorState.selection.setName]
     end
     if (editorState.preferences ~= nil) and (editorState.preferences.start == 'on') then -- Getting started: saved once
-        editorState.preferences.start, editorState.preferences.dirty = 'saved', true
+        editorState.preferences.start = 'saved'
     end
     if editorState.document.inactive then
         ctx.gearEngine.Say('/gcedit: saved ' .. editorState.document.file .. '; active job left loaded')
-        save_preferences()
         gcedit.Reload()
         editorState.ui.notice, editorState.ui.noticeBad = cleanupError
             and ('Saved, but backup cleanup failed: ' .. tostring(cleanupError))
@@ -427,7 +426,6 @@ local function save()
     )
     editorState.ui.saving, editorState.ui.notice, editorState.ui.noticeBad =
         true, 'Saved: reloading the job file...', false -- a second click would find the file changed
-    save_preferences()
     GcEditReopen = nil
     if editorState.ui.reopen == nil or editorState.ui.reopen[1] then
         local ok, reopenErr = fileWriter.Write(

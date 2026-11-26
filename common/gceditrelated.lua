@@ -4,7 +4,7 @@ return function(
     conds_on, ctx, current, describe, draw_icon, draw_png, edit, editorPanels, editorPreferences,
     editorState, feedback, fits, ghost_of, go_to, group_of, has_set, help, help_icon, ignored_suggestion_names,
     imgui, index_all_items, inspect_item, inspection_target, itemTooltip, make_button, make_set, melee_modes,
-    owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, save_preferences, setFile,
+    owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, setFile,
     set_action_entries, set_tip, tag, text_w, undo_slot, where, wi_from_game, wrap, xy
 )
 -- A submenu (opens on hover) where the imgui binding has one; else its rows inline under a dim title.

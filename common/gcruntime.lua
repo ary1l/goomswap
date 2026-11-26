@@ -77,6 +77,8 @@ do
             EditorIgnoreSuggestions = T{},
             -- newest dated /gcedit backups kept per job file, after a successful save; 0 = keep all
             EditorBackupKeep = 3,
+            -- /gcedit spacing: 'Compact' or 'Comfortable' (its Editor menu sets it here)
+            EditorSpacing = 'Compact',
             -- /gcedit heading order and your own headings ({ 'Weapons', 'Idle', { 'Two-handed', 'Tp_Chango' } }); the
             -- editor's right-click menus write it to char.lua (docs/gcedit.md, Headings)
             EditorGroups = nil,

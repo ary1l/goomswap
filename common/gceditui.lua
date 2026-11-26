@@ -132,55 +132,24 @@ end
 
 -- == State ==
 do
--- Editor preferences and navigation. Data is decoded as text, never evaluated as Lua.
+-- Editor memory per job file for this game session: the sets opened last (recent) and Getting started (start).
+-- Kept in GcEditSession, a global, so it outlives Save's reload; nothing is written to disk. Spacing is a GoomSwap
+-- setting (EditorSpacing, char.lua).
 local state = {}
 
 function state.Defaults()
-    return { density = 'Compact', dirty = false }
+    return {}
 end
 
-function state.Decode(text)
-    local preferences = state.Defaults()
-    if not text or text:match('^([^\n]+)') ~= 'GoomSwap editor preferences 1' then return preferences end
-    for key, value in text:gmatch('([^\n\t]+)\t([^\n]*)') do
-        if key == 'density' and (value == 'Compact' or value == 'Comfortable') then
-            preferences.density = value
-        elseif (key == 'view') or (key == 'left') or (key == 'middle') then -- old view and pane widths: dropped
-        elseif (key == 'start') and ((value == 'on') or (value == 'saved') or (value == 'off')) then
-            preferences.start = value -- Getting started: shown, shown and saved once, done or hidden
-        elseif key == 'recent' then -- the sets opened last, newest first (tab between names)
-            preferences.recent = {}
-            for name in value:gmatch('[^\t]+') do
-                if #preferences.recent < 7 then preferences.recent[#preferences.recent + 1] = name end
-            end
-        end -- others (favorite: removed) are left out, and gone at the next save
-    end
-    return preferences
-end
-
-function state.Encode(preferences)
-    local lines = { 'GoomSwap editor preferences 1',
-        'density\t' .. (preferences.density == 'Comfortable' and 'Comfortable' or 'Compact') }
-    if (type(preferences.recent) == 'table') and (#preferences.recent > 0) then
-        lines[#lines + 1] = 'recent\t' .. table.concat(preferences.recent, '\t')
-    end
-    if preferences.start ~= nil then lines[#lines + 1] = 'start\t' .. preferences.start end
-    return table.concat(lines, '\n') .. '\n'
-end
-
+-- path: the job file. Its old <file>.gcedit-ui (where this was kept before) is removed.
 function state.Load(path)
-    local file = io.open(path, 'rb')
-    if not file then return state.Defaults() end
-    local text = file:read(65536)
-    file:close()
-    return state.Decode(text)
-end
-
-function state.Save(path, preferences, write)
-    if not preferences or not preferences.dirty then return true end
-    local ok, err = write(path, state.Encode(preferences))
-    if ok then preferences.dirty = false end
-    return ok, err
+    GcEditSession = GcEditSession or {}
+    local key = string.lower(tostring(path))
+    if GcEditSession[key] == nil then
+        GcEditSession[key] = state.Defaults()
+        if type(path) == 'string' then os.remove(path .. '.gcedit-ui') end
+    end
+    return GcEditSession[key]
 end
 
 function state.Feedback(editor, text)
