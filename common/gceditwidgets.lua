@@ -10,6 +10,7 @@ return function(imgui, palette, set_tip)
         return boxes[id]
     end
     local function trim(s) return (string.match(s or '', '^%s*(.-)%s*$')) end
+    W.Trim = trim -- the editor's one copy
     local function vec(a, b) -- ImGui vectors come back as two numbers or as a table, by Ashita version
         if type(a) == 'table' then return a.x or a[1] or 0, a.y or a[2] or 0 end
         return a or 0, b or 0

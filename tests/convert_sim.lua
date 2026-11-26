@@ -70,4 +70,10 @@ return profile;
     assert(string.find(why, 'could not run', 1, true), why)
     assert(#plan.rules == 0, 'its rules were kept')
 end }
+tests[#tests + 1] = { 'every engine call Convert may move rules past has a stand-in in the check', function()
+    local modeled = K.Modeled()
+    for p in pairs(C.CHECKED) do
+        if string.match(p, '^gcinclude%.') then assert(modeled[p], p .. ' is in gcconvert CHECKED but has no stand-in') end
+    end
+end }
 return tests

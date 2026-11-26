@@ -258,6 +258,16 @@ function K.Same(text, plan, handler, rounds, seed, tick, engine)
     return true
 end
 
+-- The engine calls the check stands in for (as the game does, the same on both sides).
+function K.Modeled()
+    local W = world({ cycles = {}, toggles = {}, buffs = {} }, function() end)
+    local out = {}
+    for k, v in pairs(W.gc) do
+        if type(v) == 'function' then out['gcinclude.' .. k] = true end
+    end
+    return out
+end
+
 local function count(t) local n = 0 for _ in pairs(t) do n = n + 1 end return n end
 -- The checked plan: runs moved to the rules' own place where the gear stays the same, then every handler checked;
 -- one that differs keeps its ifs as code. plan.checked = { rounds, handlers, freed, skipped = { [handler] = why } };

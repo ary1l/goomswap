@@ -67,9 +67,9 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local r = AshitaCore:GetResourceManager():GetItemByName(name, 0)
         return (r ~= nil) and (r.Name[1] or name) or nil
     end
-    local function stack_of(name)
-        local r = AshitaCore:GetResourceManager():GetItemByName(name, 0)
-        return (r ~= nil) and (r.StackSize or 1) or 1
+    local function stack_of(name) -- the engine's (gcinclude.StackOf), 1 when it isn't loaded
+        local e = (files.Engine ~= nil) and files.Engine() or nil
+        return ((type(e) == 'table') and (e.StackOf ~= nil)) and e.StackOf(name) or 1
     end
     local function packer_form(v) -- char.lua's map, else LAC's list
         if type(v) ~= 'table' then return 'map' end

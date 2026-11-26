@@ -1297,6 +1297,11 @@ function gcinclude.PackerItems()
     for _, name in ipairs({ 'Moonshade Earring', 'Daybreak', 'Jubilee Ring' }) do items[#items + 1] = name end
     return items
 end
+-- An item's stack size (Packer's 'stack'), 1 when the game doesn't know it. The editor's Packer rows use it too.
+function gcinclude.StackOf(name)
+    local r = AshitaCore:GetResourceManager():GetItemByName(name, 0)
+    return (r ~= nil) and (r.StackSize or 1) or 1
+end
 function gcinclude.FillPacker(again) -- again: rebuild (char.lua's Packer changed; Get gear: what you own now)
     if gProfile == nil then return end
     if gProfile.GcPackerFilled == true then
@@ -1320,13 +1325,9 @@ function gcinclude.FillPacker(again) -- again: rebuild (char.lua's Packer change
         end
         return owned[string.lower(name)] == true
     end
-    local function stack_of(name)
-        local r = res:GetItemByName(name, 0)
-        return (r ~= nil) and (r.StackSize or 1) or 1
-    end
     gcinclude.FilePacker = gProfile.Packer -- as the job file has it
     gProfile.Packer = gcpackerlist.Build({ file = gProfile.Packer, char = gcinclude.CharPacker, sets = gProfile.Sets,
-        engineSets = gcinclude.sets, items = gcinclude.PackerItems(), stackOf = stack_of, owns = owns })
+        engineSets = gcinclude.sets, items = gcinclude.PackerItems(), stackOf = gcinclude.StackOf, owns = owns })
     gProfile.GcPackerFilled = true
 end
 -- /lac gear: the Packer plugin collects every set's gear plus the list above. false and why when it can't run.

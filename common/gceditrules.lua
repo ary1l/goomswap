@@ -91,7 +91,7 @@ return function(o)
             .. 'A rule without this tag goes on after all of your job file\'s own code (job layer).'
     end
 
-    local function trim(s) return (string.match(s or '', '^%s*(.-)%s*$')) end
+    local trim = W.Trim
     local function copy(v)
         if type(v) ~= 'table' then return v end
         local out = {}
@@ -164,10 +164,7 @@ return function(o)
         if #text <= n then return text end
         return string.sub(text, 1, n - 3) .. '...'
     end
-    local function xw(a) -- an ImGui vector's x: two numbers or a table, by Ashita version
-        if type(a) == 'table' then return a.x or a[1] or 0 end
-        return a or 0
-    end
+    local function xw(a) return (vec(a)) or 0 end -- an ImGui vector's x
     -- text cut with ... to the room left on this line (the whole of it on hover)
     local function fit(text)
         local avail = xw(imgui.GetContentRegionAvail()) - 8
@@ -950,19 +947,22 @@ return function(o)
         end
         return c
     end
-    convertible = function()
+    -- How many of the file's ifs can become rules, and how many stay code (GoomSwap's standard lines not counted);
+    -- none while a Convert is staged.
+    local function code_counts()
         local doc = editorState.document
-        if (doc == nil) or (doc.convert ~= nil) or (doc.model == nil) or (doc.model.text == nil) then return 0 end
+        if (doc == nil) or (doc.model == nil) or (doc.model.text == nil) then return 0, 0 end
+        if doc.convert ~= nil then return 0, 0 end
         local c = plan_of(doc.model.text)
-        if c.plan == nil then return 0 end
-        local k = 0
-        for _, h in ipairs(c.plan.handlers) do
+        local ok, no = 0, 0
+        for _, h in ipairs((c.plan ~= nil) and c.plan.handlers or {}) do
             for _, it in ipairs(h.items) do
-                if it.ok then k = k + 1 end
+                if it.ok then ok = ok + 1 elseif not it.standard then no = no + 1 end
             end
         end
-        return k
+        return ok, no
     end
+    convertible = function() return (code_counts()) end
     local function stage_convert(c, adopt)
         local doc = editorState.document
         local list = M.List() or {}
@@ -1023,9 +1023,8 @@ return function(o)
                     imgui.PushTextWrapPos(0)
                     if it.ok then
                         for _, r in ipairs(it.rules) do imgui.TextColored(palette.ok, R.Say(r)) end
-                        if it.spot ~= nil then
-                            imgui.TextColored(palette.dim, 'Goes on ' .. spot_label(it.spot, plan, text) .. ', where this code was, '
-                                .. 'so the order stays the same.')
+                        if it.spot ~= nil then -- where they go on: a tag (what it means is said once, over the list)
+                            pill(spot_label(it.spot, plan, text), palette.ok, palette.okBg)
                             if imgui.IsItemHovered() then set_tip(spot_tip(it.spot, plan, text)) end
                         end
                     else
@@ -1033,8 +1032,7 @@ return function(o)
                         -- findings stay amber: something there differed or couldn't be run)
                         local why = tostring(it.why)
                         local fromCheck = string.match(why, "^Convert's check") ~= nil
-                        imgui.TextColored(fromCheck and palette.warn or palette.dim, why
-                            .. (fromCheck and '' or ' Fine as it is: it keeps working as code.'))
+                        imgui.TextColored(fromCheck and palette.warn or palette.dim, why)
                     end
                     imgui.PopTextWrapPos()
                     card_end(c)
@@ -1063,7 +1061,8 @@ return function(o)
             return
         end
         if stays then
-            paragraph('These ifs in your job file stay code, each with why. They work as before; Rules go on with them.')
+            paragraph('These lines stay code, each with why a rule can\'t do it. That\'s fine: they keep working as before, '
+                .. 'and your rules go on with them.')
             imgui.Spacing()
             if draw_changes(c.plan, text, 'stays') == 0 then paragraph('None: all your gear code can become rules.') end
             return
@@ -1120,6 +1119,14 @@ return function(o)
         else
             paragraph('Nothing in your job file\'s code can become rules (Stays code, on the left: why).')
         end
+        local anySpot = false
+        for _, h in ipairs(c.plan.handlers) do
+            for _, it in ipairs(h.items) do if it.ok and (it.spot ~= nil) then anySpot = true end end
+        end
+        if anySpot then
+            paragraph('A tag like "before named set": those rules go on where the code was, just before that line, so '
+                .. 'the order stays the same.')
+        end
         imgui.Spacing()
         draw_changes(c.plan, text, 'ok')
     end
@@ -1128,19 +1135,6 @@ return function(o)
     -- Left: what to show (all rules, one moment's, or your code); right: the builder (when open), then the cards.
     local NAV_W = { 190, 0 }
     local MAIN_W = { 0, 0 }
-    local function code_counts()
-        local doc = editorState.document
-        if (doc == nil) or (doc.model == nil) or (doc.model.text == nil) then return 0, 0 end
-        if doc.convert ~= nil then return 0, 0 end
-        local c = plan_of(doc.model.text)
-        local ok, no = 0, 0
-        for _, h in ipairs((c.plan ~= nil) and c.plan.handlers or {}) do
-            for _, it in ipairs(h.items) do
-                if it.ok then ok = ok + 1 elseif not it.standard then no = no + 1 end
-            end
-        end
-        return ok, no
-    end
     local NAV_ROW = { 0, 0 }
     -- A row: the label as a selectable short of the right end, and the count there (whatever the font size).
     local function nav_row(label, n, key, tip)

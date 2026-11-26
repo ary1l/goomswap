@@ -956,12 +956,6 @@ local function action_of(scope, st)
     return nil, 'It has other code (' .. st.k .. '). A rule only puts on gear or cancels the action.'
 end
 
-local function copy(v)
-    if type(v) ~= 'table' then return v end
-    local o = {}
-    for k, x in pairs(v) do o[k] = copy(x) end
-    return o
-end
 
 -- A block's statements as rules (in order) under the conditions `when`; nil and why when one can't be.
 local convert_if
@@ -997,15 +991,15 @@ local function block_rules(scope, body, when, phase, out)
                     return nil, 'It cancels at a moment LuAshitacast can\'t cancel (only when starting a spell, an '
                         .. 'ability, a weapon skill, an item or a shot).'
                 end
-                pending = pending or { on = phase, when = copy(when) }
+                pending = pending or { on = phase, when = deep(when) }
                 pending.stop = true
             elseif a.wear then
                 flush()
-                pending = { on = phase, when = copy(when), wear = a.wear, exact = a.exact or nil }
+                pending = { on = phase, when = deep(when), wear = a.wear, exact = a.exact or nil }
             else
                 if (pending == nil) or (pending.item ~= nil and pending.item[a.item[1]] ~= nil) or pending.stop then
                     flush()
-                    pending = { on = phase, when = copy(when) }
+                    pending = { on = phase, when = deep(when) }
                 end
                 pending.item = pending.item or {}
                 pending.item[a.item[1]] = a.item[2]
@@ -1084,7 +1078,7 @@ convert_if = function(scope, st, when, phase, out)
         return out
     end
     if simple then
-        local group = { on = phase, when = (next(when) ~= nil) and copy(when) or nil, first = {} }
+        local group = { on = phase, when = (next(when) ~= nil) and deep(when) or nil, first = {} }
         for i in ipairs(st.branches) do
             local m = members[i][1]
             m.on = nil
@@ -1163,6 +1157,7 @@ local CHECKED = { ['gcinclude.ByName'] = true, ['gcinclude.EquipSet'] = true, ['
     ['gFunc.Message'] = true, ['gFunc.Echo'] = true, ['gFunc.Error'] = true, ['gFunc.CancelAction'] = true,
     T = true, tostring = true, tonumber = true, type = true, pairs = true, ipairs = true, next = true, select = true,
     print = true }
+C.CHECKED = CHECKED -- gcconvertcheck must stand in for each gcinclude.* here (tests/convert_sim.lua holds it)
 local READ_METHOD = { contains = true, find = true, match = true, lower = true, upper = true, sub = true, gsub = true,
     format = true, len = true }
 local function checked_call(p)

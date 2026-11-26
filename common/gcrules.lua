@@ -326,7 +326,7 @@ local function compile_when(when, where)
     end
 end
 
--- A rule in plain words, for the editor and chat: 'Midcast: skill Healing Magic, target me -> Self_Cure'.
+-- A rule in compact words (tests, and Say's fallback for a key it has no sentence for): 'skill Healing Magic -> X'.
 local function value_words(v)
     if type(v) ~= 'table' then return tostring(v) end
     if v[1] ~= nil then
@@ -765,7 +765,7 @@ local function compile_one(rule, where, phase)
         return nil, where .. ': wears nothing (wear, item or stop)'
     end
     return { test = test, wear = rule.wear, exact = (rule.exact == true), item = rule.item, stop = (rule.stop == true),
-        words = R.Words(rule), note = rule.note }
+        words = R.Say(rule, phase), note = rule.note } -- in chat and Equip order: the editor's own sentence
 end
 
 -- rules: gcinclude.Rules. The compiled form: [phase] = { job = { ... }, top = { ... } }, each entry a rule or a
@@ -794,7 +794,7 @@ function R.Compile(rules)
                 if test == nil then
                     err = werr
                 else
-                    entry = { group = {}, test = test, index = i, words = R.Words(rule), note = rule.note }
+                    entry = { group = {}, test = test, index = i, words = R.Say(rule), note = rule.note }
                     for j, member in ipairs(rule.first) do
                         local m, merr = nil, where .. ' choice ' .. j .. ': not a table'
                         if type(member) == 'table' then m, merr = compile_one(member, where .. ' choice ' .. j, rule.on) end
