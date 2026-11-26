@@ -802,7 +802,6 @@ local function draw_sets()
                     ImGuiTreeNodeFlags_NoTreePushOnOpen or 0))
                 if (open == folded) and (find == '') then -- clicked: it turned
                     editorState.ui.fold[grp.g] = not open
-                    ctx.headings.saveFolds()
                 end
                 local pad = editorPanels.Density(ctx.spacing()).padding[1]
                 arrowW = ((imgui.GetFontSize ~= nil) and imgui.GetFontSize() or 16) + 2 * pad
@@ -811,7 +810,6 @@ local function draw_sets()
                     or { ['- '] = '- ' .. grp.head .. '##gcg_' .. grp.g, ['+ '] = '+ ' .. grp.head .. '##gcg_' .. grp.g, }
                 if imgui.Selectable(grp.labels[folded and '+ ' or '- '], false) and (find == '') then
                     editorState.ui.fold[grp.g] = not folded
-                    ctx.headings.saveFolds()
                 end
             end
             drop_set_here(grp.g, nil)

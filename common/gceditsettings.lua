@@ -265,26 +265,12 @@ return {
         return S.Write('own', changes)
     end
 
-    -- == Folded headings, per character across game restarts (gcedit-folds.txt beside char.lua, a heading a line). ==
-    local function folds_path()
+    -- Folded headings last the game session (GcEditFold); the gcedit-folds.txt they were once kept in, beside
+    -- char.lua, is removed.
+    function S.RemoveOldFolds()
         local own = path_of('own')
         local dir = (own ~= nil) and string.match(own, '^(.*[\\/])') or nil
-        return (dir ~= nil) and (dir .. 'gcedit-folds.txt') or nil
-    end
-    function S.LoadFolds()
-        local out, path = {}, folds_path()
-        for line in string.gmatch(((path ~= nil) and o.readFile(path)) or '', '[^\r\n]+') do out[line] = true end
-        return out
-    end
-    function S.SaveFolds(fold)
-        local path = folds_path()
-        if (path == nil) or (type(fold) ~= 'table') then return end
-        local names = {}
-        for name, folded in pairs(fold) do
-            if folded == true then names[#names + 1] = name end
-        end
-        table.sort(names)
-        F.Write(path, table.concat(names, '\n'))
+        if dir ~= nil then os.remove(dir .. 'gcedit-folds.txt') end
     end
 
     return S

@@ -71,7 +71,7 @@ The set list is grouped under headings (Idle, Defense, Melee, Weapons...). Arran
 - **Hide** (heading menu): **Hide on <JOB>** or **Hide on every job**. **Show hidden** (beside the filters) shows
   them again, marked hidden; a search always shows them. **Show again** undoes it.
 - **Sets in it** (heading menu): **File order**, **A-Z**, or **Your order** (what Move up / down and dragging make).
-- Folded headings stay folded after a game restart (`gcedit-folds.txt` beside `char.lua`).
+- Folded headings stay folded until you restart the game (Save's reload keeps them).
 - **Share with every character** (heading menu): these headings go into the shared settings file, and every
   character without headings of its own uses them. **Only this character** copies them back into `char.lua`.
 

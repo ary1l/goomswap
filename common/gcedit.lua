@@ -430,7 +430,6 @@ ctx.headings = {
     pref = settingsFiles.HeadingPref, source = settingsFiles.HeadingSource, sorted = sorted, rows = heading_rows,
     order = function() return editorGroups.Order(headings_setting(), GROUPS) end,
     save = function(value, why) return save_prefs((value ~= nil) and { EditorGroups = value } or nil, why) end,
-    saveFolds = function() settingsFiles.SaveFolds(editorState.ui.fold) end,
     share = function() -- this character's headings become the shared ones
         local ok, err = settingsFiles.ShareHeadings()
         if not ok then feedback('Headings not shared: ' .. tostring(err) .. '.'); return false end
@@ -2544,6 +2543,7 @@ function gcedit.Open(include, setName, slot, draft)
             rescued = nil -- another job's file: the old edits do not apply
         end
     end
+    if GcEditFold == nil then settingsFiles.RemoveOldFolds() end
     set_state(editorPreferences.New({
         path = path,
         sourcePath = draft and draft.src,
@@ -2552,7 +2552,7 @@ function gcedit.Open(include, setName, slot, draft)
         job = player:GetMainJob(),
         level = player:GetMainJobLevel(),
         preferences = editorPreferences.Load(path),
-        fold = GcEditFold or settingsFiles.LoadFolds(), -- folded headings: this session's, else the saved ones
+        fold = GcEditFold or {}, -- folded headings: this game session's
     }))
     editorState.document.characterFolder = char_dir() or path:match('^(.*[\\/])') or ''
     local model, err = load_model()
