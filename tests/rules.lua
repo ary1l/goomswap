@@ -125,6 +125,15 @@ return {
         local back = loadstring('return ' .. text)()
         eq(back[2].first[2].wear, 'Enh'); eq(back[3].item.Head, 'Pixie Hairpin +1')
     end },
+    { "an 'either' choice says all it checks, its target too, joined by and", function()
+        eq(R.Say({ on = 'Midcast', when = { skill = 'Enhancing Magic', any = { { name = { has = 'Temper' } },
+            { name = { has = 'En' }, target = 'me' } } }, wear = 'S', exact = true }),
+            'When you cast an Enhancing Magic spell, while either its name has "Temper", or its name has "En" and it is on '
+            .. 'you: put on S')
+        eq(R.Say({ on = 'Midcast', when = { any = { { name = { has = 'Temper' } }, { mpp = { le = 50 }, target = 'me' } } },
+            wear = 'X', exact = true }),
+            'When you cast a spell, while either its name has "Temper", or it is on you and your MP is at most 50%: put on X')
+    end },
     { 'words', function()
         eq(R.Words({ on = 'Midcast', when = { skill = 'Healing Magic', mpp = { le = 40 } }, wear = 'X' }),
             'mpp <= 40, skill Healing Magic -> X')

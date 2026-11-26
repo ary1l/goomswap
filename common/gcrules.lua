@@ -618,7 +618,8 @@ local SAY = {
     familyset = function(v) return v and 'a set for its family' or 'no set for its family' end,
     dualwield = function(v) return v and 'you can dual wield' or 'you cannot dual wield' end,
 }
-function R.SayWhen(when)
+-- joined: one choice of an 'either' ('its name has "En" and it is on you'); else the compact list, comma to comma.
+function R.SayWhen(when, joined)
     if (type(when) ~= 'table') or (next(when) == nil) then return nil end
     local order = {}
     for i, k in ipairs({ 'name', 'family', 'skill', 'type', 'element', 'target', 'targethpp', 'distance', 'burst', 'buff',
@@ -634,6 +635,8 @@ function R.SayWhen(when)
             local alts = {}
             for _, alt in ipairs(v) do alts[#alts + 1] = R.SayWhen(alt) or 'always' end
             out[#out + 1] = '(' .. table.concat(alts, ') or (') .. ')'
+        elseif joined and (k == 'target') then
+            out[#out + 1] = 'it is ' .. SAY.target(v)
         elseif ((k == 'toggle') or (k == 'mode')) and (type(v) == 'table') then
             out[#out + 1] = R.WhenWords({ [k] = v })
         elseif SAY[k] ~= nil then
@@ -642,6 +645,7 @@ function R.SayWhen(when)
             out[#out + 1] = R.WhenWords({ [k] = v })
         end
     end
+    if joined and (#out > 1) then return table.concat(out, ', ', 1, #out - 1) .. ' and ' .. out[#out] end
     return table.concat(out, ', ')
 end
 function R.SayWear(rule)
@@ -775,7 +779,17 @@ local function state_of(when, skipStatus)
         local v = when[k]
         if k == 'any' then
             local alts = {}
-            for _, alt in ipairs(v) do alts[#alts + 1] = state_of(alt) or R.SayWhen(alt) or 'always' end
+            for _, alt in ipairs(v) do
+                -- what the action is (state_of leaves that to the sentence's start) said here, then the rest
+                local about, rest = {}, {}
+                for ak, av in pairs(alt) do
+                    if ACTION_KEYS[ak] then about[ak] = av else rest[ak] = av end
+                end
+                local parts = {}
+                parts[#parts + 1] = R.SayWhen(about, true)
+                parts[#parts + 1] = state_of(rest)
+                alts[#alts + 1] = (#parts > 0) and table.concat(parts, ' and ') or 'always'
+            end
             out[#out + 1] = 'either ' .. table.concat(alts, ', or ')
         elseif (k == 'toggle') and (type(v) == 'table') then
             local subs = {}
