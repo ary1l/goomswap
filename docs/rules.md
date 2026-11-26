@@ -53,9 +53,11 @@ of your job file's `if`s Convert can turn into rules (**Rules  +5 to convert**).
 | Mode | `/wm` `/mset` `/nukeset` `/idleset` `/wsset` `/tankset` `/weapon` `/pupmode` `/hoxne` `/mw` `/sw` `/rw` `/ammoset` and its value | `gcdisplay.GetCycle` |
 | Toggle | `/dt` `/mdt` `/kite` `/th` `/sir` `/proc` `/burst` `/aminon` `/death` `/songlock` `/forcestring`, on / off | `gcdisplay.GetToggle` |
 | Magic burst, Can dual wield | yes / no | GoomSwap's `BurstWanted`, `CanDualWield` |
+| In GoomSwap's spell list | `BluMagPhysical`, `BluMagDebuff`, `BluMagStun`, `BluMagBuff`, `BluMagSkill`, `BluMagCure`, `BluMagEnmity`, `BluMagTH` (is / is not) | `gcinclude.<list>:contains(name)`, the engine's own lists |
 | Has a set named after it, Has a set for its family | yes / no: a set in your job file named after the spell / ability / weapon skill (`Flash`), or its family (`Cure` for Cure IV), checked as it happens | GoomSwap's `FindSet` (what `ByName` looks for) |
 
-Text matches as the game writes it: **has**, **starts with** and **ends with** count upper and lower case
+Text matches as the game writes it: **has**, **starts with** and **ends with** count upper and lower case;
+**matches (Lua pattern)** reads the text as `string.find` does (`Evryone. Grudge`: the `.` is any character)
 (`helix` finds Pyrohelix II, not Helix). A value that isn't there (no target, no pet) fails a condition and passes
 its **not**.
 
@@ -99,6 +101,10 @@ What converts:
 - Conditions on the values above, joined by `and` / `or` / `not`; locals read from `gData` or `gcinclude.BuffCount`
   (sums of buff counts too), or holding a condition (`local roll = string.find(ability.Name, 'Roll', 1, true) ~=
   nil`); `T{...}:contains(...)`; plain-text searches (`string.contains`, `string.find(..., 1, true)`, `:contains`).
+- The zone read from Ashita (`AshitaCore:GetResourceManager():GetString('zones.names', ...GetMemberZone(0))`, the
+  same read LuAshitacast's `Area` is) when the check searches part of its name; GoomSwap's spell lists
+  (`gcinclude.BluMagPhysical:contains(spell.Name)`); a set picked by a check (`gFunc.EquipSet(c and sets.A or sets.B)`
+  becomes two rules); a Lua pattern (`string.match(spell.Name, 'Evryone. Grudge')`), kept as a pattern.
 - A check that looks a set up, `if not (ByName(spell.Name) or ByName(Family(spell.Name))) then
   gFunc.EquipSet(sets.Enmity) end`: the lookup stays code (`if not ByName(spell.Name) then ByName(Family(spell.Name))
   end`, it still puts that set on) and the rest becomes a rule, *When you cast a spell, while it has no set of its own

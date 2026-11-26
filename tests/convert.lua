@@ -120,6 +120,37 @@ return profile;
         eq(#plan.rules, 0)
         eq(string.find(plan.handlers[1].items[1].why, 'mixes a set lookup', 1, true) ~= nil, true, plan.handlers[1].items[1].why)
     end },
+    { 'zone from Ashita, GoomSwap spell lists, a set picked by a check, a Lua pattern', function()
+        local text = [[
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+profile.HandleDefault = function()
+    local area = AshitaCore:GetResourceManager():GetString('zones.names', AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0));
+    if (area ~= nil) and area:contains('Remnants') then
+        gFunc.EquipSet(sets.Salvage);
+    end
+    gcinclude.CheckDefault();
+end
+profile.HandleMidcast = function()
+    local spell = gData.GetAction();
+    if (spell.Skill == 'Blue Magic') then gFunc.EquipSet(gcinclude.BluMagPhysical:contains(spell.Name) and sets.BluPhysical or sets.BluMagical) end
+    if string.match(spell.Name, 'Evryone. Grudge') then gFunc.EquipSet(sets.BluDark) end
+end
+return profile;
+]]
+        local plan = assert(C.Plan(text))
+        eq(#plan.rules, 4)
+        eq(plan.rules[1].when.zone.has, 'Remnants'); eq(plan.rules[1].wear, 'Salvage')
+        eq(plan.rules[2].when.inlist, 'BluMagPhysical'); eq(plan.rules[2].wear, 'BluPhysical')
+        eq(plan.rules[3].when.inlist.isnt, 'BluMagPhysical'); eq(plan.rules[3].wear, 'BluMagical')
+        eq(plan.rules[4].when.name.pattern, 'Evryone. Grudge')
+        local out = F.Apply(text, plan.splices)
+        eq(string.find(out, 'local area', 1, true), nil, 'the zone local goes with its if: ' .. out)
+        -- a whole-zone-name compare stays code (Ashita's raw name vs the trimmed one rules read)
+        local t2 = string.gsub(text, "area:contains%('Remnants'%)", "(area == 'Remnants')")
+        local p2 = assert(C.Plan(t2))
+        eq(p2.handlers[1].items[1].ok, false)
+    end },
     { 'a branch that is not gear says so plainly', function()
         local text = [[
 local profile = {};

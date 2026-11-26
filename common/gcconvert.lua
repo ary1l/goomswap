@@ -426,6 +426,24 @@ local function is_party_me(e) -- AshitaCore:GetMemoryManager():GetParty():GetMem
     p = p.fn
     return (p.k == 'call') and (p.method == 'GetMemoryManager') and (path_of(p.fn) == 'AshitaCore')
 end
+-- AshitaCore:GetResourceManager():GetString('zones.names', AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0)):
+-- the zone's name as LuAshitacast's gData.GetEnvironment().Area reads it (data.lua), before it trims trailing NULs
+-- and turns Shift-JIS into UTF-8; so a search in it reads the same, a whole-name compare may not.
+local function is_zone_name(e)
+    e = unparen(e)
+    if (e == nil) or (e.k ~= 'call') or (e.method ~= 'GetString') or (#e.args ~= 2) then return false end
+    local a1, a2 = unparen(e.args[1]), unparen(e.args[2])
+    if (a1 == nil) or (a1.k ~= 'str') or (a1.v ~= 'zones.names') then return false end
+    local rm = e.fn
+    if (rm.k ~= 'call') or (rm.method ~= 'GetResourceManager') or (path_of(rm.fn) ~= 'AshitaCore') then return false end
+    if (a2 == nil) or (a2.k ~= 'call') or (a2.method ~= 'GetMemberZone') then return false end
+    local n = a2.args[1]
+    if (n == nil) or (n.k ~= 'num') or (n.v ~= 0) then return false end
+    local party = a2.fn
+    if (party.k ~= 'call') or (party.method ~= 'GetParty') then return false end
+    local mm = party.fn
+    return (mm.k == 'call') and (mm.method == 'GetMemoryManager') and (path_of(mm.fn) == 'AshitaCore')
+end
 local function literal_list(scope, e)
     e = unparen(e)
     if e == nil then return nil end
@@ -473,6 +491,7 @@ meaning = function(scope, e)
     end
     if e.k == 'call' then
         if is_party_me(e) then return { kind = 'me' } end
+        if is_zone_name(e) then return { kind = 'field', base = 'env', field = 'Area', raw = true } end
         local p = call_path(scope, e)
         if (p ~= nil) and GETTERS[p] then return { kind = GETTERS[p] } end
         if (p == 'gcinclude.BuffCount') or (p == 'gData.GetBuffCount') then
@@ -702,6 +721,11 @@ local function compare(scope, op, ea, eb)
     local eq = (op == '==')
     local textOk = (op == '==') or (op == '~=')
     local function text(key, v) if eq then return { [key] = v } end return { [key] = { isnt = v } } end
+    if a.raw and (b.kind ~= 'nil') then
+        return nil, 'It compares the whole zone name as Ashita gives it (it can end in blank characters LuAshitacast trims). '
+            .. 'A rule reads the trimmed name; a search for part of it converts.'
+    end
+    if (b.kind == 'nil') and (a.kind == 'field') and not eq then return {} end -- area ~= nil: a guard, as below
     if a.kind == 'field' then
         if (a.base == 'target') and (a.field == 'Name') and (b.kind == 'me') and textOk then
             return { target = eq and 'me' or 'other' }
@@ -782,9 +806,7 @@ local function call_cond(scope, e)
         if (m.kind == 'field') then key = (FIELD_KEY[m.base] or {})[m.field] end
         if m.kind == 'family' then key = 'family' end
         if (key == nil) or (R.KEY[key].kind ~= 'text') then return nil, 'It searches text a rule can\'t read. A rule only checks game values (spell, buffs, HP/MP, modes...).' end
-        if (not plain) and string.find(lit.v, MAGIC) then
-            return nil, "It searches with a Lua pattern ('" .. lit.v .. "'). A rule matches plain text only."
-        end
+        if (not plain) and string.find(lit.v, MAGIC) then return { [key] = { pattern = lit.v } } end -- as the code reads it
         return { [key] = { has = lit.v } }
     end
     -- gcinclude.RangedAcc(): gcdisplay.GetCycle('MeleeSet') == 'Acc' (gcinclude.lua)
@@ -798,6 +820,15 @@ local function call_cond(scope, e)
     end
     if (p == 'string.match') and (#e.args == 2) then return text_arg(e.args[1], e.args[2], false) end
     if e.method == 'contains' and (#e.args == 1) then
+        local lp = path_of(e.fn) -- gcinclude.BluMagPhysical:contains(spell.Name): GoomSwap's own spell list
+        local listName = lp and string.match(canon(scope, lp) or lp, '^gcinclude%.([%w_]+)$') or nil
+        if listName ~= nil then
+            local m = meaning(scope, e.args[1])
+            if (m ~= nil) and (m.kind == 'field') and (m.base == 'action') and (m.field == 'Name') then
+                return { inlist = listName }
+            end
+            return nil, 'It checks GoomSwap\'s ' .. listName .. ' list against something other than the action\'s name.'
+        end
         local list = literal_list(scope, e.fn)
         if list ~= nil then -- T{'Cure', 'Cura'}:contains(family)
             local m = meaning(scope, e.args[1])
@@ -932,6 +963,10 @@ local CALL_SAYS = {
     ['gcinclude.Say'] = 'prints to chat', ['gcinclude.Err'] = 'prints to chat', print = 'prints to chat',
 }
 local function not_gear(p)
+    if p == 'gcinclude.CheckTH' then
+        return 'It runs GoomSwap\'s TH step (CheckTH), which decides by itself whether to put on your TH set (/th, the '
+            .. 'target...). A rule puts on a set without those checks.'
+    end
     local what = CALL_SAYS[p]
     if what ~= nil then
         return 'Not gear: it ' .. what .. ' (' .. tostring(p) .. '). A rule only puts on gear or cancels the action.'
@@ -974,6 +1009,17 @@ local function action_of(scope, st)
 end
 
 
+-- gFunc.EquipSet(c and sets.X or sets.Y): c, 'X', 'Y'; nil when the statement is something else.
+local function ternary_wear(scope, st)
+    if (st.k ~= 'callstat') or (call_path(scope, st.call) ~= 'gFunc.EquipSet') or (#st.call.args ~= 1) then return nil end
+    local e = unparen(st.call.args[1])
+    if (e == nil) or (e.k ~= 'bin') or (e.op ~= 'or') then return nil end
+    local l = unparen(e.a)
+    if (l == nil) or (l.k ~= 'bin') or (l.op ~= 'and') then return nil end
+    local x, y = set_name_of(scope, l.b), set_name_of(scope, e.b)
+    if (x == nil) or (y == nil) then return nil end
+    return l.a, x, y
+end
 -- A block's statements as rules (in order) under the conditions `when`; nil and why when one can't be.
 local convert_if
 local function block_rules(scope, body, when, phase, out)
@@ -1000,6 +1046,19 @@ local function block_rules(scope, body, when, phase, out)
             if (i ~= #body) or (#st.exprs > 0) or ((pending == nil or not pending.stop) and not (out[#out] and out[#out].stop)) then
                 return nil, 'It stops the handler early (return), so the code after it is skipped. A rule can\'t skip code.'
             end
+        elseif ternary_wear(inner, st) ~= nil then -- gFunc.EquipSet(c and sets.X or sets.Y): two rules, c and not c
+            flush()
+            local c, x, y = ternary_wear(inner, st)
+            local cw, cwhy = cond_of(inner, c)
+            if cw == nil then return nil, cwhy end
+            local ncw = negate(cw)
+            if ncw == nil then return nil, 'It picks a set by a check a rule can\'t turn around for the other set.' end
+            local w1, why1 = both(when, cw)
+            if w1 == nil then return nil, why1 end
+            local w2, why2 = both(when, ncw)
+            if w2 == nil then return nil, why2 end
+            out[#out + 1] = { on = phase, when = deep(w1), wear = x, exact = true }
+            out[#out + 1] = { on = phase, when = deep(w2), wear = y, exact = true }
         else
             local a, why = action_of(inner, st)
             if a == nil then return nil, why end

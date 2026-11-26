@@ -108,6 +108,10 @@ R.KEYS = {
     { key = 'burst', label = 'Magic burst', kind = 'bool', phases = SPELL,
         hint = "The spell lands in a live skillchain of its element (GoomSwap's burst check)." },
     { key = 'dualwield', label = 'Can dual wield', kind = 'bool', hint = 'Your job and sub job can dual wield now.' },
+    { key = 'inlist', label = "In GoomSwap's spell list", kind = 'text', phases = { Precast = true, Midcast = true },
+        values = { 'BluMagPhysical', 'BluMagDebuff', 'BluMagStun', 'BluMagBuff', 'BluMagSkill', 'BluMagCure',
+            'BluMagEnmity', 'BluMagTH' },
+        hint = "The spell is in one of GoomSwap's own spell lists (gcinclude.BluMagPhysical...), as GoomSwap has it." },
     { key = 'nameset', label = 'Has a set named after it', kind = 'bool',
         phases = { Precast = true, Midcast = true, Ability = true, Weaponskill = true, Item = true },
         hint = 'Your job file has a set named after the spell, ability or weapon skill (Flash, Provoke), checked as it '
@@ -154,6 +158,17 @@ function R.MatchText(actual, spec)
         for _, v in ipairs(list_of(spec.isnt)) do
             if actual == v then return false end
         end
+    end
+    if spec.pattern ~= nil then -- a Lua pattern, as string.find / string.match read it (a bad one never matches)
+        if s == nil then return false end
+        local hit = false
+        for _, v in ipairs(list_of(spec.pattern)) do
+            if type(v) == 'string' then
+                local ok, at = pcall(string.find, s, v)
+                hit = hit or (ok and (at ~= nil))
+            end
+        end
+        if not hit then return false end
     end
     for _, field in ipairs({ 'has', 'start', 'ends' }) do
         if spec[field] ~= nil then
@@ -291,6 +306,28 @@ function TEST.toggle(c, v)
         if (c.api.toggle(R.TOGGLES[name] or name) == true) ~= (want == true) then return false end
     end
     return true
+end
+-- The action in one of GoomSwap's spell lists (gcinclude.BluMagPhysical...): a list name, names (any of), or
+-- { isnt = name(s) } (none of them).
+function TEST.inlist(c, v)
+    local a = c.action()
+    local name = (a ~= nil) and a.Name or nil
+    local function inl(list)
+        return (type(name) == 'string') and (c.api.inList ~= nil) and (c.api.inList(list, name) == true)
+    end
+    if type(v) == 'table' and (v[1] == nil) then
+        if v.isnt ~= nil then
+            for _, l in ipairs(list_of(v.isnt)) do if inl(l) then return false end end
+        end
+        if v.is ~= nil then
+            local hit = false
+            for _, l in ipairs(list_of(v.is)) do hit = hit or inl(l) end
+            if not hit then return false end
+        end
+        return true
+    end
+    for _, l in ipairs(list_of(v)) do if inl(l) then return true end end
+    return false
 end
 -- A set in the job file by the action's name / its family's (gcinclude.FindSet): what ByName(spell.Name) looks for.
 local function has_set(c, name)
@@ -468,7 +505,24 @@ local function text_say(v, fmt)
     if v.has ~= nil then out[#out + 1] = 'its name has "' .. either_of(v.has, '" or "') .. '"' end
     if v.start ~= nil then out[#out + 1] = 'its name starts with "' .. either_of(v.start, '" or "') .. '"' end
     if v.ends ~= nil then out[#out + 1] = 'its name ends with "' .. either_of(v.ends, '" or "') .. '"' end
+    if v.pattern ~= nil then out[#out + 1] = 'its name matches the pattern "' .. either_of(v.pattern, '" or "') .. '"' end
     return table.concat(out, ', ')
+end
+-- GoomSwap's spell lists, as a sentence says them.
+local LIST_SAY = { BluMagPhysical = 'physical Blue Magic', BluMagDebuff = 'Blue Magic debuffs',
+    BluMagStun = 'Blue Magic stuns', BluMagBuff = 'Blue Magic buffs', BluMagSkill = 'skill-based Blue Magic',
+    BluMagCure = 'Blue Magic cures', BluMagEnmity = 'Blue Magic for enmity', BluMagTH = 'Blue Magic for Treasure Hunter' }
+local function list_say(v)
+    local function names(x)
+        local out = {}
+        for _, l in ipairs(list_of(x)) do out[#out + 1] = LIST_SAY[l] or tostring(l) end
+        return either_of(out)
+    end
+    if (type(v) == 'table') and (v[1] == nil) then
+        if v.isnt ~= nil then return "it is not in GoomSwap's " .. names(v.isnt) .. ' list' end
+        v = v.is
+    end
+    return "it is in GoomSwap's " .. names(v) .. ' list'
 end
 local SAY = {
     status = function(v) return text_say(v, function(w, n) return (n and 'not ' or '') .. string.lower(w) end) end,
@@ -506,7 +560,13 @@ local SAY = {
     weather = function(v) return text_say(v, function(w, n)
         if w == 'None' then return n and 'not clear weather' or 'clear weather' end
         return (n and 'not in ' or 'in ') .. w .. ' weather' end) end,
-    zone = function(v) return text_say(v, function(w, n) return (n and 'not in ' or 'in ') .. w end) end,
+    zone = function(v)
+        if (type(v) == 'table') and (v[1] == nil) and ((v.has ~= nil) or (v.start ~= nil) or (v.ends ~= nil) or (v.pattern ~= nil)) then
+            return 'in a zone with "' .. either_of(v.has or v.start or v.ends or v.pattern, '" or "') .. '" in its name'
+        end
+        return text_say(v, function(w, n) return (n and 'not in ' or 'in ') .. w end)
+    end,
+    inlist = list_say,
     time = function(v) return num_say('time', v) end,
     buff = function(v) return either_of(buff_names(v)) .. ' up' end,
     allbuffs = function(v) return either_of(buff_names(v), 'and') .. ' up' end,
@@ -530,7 +590,7 @@ function R.SayWhen(when)
     local order = {}
     for i, k in ipairs({ 'name', 'family', 'skill', 'type', 'element', 'target', 'targethpp', 'distance', 'burst', 'buff',
         'allbuffs', 'nobuff', 'status', 'hpp', 'mpp', 'tp', 'moving', 'combat', 'mode', 'toggle', 'pet', 'pethpp', 'pettp',
-        'petname', 'petstatus', 'day', 'weather', 'zone', 'time', 'sub', 'level', 'dualwield', 'nameset', 'familyset', 'any' }) do order[k] = i end
+        'petname', 'petstatus', 'day', 'weather', 'zone', 'time', 'sub', 'level', 'dualwield', 'inlist', 'nameset', 'familyset', 'any' }) do order[k] = i end
     local keys = {}
     for k in pairs(when) do keys[#keys + 1] = k end
     table.sort(keys, function(a, b) return (order[a] or 999) < (order[b] or 999) end)
@@ -586,6 +646,9 @@ local function what_of(when, phase)
             if name.has ~= nil then parts[#parts + 1] = article(bare) .. ' with "' .. either_of(name.has, '" or "') .. '" in its name' end
             if name.start ~= nil then parts[#parts + 1] = article(bare) .. ' starting "' .. either_of(name.start, '" or "') .. '"' end
             if name.ends ~= nil then parts[#parts + 1] = article(bare) .. ' ending "' .. either_of(name.ends, '" or "') .. '"' end
+            if name.pattern ~= nil then
+                parts[#parts + 1] = article(bare) .. ' matching the pattern "' .. either_of(name.pattern, '" or "') .. '"'
+            end
             if name.isnt ~= nil then
                 if #parts == 0 then parts[#parts + 1] = article(bare) end
                 parts[#parts] = parts[#parts] .. ' other than ' .. either_of(name.isnt)
@@ -654,7 +717,7 @@ local function state_of(when, skipStatus)
     local order = {}
     for i, k in ipairs({ 'targethpp', 'distance', 'burst', 'buff', 'allbuffs', 'nobuff', 'status', 'hpp', 'mpp', 'tp',
         'moving', 'combat', 'mode', 'toggle', 'pet', 'pethpp', 'pettp', 'petname', 'petstatus', 'day', 'weather', 'zone',
-        'time', 'sub', 'level', 'dualwield', 'nameset', 'familyset', 'any' }) do order[k] = i end
+        'time', 'sub', 'level', 'dualwield', 'inlist', 'nameset', 'familyset', 'any' }) do order[k] = i end
     local keys = {}
     for k in pairs(when) do
         if not ACTION_KEYS[k] and not ((k == 'status') and skipStatus) then keys[#keys + 1] = k end
@@ -919,7 +982,7 @@ end
 -- == The builder's rows (gceditrules): a `when` as { key, op, value, sub } rows and back. A text key's ops are is,
 -- isnt, has, start, ends; a number's lt, le, gt, ge, eq, ne; yes/no and list keys take 'is'; mode and toggle rows
 -- name their cycle in sub. any: the rows are alternatives (when = { any = { {...}, {...} } }). ==
-local TEXT_OPS = { 'is', 'isnt', 'has', 'start', 'ends' }
+local TEXT_OPS = { 'is', 'isnt', 'has', 'start', 'ends', 'pattern' }
 local NUM_OPS = { 'lt', 'le', 'gt', 'ge', 'eq', 'ne' }
 R.TEXT_OPS, R.NUM_OPS = TEXT_OPS, NUM_OPS
 local function key_rows(k, v, out)

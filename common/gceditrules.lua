@@ -34,6 +34,7 @@ return function(o)
     local M = { R = R }
 
     local OP_WORDS = { is = 'is', isnt = 'is not', has = 'has', start = 'starts with', ends = 'ends with',
+        pattern = 'matches (Lua pattern)',
         lt = '<', le = '<=', gt = '>', ge = '>=', eq = '=', ne = 'not' }
     local CYCLE_NAMES = { 'wm', 'mset', 'nukeset', 'idleset', 'wsset', 'tankset', 'weapon', 'pupmode', 'hoxne', 'mw',
         'sw', 'rw', 'ammoset' }
@@ -600,7 +601,8 @@ return function(o)
                 if op ~= nil then r.op = op end
             elseif meta.kind ~= 'list' then
                 local op = W.Pick(id .. '_op', OP_WORDS[r.op or 'is'], { { 'is', 'is' }, { 'isnt', 'is not' },
-                    { 'has', 'has' }, { 'start', 'starts with' }, { 'ends', 'ends with' } }, 120)
+                    { 'has', 'has' }, { 'start', 'starts with' }, { 'ends', 'ends with' },
+                    { 'pattern', 'matches (Lua pattern)' } }, 120)
                 if op ~= nil then r.op = op end
             end
             if meta.kind ~= 'list' then imgui.SameLine() end

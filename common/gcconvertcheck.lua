@@ -132,6 +132,10 @@ local function world(state, record, engine)
         toggle = function(n) return state.toggles[n] == true end, burst = function() return state.burst end,
         dualWield = function() return state.dw end, inCombat = function() return false end, family = gc.Family,
         hasSet = function(n) return find(n) ~= nil end,
+        inList = function(list, name) -- the same lists the file's code reads (the engine's, or empty offline)
+            local l = gc[list]
+            return (type(l) == 'table') and (l.contains ~= nil) and (l:contains(name) == true)
+        end,
         wear = function(name, exact) if exact then wear(find(name)) else byname(name) end end,
         equip = function(slot, item) W.gFunc.Equip(slot, item) end,
         cancel = function() W.cancelled = true end,
@@ -180,17 +184,18 @@ local function random_state(lits, rnd, names)
         'Singing', 'Ninjutsu', 'Blue Magic', 'Geomancy', 'Summoning' }
     local name = pick(names)
     if rnd(3) == 1 then name = name .. ' II' end
+    local env = (rnd(10) == 1) and nil or { WeatherElement = pick(elements), DayElement = pick(elements), Area = pick(names),
+        Time = rnd(24) }
     return {
         player = { Status = pick(statuses), HPP = rnd(100), MPP = rnd(100), TP = rnd(3000), IsMoving = rnd(2) == 1,
             SubJob = pick({ 'NIN', 'DNC', 'WHM', 'RDM', 'SCH', 'WAR' }), MainJobSync = 99, Name = 'Me' },
         action = { Name = name, Skill = pick(skills), Element = pick(elements), Type = pick(names) },
         target = (rnd(5) == 1) and ((rnd(2) == 1) and {} or nil) or { Name = (rnd(2) == 1) and 'Me' or 'Other',
             Type = pick({ 'PC', 'Monster', 'NPC' }), HPP = rnd(100), Distance = rnd(20) },
-        env = (rnd(10) == 1) and nil or { WeatherElement = pick(elements), DayElement = pick(elements), Area = pick(lits),
-            Time = rnd(24) },
+        env = env,
         pet = (rnd(2) == 1) and { Name = pick(names), HPP = rnd(100), TP = rnd(3000), Status = pick(statuses) } or nil,
         petAction = nil, buffs = buffs, cycles = cycles, toggles = toggles, burst = rnd(2) == 1, dw = rnd(2) == 1,
-        zoneName = pick(names),
+        zoneName = env and env.Area or nil, -- Ashita's zone name: the same read LuAshitacast's Area is
     }
 end
 
