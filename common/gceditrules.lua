@@ -322,6 +322,58 @@ return function(o)
         if button('Delete##rule_del_' .. id, 'danger') then take_out(list, i, group) end
         if imgui.IsItemHovered() then set_tip('Take it out (Revert the job file to get it back before Save).') end
     end
+    -- == A rule a set name already does: GoomSwap or your job file puts on a set named after the action (its named-set
+    -- step: ByName(spell.Name), ByName(spell.Skill)...), or Idle_<pick> (gcinclude.EquipIdle). ==
+    local stepCache = {}
+    local function name_steps()
+        local doc = editorState.document
+        local text = (doc ~= nil) and (doc.model ~= nil) and doc.model.text or nil
+        if (stepCache.steps == nil) or (stepCache.text ~= text) then
+            local ok, st = pcall(Conv.NameSteps, text)
+            stepCache = { text = text, steps = (ok and (type(st) == 'table')) and st or {} }
+        end
+        return stepCache.steps
+    end
+    -- The set name that would do this rule with no rule, the job file's line and what it does there; nil when none.
+    -- Only a rule whose one condition is what a step names by (the action's name, skill, family, type; idle + a pick).
+    local function name_cover(rule, phase)
+        if (type(rule) ~= 'table') or rule.stop or (rule.item ~= nil) or (rule.first ~= nil) or (rule.layer == 'top') then
+            return nil
+        end
+        local w = (type(rule.when) == 'table') and rule.when or {}
+        local keys = {}
+        for k in pairs(w) do keys[#keys + 1] = k end
+        local steps = name_steps()
+        if phase == 'Default' then -- Idle_<pick>: EquipIdle, standing idle
+            if (steps.idle == nil) or (type(w.mode) ~= 'table') or (w.status ~= 'Idle') or (#keys ~= 2) then return nil end
+            local mk, mv, n = nil, nil, 0
+            for k, v in pairs(w.mode) do mk, mv, n = k, v, n + 1 end
+            if (n ~= 1) or (type(mv) ~= 'string') or ((mk ~= 'wm') and (mk ~= 'idleset')) then return nil end
+            return 'Idle_' .. mv, steps.idle.line, 'gcinclude.EquipIdle() puts on Idle_<your /' .. mk .. ' pick> while you '
+                .. 'stand idle'
+        end
+        local st = steps[phase]
+        if (st == nil) or (#keys ~= 1) then return nil end
+        local k = keys[1]
+        local v = w[k]
+        if type(v) ~= 'string' then return nil end
+        local best = nil
+        for key, step in pairs(st) do
+            local base, suffix = string.match(key, '^(%a+)(.*)$')
+            if (base == k) and ((best == nil) or (suffix == '')) then best = { v .. suffix, step } end
+        end
+        if best == nil then return nil end
+        return best[1], best[2].line, 'it puts on ' .. best[2].text
+    end
+    local function repeats(rule) -- the rule wears just what that step already wears there
+        local cand, line = name_cover(rule, rule and rule.on)
+        if (cand ~= nil) and (type(rule.wear) == 'string') and (string.lower(rule.wear) == string.lower(cand)) then
+            return cand, line
+        end
+        return nil
+    end
+    M.NameCover = name_cover
+
     local function tags(rule)
         pill(R.PHASE_LABEL[rule.on] or tostring(rule.on), palette.blue, palette.selBg)
         if imgui.IsItemHovered() then set_tip('When it is checked: ' .. (R.PHASE_LONG[rule.on] or tostring(rule.on)) .. '.') end
@@ -340,6 +392,15 @@ return function(o)
             if imgui.IsItemHovered() then set_tip(TOP_NOTE) end
         end
         if rule.stop then chip('cancels it', palette.bad, palette.chipBg) end
+        local same, sameLine = repeats(rule)
+        if same ~= nil then
+            chip('repeats line ' .. sameLine, palette.warn, palette.warnBg)
+            if imgui.IsItemHovered() then
+                set_tip('Your job file already puts on ' .. same .. ' at this moment (line ' .. sameLine .. ', its named-set '
+                    .. 'step), so this rule repeats it. Delete it, or keep it to also put ' .. same .. ' on later, over what '
+                    .. 'your code puts on after that line.')
+            end
+        end
         if rule.off then chip('off', palette.dim, palette.chipBg) end
         if (rule.note or '') ~= '' then
             imgui.SameLine(0, 10)
@@ -807,6 +868,20 @@ return function(o)
             if (e.member ~= nil) and (r2.on == nil) then r2 = copy(rule); r2.on = e.phase end
             imgui.TextColored(palette.ok, R.Say(r2, e.phase))
             outline(palette.ok)
+            -- a set name already does this: say so (or that the rule repeats it)
+            local cand, line, what = nil, nil, nil
+            if e.member == nil then cand, line, what = name_cover(r2, e.phase) end
+            if cand ~= nil then
+                imgui.Spacing()
+                if (type(r2.wear) == 'string') and (string.lower(r2.wear) == string.lower(cand)) then
+                    imgui.TextColored(palette.warn, 'Your job file already puts on ' .. cand .. ' at this moment (line '
+                        .. line .. ': ' .. what .. '). This rule repeats it.')
+                else
+                    imgui.TextColored(palette.blue, 'A set named ' .. cand .. ' does this without a rule: line ' .. line
+                        .. ' of your job file (' .. what .. '). Rename or copy ' .. tostring(r2.wear or 'the set') .. ' to '
+                        .. cand .. ' and this rule isn\'t needed.')
+                end
+            end
         else
             imgui.TextColored(palette.warn, why)
             outline(palette.warn)

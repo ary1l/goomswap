@@ -1667,6 +1667,71 @@ function C.Spots(text)
     return out, true
 end
 
+-- The named-set steps in the job file: { [phase] = { name = { line, text }, skill = ..., family = ..., type = ...,
+-- ['skill_Precast'] = ... }, idle = { line } } for a ByName on the action's name, skill, family or type (with a fixed
+-- suffix: spell.Skill .. '_Precast'), and gcinclude.EquipIdle (Idle_<wm>, Idle_<idleset>). A set by that name is
+-- worn there with no rule (the builder says so).
+local STEP_WORDS = { name = 'the set named after the %s', skill = "the set named after the spell's skill",
+    family = "the set named after the spell's family", type = "the set named after the action's type" }
+function C.NameSteps(text)
+    local out = {}
+    if text == nil then return out end
+    local chunk = C.Parse(text)
+    if chunk == nil then return out end
+    local scope = file_scope(chunk)
+    for _, st in ipairs(chunk) do
+        if (st.k == 'assign') and (#st.targets == 1) and (st.exprs[1] ~= nil) and (st.exprs[1].k == 'func') then
+            local name = string.match(path_of(st.targets[1]) or '', '^profile%.(Handle%a+)$')
+            local phase = name and HANDLERS[name]
+            if phase ~= nil then
+                local hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists }
+                local steps = out[phase] or {}
+                out[phase] = steps
+                local function kind_of(a) -- what a ByName argument names: 'name', 'skill', 'family', 'type' (+ suffix)
+                    a = unparen(a)
+                    if a == nil then return nil end
+                    if (a.k == 'bin') and (a.op == '..') then
+                        local left, right = kind_of(a.a), unparen(a.b)
+                        if (left ~= nil) and (right ~= nil) and (right.k == 'str') then return left .. right.v end
+                        return nil
+                    end
+                    local m = meaning(hs, a)
+                    if m == nil then return nil end
+                    if m.kind == 'family' then return 'family' end
+                    if (m.kind == 'field') and (m.base == 'action') then
+                        return ({ Name = 'name', Skill = 'skill', Type = 'type' })[m.field]
+                    end
+                    return nil
+                end
+                local function walk(node)
+                    if type(node) ~= 'table' then return end
+                    if (node.k == 'call') and (node.method == nil) then
+                        local p = canon(hs, path_of(node.fn))
+                        if (p == 'gcinclude.ByName') or (p == 'ByName') then
+                            local k = kind_of(node.args[1])
+                            if (k ~= nil) and (steps[k] == nil) then
+                                local base, suffix = string.match(k, '^(%a+)(.*)$')
+                                local words = string.format(STEP_WORDS[base] or 'its set', WHAT[phase] or 'action')
+                                steps[k] = { line = line_of(text, node.s), text = words .. ((suffix ~= '') and (' + ' .. suffix) or '') }
+                            end
+                        elseif (p == 'gcinclude.EquipIdle') and (out.idle == nil) then
+                            out.idle = { line = line_of(text, node.s) }
+                        end
+                    end
+                    for _, v in pairs(node) do if type(v) == 'table' then walk(v) end end
+                end
+                for _, s in ipairs(st.exprs[1].body) do
+                    if s.k == 'local' then
+                        for j, n in ipairs(s.names) do hs.vars[n] = (s.exprs[j] ~= nil) and meaning(hs, s.exprs[j]) or nil end
+                    end
+                    walk(s)
+                end
+            end
+        end
+    end
+    return out
+end
+
 -- The splice taking a statement (s..e) out: its whole lines when nothing else is on them (a trailing ';' and
 -- comment go too), else just the statement.
 function C.Removal(text, s, e)

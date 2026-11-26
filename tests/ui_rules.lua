@@ -113,6 +113,37 @@ return {
         eq(v[1].wear, 'D'); eq(v[4].wear, 'A'); eq(v[2].wear, 'B'); eq(v[3].wear, 'C')
         fileValue, staged = nil, {}
     end },
+    { 'a rule a set name already does: hint and repeats tag', function()
+        state.document.model.text = [[
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+local ByName = gcinclude.ByName;
+profile.HandleMidcast = function()
+    local spell = gData.GetAction();
+    ByName(spell.Skill);
+    ByName(spell.Name);
+end
+profile.HandleDefault = function()
+    gcinclude.EquipIdle();
+    gcinclude.CheckDefault();
+end
+return profile;
+]]
+        local cand, line = M.NameCover({ on = 'Midcast', when = { name = 'Absorb-TP' }, wear = 'Absorb_TP' }, 'Midcast')
+        eq(cand, 'Absorb-TP'); eq(line, 7)
+        cand = M.NameCover({ on = 'Midcast', when = { skill = 'Healing Magic' }, wear = 'X' }, 'Midcast')
+        eq(cand, 'Healing Magic')
+        eq(M.NameCover({ on = 'Midcast', when = { name = 'Cure', mpp = { le = 50 } }, wear = 'X' }, 'Midcast'), nil, 'two conditions')
+        eq(M.NameCover({ on = 'Default', when = { status = 'Idle', mode = { wm = 'Tizona' } }, wear = 'X' }, 'Default'), 'Idle_Tizona')
+        eq(M.NameCover({ on = 'Default', when = { mode = { wm = 'Tizona' } }, wear = 'X' }, 'Default'), nil, 'not only idle')
+        eq(M.NameCover({ on = 'Ability', when = { name = 'Provoke' }, wear = 'X' }, 'Ability'), nil, 'no ability step here')
+        fileValue = { { on = 'Midcast', when = { name = 'Cursna' }, wear = 'Cursna' } }
+        staged = {}
+        state.ui.rulesView, state.ui.ruleEdit = nil, nil
+        M.Draw()
+        fileValue = nil
+        state.document.model.text = nil
+    end },
     { 'code: plan, convert, undo', function()
         staged = {}
         fileValue = nil
