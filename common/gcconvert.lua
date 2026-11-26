@@ -520,8 +520,15 @@ local function single(when) -- the one key of a when table, or nil
     return k
 end
 -- `a and b` as one when table; nil and why when they can't be said together.
+-- One value checked twice in a way one rule can't hold (its name has 'A' and has 'B', two HP limits...).
+local function twice(k)
+    local key = string.match(k, '^(%S+)')
+    local label = (R.KEY[key] ~= nil) and (R.KEY[key].label or key) or k
+    return 'It checks ' .. string.lower(label) .. ' twice in one condition (nested ifs, or an elseif\'s "not the ones '
+        .. 'before"). A rule checks each value once.'
+end
 local function both(a, b)
-    if a.any ~= nil and b.any ~= nil then return nil, 'two sets of "or" joined by "and"' end
+    if a.any ~= nil and b.any ~= nil then return nil, 'Its check is (A or B) and (C or D). A rule takes one list of "any of these", not two.' end
     local out = {}
     for k, v in pairs(a) do out[k] = v end
     for k, v in pairs(b) do
@@ -534,7 +541,7 @@ local function both(a, b)
                 local m = {}
                 for op, x in pairs(cur) do m[op] = x end
                 for op, x in pairs(v) do
-                    if m[op] ~= nil and m[op] ~= x then return nil, k .. ' compared twice' end
+                    if m[op] ~= nil and m[op] ~= x then return nil, twice(k) end
                     m[op] = x
                 end
                 out[k] = m
@@ -542,7 +549,7 @@ local function both(a, b)
                 local m = {}
                 for s, x in pairs(cur) do m[s] = x end
                 for s, x in pairs(v) do
-                    if m[s] ~= nil then return nil, k .. ' ' .. s .. ' checked twice' end
+                    if m[s] ~= nil then return nil, twice(k .. ' ' .. s) end
                     m[s] = x
                 end
                 out[k] = m
@@ -559,12 +566,12 @@ local function both(a, b)
                 for _, x in ipairs((type(v) == 'table') and v or { v }) do list[#list + 1] = x end
                 out.nobuff = list
             elseif (k == 'any') then
-                return nil, 'two sets of "or" joined by "and"'
+                return nil, 'Its check is (A or B) and (C or D). A rule takes one list of "any of these", not two.'
             elseif (type(cur) == 'table') and (type(v) == 'table') and (cur[1] == nil) and (v[1] == nil) then
                 local m = {}
                 for f, x in pairs(cur) do m[f] = x end
                 for f, x in pairs(v) do
-                    if m[f] ~= nil then return nil, k .. ' checked twice the same way' end
+                    if m[f] ~= nil then return nil, twice(k) end
                     m[f] = x
                 end
                 out[k] = m
@@ -577,7 +584,7 @@ local function both(a, b)
                 for f, x in pairs(cur) do m[f] = x end
                 out[k] = m
             else
-                return nil, k .. ' checked twice'
+                return nil, twice(k)
             end
         end
     end
@@ -674,14 +681,14 @@ local function compare(scope, op, ea, eb)
                 if op == '~=' then return c end
                 local n = negate(c)
                 if n ~= nil then return n end
-                return nil, '"== nil" of something rules cannot turn around'
+                return nil, 'It checks that something is missing (== nil) in a way a rule can\'t say.'
             end
         end
     end
     local a, b = meaning(scope, ea), meaning(scope, eb)
-    if (a == nil) or (b == nil) then return nil, 'compares something rules cannot read' end
+    if (a == nil) or (b == nil) then return nil, 'It compares a value a rule can\'t read. A rule only checks game values (spell, buffs, HP/MP, modes...).' end
     if (a.kind == 'lit') or (a.kind == 'nil') or (a.kind == 'me') and (b.kind == 'field') then a, b, op = b, a, FLIP[op] end
-    if (op ~= '==') and (op ~= '~=') and NUM_OP[op] == nil then return nil, 'an unknown comparison' end
+    if (op ~= '==') and (op ~= '~=') and NUM_OP[op] == nil then return nil, 'It uses a comparison a rule doesn\'t have.' end
     local eq = (op == '==')
     local textOk = (op == '==') or (op == '~=')
     local function text(key, v) if eq then return { [key] = v } end return { [key] = { isnt = v } } end
@@ -694,8 +701,10 @@ local function compare(scope, op, ea, eb)
         local meta = R.KEY[key]
         if (a.base == 'action') and (a.field == 'Element') and (b.kind == 'field') and (b.base == 'env') and textOk then
             local which = (b.field == 'WeatherElement') and 'weather' or ((b.field == 'DayElement') and 'day' or nil)
-            if which == nil then return nil, 'compares the element with ' .. b.field end
-            if not eq then return nil, 'element not equal to the ' .. which end
+            if which == nil then
+                return nil, 'It compares the spell\'s element with ' .. tostring(b.field) .. '. A rule can match it to the day or the weather only.'
+            end
+            if not eq then return nil, 'It checks the element is NOT the ' .. which .. '\'s. A rule can only match it.' end
             return { element = which }
         end
         if (a.base == 'target') and (a.field == 'Name') and (b.kind == 'me') and textOk then
@@ -712,32 +721,32 @@ local function compare(scope, op, ea, eb)
         end
         if (not textOk) or (type(b.v) ~= 'string') then return nil, a.field .. ' compared as a number' end
         if key == 'target' then
-            if not eq then return nil, 'target type "not"' end
+            if not eq then return nil, 'It checks the target is NOT a kind (PC, monster...). A rule can only match the kind.' end
             return { target = b.v }
         end
         return text(key, b.v)
     end
     if a.kind == 'family' then
-        if (b.kind ~= 'lit') or (type(b.v) ~= 'string') or not textOk then return nil, 'family compared oddly' end
+        if (b.kind ~= 'lit') or (type(b.v) ~= 'string') or not textOk then return nil, 'It compares the spell family with something other than a name.' end
         return text('family', b.v)
     end
     if a.kind == 'buffcount' then
-        if (b.kind ~= 'lit') or (type(b.v) ~= 'number') then return nil, 'buff count compared with a non-number' end
+        if (b.kind ~= 'lit') or (type(b.v) ~= 'number') then return nil, 'It compares a buff count with something other than a number.' end
         local n, up = b.v, nil
         if ((op == '>') and (n == 0)) or ((op == '>=') and (n == 1)) or ((op == '~=') and (n == 0)) then up = true end
         if ((op == '==') and (n == 0)) or ((op == '<') and (n == 1)) or ((op == '<=') and (n == 0)) then up = false end
-        if up == nil then return nil, 'a buff count other than up / not up' end
+        if up == nil then return nil, 'It needs a buff count (2 or more, say). A rule only knows a buff is up or not.' end
         local v = (#a.names == 1) and a.names[1] or a.names
         if up then return { buff = v } end
         return { nobuff = v }
     end
     if a.kind == 'cycle' then
-        if (b.kind ~= 'lit') or (type(b.v) ~= 'string') or not textOk then return nil, 'a mode compared oddly' end
+        if (b.kind ~= 'lit') or (type(b.v) ~= 'string') or not textOk then return nil, 'It compares a mode with something other than one of its values.' end
         local s = CYCLE_SHORT[a.name] or a.name
         return { mode = { [s] = eq and b.v or { isnt = b.v } } }
     end
     if a.kind == 'toggle' then
-        if (b.kind ~= 'lit') or (type(b.v) ~= 'boolean') or not textOk then return nil, 'a toggle compared oddly' end
+        if (b.kind ~= 'lit') or (type(b.v) ~= 'boolean') or not textOk then return nil, 'It compares a toggle with something other than on or off.' end
         local s = TOGGLE_SHORT[a.name] or a.name
         return { toggle = { [s] = (b.v == eq) } }
     end
@@ -745,12 +754,12 @@ local function compare(scope, op, ea, eb)
     if (a.kind == 'flag') and (b.kind == 'lit') and (type(b.v) == 'boolean') and textOk then
         return { [a.key] = (b.v == eq) }
     end
-    if (a.kind == 'petAction') and (b.kind == 'nil') then return nil, 'a pet action check (stays with the handler)' end
+    if (a.kind == 'petAction') and (b.kind == 'nil') then return nil, 'It checks your pet\'s move. Pet moves are handled on their own, so this part stays with your code.' end
     if (b.kind == 'nil') and (a.kind == 'player' or a.kind == 'action' or a.kind == 'target' or a.kind == 'env') then
-        if eq then return nil, 'checks for a missing ' .. a.kind end
+        if eq then return nil, 'It checks that the ' .. a.kind .. ' is missing. A rule can\'t test for that.' end
         return {} -- x ~= nil: a guard; a rule reading a missing one is false anyway
     end
-    return nil, 'compares something rules cannot read'
+    return nil, 'It compares a value a rule can\'t read. A rule only checks game values (spell, buffs, HP/MP, modes...).'
 end
 
 -- string.contains(spell.Name, 'x'), string.find(..., 'x', 1, true), spell.Name:contains('x'), T{...}:contains(x)
@@ -758,12 +767,14 @@ local function call_cond(scope, e)
     local p = call_path(scope, e)
     local function text_arg(subject, lit, plain)
         local m = meaning(scope, subject)
-        if (m == nil) or (lit == nil) or (lit.k ~= 'str') then return nil, 'a text search rules cannot read' end
+        if (m == nil) or (lit == nil) or (lit.k ~= 'str') then return nil, 'It searches text a rule can\'t read. A rule only checks game values (spell, buffs, HP/MP, modes...).' end
         local key = nil
         if (m.kind == 'field') then key = (FIELD_KEY[m.base] or {})[m.field] end
         if m.kind == 'family' then key = 'family' end
-        if (key == nil) or (R.KEY[key].kind ~= 'text') then return nil, 'a text search in something rules cannot read' end
-        if (not plain) and string.find(lit.v, MAGIC) then return nil, "a pattern ('" .. lit.v .. "') rules match only as plain text" end
+        if (key == nil) or (R.KEY[key].kind ~= 'text') then return nil, 'It searches text a rule can\'t read. A rule only checks game values (spell, buffs, HP/MP, modes...).' end
+        if (not plain) and string.find(lit.v, MAGIC) then
+            return nil, "It searches with a Lua pattern ('" .. lit.v .. "'). A rule matches plain text only."
+        end
         return { [key] = { has = lit.v } }
     end
     -- gcinclude.RangedAcc(): gcdisplay.GetCycle('MeleeSet') == 'Acc' (gcinclude.lua)
@@ -772,7 +783,7 @@ local function call_cond(scope, e)
     if (p == 'string.find') and (#e.args >= 2) then
         local plain = (#e.args == 4) and (e.args[3].k == 'num') and (e.args[3].v == 1) and (e.args[4].k == 'bool')
             and (e.args[4].v == true)
-        if (#e.args ~= 2) and not plain then return nil, 'string.find with other arguments' end
+        if (#e.args ~= 2) and not plain then return nil, 'It uses string.find with options a rule doesn\'t have.' end
         return text_arg(e.args[1], e.args[2], plain)
     end
     if (p == 'string.match') and (#e.args == 2) then return text_arg(e.args[1], e.args[2], false) end
@@ -783,7 +794,7 @@ local function call_cond(scope, e)
             local key = nil
             if (m ~= nil) and (m.kind == 'field') then key = (FIELD_KEY[m.base] or {})[m.field] end
             if (m ~= nil) and (m.kind == 'family') then key = 'family' end
-            if (key == nil) or (R.KEY[key].kind ~= 'text') then return nil, 'a list check on something rules cannot read' end
+            if (key == nil) or (R.KEY[key].kind ~= 'text') then return nil, 'It checks a list against something a rule can\'t read. A rule only checks game values (spell, buffs, HP/MP, modes...).' end
             -- T{}:contains compares as written; a list in rules too
             return { [key] = list }
         end
@@ -794,7 +805,15 @@ local function call_cond(scope, e)
         if m.kind == 'flag' then return { [m.key] = true } end
         if m.kind == 'toggle' then return { toggle = { [TOGGLE_SHORT[m.name] or m.name] = true } } end
     end
-    return nil, 'calls ' .. tostring(p or (e.method and (':' .. e.method)) or 'a function')
+    local asks = { -- what a few engine calls in a check do, plainly
+        ['gcinclude.ByName'] = 'Its check puts on a set and asks whether one by that name exists (ByName). A rule '
+            .. 'can\'t ask whether a set exists.',
+        ['gcinclude.IsWeaponValue'] = 'Its check asks whether a weapon pick is set, not None or Unknown '
+            .. '(IsWeaponValue). A rule can\'t ask that one.',
+    }
+    if (p ~= nil) and (asks[p] ~= nil) then return nil, asks[p] end
+    return nil, 'Its check asks ' .. tostring(p or (e.method and (':' .. e.method)) or 'a function') .. '(), which a rule '
+        .. 'can\'t ask. A rule only checks game values (spell, buffs, HP/MP, modes...).'
 end
 
 cond_of = function(scope, e)
@@ -811,35 +830,40 @@ cond_of = function(scope, e)
             if a == nil then return nil, why end
             local b, whyb = cond_of(scope, e.b)
             if b == nil then return nil, whyb end
-            if (next(a) == nil) or (next(b) == nil) then return nil, '"or" with a check that is always true' end
+            if (next(a) == nil) or (next(b) == nil) then
+                return nil, 'It joins with "or" a part a rule reads as always true (a check that a value exists), so the '
+                    .. 'rule would always apply.'
+            end
             return either(a, b)
         elseif (NUM_OP[e.op] ~= nil) then
             return compare(scope, e.op, e.a, e.b)
         end
-        return nil, 'uses ' .. e.op
+        return nil, 'It does math (' .. tostring(e.op) .. ') in its check. A rule only compares values.'
     end
     if (e.k == 'un') and (e.op == 'not') then
         local a, why = cond_of(scope, e.a)
         if a == nil then return nil, why end
         local n = negate(a)
-        if n == nil then return nil, '"not" of something rules cannot turn around' end
+        if n == nil then return nil, 'It uses "not" on a check a rule can\'t turn around.' end
         return n
     end
     if e.k == 'call' then return call_cond(scope, e) end
     if e.k == 'name' or e.k == 'index' then
         local m = meaning(scope, e)
-        if m == nil then return nil, 'reads ' .. tostring(path_of(e) or 'a value') .. ', which rules cannot' end
+        if m == nil then
+            return nil, 'It reads ' .. tostring(path_of(e) or 'a value') .. ', which a rule can\'t. A rule only checks game values (spell, buffs, HP/MP, modes...).'
+        end
         if m.kind == 'cond' then return deep(m.cond) end -- local roll = string.find(ability.Name, 'Roll', 1, true) ~= nil
         if m.kind == 'flag' then return { [m.key] = true } end
         if m.kind == 'toggle' then return { toggle = { [TOGGLE_SHORT[m.name] or m.name] = true } } end
         if (m.kind == 'field') and (FIELD_KEY[m.base] or {})[m.field] == 'moving' then return { moving = true } end
         if (m.kind == 'pet') then return { pet = true } end
         if (m.kind == 'env') or (m.kind == 'player') or (m.kind == 'action') or (m.kind == 'target') then return {} end
-        if m.kind == 'petAction' then return nil, 'a pet action check (stays with the handler)' end
-        return nil, 'reads ' .. tostring(path_of(e)) .. ' as true or false'
+        if m.kind == 'petAction' then return nil, 'It checks your pet\'s move. Pet moves are handled on their own, so this part stays with your code.' end
+        return nil, 'It uses ' .. tostring(path_of(e)) .. ' as yes/no. A rule can\'t read it that way.'
     end
-    if e.k == 'bool' then return nil, 'a fixed true/false' end
-    return nil, 'an expression rules cannot read'
+    if e.k == 'bool' then return nil, 'Its check is always true or always false: nothing to make a rule from.' end
+    return nil, 'Its check is code a rule can\'t read. A rule only checks game values (spell, buffs, HP/MP, modes...).'
 end
 
 -- == Bodies: what a branch wears ==
@@ -883,6 +907,21 @@ local function item_of(e)
     return nil
 end
 
+-- What a call that isn't gear does, said plainly (a rule only puts on gear or cancels the action).
+local CALL_SAYS = {
+    ['gcinclude.DoCORmsg'] = 'prints the roll\'s lucky and unlucky numbers to chat',
+    ['gcinclude.CheckCancels'] = 'cancels a buff first when an action needs it (Sneak, Utsusemi...)',
+    ['gFunc.Message'] = 'prints to chat', ['gFunc.Echo'] = 'prints to chat', ['gFunc.Error'] = 'prints to chat',
+    ['gcinclude.Say'] = 'prints to chat', ['gcinclude.Err'] = 'prints to chat', print = 'prints to chat',
+}
+local function not_gear(p)
+    local what = CALL_SAYS[p]
+    if what ~= nil then
+        return 'Not gear: it ' .. what .. ' (' .. tostring(p) .. '). A rule only puts on gear or cancels the action.'
+    end
+    return 'It runs ' .. tostring(p or 'a function') .. '(), which does more than put on gear. A rule only puts on gear '
+        .. 'or cancels the action.'
+end
 -- A statement in a branch as rule actions: { wear, exact } / { item = { slot, item } } / { stop } / { localvar };
 -- nil and why when it is something else.
 local function action_of(scope, st)
@@ -891,23 +930,30 @@ local function action_of(scope, st)
         local p = call_path(scope, call)
         if p == 'gFunc.EquipSet' and (#call.args == 1) then
             local name = set_name_of(scope, call.args[1])
-            if name == nil then return nil, 'wears a set built in code' end
+            if name == nil then
+                return nil, 'It puts on a set whose name is made while it runs. A rule needs the set\'s name written out.'
+            end
             return { wear = name, exact = true }
         end
         if p == 'gcinclude.ByName' and (#call.args == 1) then
-            if call.args[1].k ~= 'str' then return nil, 'wears a set named in code' end
+            if call.args[1].k ~= 'str' then
+                return nil, 'It puts on a set named by a variable. A rule needs the set\'s name written out.'
+            end
             return { wear = call.args[1].v }
         end
         if p == 'gFunc.Equip' and (#call.args == 2) then
             local slot = (call.args[1].k == 'str') and SLOT[string.lower(call.args[1].v)] or nil
             local item = item_of(call.args[2])
-            if (slot == nil) or (item == nil) then return nil, 'equips an item named in code' end
+            if (slot == nil) or (item == nil) then
+                return nil, 'It puts on an item or slot named by a variable. A rule needs both written out.'
+            end
             return { item = { slot, item } }
         end
         if p == 'gFunc.CancelAction' and (#call.args == 0) then return { stop = true } end
-        return nil, 'calls ' .. tostring(p or 'a function')
+        return nil, not_gear(p)
     end
-    return nil, (st.k == 'local') and 'sets a variable' or ('has ' .. st.k .. ' code')
+    if st.k == 'local' then return nil, 'It sets a variable for later code. A rule can\'t keep a value.' end
+    return nil, 'It has other code (' .. st.k .. '). A rule only puts on gear or cancels the action.'
 end
 
 local function copy(v)
@@ -934,19 +980,23 @@ local function block_rules(scope, body, when, phase, out)
         elseif st.k == 'local' then
             for j, name in ipairs(st.names) do
                 local m = (st.exprs[j] ~= nil) and meaning(inner, st.exprs[j]) or nil
-                if m == nil then return nil, 'sets local ' .. name .. ' to something rules cannot read' end
+                if m == nil then
+                    return nil, 'It sets ' .. name .. ' from something a rule can\'t read. ' .. 'A rule only checks game values (spell, buffs, HP/MP, modes...).'
+                end
                 inner.vars[name] = m
             end
         elseif st.k == 'return' then
-            if (i ~= #body) or (#st.exprs > 0) then return nil, 'returns early' end
-            if (pending == nil or not pending.stop) and not (out[#out] and out[#out].stop) then
-                return nil, 'returns early: the code after it would be skipped'
+            if (i ~= #body) or (#st.exprs > 0) or ((pending == nil or not pending.stop) and not (out[#out] and out[#out].stop)) then
+                return nil, 'It stops the handler early (return), so the code after it is skipped. A rule can\'t skip code.'
             end
         else
             local a, why = action_of(inner, st)
             if a == nil then return nil, why end
             if a.stop then
-                if not R.STOPPABLE[phase] then return nil, 'cancels the action where LuAshitacast cannot' end
+                if not R.STOPPABLE[phase] then
+                    return nil, 'It cancels at a moment LuAshitacast can\'t cancel (only when starting a spell, an '
+                        .. 'ability, a weapon skill, an item or a shot).'
+                end
                 pending = pending or { on = phase, when = copy(when) }
                 pending.stop = true
             elseif a.wear then
@@ -1019,7 +1069,8 @@ convert_if = function(scope, st, when, phase, out)
         for i, br in ipairs(st.branches) do
             local w, why = both(when, conds[i])
             if w == nil then return nil, why end
-            if block_rules(scope, br.body, w, phase, out) == nil then return nil, 'a branch' end
+            local r, bwhy = block_rules(scope, br.body, w, phase, out)
+            if r == nil then return nil, bwhy end
         end
         if st.elseBody ~= nil then
             local list = {}
@@ -1027,7 +1078,8 @@ convert_if = function(scope, st, when, phase, out)
             table.sort(list)
             local w, why = both(when, { [key] = { isnt = list } })
             if w == nil then return nil, why end
-            if block_rules(scope, st.elseBody, w, phase, out) == nil then return nil, 'the else branch' end
+            local r, bwhy = block_rules(scope, st.elseBody, w, phase, out)
+            if r == nil then return nil, bwhy end
         end
         return out
     end
@@ -1048,7 +1100,10 @@ convert_if = function(scope, st, when, phase, out)
             group.first[#group.first + 1] = m
         end
         for _, m in ipairs(group.first) do
-            if m.stop then return nil, 'a group that cancels' end
+            if m.stop then
+                return nil, 'One choice of its if / elseif chain cancels the action. A first-that-fits group of rules '
+                    .. 'can only put on gear.'
+            end
         end
         out[#out + 1] = group
         return out
@@ -1062,9 +1117,13 @@ convert_if = function(scope, st, when, phase, out)
             w, why = both(w, p)
             if w == nil then return nil, why end
         end
-        if block_rules(scope, br.body, w, phase, out) == nil then return nil, 'a branch' end
+        local r, bwhy = block_rules(scope, br.body, w, phase, out)
+        if r == nil then return nil, bwhy end
         local n = negate(conds[i])
-        if n == nil then return nil, 'an elseif chain whose conditions rules cannot turn around' end
+        if n == nil then
+            return nil, 'In its elseif chain, each later branch means "not the ones before", and a rule can\'t say "not" '
+                .. 'for one of those checks.'
+        end
         prior[#prior + 1] = n
     end
     if st.elseBody ~= nil then
@@ -1074,7 +1133,8 @@ convert_if = function(scope, st, when, phase, out)
             w, why = both(w, p)
             if w == nil then return nil, why end
         end
-        if block_rules(scope, st.elseBody, w, phase, out) == nil then return nil, 'the else branch' end
+        local r, bwhy = block_rules(scope, st.elseBody, w, phase, out)
+        if r == nil then return nil, bwhy end
     end
     return out
 end

@@ -82,7 +82,24 @@ return profile;
         local plan = assert(C.Plan(text))
         eq(#plan.rules, 0)
         eq(plan.handlers[1].items[1].ok, false)
-        eq(plan.handlers[1].items[2].why, 'calls MyThing')
+        eq(string.find(plan.handlers[1].items[2].why, 'asks MyThing()', 1, true) ~= nil, true, plan.handlers[1].items[2].why)
+    end },
+    { 'a branch that is not gear says so plainly', function()
+        local text = [[
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+profile.HandleAbility = function()
+    local ability = gData.GetAction();
+    local roll = (string.find(ability.Name, 'Roll', 1, true) ~= nil);
+    if roll then gcinclude.DoCORmsg(ability.Name) end
+    if (ability.Name == 'Wild Card') then gcinclude.Mystery(ability.Name) end
+end
+return profile;
+]]
+        local plan = assert(C.Plan(text))
+        local a, b = plan.handlers[1].items[1].why, plan.handlers[1].items[2].why
+        eq(string.find(a, "Not gear: it prints the roll's lucky and unlucky numbers to chat", 1, true) ~= nil, true, a)
+        eq(string.find(b, 'It runs gcinclude.Mystery(), which does more than put on gear', 1, true) ~= nil, true, b)
     end },
     { 'elseif chains: exclusive skills, else, groups', function()
         local text = [[

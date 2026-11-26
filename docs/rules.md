@@ -107,7 +107,9 @@ What converts:
   first). Your later code still wins those slots, as before. If that line is later taken out of the file by hand,
   its rules can't go on: GoomSwap says so in chat on load, and the Rules page tags them **not running** (Edit, More,
   **Use a layer instead**).
-- Stays code: names built in code (`'Tank_' .. tank`), engine calls (`CheckBlockedAmmo`), pet action branches, math
+- **Stays code** says, for each, what the line does and why a rule can't do it (*Not gear: it prints the roll's
+  lucky and unlucky numbers to chat. A rule only puts on gear or cancels the action.*); it keeps working as code.
+  Stays code: names built in code (`'Tank_' .. tank`), engine calls (`CheckBlockedAmmo`), pet action branches, math
   on counts, two `has` that must both hold. `gData.GetBuffCount` becomes GoomSwap's buff check, which also counts a
   buff that just landed.
 

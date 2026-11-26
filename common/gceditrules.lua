@@ -914,7 +914,12 @@ return function(o)
                             if imgui.IsItemHovered() then set_tip(spot_tip(it.spot, plan, text)) end
                         end
                     else
-                        imgui.TextColored(palette.warn, 'Stays code: ' .. tostring(it.why))
+                        -- why it can't be a rule, and that it's fine: it keeps working as code (the check's own
+                        -- findings stay amber: something there differed or couldn't be run)
+                        local why = tostring(it.why)
+                        local fromCheck = string.match(why, "^Convert's check") ~= nil
+                        imgui.TextColored(fromCheck and palette.warn or palette.dim, why
+                            .. (fromCheck and '' or ' Fine as it is: it keeps working as code.'))
                     end
                     imgui.PopTextWrapPos()
                     card_end(c)
