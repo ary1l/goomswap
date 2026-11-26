@@ -268,6 +268,47 @@ return profile;
         eq(R.MatchText('Fire', { has = { 'Fi', 'Bl' }, hasall = { 'r', 'e' } }), true) -- any of has, all of hasall
         eq(R.MatchText('Fire', { has = { 'Fi', 'Bl' }, hasall = { 'r', 'z' } }), false)
     end },
+    { 'a buff count == 1 converts as up only when you say so (Count 1 as up); the old THF SA/TA block is a standard step', function()
+        local text = [[
+local profile = {};
+local sets = { SATA = { Body = 'Plunderer Vest' }, SA = { Hands = 'Raider Armlets' }, Ws_Default_SA = { Ring1 = 'Ilabrat Ring' } };
+profile.Sets = sets;
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+profile.HandleDefault = function()
+    local sa = gcinclude.BuffCount('Sneak Attack');
+    local ta = gcinclude.BuffCount('Trick Attack');
+    if (sa == 1) and (ta == 1) then
+        gFunc.EquipSet(sets.SATA);
+    elseif (sa == 1) then
+        gFunc.EquipSet(sets.SA);
+    end
+    gcinclude.CheckDefault();
+end
+profile.HandleWeaponskill = function()
+    local ws = gData.GetAction();
+    local sa, ta = gcinclude.BuffCount('Sneak Attack'), gcinclude.BuffCount('Trick Attack');
+    local suffix = ((sa > 0) and (ta > 0) and 'SATA') or ((sa > 0) and 'SA') or ((ta > 0) and 'TA') or nil;
+    if (suffix ~= nil) then
+        local mode = gcdisplay.GetCycle('MeleeSet');
+        local set = gcinclude.FindSet(ws.Name .. ((mode == 'Default') and '' or ('_' .. mode)) .. '_' .. suffix);
+        if (set == nil) or (next(set) == nil) then set = gcinclude.FindSet('Ws_' .. mode .. '_' .. suffix) end
+        if (set ~= nil) then gFunc.EquipSet(set) end
+    end
+end
+return profile;
+]]
+        local plan = assert(C.Plan(text))
+        local it = plan.handlers[1].items[1]
+        eq(it.ok, false); eq(it.why, C.ONE_WHY); eq(it.oneKey, 'if (sa == 1) and (ta == 1) then')
+        eq(plan.handlers[2].items[1].standard, true, plan.handlers[2].items[1].why)
+        local up = { [it.oneKey] = true }
+        local p2 = assert(C.Plan(text, { oneIsUp = up }))
+        eq(p2.handlers[1].items[1].ok, true); eq(p2.handlers[1].items[1].oneIsUp, true)
+        eq(R.Say(p2.rules[1].first[1], 'Default'), 'If Sneak Attack and Trick Attack are both up: put on SATA')
+        local K = gFunc.LoadFile('common\\gcconvertcheck.lua')
+        local p3 = assert(K.Run(text, { oneIsUp = up, rounds = 100, trialRounds = 50 }))
+        eq(p3.checked.skippedCount, 0); eq(#p3.rules, 1)
+    end },
     { 'a branch that is not gear says so plainly', function()
         local text = [[
 local profile = {};

@@ -931,16 +931,26 @@ return function(o)
     -- == The job file's own code: what Convert turns into rules, and Adopt for a plain LuAshitacast file ==
     -- The plan for the file's text: at once the plain one (counts, the list), then the checked one once the same-gear
     -- check is done (a few ms each frame while the editor is open); Convert waits for it.
+    -- The ifs whose buff count of 1 you said reads as up (Count 1 as up), by their first line; changing it replans.
+    local function one_is_up()
+        editorState.ui.oneIsUp = editorState.ui.oneIsUp or {}
+        return editorState.ui.oneIsUp
+    end
     local function plan_of(text)
         local c = editorState.ui.convertPlan
-        if (c == nil) or (c.text ~= text) then
-            local plan, why = Conv.Plan(text)
-            c = { text = text, plan = plan, why = why, adoptable = not Conv.IsGoomSwap(text) }
+        local up = one_is_up()
+        if (c == nil) or (c.text ~= text) or (c.up ~= up.version) then
+            local plan, why = Conv.Plan(text, { oneIsUp = up })
+            c = { text = text, up = up.version, plan = plan, why = why, adoptable = not Conv.IsGoomSwap(text) }
             local any = false
             for _, h in ipairs((plan ~= nil) and plan.handlers or {}) do
                 for _, it in ipairs(h.items) do if it.ok then any = true end end
             end
-            if any then c.job = Check.Job(text, { engine = (o.ctx ~= nil) and o.ctx.gearEngine or nil }) else c.ready = true end
+            if any then
+                c.job = Check.Job(text, { engine = (o.ctx ~= nil) and o.ctx.gearEngine or nil, oneIsUp = up })
+            else
+                c.ready = true
+            end
             editorState.ui.convertPlan = c
         end
         if (c.job ~= nil) and c.job.Step(o.checkBudget or 0.004) then
@@ -1038,12 +1048,34 @@ return function(o)
                             pill(spot_label(it.spot, plan, text), palette.ok, palette.okBg)
                             if imgui.IsItemHovered() then set_tip(spot_tip(it.spot, plan, text)) end
                         end
+                        if it.oneIsUp then -- your say-so: a count of 1 read as up
+                            if it.spot ~= nil then imgui.SameLine(0, 8) end
+                            imgui.TextColored(palette.dim, 'a buff count of 1 read as up (you said)')
+                            imgui.SameLine(0, 8)
+                            if button('Undo##one_' .. it.line, 'ghost') then
+                                local up = one_is_up()
+                                up[Conv.FirstLine(text, it)] = nil
+                                up.version = (up.version or 0) + 1
+                            end
+                            if imgui.IsItemHovered() then set_tip('Back to code: the count is compared with 1 again.') end
+                        end
                     else
                         -- why it can't be a rule, and that it's fine: it keeps working as code (the check's own
                         -- findings stay amber: something there differed or couldn't be run)
                         local why = tostring(it.why)
                         local fromCheck = string.match(why, "^Convert's check") ~= nil
                         imgui.TextColored(fromCheck and palette.warn or palette.dim, why)
+                        if it.oneKey ~= nil then -- a buff count == 1: up, on your say-so
+                            if button('Count 1 as up##one_' .. it.line, 'plain') then
+                                local up = one_is_up()
+                                up[it.oneKey] = true
+                                up.version = (up.version or 0) + 1
+                            end
+                            if imgui.IsItemHovered() then
+                                set_tip('These buffs never show twice, so a count of exactly 1 means the buff is up: this '
+                                    .. 'line becomes rules (Can become rules). Undo there puts it back.')
+                            end
+                        end
                     end
                     imgui.PopTextWrapPos()
                     card_end(c)
@@ -1053,7 +1085,7 @@ return function(o)
         end
         if (want == 'stays') and (std > 0) then
             paragraph(std .. ' more ' .. ((std == 1) and 'is' or 'are') .. " GoomSwap's standard lines (your idle / engaged "
-                .. 'steps, the named-set step, the WS check): they stay as they are.')
+                .. 'steps, the named-set step, the WS check...): they stay as they are.')
         end
         return shown
     end

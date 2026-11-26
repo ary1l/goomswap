@@ -315,15 +315,7 @@ profile.HandleWeaponskill = function()
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
     ByName(ws.Name); -- e.g. ['Rudra\'s Storm'], then ['Rudra\'s Storm_<mset>']
-    -- Sneak/Trick Attack on top: ['<WS>_SA'] / _TA / _SATA (['<WS>_Acc_SA'] with /mset acc), else Ws_<mset>_SA ...
-    local sa, ta = gcinclude.BuffCount('Sneak Attack'), gcinclude.BuffCount('Trick Attack');
-    local suffix = ((sa > 0) and (ta > 0) and 'SATA') or ((sa > 0) and 'SA') or ((ta > 0) and 'TA') or nil;
-    if (suffix ~= nil) then
-        local mode = gcdisplay.GetCycle('MeleeSet');
-        local set = gcinclude.FindSet(ws.Name .. ((mode == 'Default') and '' or ('_' .. mode)) .. '_' .. suffix);
-        if (set == nil) or (next(set) == nil) then set = gcinclude.FindSet('Ws_' .. mode .. '_' .. suffix) end
-        if (set ~= nil) then gFunc.EquipSet(set) end
-    end
+    gcinclude.EquipSATA(ws.Name); -- SA/TA up: ['<WS>_SA'] / _TA / _SATA (['<WS>_Acc_SA'] with /mset acc), else Ws_<mset>_SA ...
 end
 
 return profile;

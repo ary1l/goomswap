@@ -386,6 +386,12 @@ local function path_of(e) -- 'gData.GetPlayer', 'sets.Idle'; nil for anything bu
     end
     return nil
 end
+-- A scope inside another: its own locals over the outer ones; the file's aliases, lists, functions, and which ifs
+-- read a buff count of 1 as up (up: the user said those buffs never show twice).
+local function sub(scope)
+    return { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists,
+        funcs = scope.funcs, up = scope.up, depth = scope.depth }
+end
 local function unparen(e)
     while (e ~= nil) and (e.k == 'paren') do e = e.a end
     return e
@@ -794,6 +800,9 @@ local function compare(scope, op, ea, eb)
         local n, up = b.v, nil
         if ((op == '>') and (n == 0)) or ((op == '>=') and (n == 1)) or ((op == '~=') and (n == 0)) then up = true end
         if ((op == '==') and (n == 0)) or ((op == '<') and (n == 1)) or ((op == '<=') and (n == 0)) then up = false end
+        if (n == 1) and ((op == '==') or (op == '~=')) then
+            if scope.up then up = (op == '==') else return nil, C.ONE_WHY end -- you said: never shows twice
+        end
         if up == nil then return nil, 'It checks a buff count ' .. op .. ' ' .. n .. '. A rule only knows up (count above 0) or not up. '
             .. 'For a buff that never shows twice, > 0 means the same and converts.' end
         local v = (#a.names == 1) and a.names[1] or a.names
@@ -893,7 +902,8 @@ local function call_cond(scope, e)
     local body = (e.fn ~= nil) and (e.fn.k == 'name') and (e.method == nil) and (#e.args == 0) and (scope.funcs ~= nil)
         and (scope.vars[e.fn.v] == nil) and scope.funcs[e.fn.v] or nil -- not a handler local by that name
     if (body ~= nil) and ((scope.depth or 0) < 4) then -- Night(): its locals, then the check it returns
-        local inner = { vars = {}, aliases = scope.aliases, lists = scope.lists, funcs = scope.funcs, depth = (scope.depth or 0) + 1 }
+        local inner = sub(scope) -- a file function sees the file's names, not the handler's locals
+        inner.vars, inner.depth = {}, (scope.depth or 0) + 1
         for i = 1, #body - 1 do
             for j, name in ipairs(body[i].names) do
                 local m = (body[i].exprs[j] ~= nil) and meaning(inner, body[i].exprs[j]) or nil
@@ -1102,7 +1112,7 @@ end
 -- A block's statements as rules (in order) under the conditions `when`; nil and why when one can't be.
 local convert_if
 local function block_rules(scope, body, when, phase, out)
-    local inner = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists, funcs = scope.funcs }
+    local inner = sub(scope)
     local pending = nil -- consecutive wears/items under the same conditions join one rule
     local function flush()
         if pending ~= nil then out[#out + 1] = pending end
@@ -1291,6 +1301,13 @@ end
 
 -- == The plan ==
 -- Lines every GoomSwap job file has, which stay as they are (they are GoomSwap's steps, not your own logic).
+-- An if's first line, trimmed: what the editor keys a choice about that if by (it survives other lines moving).
+function C.FirstLine(text, node)
+    local code = string.sub(text, node.s, node.e)
+    return (string.gsub(string.match(code, '^[^\n]*') or '', '^%s*(.-)%s*$', '%1'))
+end
+C.ONE_WHY = 'It checks a buff count of exactly 1. A rule only knows up (count above 0) or not up. If these buffs never '
+    .. 'show twice, the two mean the same: say so with Count 1 as up.'
 C.STANDARD = {
     { 'gcinclude%.EquipMode%(', 'a standard step: your idle / engaged / resting / moving sets' },
     -- exactly `if not ByName(x) then ByName(y) end` (gcinclude.ByName too): nothing else in it
@@ -1298,6 +1315,9 @@ C.STANDARD = {
         "a standard step: the action's own set, else its family's (Cure IV: Cure)" },
     { 'CheckWsBailout', 'a standard step: a weapon skill that would fail is stopped' },
     { 'CheckBlockedAmmo', 'a standard step: a shot or weapon skill that would use precious ammo is stopped' },
+    -- the THF job file's own SA/TA step, as it was before gcinclude.EquipSATA (one line now)
+    { "FindSet%('Ws_'%s*%.%.%s*mode%s*%.%.%s*'_'%s*%.%.%s*suffix%)",
+        'a standard step: your Sneak / Trick Attack sets over the weapon skill (<WS>_SA, else Ws_<mset>_SA)' },
 }
 local HANDLERS = { HandleDefault = 'Default', HandlePrecast = 'Precast', HandleMidcast = 'Midcast',
     HandleAbility = 'Ability', HandleWeaponskill = 'Weaponskill', HandlePreshot = 'Preshot', HandleMidshot = 'Midshot',
@@ -1310,7 +1330,7 @@ local NEUTRAL = { ['gcinclude.CheckTH'] = true, ['gcinclude.CheckCancels'] = tru
 local CHECKED = { ['gcinclude.ByName'] = true, ['gcinclude.EquipSet'] = true, ['gcinclude.FindSet'] = true,
     ['gcinclude.FindFilled'] = true, ['gcinclude.Family'] = true, ['gcinclude.BuffCount'] = true,
     ['gcinclude.BurstWanted'] = true, ['gcinclude.CanDualWield'] = true, ['gcinclude.RangedAcc'] = true,
-    ['gcinclude.IsWeaponValue'] = true, ['gFunc.EquipSet'] = true, ['gFunc.Equip'] = true, ['gFunc.Combine'] = true,
+    ['gcinclude.IsWeaponValue'] = true, ['gcinclude.EquipSATA'] = true, ['gFunc.EquipSet'] = true, ['gFunc.Equip'] = true, ['gFunc.Combine'] = true,
     ['gFunc.Message'] = true, ['gFunc.Echo'] = true, ['gFunc.Error'] = true, ['gFunc.CancelAction'] = true,
     T = true, tostring = true, tonumber = true, type = true, pairs = true, ipairs = true, next = true, select = true,
     print = true }
@@ -1608,7 +1628,7 @@ function C.Plan(text, opts)
             if phase ~= nil then
                 local h = { name = name, phase = phase, items = {} }
                 plan.handlers[#plan.handlers + 1] = h
-                local hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists, funcs = scope.funcs }
+                local hs = sub(scope)
                 local body = st.exprs[1].body
                 local stopAt = #body + 1 -- the place rules go by themselves: HandleDefault's CheckDefault, else the end
                 for i, s in ipairs(body) do
@@ -1630,8 +1650,10 @@ function C.Plan(text, opts)
                             hs.vars[n] = m
                         end
                     elseif s.k == 'if' then
-                        local snapshot = { vars = setmetatable({}, { __index = hs.vars }), aliases = hs.aliases, lists = hs.lists, funcs = hs.funcs }
+                        local snapshot = sub(hs)
                         for k, v in pairs(hs.vars) do snapshot.vars[k] = v end
+                        local oneKey = C.FirstLine(text, s)
+                        snapshot.up = (opts.oneIsUp ~= nil) and (opts.oneIsUp[oneKey] == true) or nil
                         local rules, why = convert_if(snapshot, s, {}, phase, {})
                         if (rules ~= nil) and (opts.skip ~= nil) and (opts.skip[name] ~= nil) then
                             rules, why = nil, opts.skip[name]
@@ -1642,7 +1664,8 @@ function C.Plan(text, opts)
                             if k == false then rules, why, keepFailed = nil, kwhy, true else keep = k end
                         end
                         local item = { line = line_of(text, s.s), s = s.s, e = s.e, ok = (rules ~= nil), why = why,
-                            rules = rules, keep = keep }
+                            rules = rules, keep = keep, oneKey = (why == C.ONE_WHY) and oneKey or nil,
+                            oneIsUp = snapshot.up }
                         if (rules == nil) and not keepFailed then -- GoomSwap's own steps every job file has: stay
                             local code = string.sub(text, s.s, s.e)
                             for _, std in ipairs(C.STANDARD) do
@@ -1858,7 +1881,7 @@ function C.Spots(text)
             local phase = name and HANDLERS[name]
             if phase ~= nil then
                 local body = st.exprs[1].body
-                hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists, funcs = scope.funcs }
+                hs = sub(scope)
                 for i, s in ipairs(body) do
                     if s.k == 'local' then
                         for j, n in ipairs(s.names) do hs.vars[n] = (s.exprs[j] ~= nil) and meaning(hs, s.exprs[j]) or nil end
@@ -1915,7 +1938,7 @@ function C.NameSteps(text)
             local name = string.match(path_of(st.targets[1]) or '', '^profile%.(Handle%a+)$')
             local phase = name and HANDLERS[name]
             if phase ~= nil then
-                local hs = { vars = setmetatable({}, { __index = scope.vars }), aliases = scope.aliases, lists = scope.lists, funcs = scope.funcs }
+                local hs = sub(scope)
                 local steps = out[phase] or {}
                 out[phase] = steps
                 local function kind_of(a) -- what a ByName argument names: 'name', 'skill', 'family', 'type' (+ suffix)

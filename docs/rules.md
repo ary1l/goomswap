@@ -138,8 +138,11 @@ What converts:
 - **Stays code** says, for each, what the line does and why a rule can't do it (*Not gear: it prints the roll's
   lucky and unlucky numbers to chat. A rule only puts on gear or cancels the action.*); it keeps working as code.
   Stays code: names built in code (`'Tank_' .. tank`), engine calls (`CheckBlockedAmmo`), pet action branches, math
-  on counts. Two `has` that must both hold (`helix`, then inside it `Nocto`) become **has all of**. `gData.GetBuffCount` becomes GoomSwap's buff check, which also counts a
-  buff that just landed.
+  on counts. Two `has` that must both hold (`helix`, then inside it `Nocto`) become **has all of**. `gData.GetBuffCount`
+  becomes GoomSwap's buff check, which also counts a buff that just landed.
+- A buff count compared with exactly 1 (`if (sa == 1) and (ta == 1)`) stays code: a rule knows *up* (count above 0),
+  and 1 is the same only for a buff that never shows twice. If yours don't, press **Count 1 as up** on that line: it
+  moves to **Can become rules** (with **Undo** there). Your call, not Convert's: it can't know which buffs stack.
 
 `tests/convert_sim.lua` runs the same check (`common/gcconvertcheck.lua`) on every example and on the examples as
 they were before their Convert, again with other random states, and makes sure it catches a rule that wears the

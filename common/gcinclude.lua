@@ -2631,6 +2631,19 @@ function gcinclude.SetRegenRefreshGear(player)
     end
 end
 
+-- THF, on a weapon skill while Sneak Attack and/or Trick Attack is up: <WS>_SATA / _SA / _TA (with /mset acc:
+-- <WS>_Acc_SA...), else Ws_<mset>_SATA / _SA / _TA (Ws_Default_SA). Each only when the job file has it.
+function gcinclude.EquipSATA(name)
+    if (type(name) ~= 'string') then return end
+    local sa, ta = gcinclude.BuffCount('Sneak Attack'), gcinclude.BuffCount('Trick Attack')
+    local suffix = ((sa > 0) and (ta > 0) and 'SATA') or ((sa > 0) and 'SA') or ((ta > 0) and 'TA') or nil
+    if (suffix == nil) then return end
+    local mode = gcdisplay.GetCycle('MeleeSet')
+    local set = gcinclude.FindSet(name .. ((mode == 'Default') and '' or ('_' .. mode)) .. '_' .. suffix)
+    if (set == nil) or (next(set) == nil) then set = gcinclude.FindSet('Ws_' .. mode .. '_' .. suffix) end
+    if (set ~= nil) then gFunc.EquipSet(set) end
+end
+
 function gcinclude.CheckWsBailout()
     local player = gData.GetPlayer()
     local ws = gData.GetAction()

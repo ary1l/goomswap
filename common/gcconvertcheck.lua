@@ -98,6 +98,16 @@ local function world(state, record, engine)
     gc.EquipIdle = function() byname('Idle') end
     gc.EquipMode = function(p) byname(p .. '_Default') end
     gc.CheckWsBailout = function() return true end
+    gc.EquipSATA = function(name) -- as gcinclude's
+        if type(name) ~= 'string' then return end
+        local sa, ta = gc.BuffCount('Sneak Attack'), gc.BuffCount('Trick Attack')
+        local suffix = ((sa > 0) and (ta > 0) and 'SATA') or ((sa > 0) and 'SA') or ((ta > 0) and 'TA') or nil
+        if suffix == nil then return end
+        local mode = W.gcdisplay.GetCycle('MeleeSet')
+        local set = find(name .. ((mode == 'Default') and '' or ('_' .. mode)) .. '_' .. suffix)
+        if (set == nil) or (next(set) == nil) then set = find('Ws_' .. mode .. '_' .. suffix) end
+        if set ~= nil then wear(set) end
+    end
     gc.CheckTH = function() if state.toggles.TH then wear(find('TH')); W.thWorn = true end end
     gc.RangedAcc = function() return state.cycles.MeleeSet == 'Acc' end
     gc.IsWeaponValue = function(v) return (v ~= nil) and (v ~= 'None') and (v ~= 'Unknown') end -- same as gcinclude's
@@ -291,7 +301,8 @@ local function count(t) local n = 0 for _ in pairs(t) do n = n + 1 end return n 
 function K.Run(text, o)
     o = o or {}
     local rounds, trial = o.rounds or 400, o.trialRounds or 300
-    local plan0, why = C.Plan(text)
+    local up = o.oneIsUp -- the ifs whose buff count of 1 you said is up (C.Plan's oneIsUp)
+    local plan0, why = C.Plan(text, { oneIsUp = up })
     if plan0 == nil then return nil, why end
     local ok, res = pcall(function()
         local free = {}
@@ -300,11 +311,11 @@ function K.Run(text, o)
                 local f = {}
                 for k in pairs(free) do f[k] = true end
                 f[run.line] = true
-                local tried = C.Plan(text, { free = f })
+                local tried = C.Plan(text, { free = f, oneIsUp = up })
                 if K.Same(text, tried, run.handler, trial, run.line, o.tick, o.engine) then free[run.line] = true end
             end
         end
-        local plan = C.Plan(text, { free = free })
+        local plan = C.Plan(text, { free = free, oneIsUp = up })
         local skip, checked = {}, 0
         for _, h in ipairs(plan.handlers) do
             local any = false
@@ -318,7 +329,7 @@ function K.Run(text, o)
                         if (run.handler == h.name) and free[run.line] then free[run.line], back = nil, true end
                     end
                     if back then
-                        plan = C.Plan(text, { free = free })
+                        plan = C.Plan(text, { free = free, oneIsUp = up })
                         same, diff, kind = K.Same(text, plan, h.name, rounds, #text + checked, o.tick, o.engine)
                     end
                 end
@@ -328,7 +339,7 @@ function K.Run(text, o)
                 end
             end
         end
-        if next(skip) ~= nil then plan = C.Plan(text, { free = free, skip = skip }) end
+        if next(skip) ~= nil then plan = C.Plan(text, { free = free, skip = skip, oneIsUp = up }) end
         local freed = 0
         for _, run in ipairs(plan.runs) do if free[run.line] then freed = freed + 1 end end
         plan.checked = { rounds = rounds, handlers = checked, freed = freed, skipped = skip, skippedCount = count(skip) }
@@ -343,7 +354,7 @@ end
 function K.Job(text, o)
     o = o or {}
     local job = { done = false, progress = 0 }
-    local plan0 = C.Plan(text)
+    local plan0 = C.Plan(text, { oneIsUp = o.oneIsUp })
     local total, n = 1, 0
     if plan0 ~= nil then
         local runs, handlers = 0, 0
@@ -354,7 +365,7 @@ function K.Job(text, o)
         total = runs * (o.trialRounds or 300) + handlers * (o.rounds or 400)
     end
     local co = coroutine.create(function()
-        return K.Run(text, { rounds = o.rounds, trialRounds = o.trialRounds, engine = o.engine,
+        return K.Run(text, { rounds = o.rounds, trialRounds = o.trialRounds, engine = o.engine, oneIsUp = o.oneIsUp,
             tick = function() n = n + 1; coroutine.yield() end })
     end)
     function job.Step(seconds)

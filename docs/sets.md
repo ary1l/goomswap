@@ -95,6 +95,7 @@ end
 | `gcinclude.Family(name)` | `'Drain III'` → `'Drain'` |
 | `gcinclude.CheckTH(force)` | `TH` at an untagged mob |
 | `gcinclude.CheckWsBailout()` | false if the WS would fail |
+| `gcinclude.EquipSATA(ws.Name)` | THF, SA/TA up: `<WS>_SATA` / `_SA` / `_TA` (`<WS>_<mset>_SA`), else `Ws_<mset>_SA`... |
 | `gcinclude.BuffCount(x)` | buff count |
 
 No `HandleItem` needed: the engine wears `Holy_Water` itself; add one only for your own item sets.
