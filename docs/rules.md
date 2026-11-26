@@ -7,6 +7,12 @@ on nukes, Self_Cure when a cure lands on you. Rules are data in the job file (`g
 `/gcedit`: **Rules** in the top bar (or the blue **RULES** button over the set list) opens them; it also says how many
 of your job file's `if`s Convert can turn into rules (**Rules  +5 to convert**). No code, no text editor.
 
+**Most swaps need no rule.** A weapon skill, ability or spell puts on the set with its exact name (`Savage Blade`,
+`Sentinel`, `Cure`, or the spell's family) by itself, then that set's `/wm` and `/mset` versions (`Savage Blade_Naegling`,
+`Savage Blade_Acc`): your job file's standard lines (`ByName(ws.Name)`...) do it. So does each moment's base set
+(`Ws_Default`, `Precast`, `Midcast`, `Idle`, `Tp_Default`). Rules are the extras: *if this, then that*. The Rules page
+says so at the top, with your file's lines on hover.
+
 ## In the editor
 
 - **Left**: what to show: **All rules** or one moment's (Casting, Not acting...), and **Your code**: **Can become

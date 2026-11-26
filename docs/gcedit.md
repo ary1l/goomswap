@@ -21,7 +21,9 @@ file; hover one for what it is for in plain words (`Tp_Default`: *Fighting*). Th
 
 **Rules** in the top bar (or **RULES** over the set list; a second click on the top bar's goes back to the set):
 "when this, wear that" without code, and **Convert** for your job file's own `if`s; the button says how many it can
-take. See [Rules](rules.md).
+take. Most swaps need no rule: a set with a weapon skill's, ability's or spell's exact name (`Savage Blade`,
+`Sentinel`, `Cure`) goes on by itself, with its `/wm` and `/mset` versions; the Rules page says so at the top. See
+[Rules](rules.md).
 
 ## New job file
 

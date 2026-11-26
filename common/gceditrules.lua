@@ -1224,6 +1224,33 @@ return function(o)
             imgui.SameLine(0, 10)
             imgui.TextColored(palette.warn, 'unsaved')
         end
+        if (view ~= 'code') and (view ~= 'stays') then -- what needs no rule: the file's named-set lines
+            local steps = name_steps()
+            local kinds, lines = {}, {}
+            for _, k in ipairs({ { 'Weaponskill', 'weapon skill', 'Savage Blade' }, { 'Ability', 'ability', 'Sentinel' },
+                { 'Midcast', 'spell', 'Cure' } }) do
+                local st = steps[k[1]] and steps[k[1]].name or nil
+                if st ~= nil then
+                    kinds[#kinds + 1] = { k[2], k[3] }
+                    lines[#lines + 1] = 'line ' .. tostring(st.line) .. ': ' .. tostring(st.text)
+                end
+            end
+            if #kinds > 0 then
+                local words, eg = {}, {}
+                for _, k in ipairs(kinds) do words[#words + 1] = k[1]; eg[#eg + 1] = k[2] end
+                local function join(t, sep)
+                    if #t == 1 then return t[1] end
+                    return table.concat(t, ', ', 1, #t - 1) .. ' ' .. sep .. ' ' .. t[#t]
+                end
+                local w = join(words, 'or')
+                paragraph('No rule needed for ' .. (string.match(w, '^[aeiou]') and 'an ' or 'a ') .. w .. "'s own gear: a set with its exact name ("
+                    .. join(eg, 'or') .. ') goes on by itself, then its /wm and /mset versions. Rules are the extras: '
+                    .. 'if this, then that.')
+                if imgui.IsItemHovered() then
+                    set_tip('Your job file does this, no rule:\n' .. table.concat(lines, '\n'))
+                end
+            end
+        end
         if (#list > 1) and (view ~= 'code') and (view ~= 'stays') then
             paragraph('Order only matters when two rules put gear in the same slot at the same moment: the later one '
                 .. 'wins. Up / Down show only where that can happen.')
