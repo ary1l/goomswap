@@ -59,7 +59,7 @@ More pictures of the editor, some of them mockups of the newest build, are in [i
 2. Run `/gcbuild` to create `<JOB>.proposed.lua` with gear you own, or open `/gcedit` and choose **Keep only my gear**.
 3. Use the editor's **To fill** and **Gear** tabs to fill empty or missing slots. **Use worn** copies your current gear
    into a set.
-4. Choose **Save + reload**. The previous file is backed up; the newest ten editor backups per job are kept
+4. Choose **Save + reload**. The previous file is backed up; the newest three editor backups per job are kept
    by default (`EditorBackupKeep = 0` keeps all). Other job files use **Save file** without changing your active job.
 5. Run `/checksets`; the editor's **What goes on** tab shows what an action actually put on, slot by slot.
 

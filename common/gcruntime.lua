@@ -76,7 +76,7 @@ do
             -- set names hidden from /gcedit's Related tab, e.g. T{'Singing'}
             EditorIgnoreSuggestions = T{},
             -- newest dated /gcedit backups kept per job file, after a successful save; 0 = keep all
-            EditorBackupKeep = 10,
+            EditorBackupKeep = 3,
             -- /gcedit heading order and your own headings ({ 'Weapons', 'Idle', { 'Two-handed', 'Tp_Chango' } }); the
             -- editor's right-click menus write it to char.lua (docs/gcedit.md, Headings)
             EditorGroups = nil,
@@ -1594,7 +1594,7 @@ return {
         -- Use the same main's name in each box's char.lua.
         -- HUDOwners = { 'YourMain' }, -- replace YourMain with the actual name
         -- Keybinds = {},             -- disable all GoomSwap keybinds
-        -- EditorBackupKeep = 10,     -- newest editor backups per job file; 0 = keep all
+        -- EditorBackupKeep = 3,      -- newest editor backups per job file; 0 = keep all
         -- EditorGroups = { 'Weapons', 'Idle' }, -- /gcedit heading order; its right-click menus write this
 
         -- For custom binds, use this INSTEAD of Keybinds = {} above.

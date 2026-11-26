@@ -47,7 +47,7 @@ Most changed:
 | Setting | Default | Does |
 |---|---|---|
 | `Messages` | `false` | chat line on every mode change (`/gcmessages`) |
-| `EditorBackupKeep` | `10` | newest dated `/gcedit` backups retained per job file after successful saves; `0` keeps all |
+| `EditorBackupKeep` | `3` | newest dated `/gcedit` backups retained per job file after successful saves; `0` keeps all |
 | `EditorGroups` | none | `/gcedit` heading order and your own headings; the editor's right-click menus write it ([Headings](gcedit.md#headings)) |
 | `EditorHidden` `EditorSort` `EditorOrder` | none | `/gcedit` headings hidden per job or on every job, how each heading sorts its sets, your own order ([Headings](gcedit.md#headings)) |
 | `HUDOwners` | `T{}` | boxes whose bar drops the others in (the HUD) |

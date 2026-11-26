@@ -1297,7 +1297,7 @@ end
 local backups = {}
 function backups.Keep(value)
     value = tonumber(value)
-    if not value or value ~= value or value < 0 or value == math.huge then return 10 end
+    if not value or value ~= value or value < 0 or value == math.huge then return 3 end
     return math.min(1000, math.floor(value)) -- zero explicitly keeps every backup
 end
 function backups.Path(path, exists, stamp)

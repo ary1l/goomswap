@@ -1205,7 +1205,7 @@ local function draw_save_review()
     local keep = fileWriter.Backups.Keep((gearEngine.settings or {}).EditorBackupKeep)
     imgui.TextColored(palette.dim, keep == 0 and 'Backup cleanup off: keep all editor backups.'
         or ('Keep newest ' .. keep .. ' editor backups for this file.'))
-    help('EditorBackupKeep in char.lua settings controls retention (default 10; 0 keeps all).\n'
+    help('EditorBackupKeep in char.lua settings controls retention (default 3; 0 keeps all).\n'
         .. 'Only this job file\'s dated .gcedit.bak files are pruned, after a successful save.\n'
         .. 'The backup just created is always kept. Host/addset backups are untouched.')
     if imgui.Button(editorState.document.inactive and 'Confirm save file' or 'Confirm save + reload')
@@ -1433,7 +1433,7 @@ ctx.draw_backups = function()
         return
     end
     imgui.TextUnformatted(editorState.document.file .. ' backups, newest first')
-    imgui.TextColored(palette.dim, 'Every Save keeps one (EditorBackupKeep: the newest 10). Compare: then -> now.')
+    imgui.TextColored(palette.dim, 'Every Save keeps one (EditorBackupKeep: the newest 3). Compare: then -> now.')
     local listH = math.min(380, 40 + #B.list * 26 + ((B.compare ~= nil) and 220 or 0))
     imgui.BeginChild('##gcedit_backups_list', { 560, listH }, CHILD_BORDERS)
     if #B.list == 0 then imgui.TextColored(palette.dim, 'None yet: the first Save makes one.') end

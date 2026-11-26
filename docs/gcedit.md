@@ -171,7 +171,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   this character), GoomSwap's own, or any of the 30 presets; hover one to preview. Kept per character
   (`gcedit-theme.txt`); the bar keeps its own.
 - **Rescan bags** refreshes ownership and keeps edits. Storage Slip gear counts as owned and shows its slip.
-- **Backups** lists this file's editor backups (every Save keeps one; `EditorBackupKeep`, the newest 10), newest
+- **Backups** lists this file's editor backups (every Save keeps one; `EditorBackupKeep`, the newest 3), newest
   first, each with the sets that differ from the file now; **Compare** shows them slot by slot (then -> now).
   **Restore** puts one back: the file is backed up first, then replaced and reloaded. Not with unsaved edits.
 - **Recent** (over the slots): the sets you opened last, newest first; a click opens one. Kept per job.
@@ -297,5 +297,5 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 **Save + reload** shows a review (before/after per set, new, deleted and renamed sets, weapon and melee modes);
 cancelling writes nothing. Saving checks the file didn't change on disk and still parses, writes a dated backup,
 then reloads (reopening the editor if ticked). A set written as code (built by a function, not a table of slots) is shown, not
-edited; everything outside the gear definitions, rules and the settings you change is kept as written. The newest ten editor backups per file are kept (`EditorBackupKeep` in
+edited; everything outside the gear definitions, rules and the settings you change is kept as written. The newest three editor backups per file are kept (`EditorBackupKeep` in
 char.lua's `settings`, `0` keeps all). Widths and density live in the job's `.gcedit-ui` file.

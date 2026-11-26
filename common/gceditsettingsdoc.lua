@@ -30,7 +30,7 @@ local settings = {
     SmartSwapTP = { 'SmartSwap acts only at or above this TP.', '1' },
     KeepWeaponsFor = { 'Spells that keep Main/Sub/Range: a name, or Spells (names they start with) while a Worn item is in Main or Sub.', "{ 'Dia II', { Spells = { 'Cure' }, Worn = { 'Daybreak' } } }" },
     EditorIgnoreSuggestions = { 'Exact set names /gcedit no longer suggests (Related tab), any case.', "{ 'Singing' }" },
-    EditorBackupKeep = { 'Newest dated /gcedit backups kept per job file after a save. 0 = keep all.', '10' },
+    EditorBackupKeep = { 'Newest dated /gcedit backups kept per job file after a save. 0 = keep all.', '3' },
     EditorGroups = { 'Your /gcedit headings and their order; the heading menus write it.', "{ 'Weapons', 'Idle', { 'Two-handed', 'Tp_Chango' } }" },
     EditorHidden = { 'Headings /gcedit hides: on every job (all) or on one job.', "{ all = { 'Received' }, WAR = { 'Hoxne' } }" },
     EditorSort = { "How a heading sorts its sets: 'file' (the default), 'az' or 'own'.", "{ Melee = 'own', Casting = 'az' }" },

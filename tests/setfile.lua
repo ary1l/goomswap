@@ -19,4 +19,8 @@ return {
         eq(added, "local profile = {};\nprofile.OnLoad = function()\n    profile.Packer = {};\n    gcinclude.Initialize();\nend\n")
         eq(F.JobSetting(job, 'Packer'), nil, 'gcinclude.Packer is another name')
     end },
+    { 'editor backups kept: 3 unless set (0 keeps all)', function()
+        eq(F.Backups.Keep(nil), 3); eq(F.Backups.Keep('x'), 3); eq(F.Backups.Keep(-1), 3)
+        eq(F.Backups.Keep(0), 0); eq(F.Backups.Keep(20), 20)
+    end },
 }
