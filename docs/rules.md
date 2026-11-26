@@ -16,7 +16,8 @@ says so at the top, with your file's lines on hover.
 ## In the editor
 
 - **Left**: what to show: **All rules** or one moment's (Casting, Not acting...), and **Your code**: **Can become
-  rules** (Convert) and **Stays code** (each `if` that stays, with why).
+  rules** (Convert) and **Stays code** (each `if` that stays, with why). **Your code** shows only while there is
+  something in it: a fully converted file shows its rules alone.
 - **Each rule is a card**: what it does as a sentence (`When you cast Absorb-TP: put on Absorb_TP`), its tags
   (moment, **over everything**, where it goes on in your code: **before skill set**), and **Edit**, **Up** / **Down**, **Off** (kept, not used), **Delete**.
   Order only matters between rules that go on at the same moment and place (same moment, same code spot or layer):

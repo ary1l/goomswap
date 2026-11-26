@@ -1203,11 +1203,17 @@ return function(o)
         for _, ph in ipairs(R.PHASES) do
             if per[ph] ~= nil then nav_row(R.PHASE_LABEL[ph] or ph, per[ph], ph, R.PHASE_LONG[ph]) end
         end
-        imgui.Spacing()
-        imgui.TextColored(palette.dim, 'YOUR CODE')
+        -- your code: only while there is some to convert or to explain (a converted file shows rules alone), a
+        -- Convert is staged, or you are looking at it
         local ok, no = code_counts()
-        nav_row('Can become rules', ok, 'code', 'The ifs in your job file that Convert can make into rules.')
-        nav_row('Stays code', no, 'stays', 'The ifs that stay code, and why.')
+        local view = editorState.ui.rulesView
+        local staged = (editorState.document ~= nil) and (editorState.document.convert ~= nil)
+        if (ok > 0) or (no > 0) or staged or (view == 'code') or (view == 'stays') then
+            imgui.Spacing()
+            imgui.TextColored(palette.dim, 'YOUR CODE')
+            nav_row('Can become rules', ok, 'code', 'The ifs in your job file that Convert can make into rules.')
+            nav_row('Stays code', no, 'stays', 'The ifs that stay code, and why.')
+        end
     end
     -- Convert staged and not saved: said on every view, with its Undo.
     local function draw_staged()
