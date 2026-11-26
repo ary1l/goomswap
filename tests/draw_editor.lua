@@ -39,6 +39,34 @@ ashita = { fs = { exists = function() return false end, create_directory = funct
 SEEN = {}
 local clicks, frame = {}, 0
 local fail = nil
+-- Argument types as Ashita's ImGui binding (sol) takes them: a wrong one is an error in game ("no matching function
+-- call"), so it is one here too. A vector is a table; flags and sizes are numbers.
+local SIG = {
+    BeginChild = { 'string', 'table?', 'number?', 'number?' },
+    Begin = { 'string', 'table?', 'number?' },
+    Selectable = { 'string', 'boolean?', 'number?', 'table?' },
+    Checkbox = { 'string', 'table' },
+    Button = { 'string', 'table?' },
+    SmallButton = { 'string' },
+    InputTextWithHint = { 'string', 'string', 'table', 'number' },
+    SetCursorPos = { 'table' }, SetCursorPosX = { 'number' }, SetCursorPosY = { 'number' },
+    SameLine = { 'number?', 'number?' }, Indent = { 'number?' }, Unindent = { 'number?' },
+    PushTextWrapPos = { 'number?' }, Dummy = { 'table' }, PushItemWidth = { 'number' },
+    TextColored = { 'table', 'string' },
+}
+local function check_args(k, ...)
+    local sig = SIG[k]
+    if sig == nil then return end
+    local args = { ... }
+    for i, want in ipairs(sig) do
+        local opt = string.sub(want, -1) == '?'
+        local t = opt and string.sub(want, 1, -2) or want
+        local v = args[i]
+        if not ((v == nil and opt) or (type(v) == t)) then
+            error(string.format('imgui.%s: argument %d is a %s, the binding takes a %s', k, i, type(v), want), 3)
+        end
+    end
+end
 local imgui = setmetatable({}, { __index = function(_, k)
     if (k == 'CalcTextSize') then return function(t) return #tostring(t) * 7, 14 end end
     if (k == 'GetContentRegionAvail') or (k == 'GetWindowSize') then return function() return 900, 600 end end
@@ -54,21 +82,25 @@ local imgui = setmetatable({}, { __index = function(_, k)
     if (k == 'GetWindowDrawList') or (k == 'GetForegroundDrawList') then return function() return stub('dl') end end
     if (k == 'GetStyle') then return function() return { ItemSpacing = { x = 8, y = 4 }, FramePadding = { x = 4, y = 3 } } end end
     if (k == 'GetIO') then return function() return { DisplaySize = { x = 1920, y = 1080 }, KeyCtrl = false, KeyShift = false } end end
-    if (k == 'Begin') or (k == 'BeginChild') or (k == 'BeginTabBar') or (k == 'BeginTable') then return function() return true end end
+    if (k == 'Begin') or (k == 'BeginChild') or (k == 'BeginTabBar') or (k == 'BeginTable') then
+        return function(...) check_args(k, ...) return true end
+    end
     if (k == 'Button') or (k == 'SmallButton') or (k == 'Selectable') or (k == 'MenuItem') then
-        return function(label)
+        return function(label, ...)
+            check_args(k, label, ...)
             label = tostring(label); SEEN[label] = true
             local id = string.match(label, '##(.*)$') or label
             if clicks[label] then clicks[label] = nil; return true end
             if clicks[id] then clicks[id] = nil; if os.getenv("TRACE") then print("  clicked " .. label) end return true end return false end
     end
-    if (k == 'TextColored') then return function(_, t) SEEN[tostring(t)] = true end end
+    if (k == 'TextColored') then return function(c, t) check_args(k, c, t) SEEN[tostring(t)] = true end end
     if (k == 'TextUnformatted') or (k == 'Text') then return function(t) SEEN[tostring(t)] = true end end
     if (k == 'IsItemHovered') and os.getenv('HOVER') then return function() return true end end -- every tooltip path
     if (k == 'IsItemClicked') then
         return function(b) if (b or 0) == 0 and CLICK_ITEM and CLICK_ITEM > 0 then CLICK_ITEM = CLICK_ITEM - 1
             return CLICK_ITEM == 0 end return false end
     end
+    if SIG[k] ~= nil then return function(...) check_args(k, ...) return false end end
     return function() return false end
 end })
 package.preload['imgui'] = function() return imgui end

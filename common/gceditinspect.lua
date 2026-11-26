@@ -389,9 +389,10 @@ local function draw_cell(set, slot)
             cardText.Fit(status, ctx.CELL_W - 16, text_w))
     end
     local menuHit = false
-    if (editorState.ui.cardShown == slot) and (imgui.SetCursorPos ~= nil) then -- the card hovered: '...' opens its menu
+    if (editorState.ui.cardShown == slot) and (imgui.SetCursorPosX ~= nil) then -- the card hovered: '...' opens its menu
         local bw = text_w('...') + 10
-        imgui.SetCursorPos({ ctx.CELL_W - bw - 6, ctx.CELL_H - lh - 8 })
+        imgui.SetCursorPosX(ctx.CELL_W - bw - 6)
+        imgui.SetCursorPosY(ctx.CELL_H - lh - 8)
         imgui.PushStyleColor(ImGuiCol_Button, palette.btn)
         menuHit = imgui.SmallButton('...##gcedit_cellmenu_' .. slot)
         imgui.PopStyleColor()

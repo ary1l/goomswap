@@ -1057,11 +1057,11 @@ return function(o)
             return
         end
         local view = editorState.ui.rulesView or 'all'
-        imgui.BeginChild('##rules_nav', NAV_W, true)
+        imgui.BeginChild('##rules_nav', NAV_W, ImGuiChildFlags_Borders or ImGuiChildFlags_Border or 1) -- flags: a number
         draw_nav(list)
         imgui.EndChild()
         imgui.SameLine()
-        imgui.BeginChild('##rules_main', MAIN_W, false)
+        imgui.BeginChild('##rules_main', MAIN_W, 0)
         if button('+ New rule##rules_add', 'primary', true) then
             M.Edit(nil)
             if (view == 'code') or (view == 'stays') then editorState.ui.rulesView = 'all'; view = 'all' end
