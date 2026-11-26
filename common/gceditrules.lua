@@ -233,10 +233,30 @@ return function(o)
         if col ~= nil then imgui.TextColored(col, text) else imgui.TextUnformatted(text) end
         imgui.PopTextWrapPos()
     end
-    local function move(list, i, group, by)
+    -- Where a rule goes on: its moment and its place (a code spot, or the job / top layer). Order only matters between
+    -- rules with the same one (a later one wins the slots both wear); rules elsewhere never meet.
+    local function place_of(r)
+        if type(r) ~= 'table' then return nil end
+        return tostring(r.on) .. '|' .. ((r.at ~= nil) and ('at ' .. tostring(r.at)) or ((r.layer == 'top') and 'top' or 'job'))
+    end
+    -- The nearest rule before (by -1) or after (by 1) i that goes on at the same place; nil when none.
+    local function neighbour(list, i, group, by)
+        if group ~= nil then -- a group's choices: their order is the first-that-fits order
+            local j = i + by
+            return (list[group].first[j] ~= nil) and j or nil
+        end
+        local mine = place_of(list[i])
+        local j = i + by
+        while (list[j] ~= nil) do
+            if place_of(list[j]) == mine then return j end
+            j = j + by
+        end
+        return nil
+    end
+    local function move(list, i, group, j) -- i and j trade places (the rules between them go on elsewhere)
         local out = copy(list)
         local arr = (group ~= nil) and out[group].first or out
-        arr[i], arr[i + by] = arr[i + by], arr[i]
+        arr[i], arr[j] = arr[j], arr[i]
         M.Stage(out)
     end
     local function take_out(list, i, group)
@@ -259,18 +279,38 @@ return function(o)
     -- Edit, Up, Down (and Off/On, Delete for a whole rule), as ghost buttons in one row.
     local function row_buttons(c, list, i, group)
         local id = (group ~= nil) and (tostring(group) .. '_' .. i) or tostring(i)
-        local items = (group ~= nil) and list[group].first or list
         local whole = list[group or i]
-        local labels = { 'Edit', 'Up', 'Down', 'Delete' }
+        -- Up / Down only where order can matter: another rule that goes on at the same moment and place
+        local up, down = neighbour(list, i, group, -1), neighbour(list, i, group, 1)
+        local labels = { 'Edit' }
+        if up ~= nil then labels[#labels + 1] = 'Up' end
+        if down ~= nil then labels[#labels + 1] = 'Down' end
+        labels[#labels + 1] = 'Delete'
         if group == nil then labels[#labels + 1] = whole.off and 'On' or 'Off' end
         to_right(c, labels)
         if button('Edit##rule_edit_' .. id, 'ghost') then M.Edit(group or i, (group ~= nil) and i or nil) end
-        imgui.SameLine(0, 4)
-        if button('Up##rule_up_' .. id, 'ghost', false, i <= 1) then move(list, i, group, -1) end
-        if imgui.IsItemHovered() then set_tip('Earlier: a later rule wins the slots both wear.') end
-        imgui.SameLine(0, 4)
-        if button('Down##rule_down_' .. id, 'ghost', false, i >= #items) then move(list, i, group, 1) end
-        if imgui.IsItemHovered() then set_tip('Later: a later rule wins the slots both wear.') end
+        local function said(j) -- the other rule, for the tip
+            local r = (group ~= nil) and list[group].first[j] or list[j]
+            return (group ~= nil) and ('choice ' .. j) or ('rule ' .. j .. ' (' .. short(R.Say(r), 60) .. ')')
+        end
+        if up ~= nil then
+            imgui.SameLine(0, 4)
+            if button('Up##rule_up_' .. id, 'ghost') then move(list, i, group, up) end
+            if imgui.IsItemHovered() then
+                set_tip((group ~= nil) and ('Before ' .. said(up) .. ': tried first.')
+                    or ('Before ' .. said(up) .. '. Where both put gear in the same slot, the later one wins: this one '
+                        .. 'would then lose to it.'))
+            end
+        end
+        if down ~= nil then
+            imgui.SameLine(0, 4)
+            if button('Down##rule_down_' .. id, 'ghost') then move(list, i, group, down) end
+            if imgui.IsItemHovered() then
+                set_tip((group ~= nil) and ('After ' .. said(down) .. ': tried after it.')
+                    or ('After ' .. said(down) .. '. Where both put gear in the same slot, the later one wins: this one '
+                        .. 'would then win.'))
+            end
+        end
         if group == nil then
             imgui.SameLine(0, 4)
             if button((whole.off and 'On' or 'Off') .. '##rule_off_' .. id, 'ghost') then set_off(list, i, not whole.off) end
@@ -1096,10 +1136,14 @@ return function(o)
             if (view == 'code') or (view == 'stays') then editorState.ui.rulesView = 'all'; view = 'all' end
         end
         imgui.SameLine(0, 10)
-        imgui.TextColored(palette.dim, 'A rule puts gear on at a moment, when its conditions hold. Later rules win.')
+        imgui.TextColored(palette.dim, 'A rule puts gear on at a moment, when its conditions hold.')
         if how == 'staged' then
             imgui.SameLine(0, 10)
             imgui.TextColored(palette.warn, 'unsaved')
+        end
+        if (#list > 1) and (view ~= 'code') and (view ~= 'stays') then
+            paragraph('Order only matters when two rules put gear in the same slot at the same moment: the later one '
+                .. 'wins. Up / Down show only where that can happen.')
         end
         -- problems, as the engine would see them on load
         local p = editorState.ui.ruleProblems

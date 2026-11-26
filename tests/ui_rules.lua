@@ -94,6 +94,25 @@ return {
         M.Draw()
         eq(staged.Rules.remove, true, 'none left: the line goes')
     end },
+    { 'up / down only between rules that go on at the same moment and place', function()
+        fileValue = { { on = 'Default', when = { buff = 'Cover' }, wear = 'A' },
+            { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Healing Magic' }, wear = 'B' },
+            { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Dark Magic' }, wear = 'C' },
+            { on = 'Default', when = { buff = 'Haste' }, wear = 'D' } }
+        staged = {}
+        state.ui.rulesView, state.ui.ruleEdit = nil, nil
+        drawn = {}
+        M.Draw()
+        eq(drawn['Up##rule_up_2'], nil, 'rule 2 has no earlier Midcast 1 rule')
+        eq(drawn['Up##rule_up_3'], true, 'rule 3 can go before rule 2')
+        eq(drawn['Down##rule_down_1'], true, 'rule 1 can go after rule 4 (both not acting)')
+        eq(drawn['Down##rule_down_3'], nil, 'nothing after rule 3 at Midcast 1')
+        clicks['Up##rule_up_4'] = true
+        M.Draw()
+        local v = staged.Rules.value
+        eq(v[1].wear, 'D'); eq(v[4].wear, 'A'); eq(v[2].wear, 'B'); eq(v[3].wear, 'C')
+        fileValue, staged = nil, {}
+    end },
     { 'code: plan, convert, undo', function()
         staged = {}
         fileValue = nil

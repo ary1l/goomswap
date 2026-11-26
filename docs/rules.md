@@ -12,8 +12,10 @@ of your job file's `if`s Convert can turn into rules (**Rules  +5 to convert**).
 - **Left**: what to show: **All rules** or one moment's (Casting, Not acting...), and **Your code**: **Can become
   rules** (Convert) and **Stays code** (each `if` that stays, with why).
 - **Each rule is a card**: what it does as a sentence (`When you cast Absorb-TP: put on Absorb_TP`), its tags
-  (moment, **over everything**, where it goes on in your code: **before skill set**), and **Edit**, **Up** / **Down** (a later rule wins the slots both
-  wear), **Off** (kept, not used), **Delete**.
+  (moment, **over everything**, where it goes on in your code: **before skill set**), and **Edit**, **Up** / **Down**, **Off** (kept, not used), **Delete**.
+  Order only matters between rules that go on at the same moment and place (same moment, same code spot or layer):
+  where two put gear in the same slot, the later one wins. **Up** / **Down** show only there, and move a rule past the
+  next one that goes on at that place.
 - **+ New rule** opens the builder over the cards, in three steps:
   1. **When**: not acting (idle, fighting, resting), your pet's move, starting a spell, casting, a job ability, a
      weapon skill, starting a shot, a ranged shot, using an item.
