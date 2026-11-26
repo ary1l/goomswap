@@ -1319,7 +1319,7 @@ function gcinclude.FillPacker(again) -- again: rebuild (char.lua's Packer change
         if owned == nil then
             owned = {}
             for _, c in ipairs(PACKER_BAGS) do
-                for i = 0, (inv:GetContainerCountMax(c) or 0) do
+                for i = 1, (gData.GetContainerMax(c) or 0) do -- as the bag scans do (gceditbags, gcgear)
                     local it = inv:GetContainerItem(c, i)
                     if (it ~= nil) and (it.Id ~= 0) and (it.Id ~= 65535) then
                         local r = res:GetItemById(it.Id)

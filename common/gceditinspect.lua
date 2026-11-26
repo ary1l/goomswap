@@ -575,7 +575,10 @@ local function draw_layer_view(set, V)
         for _, row in ipairs(V.rows) do
             imgui.TableNextRow()
             if (rowBg ~= nil) and (editorState.ui.hoverShown == row.slot) then -- its card is hovered (or this row)
-                imgui.TableSetBgColor(ImGuiTableBgTarget_RowBg0 or 1, rowBg)
+                -- new to this editor: the binding's argument list isn't proven, so a refusal only loses the highlight
+                if not pcall(imgui.TableSetBgColor, ImGuiTableBgTarget_RowBg0 or 1, rowBg) then
+                    pcall(imgui.TableSetBgColor, ImGuiTableBgTarget_RowBg0 or 1, rowBg, -1)
+                end
             end
             imgui.TableNextColumn()
             imgui.TextColored(palette.dim, row.slot)
