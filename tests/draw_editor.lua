@@ -95,6 +95,9 @@ local imgui = setmetatable({}, { __index = function(_, k)
     end
     if (k == 'TextColored') then return function(c, t) check_args(k, c, t) SEEN[tostring(t)] = true end end
     if (k == 'TextUnformatted') or (k == 'Text') then return function(t) SEEN[tostring(t)] = true end end
+    if ((k == 'BeginPopup') or (k == 'BeginPopupModal')) and os.getenv('POPUP') then -- that popup held open
+        return function(id) return tostring(id) == os.getenv('POPUP') end
+    end
     if (k == 'IsItemHovered') and os.getenv('HOVER') then return function() return true end end -- every tooltip path
     if (k == 'IsItemClicked') then
         return function(b) if (b or 0) == 0 and CLICK_ITEM and CLICK_ITEM > 0 then CLICK_ITEM = CLICK_ITEM - 1

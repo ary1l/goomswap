@@ -88,6 +88,18 @@ return function(imgui, palette, set_tip)
         return hit and not off
     end
     W.Button = button
+    -- An either/or switch: its choices as joined buttons, the one on lit. options: { { value, label, tip } }.
+    -- The choice clicked when it isn't the one on, else nil.
+    function W.Switch(id, options, current)
+        local picked = nil
+        for i, o in ipairs(options) do
+            if i > 1 then imgui.SameLine(0, 1) end
+            local on = (o[1] == current)
+            if button(o[2] .. '##' .. id .. '_' .. i, on and 'accent' or 'plain', true) and not on then picked = o[1] end
+            if (o[3] ~= nil) and (set_tip ~= nil) and imgui.IsItemHovered() then set_tip(o[3]) end
+        end
+        return picked
+    end
     -- a key as a key cap: its name on a rounded fill with an edge
     -- text on a rounded fill (a tag): where a value comes from, a state
     function W.Pill(text, fg, bg)

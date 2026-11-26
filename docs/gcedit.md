@@ -7,10 +7,11 @@ Edits your loaded job file. Changes stay in memory until you confirm a save. `/g
 ## Simple and Full view
 
 The top bar: your character and job, the job file (its menu opens your other job files and **New job file**), the save
-state, then **Rules**, **Settings**, **...** and **Save + reload**. **...** holds the view (**Simple** / **Full**),
-density, theme, **Backups**, **Unused gear**, **Rescan bags**, **Reload file** and Diagnostics.
+state, then **Rules**, **Settings**, **...** and **Save + reload**. **...** holds two switches, **View**
+(**Simple** | **Full**) and **Spacing** (**Compact** | **Comfortable**), each with a line saying what the one on does;
+then the theme, **Backups**, **Unused gear**, **Rescan bags**, **Reload file** and Diagnostics.
 
-**Simple** / **Full** (under **...**) is kept per job; a new job file (the example, a draft) starts in Simple. Simple:
+**View** (under **...**) is kept per job; a new job file (the example, a draft) starts in Simple. Simple:
 each set says what it is for beside its name (`Tp_Default`: *Fighting*, `Idle_Refresh`: *Standing: low MP*), and the
 right pane has **Gear**, **What goes on** (the Result, with **Related** and **Compare** one click away) and
 **Stats**, plus **To fill** while something is left. Full view is everything below.

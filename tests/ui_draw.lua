@@ -14,4 +14,11 @@ local tests = {}
 for _, f in ipairs({ 'examples/WHM.lua', 'examples/COR.lua', 'examples/PUP.lua', 'tests/fixtures/BLM.lua' }) do
     tests[#tests + 1] = { 'the editor draws ' .. f, function() draw(f, false); draw(f, true) end }
 end
+tests[#tests + 1] = { 'the ... menu draws, its View and Spacing switches switch', function()
+    local p = io.popen('POPUP="##gcedit_tools" luajit tests/draw_editor.lua examples/BLU.lua "x,gct_view_1,x,gct_view_2,x,gct_dens_2,x,gct_dens_1,x" "^Simple:" 2>&1')
+    local out = p:read('*a')
+    p:close()
+    assert(string.match(out, '([^\n]*)\n?$') == 'drawn', out)
+    assert(string.find(out, '\n  Simple:', 1, true), 'View switch to Simple not shown: ' .. out)
+end }
 return tests

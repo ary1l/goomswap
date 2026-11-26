@@ -197,7 +197,8 @@ local iconBudget = ICONS_PER_FRAME
 local CHILD_BORDERS = ImGuiChildFlags_Borders or ImGuiChildFlags_Border or 1
 
 -- ImGui vectors come back as two numbers or as a table, by Ashita version: the editor's one reader (gceditwidgets)
-local xy = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip).Vec
+ctx.W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip) -- the editor's widgets (W.Switch...)
+local xy = ctx.W.Vec
 ctx.xy = xy
 
 -- Game data: icons, owned gear, worn gear.
@@ -2052,25 +2053,38 @@ local function body()
     if imgui.Button('...##gcedit_more') then imgui.OpenPopup('##gcedit_tools') end
     if imgui.IsItemHovered() then set_tip('View, density, theme; Backups, Unused gear, Rescan bags, Reload file.') end
     if imgui.BeginPopup('##gcedit_tools') then
+        -- either/or choices as switches, each with what the one on does
+        imgui.PushTextWrapPos(imgui.GetCursorPosX() + 330)
         imgui.TextColored(palette.dim, 'View')
-        if imgui.Selectable('Simple view' .. (simple and '  (on)' or '') .. '##gct_simple', simple) then
-            ctx.simple.Set(true)
+        imgui.SameLine(90)
+        local view = ctx.W.Switch('gct_view', {
+            { true, 'Simple', 'Set names say what they are for; right pane: Gear, What goes on, Stats.' },
+            { false, 'Full', 'Set names as in your file; right pane: Result, Gear, Summary, Related, To fill.' },
+        }, simple)
+        if view ~= nil then
+            ctx.simple.Set(view)
             save_preferences()
         end
-        if imgui.IsItemHovered() then set_tip('Sets say what they are for; fewer tabs.') end
-        if imgui.Selectable('Full view' .. ((not simple) and '  (on)' or '') .. '##gct_full', not simple) then
-            ctx.simple.Set(false)
+        imgui.TextColored(palette.dim, simple
+            and 'Simple: sets named by what they are for, Standing (Idle); right pane Gear, What goes on, Stats.'
+            or 'Full: sets named as in your file, Idle; right pane Result, Gear, Summary, Related, To fill.')
+        imgui.Spacing()
+        imgui.TextColored(palette.dim, 'Spacing')
+        imgui.SameLine(90)
+        local dens = editorState.preferences.density or 'Compact'
+        local pickD = ctx.W.Switch('gct_dens', {
+            { 'Compact', 'Compact', 'Tighter rows and slot cards: more fits on screen.' },
+            { 'Comfortable', 'Comfortable', 'More room between rows, taller slot cards.' },
+        }, dens)
+        if pickD ~= nil then
+            editorState.preferences.density = pickD
+            editorState.preferences.dirty = true
             save_preferences()
         end
-        if imgui.IsItemHovered() then set_tip('Every tab: Result, Gear, Summary, Compare, Related, To fill.') end
-        for _, name in ipairs({ 'Compact', 'Comfortable' }) do
-            local on = (editorState.preferences.density == name)
-            if imgui.Selectable(name .. (on and '  (on)' or '') .. '##gct_d' .. name, on) then
-                editorState.preferences.density = name
-                editorState.preferences.dirty = true
-                save_preferences()
-            end
-        end
+        imgui.TextColored(palette.dim, (dens == 'Comfortable') and 'Comfortable: more room between rows, taller slot cards.'
+            or 'Compact: tighter rows and slot cards, more fits on screen.')
+        imgui.PopTextWrapPos()
+        imgui.Spacing()
         theme_menu()
         imgui.Separator()
         imgui.TextColored(palette.dim, 'This file')
