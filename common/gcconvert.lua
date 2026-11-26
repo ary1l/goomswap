@@ -991,12 +991,13 @@ end
 -- A set whose name is put together while the code runs (FindSet(ws.Name .. '_' .. suffix)): anywhere in an if's
 -- branches, the whole if stays code, whatever its conditions say.
 local NAMED_BY = { ['gcinclude.FindSet'] = true, ['gcinclude.ByName'] = true, ['gcinclude.FindFilled'] = true }
+local function joined(e) -- 'Pet_WS_' .. mode
+    e = unparen(e)
+    return (e ~= nil) and (e.k == 'bin') and (e.op == '..')
+end
 local function builds_name(scope, node)
     if type(node) ~= 'table' then return false end
-    if (node.k == 'call') and NAMED_BY[call_path(scope, node) or ''] and (node.args[1] ~= nil) then
-        local a = unparen(node.args[1])
-        if (a ~= nil) and (a.k == 'bin') and (a.op == '..') then return true end
-    end
+    if (node.k == 'call') and NAMED_BY[call_path(scope, node) or ''] and joined(node.args[1]) then return true end
     for k, v in pairs(node) do
         if (k ~= 'cond') and (type(v) == 'table') and builds_name(scope, v) then return true end
     end
@@ -1014,7 +1015,15 @@ local function action_of(scope, st)
         if p == 'gFunc.EquipSet' and (#call.args == 1) then
             local name = set_name_of(scope, call.args[1])
             if name == nil then
-                return nil, BUILT
+                local arg = unparen(call.args[1])
+                local inner = (arg ~= nil) and path_of(arg) or nil
+                inner = (inner ~= nil) and (string.match(inner, '^sets%.(.+)$') or string.match(inner, '^profile%.Sets%.(.+)$')) or nil
+                if inner ~= nil then
+                    return nil, 'It puts on sets.' .. inner .. ', a set inside another table. A rule puts on a set from '
+                        .. 'your set list by its name.'
+                end
+                if joined(arg) or builds_name(scope, arg) then return nil, BUILT end
+                return nil, 'It puts on a set named by a variable. A rule needs the set\'s name written out.'
             end
             return { wear = name, exact = true }
         end

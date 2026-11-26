@@ -181,6 +181,25 @@ return profile;
             eq(R.Holds(plan.rules[1], 'Default', api) == true, not v)
         end
     end },
+    { 'a set name put together while it runs, or a set inside a table, says so (whatever the condition)', function()
+        local text = [[
+local profile = {};
+gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
+profile.HandleWeaponskill = function()
+    local ws = gData.GetAction();
+    local suffix = (gcinclude.BuffCount('Sneak Attack') > 0) and 'SA' or nil;
+    if (suffix ~= nil) then
+        local set = gcinclude.FindSet(ws.Name .. '_' .. suffix);
+        if (set ~= nil) then gFunc.EquipSet(set) end
+    end
+    if (ws.Name == 'Asuran Fists') then gFunc.EquipSet(sets.Buffs.Boost) end
+end
+return profile;
+]]
+        local items = assert(C.Plan(text)).handlers[1].items
+        eq(string.find(items[1].why, 'put together while it runs', 1, true) ~= nil, true, items[1].why)
+        eq(string.find(items[2].why, 'sets.Buffs.Boost, a set inside another table', 1, true) ~= nil, true, items[2].why)
+    end },
     { 'a branch that is not gear says so plainly', function()
         local text = [[
 local profile = {};
