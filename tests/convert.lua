@@ -181,7 +181,7 @@ return profile;
             eq(R.Holds(plan.rules[1], 'Default', api) == true, not v)
         end
     end },
-    { 'a set name put together while it runs, or a set inside a table, says so (whatever the condition)', function()
+    { "a set name put together while it runs says so (whatever the condition); a set inside a set is Buffs['Boost']", function()
         local text = [[
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
@@ -193,12 +193,16 @@ profile.HandleWeaponskill = function()
         if (set ~= nil) then gFunc.EquipSet(set) end
     end
     if (ws.Name == 'Asuran Fists') then gFunc.EquipSet(sets.Buffs.Boost) end
+    if (ws.Name == 'Raging Fists') then gFunc.EquipSet(sets.Buffs['Boost']) end
+    if (ws.Name == 'Victory Smite') then gFunc.EquipSet(sets.A.B.C) end
 end
 return profile;
 ]]
         local items = assert(C.Plan(text)).handlers[1].items
         eq(string.find(items[1].why, 'put together while it runs', 1, true) ~= nil, true, items[1].why)
-        eq(string.find(items[2].why, 'sets.Buffs.Boost, a set inside another table', 1, true) ~= nil, true, items[2].why)
+        local plan = assert(C.Plan(text))
+        eq(plan.rules[1].wear, "Buffs['Boost']"); eq(plan.rules[2].wear, "Buffs['Boost']"); eq(#plan.rules, 2)
+        eq(string.find(items[4].why, 'sets.A.B.C, a set inside another table', 1, true) ~= nil, true, items[4].why)
     end },
     { "a no-argument function of the file's own reads through (Night: Vana'diel time, LAC's hour + minute / 100)", function()
         local text = [[

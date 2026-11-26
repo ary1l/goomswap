@@ -236,6 +236,7 @@ profile.OnLoad = function()
         { on = 'Default', when = { buff = 'Impetus', toggle = { dt = true } }, wear = 'Dt_Impetus' },
         { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
         { on = 'Weaponskill', when = { buff = 'Impetus', name = 'Victory Smite' }, wear = 'Victory Smite_Impetus' },
+        { on = 'Ability', when = { name = 'Boost' }, wear = "Buffs['Boost']", exact = true, note = 'sash on from the start' },
     };
     gcinclude.Initialize();
 end
@@ -269,7 +270,6 @@ end
 profile.HandleAbility = function()
     local ability = gData.GetAction();
     ByName(ability.Name); -- a set named after the ability, e.g. ['Focus'], ['Hundred Fists']
-    if (ability.Name == 'Boost') then gFunc.EquipSet(sets.Buffs.Boost) end -- sash on from the start
     gcinclude.CheckCancels();
 end
 

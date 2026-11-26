@@ -47,13 +47,21 @@ local EMPTY_META = { __index = { contains = function() return false end }, __cal
 local function world(state, record, engine)
     local gear = {}
     local W = { gear = gear, sets = {} }
-    local function find(name)
-        if type(name) ~= 'string' then return nil end
+    local function find_in(t, name)
         local l = string.lower(name)
-        for k, v in pairs(W.sets) do
+        for k, v in pairs(t) do
             if (type(k) == 'string') and (string.lower(k) == l) and (type(v) == 'table') then return v end
         end
         return nil
+    end
+    local function find(name) -- as gcinclude.FindSet: any case; a set inside a set as Buffs['Boost']
+        if type(name) ~= 'string' then return nil end
+        local hit = find_in(W.sets, name)
+        if hit ~= nil then return hit end
+        local parent, key = string.match(name, "^(.-)%['(.+)'%]$")
+        local holder = (parent ~= nil) and find_in(W.sets, parent) or nil
+        if holder == nil then return nil end
+        return ((type(holder[key]) == 'table') and holder[key]) or find_in(holder, key)
     end
     local function wear(set)
         if type(set) == 'string' then set = find(set) end

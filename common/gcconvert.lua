@@ -962,6 +962,11 @@ local function set_name_of(scope, arg)
         local name = string.match(p, '^sets%.(.+)$') or string.match(p, '^profile%.Sets%.(.+)$')
         if (name ~= nil) and not string.find(name, '.', 1, true) then return name end
     end
+    if (arg.k == 'index') and (arg.key.k == 'str') then -- sets.Buffs.Boost / sets.Buffs['Boost']: Buffs['Boost'], as /gcedit names it
+        local holder = path_of(unparen(arg.obj))
+        local parent = (holder ~= nil) and (string.match(holder, '^sets%.([%w_]+)$') or string.match(holder, '^profile%.Sets%.([%w_]+)$')) or nil
+        if (parent ~= nil) and not string.find(arg.key.v, "'", 1, true) then return parent .. "['" .. arg.key.v .. "']" end
+    end
     if (arg.k == 'call') and (call_path(scope, arg) == 'gcinclude.FindSet') and (#arg.args == 1) and (arg.args[1].k == 'str') then
         return arg.args[1].v
     end

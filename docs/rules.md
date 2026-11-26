@@ -79,7 +79,8 @@ gcinclude.Rules = {
 
 `on`: the phase (`Default`, `Pet`, `Precast`, `Midcast`, `Ability`, `Weaponskill`, `Preshot`, `Midshot`, `Item`).
 `when`: every key must hold; `any = { {...}, {...} }` holds when one does. `first`: only the first choice whose
-conditions hold. `exact = true`: that set only. `item = { Head = 'Pixie Hairpin +1' }`. `layer = 'top'`: over
+conditions hold. `exact = true`: that set only. A set inside a set is named as /gcedit lists it:
+`wear = "Buffs['Boost']"` (MNK: the Boost sash on from the start, before the buff is up). `item = { Head = 'Pixie Hairpin +1' }`. `layer = 'top'`: over
 everything. `off = true`: kept, not used. A rule the engine can't use is left out on load, with one line in chat.
 `/gcperf` times them.
 
@@ -110,6 +111,8 @@ What converts:
   (`local function Night() local t = gData.GetEnvironment().Time; return (t >= 17) or (t < 7); end`: *Vana'diel time
   17:00 or later, or before 7:00*). LuAshitacast's `Time` is the hour plus minutes / 100, so 17.30 is 17:30.
 - `gcinclude.IsWeaponValue(gcdisplay.GetCycle('Weapons'))`: *A /wm weapon is picked*.
+- A set inside a set, `gFunc.EquipSet(sets.Buffs.Boost)`: the rule wears `Buffs['Boost']`, the same set (it stays
+  where it is, so the engine still wears it while Boost is up).
 - A check that looks a set up, `if not (ByName(spell.Name) or ByName(Family(spell.Name))) then
   gFunc.EquipSet(sets.Enmity) end`: the lookup stays code (`if not ByName(spell.Name) then ByName(Family(spell.Name))
   end`, it still puts that set on) and the rest becomes a rule, *When you cast a spell, while it has no set of its own

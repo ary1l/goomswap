@@ -1215,6 +1215,20 @@ function gcinclude.FindSet(name)
         end
     end
     local hit = setIndex[string.lower(name)]
+    if (hit == nil) then -- a set inside a set, by the name /gcedit gives it: Buffs['Boost']
+        local parent, key = string.match(name, "^(.-)%['(.+)'%]$")
+        local holder = (parent ~= nil) and setIndex[string.lower(parent)] or nil
+        if (type(holder) == 'table') then
+            hit = holder[key]
+            if (hit == nil) then
+                local l = string.lower(key)
+                for k, v in pairs(holder) do
+                    if (type(k) == 'string') and (string.lower(k) == l) then hit = v break end
+                end
+            end
+            if (type(hit) ~= 'table') then hit = nil end
+        end
+    end
     -- a set looked for and not there, during an action: /gcedit lists it (gcaction.RecMiss)
     if (hit == nil) and (name ~= '') and (gcaction ~= nil) and (gcaction.RecMiss ~= nil) then gcaction.RecMiss(name) end
     return hit
