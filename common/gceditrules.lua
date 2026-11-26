@@ -1024,7 +1024,16 @@ return function(o)
                     if imgui.IsItemHovered() then set_tip(string.sub(code, 1, 1200)) end
                     imgui.PushTextWrapPos(0)
                     if it.ok then
-                        for _, r in ipairs(it.rules) do imgui.TextColored(palette.ok, R.Say(r)) end
+                        for _, r in ipairs(it.rules) do -- a group: its moment, then one choice a line (as its card)
+                            if type(r.first) == 'table' then
+                                imgui.TextColored(palette.ok, moment_words(r.on, r.when) .. ', the first that fits:')
+                                imgui.Indent(14)
+                                for j, m in ipairs(r.first) do imgui.TextColored(palette.ok, j .. ') ' .. R.Say(m, r.on)) end
+                                imgui.Unindent(14)
+                            else
+                                imgui.TextColored(palette.ok, R.Say(r))
+                            end
+                        end
                         if it.spot ~= nil then -- where they go on: a tag (what it means is said once, over the list)
                             pill(spot_label(it.spot, plan, text), palette.ok, palette.okBg)
                             if imgui.IsItemHovered() then set_tip(spot_tip(it.spot, plan, text)) end

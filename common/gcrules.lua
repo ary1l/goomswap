@@ -486,6 +486,12 @@ local function either_of(v, sep)
     if #out <= 1 then return out[1] or '' end
     return table.concat(out, ', ', 1, #out - 1) .. ' ' .. (sep or 'or') .. ' ' .. out[#out]
 end
+-- Texts each in quotes: '"A"', '"A" or "B"', '"A", "B" or "C"'.
+local function quoted(v)
+    local list = {}
+    for _, x in ipairs((type(v) == 'table') and v or { v }) do list[#list + 1] = '"' .. tostring(x) .. '"' end
+    return either_of(list)
+end
 local NUM_SAY = { lt = 'under', le = 'at most', gt = 'over', ge = 'at least', eq = 'exactly', ne = 'not' }
 local function num_say(what, v, unit)
     if type(v) ~= 'table' then return what .. ' ' .. tostring(v) .. (unit or '') end
@@ -502,10 +508,10 @@ local function text_say(v, fmt)
     local out = {}
     if v.is ~= nil then out[#out + 1] = fmt(either_of(v.is), false) end
     if v.isnt ~= nil then out[#out + 1] = fmt(either_of(v.isnt), true) end
-    if v.has ~= nil then out[#out + 1] = 'its name has "' .. either_of(v.has, '" or "') .. '"' end
-    if v.start ~= nil then out[#out + 1] = 'its name starts with "' .. either_of(v.start, '" or "') .. '"' end
-    if v.ends ~= nil then out[#out + 1] = 'its name ends with "' .. either_of(v.ends, '" or "') .. '"' end
-    if v.pattern ~= nil then out[#out + 1] = 'its name matches the pattern "' .. either_of(v.pattern, '" or "') .. '"' end
+    if v.has ~= nil then out[#out + 1] = 'its name has ' .. quoted(v.has) end
+    if v.start ~= nil then out[#out + 1] = 'its name starts with ' .. quoted(v.start) end
+    if v.ends ~= nil then out[#out + 1] = 'its name ends with ' .. quoted(v.ends) end
+    if v.pattern ~= nil then out[#out + 1] = 'its name matches the pattern ' .. quoted(v.pattern) end
     return table.concat(out, ', ')
 end
 -- GoomSwap's spell lists, as a sentence says them.
@@ -562,7 +568,7 @@ local SAY = {
         return (n and 'not in ' or 'in ') .. w .. ' weather' end) end,
     zone = function(v)
         if (type(v) == 'table') and (v[1] == nil) and ((v.has ~= nil) or (v.start ~= nil) or (v.ends ~= nil) or (v.pattern ~= nil)) then
-            return 'in a zone with "' .. either_of(v.has or v.start or v.ends or v.pattern, '" or "') .. '" in its name'
+            return 'in a zone with ' .. quoted(v.has or v.start or v.ends or v.pattern) .. ' in its name'
         end
         return text_say(v, function(w, n) return (n and 'not in ' or 'in ') .. w end)
     end,
@@ -643,11 +649,11 @@ local function what_of(when, phase)
         elseif type(name) == 'table' then
             local parts = {}
             if name.is ~= nil then parts[#parts + 1] = either_of(name.is) end
-            if name.has ~= nil then parts[#parts + 1] = article(bare) .. ' with "' .. either_of(name.has, '" or "') .. '" in its name' end
-            if name.start ~= nil then parts[#parts + 1] = article(bare) .. ' starting "' .. either_of(name.start, '" or "') .. '"' end
-            if name.ends ~= nil then parts[#parts + 1] = article(bare) .. ' ending "' .. either_of(name.ends, '" or "') .. '"' end
+            if name.has ~= nil then parts[#parts + 1] = article(bare) .. ' with ' .. quoted(name.has) .. ' in its name' end
+            if name.start ~= nil then parts[#parts + 1] = article(bare) .. ' starting ' .. quoted(name.start) end
+            if name.ends ~= nil then parts[#parts + 1] = article(bare) .. ' ending ' .. quoted(name.ends) end
             if name.pattern ~= nil then
-                parts[#parts + 1] = article(bare) .. ' matching the pattern "' .. either_of(name.pattern, '" or "') .. '"'
+                parts[#parts + 1] = article(bare) .. ' matching the pattern ' .. quoted(name.pattern)
             end
             if name.isnt ~= nil then
                 if #parts == 0 then parts[#parts + 1] = article(bare) end
