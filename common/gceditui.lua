@@ -275,7 +275,7 @@ local function clamp(value, minimum, maximum)
 end
 
 local densities = {
-    Compact = { spacing = { 6, 4 }, padding = { 6, 3 }, cardHeight = 114, icon = 32, rowIcon = 20 },
+    Compact = { spacing = { 4, 2 }, padding = { 5, 2 }, cardHeight = 108, icon = 32, rowIcon = 20 }, -- tight; 108: a 2-line name still clears the rank line
     Comfortable = { spacing = { 9, 7 }, padding = { 9, 5 }, cardHeight = 132, icon = 36, rowIcon = 26 },
 }
 
