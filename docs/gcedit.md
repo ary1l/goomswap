@@ -86,6 +86,8 @@ To add a buff set by hand: open `Buffs`, type the buff's name as the game shows 
   `/mset acc`.
 - **Delete set...** on `Weapon_Mpu` takes the mode out on Save, and offers to delete the sets worn only with it.
 - To start from a set you have, right-click `Tp_Default` (or `Dt`, `Idle`, a WS's set): **Copy as a weapon set**.
+- A Hoxne set for one weapon skill: right-click `Hoxne_Ws`, **Add a set for one WS** (`Hoxne_Ruthless Stroke`, a copy
+  of `Hoxne_Ws`, worn over it on that WS).
 
 ### Melee modes (`/mset`)
 
