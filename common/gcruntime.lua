@@ -250,9 +250,10 @@ do
             local melee = (type(gcinclude.MeleeModes) == 'table')
                     and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or { 'Default', 'SubtleBlow', 'Acc' }
             gcdisplay.CreateCycle('MeleeSet', melee)
-            -- /wsset: how buffed you are, for weapon skills only. High wears <WS set>_HighBuff over each WS set,
-            -- PDL <WS set>_PDL (Physical damage limit+ gear).
-            gcdisplay.CreateCycle('WsSet', { 'Mid', 'High', 'PDL' })
+            -- /wsset: for weapon skills only. High wears <WS set>_HighBuff over each WS set, PDL <WS set>_PDL
+            -- (Physical damage limit+ gear), Acc <WS set>_Acc (as /mset acc does, without changing TP gear).
+            -- Default was Mid: /wsset mid still picks it (SetCycleFrom).
+            gcdisplay.CreateCycle('WsSet', { 'Default', 'High', 'PDL', 'Acc' })
             -- /idleset: Idle_<mode> over Idle while idle (gcinclude.EquipIdle).
             gcdisplay.CreateCycle('IdleSet', { 'Default', 'Refresh', 'Regen', 'Regain' })
             gcinclude.BuildWeaponCycles()
@@ -797,6 +798,9 @@ do
             if (cname == 'MeleeSet') and (wantBase ~= '') and (string.sub('base', 1, #wantBase) == wantBase) then
                 val = 'Default'
             end -- Base = Default
+            if (cname == 'WsSet') and (wantBase ~= '') and (string.sub('mid', 1, #wantBase) == wantBase) then
+                val = 'Default'
+            end -- /wsset mid: the old name of Default
             local index = tonumber(val)
             if (index ~= nil) and (index >= 1) and (index <= #list) then
                 return gcdisplay.SetCycle(cname, list[index])

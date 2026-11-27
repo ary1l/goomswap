@@ -108,7 +108,7 @@ missing. The examples carry only sets with gear; `/gcedit` → **+ New set** lis
 
 | Set | Worn |
 |---|---|
-| `['Savage Blade']` `['Savage Blade_Acc']` `['Savage Blade_HighBuff']` `['Savage Blade_PDL']` | that WS; `/mset acc`; `/wsset high`; `/wsset pdl` |
+| `['Savage Blade']` `['Savage Blade_Acc']` `['Savage Blade_HighBuff']` `['Savage Blade_PDL']` | that WS; `/mset acc` or `/wsset acc`; `/wsset high`; `/wsset pdl` |
 | `Ws_Default` `Ws_Acc` `Ws_HighBuff` `Ws_PDL` | any WS, under its own |
 | `['Berserk']` | that job ability |
 | `['Enhancing Magic']` `['Cure']` `['Phalanx']` | skill, then spell or family (`Cure IV` → `Cure`) |

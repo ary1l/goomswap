@@ -228,6 +228,9 @@ function actionModel.New(context)
                 local key = string.match(by, '_([^_]+)$')
                 if key == 'HighBuff' then return 'WS high-buff mode (/wsset high)' end
                 if key == 'PDL' then return 'WS PDL mode (/wsset pdl)' end
+                if (key == 'Acc') and (gcdisplay ~= nil) and (gcdisplay.GetCycle('WsSet') == 'Acc') then
+                    return 'WS acc mode (/wsset acc)'
+                end
                 if key == 'Dt' then return 'DT mode (/dt)' end
                 if key == 'Self' then return 'the spell is on yourself' end
                 if key == 'Others' then return 'the spell is on someone else' end
@@ -318,6 +321,7 @@ function actionModel.New(context)
             if (st.idleset ~= nil) and (st.idleset ~= 'Default') then on[#on + 1] = 'idle ' .. st.idleset end
             if st.wsset == 'High' then on[#on + 1] = 'WS high-buff' end
             if st.wsset == 'PDL' then on[#on + 1] = 'WS PDL' end
+            if st.wsset == 'Acc' then on[#on + 1] = 'WS acc' end
             if st.dt then on[#on + 1] = 'DT' end
             if st.kite then on[#on + 1] = 'kite' end
             if st.proc then on[#on + 1] = 'proc' end
@@ -332,6 +336,7 @@ function actionModel.New(context)
             if (st.mset ~= nil) and (st.mset ~= 'Default') then on[#on + 1] = 'melee ' .. st.mset end
             if st.wsset == 'High' then on[#on + 1] = 'WS high-buff' end
             if st.wsset == 'PDL' then on[#on + 1] = 'WS PDL' end
+            if st.wsset == 'Acc' then on[#on + 1] = 'WS acc' end
             if st.dt then on[#on + 1] = 'DT' end
             if st.mdt then on[#on + 1] = 'MDT' end
             if st.aminon then on[#on + 1] = 'Aminon' end
@@ -1083,6 +1088,9 @@ function actionModel.New(context)
             end
             if (st.wsset == 'High') and not st.proc then children('HighBuff', 'WS high-buff mode (/wsset high)') end
             if (st.wsset == 'PDL') and not st.proc then children('PDL', 'WS PDL mode (/wsset pdl)') end
+            if (st.wsset == 'Acc') and (st.mset ~= 'Acc') and not st.proc then
+                children('Acc', 'WS acc mode (/wsset acc)')
+            end
             if st.dt and not st.proc then children('Dt', 'DT mode (/dt)') end
         elseif a.event == 'Ability' then
             byname(a.action, 'the set named after ' .. a.action)

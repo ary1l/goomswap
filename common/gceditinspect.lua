@@ -1331,6 +1331,8 @@ local function conds_on(conds, now)
             ok = (now.wsset == 'High')
         elseif c == 'WS PDL mode' then
             ok = (now.wsset == 'PDL')
+        elseif c == 'WS acc mode' then
+            ok = (now.wsset == 'Acc')
         elseif c == 'DT mode' then
             ok = now.dt
         elseif c == 'proc mode' then
