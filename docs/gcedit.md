@@ -36,7 +36,7 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
   abilities and weapon skills you know. Spells are left out (too many).
 - Under BUFFS: one row for each of your JAs that has a buff of the same name (Saber Dance). Its buttons make the
   set worn while the buff is up: **Idle/TP** `Buffs['Saber Dance']`, **WS** `Buffs_Ws['Saber Dance']`, **Spells**
-  `Buffs_Midcast['Saber Dance']` (the ones your file has a holder for). A dim button is made already and opens it.
+  `Buffs_Midcast['Saber Dance']` (the ones your file has a holder for). A green button is made already and opens it.
 - An ability group (`Step`) is a set your job file's HandleAbility puts on for every ability with that word in its
   name, under the ability's own set.
 - **More** holds the rarely used ones (Aminon, Sleeping, Doomed...) and abilities a group set covers (Curing Waltz

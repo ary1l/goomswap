@@ -884,6 +884,11 @@ function actionModel.New(context)
             return 'While ' .. set.key .. ' is up, ' .. holder[1] .. ': GoomSwap puts it on over your sets (name it as '
                 .. 'the buff list shows it).', set.key .. ' up' .. holder[2]
         end
+        -- an ability group (DNC's ['Step']): the job file's HandleAbility wears it by name on each of them
+        if (set.parentName == nil) and (context.abilityKinds ~= nil) and context.abilityKinds()[set.name] then
+            return 'On every ability with ' .. set.name .. " in its name: your job file's HandleAbility puts it on, "
+                .. "then the ability's own set (Box Step) over it.", 'every ability with ' .. set.name
+        end
         local wtext, wshort = weapon_set_when(set)
         if wtext ~= nil then return wtext, wshort end
         local text, short

@@ -608,7 +608,7 @@ local function addable()
                 list[#list + 1] = { name = x.name, id = 'buff:' .. string.lower(x.name), buff = opts, group = 'Buffs',
                     ignore = "Buffs['" .. x.name .. "']", why = 'while it is up',
                     tip = 'Gear worn while ' .. x.name .. ' is up: Idle/TP (Buffs), on weapon skills (Buffs_Ws), on '
-                        .. 'spells (Buffs_Midcast), each its own set. Dim: made already (opens it).' }
+                        .. 'spells (Buffs_Midcast), each its own set. Green: made already (opens it).' }
             end
         end
     end
@@ -744,10 +744,10 @@ local function draw_addable()
             imgui.TextColored(palette.dim, 'More:')
         else
             local x0 = (imgui.GetCursorPosX ~= nil) and imgui.GetCursorPosX() or nil
-            if s.buff ~= nil then -- a buff's sets: one button per holder; dim: made (opens it)
+            if s.buff ~= nil then -- a buff's sets: one button per holder; green: made (opens it)
                 for j, o in ipairs(s.buff) do
                     if j > 1 then imgui.SameLine(0, 2) end
-                    if o.made then imgui.PushStyleColor(ImGuiCol_Text, palette.dim) end
+                    if o.made then imgui.PushStyleColor(ImGuiCol_Text, palette.ok) end
                     if imgui.SmallButton(o.label .. '##gcadd_b' .. i .. '_' .. j) then
                         if o.made then
                             go_to(o.name, 'Head', 'gear')

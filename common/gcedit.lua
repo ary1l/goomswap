@@ -308,9 +308,10 @@ local CASTING = editorData.CASTING
 -- The ability groups a job file wears by name: `for _, kind in ipairs({'Waltz', 'Step'}) do ... ByName(kind)` (DNC's
 -- HandleAbility: ['Step'] on every step). Those sets go under JOB ABILITIES, and the set list offers the missing ones.
 local kindsOf = { text = nil, set = {} }
+local loadingText = nil -- load_model: the file being read, before it is the document's (its sets get headings first)
 local function ability_kinds()
     local doc = editorState and editorState.document
-    local text = (doc ~= nil) and (doc.model ~= nil) and doc.model.text or nil
+    local text = loadingText or ((doc ~= nil) and (doc.model ~= nil) and doc.model.text) or nil
     if kindsOf.text ~= text then
         kindsOf.text, kindsOf.set, kindsOf.list = text, {}, {}
         for var, list, body in string.gmatch(text or '', 'for%s+_%s*,%s*([%w_]+)%s+in%s+ipairs%(%s*(%b{})%s*%)%s+do(.-)end') do
@@ -512,6 +513,7 @@ local function load_model(document)
     if model == nil then return nil, err end
     model.text = text -- the job file's handlers are read from it (scan_job), once, when All sets first needs them
     model.byLower = {}
+    loadingText = text -- its ability groups (['Waltz']) go under JOB ABILITIES
     for _, set in ipairs(model.list) do
         set.group, set.builtin = group_of(set.name, set.parentName)
         set.lname = string.lower(set.name)
@@ -522,6 +524,7 @@ local function load_model(document)
         end
         set.count = n
     end
+    loadingText = nil
     return model
 end
 
@@ -940,7 +943,8 @@ local function bind_actions()
             return ability ~= nil and ability.Id < 0x200
         end,
         itemId = item_id, setFile = setFile,
-        readFile = read_file, resources = resources, display = live and gcdisplay or nil, getRecords = function()
+        readFile = read_file, abilityKinds = ability_kinds, resources = resources, display = live and gcdisplay or nil,
+        getRecords = function()
             return live and GcRecords or nil
         end, getPlayer = function()
             if live then return AshitaCore:GetMemoryManager():GetPlayer() end
