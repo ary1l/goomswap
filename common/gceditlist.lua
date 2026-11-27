@@ -638,20 +638,20 @@ local function addable()
     local c = editorState.cache
     if (c.addRev == editorState.document.revision) and (c.addable ~= nil) then return c.addable end
     -- rank: 1 the sets most job files have (the engine's usual ones, the example's, an /mset or /wm mode's, the
-    -- ability groups), 2 the abilities and weapon skills you know, 3 the one-fight / one-state ones (RARE): More
+    -- ability groups), 2 the abilities and weapon skills you know, 3 under More: the one-fight / one-state ones (RARE)
+    -- and the abilities an ability group's set covers (Curing Waltz III: Waltz)
     local out, list, seen = {}, {}, {}
+    local kinds = NONE -- the ability groups the job file wears by name (['Step'] on every step)
+    if ctx.ability_kinds ~= nil then kinds = select(2, ctx.ability_kinds()) or NONE end
     for _, m in ipairs((ctx.melee_modes ~= nil) and ctx.melee_modes() or {}) do -- an /mset mode with no Tp_ set
         local name = 'Tp_' .. m
         if (string.lower(m) ~= 'default') and (editorState.document.model.byLower[string.lower(name)] == nil) then
             list[#list + 1] = { name = name, why = '/mset ' .. string.lower(m) .. ' (fighting stays Default without it)' }
         end
     end
-    if ctx.ability_kinds ~= nil then -- the ability groups the job file wears by name (['Step'] on every step)
-        local _, kinds = ctx.ability_kinds()
-        for _, k in ipairs(kinds or {}) do
-            if editorState.document.model.byLower[string.lower(k)] == nil then
-                list[#list + 1] = { name = k, why = 'worn on every ' .. k .. ' (your job file names it)' }
-            end
+    for _, k in ipairs(kinds) do
+        if editorState.document.model.byLower[string.lower(k)] == nil then
+            list[#list + 1] = { name = k, why = 'worn on every ' .. k .. ' (your job file names it)' }
         end
     end
     local ok, sugg = pcall(suggestions, false, true)
@@ -675,6 +675,12 @@ local function addable()
         if (g ~= nil) and not seen[string.lower(x.name)] then
             seen[string.lower(x.name)] = true
             x.rank = ((x.why == 'job ability') or (x.why == 'weapon skill')) and 2 or (RARE_SET(x.name) and 3 or 1)
+            for _, k in ipairs((x.why == 'job ability') and kinds or NONE) do
+                if (x.name ~= k) and string.find(x.name, k, 1, true) then
+                    x.rank, x.why = 3, 'gets your ' .. k .. ' set already (a set by its own name goes on top)'
+                    break
+                end
+            end
             out[g] = out[g] or {}
             out[g][#out[g] + 1] = x
         end
