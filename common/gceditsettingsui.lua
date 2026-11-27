@@ -107,25 +107,8 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         if (type(v) == 'string') and plain then return v end
         return groups.SerializeValue(v, setFile.QuoteText, setFile.FormatKey)
     end
-    -- Lua data (no code run; T{...} allowed): the value, and whether it read.
-    local function data(text)
-        local chunk = (loadstring or load)('return ' .. text)
-        if chunk == nil then return nil, false end
-        if setfenv ~= nil then setfenv(chunk, { T = function(t) return t end }) end
-        local ok, v = pcall(chunk)
-        return v, ok
-    end
-    local function same(a, b)
-        if type(a) ~= type(b) then return false end
-        if type(a) ~= 'table' then return a == b end
-        for k, v in pairs(a) do
-            if not same(v, b[k]) then return false end
-        end
-        for k in pairs(b) do
-            if a[k] == nil then return false end
-        end
-        return true
-    end
+    -- Lua data (no code run; T{...} allowed): the value, and whether it read; two values alike, tables deeply.
+    local data, same = files.ValueOf, files.Same
     -- One the panel can write back as it is (tables: what the writer gives reads back the same).
     local function editable(v)
         if (type(v) == 'function') or (type(v) == 'userdata') then return false end

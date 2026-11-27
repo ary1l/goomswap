@@ -103,37 +103,24 @@ return function(imgui, palette, set_tip)
     end
     -- a key as a key cap: its name on a rounded fill with an edge
     -- text on a rounded fill (a tag): where a value comes from, a state
+    -- a rounded fill behind the text about to be drawn (pad px each side; edge: an outline too)
+    local function backing(text, pad, round, fill, edge)
+        local dl = (imgui.GetWindowDrawList ~= nil) and imgui.GetWindowDrawList() or nil
+        if ((type(dl) ~= 'userdata') and (type(dl) ~= 'table')) or (imgui.GetCursorScreenPos == nil)
+            or (imgui.GetColorU32 == nil) then return end
+        local x, y = vec(imgui.GetCursorScreenPos())
+        local w, h = vec(imgui.CalcTextSize(text))
+        if (x == nil) or (y == nil) or (w == nil) or (h == nil) or (w <= 0) then return end
+        P1[1], P1[2], P2[1], P2[2] = x - pad, y - 1, x + w + pad, y + h + 1
+        dl:AddRectFilled(P1, P2, u32(fill), round)
+        if edge ~= nil then dl:AddRect(P1, P2, u32(edge), round, 0, 1) end
+    end
     function W.Pill(text, fg, bg)
-        local dl = nil
-        if imgui.GetWindowDrawList ~= nil then
-            dl = imgui.GetWindowDrawList()
-            if (type(dl) ~= 'userdata') and (type(dl) ~= 'table') then dl = nil end
-        end
-        if (dl ~= nil) and (imgui.GetCursorScreenPos ~= nil) and (imgui.GetColorU32 ~= nil) then
-            local x, y = vec(imgui.GetCursorScreenPos())
-            local w, h = vec(imgui.CalcTextSize(text))
-            if (x ~= nil) and (y ~= nil) and (w ~= nil) and (h ~= nil) and (w > 0) then
-                P1[1], P1[2], P2[1], P2[2] = x - 5, y - 1, x + w + 5, y + h + 1
-                dl:AddRectFilled(P1, P2, u32(bg or palette.cell or palette.btn), 8)
-            end
-        end
+        backing(text, 5, 8, bg or palette.cell or palette.btn)
         imgui.TextColored(fg or palette.dim, text)
     end
     local function keycap(text)
-        local dl = nil
-        if imgui.GetWindowDrawList ~= nil then
-            dl = imgui.GetWindowDrawList()
-            if (type(dl) ~= 'userdata') and (type(dl) ~= 'table') then dl = nil end
-        end
-        if (dl ~= nil) and (imgui.GetCursorScreenPos ~= nil) and (imgui.GetColorU32 ~= nil) then
-            local x, y = vec(imgui.GetCursorScreenPos())
-            local w, h = vec(imgui.CalcTextSize(text))
-            if (x ~= nil) and (y ~= nil) and (w ~= nil) and (h ~= nil) and (w > 0) then
-                P1[1], P1[2], P2[1], P2[2] = x - 4, y - 1, x + w + 4, y + h + 1
-                dl:AddRectFilled(P1, P2, u32(palette.cell or palette.btn), 4)
-                dl:AddRect(P1, P2, u32(palette.edge or palette.dim), 4, 0, 1)
-            end
-        end
+        backing(text, 4, 4, palette.cell or palette.btn, palette.edge or palette.dim)
         imgui.TextUnformatted(text)
     end
     function W.Pick(id, label, options, width)

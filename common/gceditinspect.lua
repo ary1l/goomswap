@@ -647,7 +647,7 @@ local function draw_layer_view(set, V)
 end
 
 ---------------------------------------------------------------------------------------------------------------------
--- Exact set names to omit from the suggestions view. Configure with settings.EditorIgnoreSuggestions = T{'Singing'}.
+-- Exact set names the add list and Related leave out: settings.EditorIgnoreSuggestions = T{'Singing'}.
 local function ignored_suggestion_names()
     local out = {}
     local function add(list)
@@ -824,7 +824,7 @@ local function set_action_entries(set, part)
         editorState.selection.rules, editorState.ui.rulesView = true, 'all'
     end
     if set.new then
-        if (part ~= 'drop') and item('Rename set...##gcedit_new') then editorState.ui.requestRenameSet = set.name end
+        if (part ~= 'drop') and item('Rename set...##gcedit_rename_set') then editorState.ui.requestRenameSet = set.name end
         if (part ~= 'edit') and item('Discard new set##gcedit', true, false, palette.bad) then
             drop_new(set)
             return true

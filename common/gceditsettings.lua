@@ -59,6 +59,23 @@ return {
     end
 
     S.REMOVE = setmetatable({}, { __tostring = function() return '(taken out)' end }) -- a value of false is a value
+    -- text written to path (old: what it held, nil when new): the first write this session backs old up first; a
+    -- failed write puts old back.
+    local function commit(path, old, text)
+        if (old ~= nil) and (backedUp[path] == nil) then
+            local backup, berr = F.Backups.Path(path, function(p) return ashita.fs.exists(p) end)
+            local ok, werr = false, berr
+            if backup ~= nil then ok, werr = F.Write(backup, old) end
+            if not ok then return false, 'backup failed: ' .. tostring(werr) end
+            backedUp[path] = backup
+        end
+        local ok, werr = F.Write(path, text)
+        if not ok then
+            if old ~= nil then F.Write(path, old) end
+            return false, tostring(werr)
+        end
+        return true
+    end
     -- Each key of changes set in which ('own' or 'shared'; S.REMOVE: taken out), in one write; then in use at once (a
     -- job file's own value comes back on its next load). A missing file is made from its template.
     function S.Write(which, changes)
@@ -80,18 +97,8 @@ return {
             local fine, why = e.CheckConfig(values)
             if not fine then return false, tostring(why) end
         end
-        if (old ~= nil) and (backedUp[path] == nil) then
-            local backup, berr = F.Backups.Path(path, function(p) return ashita.fs.exists(p) end)
-            local ok, werr = false, berr
-            if backup ~= nil then ok, werr = F.Write(backup, old) end
-            if not ok then return false, 'backup failed: ' .. tostring(werr) end
-            backedUp[path] = backup
-        end
-        local ok, werr = F.Write(path, text)
-        if not ok then
-            if old ~= nil then F.Write(path, old) end
-            return false, tostring(werr)
-        end
+        local ok, werr = commit(path, old, text)
+        if not ok then return false, werr end
         local L = layer(which).settings
         for k, v in pairs(changes) do
             if v == S.REMOVE then L[k] = nil else L[k] = v end
@@ -124,18 +131,8 @@ return {
             end)
         if text == nil then return false, tostring(err) end
         if (loadstring or load)(text) == nil then return false, 'the file would not load after the change' end
-        if (old ~= nil) and (backedUp[path] == nil) then
-            local backup, berr = F.Backups.Path(path, function(p) return ashita.fs.exists(p) end)
-            local ok, werr = false, berr
-            if backup ~= nil then ok, werr = F.Write(backup, old) end
-            if not ok then return false, 'backup failed: ' .. tostring(werr) end
-            backedUp[path] = backup
-        end
-        local ok, werr = F.Write(path, text)
-        if not ok then
-            if old ~= nil then F.Write(path, old) end
-            return false, tostring(werr)
-        end
+        local ok, werr = commit(path, old, text)
+        if not ok then return false, werr end
         layer(which)[key] = (value ~= S.REMOVE) and value or nil
         if key == 'Packer' then
             e.CharPacker = layer('own').Packer or layer('shared').Packer
@@ -164,6 +161,7 @@ return {
         end
         return true
     end
+    S.ValueOf, S.Same = value_of, same -- the Settings panel reads typed values with them
     local function doc()
         local st = (o.state ~= nil) and o.state() or nil
         return (st ~= nil) and st.document or nil

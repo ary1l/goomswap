@@ -1110,16 +1110,32 @@ local function weapon_modes_without(s, modes)
     end
 end
 
--- char.lua (`return { settings = { ... } }`): the settings table's `key = ...` replaced, or added as its first entry
--- (a settings table is added when there is none). valueFor(indent) gives the value's Lua text for a key line with
--- that indent, or nil to take the key out. Comments and every other line stay. nil, why when the file has no
--- `return {` table.
-local function set_char_setting(text, key, valueFor)
+-- char.lua's `return {` table: its opening brace, entries and close; nil, why when there is none.
+local function char_return(text)
     local r = string.find(code_only(text), '%f[%w_]return%s*{')
     if r == nil then return nil, 'no `return {` table' end
     local open = string.find(text, '{', r, true)
     local entries, close = scan_table(text, open)
     if close == nil then return nil, 'its table never closes' end
+    return open, entries
+end
+-- The span an entry takes out: its whole line when nothing else is on it.
+local function entry_span(text, hit)
+    local first, finish = hit.start, hit.sep and (hit.sep + 1) or hit.vend
+    local ls, le = line_start(text, first), line_end(text, finish)
+    if string.match(string.sub(text, ls, first - 1), '^%s*$') and string.match(string.sub(text, finish, le - 1), '^%s*$') then
+        first, finish = ls, le
+    end
+    return first, finish
+end
+
+-- char.lua (`return { settings = { ... } }`): the settings table's `key = ...` replaced, or added as its first entry
+-- (a settings table is added when there is none). valueFor(indent) gives the value's Lua text for a key line with
+-- that indent, or nil to take the key out. Comments and every other line stay. nil, why when the file has no
+-- `return {` table.
+local function set_char_setting(text, key, valueFor)
+    local open, entries = char_return(text)
+    if open == nil then return nil, entries end
     local settings = nil
     for _, e in ipairs(entries) do
         if (e.key == 'settings') and (string.sub(text, e.vstart, e.vstart) == '{') then settings = e end
@@ -1140,11 +1156,7 @@ local function set_char_setting(text, key, valueFor)
         end
         local value = valueFor(indent_at(text, (hit or sEntries[1] or settings).start))
         if (hit ~= nil) and (value == nil) then -- taken out: its line goes when nothing else is on it
-            local first, finish = hit.start, hit.sep and (hit.sep + 1) or hit.vend
-            local ls, le = line_start(text, first), line_end(text, finish)
-            if string.match(string.sub(text, ls, first - 1), '^%s*$') and string.match(string.sub(text, finish, le - 1), '^%s*$') then
-                first, finish = ls, le
-            end
+            local first, finish = entry_span(text, hit)
             out[1] = { first, finish, '' }
         elseif value == nil then
             return text
@@ -1161,11 +1173,8 @@ end
 
 -- The text with the return table's own key (beside settings: Packer, sets) set to valueFor(indent) (nil: taken out).
 local function set_char_top(text, key, valueFor)
-    local r = string.find(code_only(text), '%f[%w_]return%s*{')
-    if r == nil then return nil, 'no `return {` table' end
-    local open = string.find(text, '{', r, true)
-    local entries, close = scan_table(text, open)
-    if close == nil then return nil, 'its table never closes' end
+    local open, entries = char_return(text)
+    if open == nil then return nil, entries end
     local hit = nil
     for _, e in ipairs(entries) do
         if e.key == key then hit = e end
@@ -1179,11 +1188,7 @@ local function set_char_top(text, key, valueFor)
         return apply(text, { { at, at, comma .. '\n' .. ind .. key .. ' = ' .. value .. ',' } })
     end
     if value ~= nil then return apply(text, { { hit.vstart, hit.vend, value } }) end
-    local first, finish = hit.start, hit.sep and (hit.sep + 1) or hit.vend
-    local ls, le = line_start(text, first), line_end(text, finish)
-    if string.match(string.sub(text, ls, first - 1), '^%s*$') and string.match(string.sub(text, finish, le - 1), '^%s*$') then
-        first, finish = ls, le
-    end
+    local first, finish = entry_span(text, hit)
     return apply(text, { { first, finish, '' } })
 end
 

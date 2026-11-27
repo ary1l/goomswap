@@ -429,27 +429,21 @@ local function fit_cmd(t, room)
     return (lo >= 5) and (string.sub(t, 1, lo) .. '...') or nil
 end
 
--- A small filled dot at the cursor (dx from it), centred on the text line; nothing drawn without a draw list.
-local function dot(dx, col)
+-- A small filled dot at the cursor (dx from it), centred on the text line; ring: an open circle around the row's dot
+-- (the set is on you now). Nothing drawn without a draw list.
+local function circle(dx, col, open)
     if (imgui.GetWindowDrawList == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetColorU32 == nil) then
         return
     end
     local x, y = ctx.xy(imgui.GetCursorScreenPos())
     local lh = (imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or 14
-    if (x ~= nil) and (y ~= nil) then
-        imgui.GetWindowDrawList():AddCircleFilled({ x + dx, y + lh / 2 }, 3, imgui.GetColorU32(col), 12)
-    end
+    if (x == nil) or (y == nil) then return end
+    local dl, at = imgui.GetWindowDrawList(), { x + dx, y + lh / 2 }
+    if open then dl:AddCircle(at, 5.5, imgui.GetColorU32(col), 16, 1.5)
+    else dl:AddCircleFilled(at, 3, imgui.GetColorU32(col), 12) end
 end
-local function ring(dx, col) -- an open circle around the row's dot: the set is on you now
-    if (imgui.GetWindowDrawList == nil) or (imgui.GetCursorScreenPos == nil) or (imgui.GetColorU32 == nil) then
-        return
-    end
-    local x, y = ctx.xy(imgui.GetCursorScreenPos())
-    local lh = (imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or 14
-    if (x ~= nil) and (y ~= nil) then
-        imgui.GetWindowDrawList():AddCircle({ x + dx, y + lh / 2 }, 5.5, imgui.GetColorU32(col), 16, 1.5)
-    end
-end
+local function dot(dx, col) circle(dx, col, false) end
+local function ring(dx, col) circle(dx, col, true) end
 local SLOT_OF = { 'Main', 'Sub', 'Range', 'Ammo', 'Head', 'Body', 'Hands', 'Legs', 'Feet', 'Neck', 'Waist', 'Ear1',
     'Ear2', 'Ring1', 'Ring2', 'Back' } -- LAC's slot numbers (gcaction's records)
 -- On you now (over the list): the sets wearing something on you, the most slots first, from gcaction's record of
