@@ -2144,15 +2144,22 @@ function gcinclude.CheckSleepStoneskin(now)
 end
 
 -- Entering a Dynamis - Divergence zone (named "Dynamis - <city> [D]", per SE's Nov 2025 update notes): a reminder
--- that /dynamisrp holds the job neck.
-gcinclude.LastZone = nil
+-- that /dynamisrp holds the job neck. Leaving one for a zone that isn't: /dynamisrp goes off by itself, so your normal
+-- neck comes back (a /dynamisrp turned on outside Dynamis stays). Run from the hold tick, never mid-zone.
+gcinclude.LastZone, gcinclude.LastZoneDivergence = nil, false
 function gcinclude.CheckZoneNotes()
     local zone = AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0)
-    if (zone == gcinclude.LastZone) then return end
+    if (zone == nil) or (zone == 0) or (zone == gcinclude.LastZone) then return end
     gcinclude.LastZone = zone
     local name = AshitaCore:GetResourceManager():GetString('zones.names', zone) or ''
-    if (string.find(name, 'Dynamis', 1, true) ~= nil) and (string.find(name, '[D]', 1, true) ~= nil) then
+    local divergence = (string.find(name, 'Dynamis', 1, true) ~= nil) and (string.find(name, '[D]', 1, true) ~= nil)
+    local left = gcinclude.LastZoneDivergence and not divergence
+    gcinclude.LastZoneDivergence = divergence
+    if divergence then
         gcinclude.Say('Dynamis - Divergence: /dynamisrp holds your best job neck (RP)')
+    elseif left and (gcinclude.Holds['dynamisrp'] ~= nil) then
+        gcinclude.ReleaseHold('dynamisrp')
+        gcinclude.Say('dynamisrp: off (left Dynamis - Divergence)')
     end
 end
 
@@ -2182,6 +2189,7 @@ function gcinclude.Help()
             .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
         'hud    : /gchud [on|off|debug] (the other boxes, dropped under the bar)',
         'checks : /checksets [all], /gcperf (timings in chat every 10s)',
+        'ws     : /wsdistance [on|off|N] (no word: the check and your target\'s reach; N = the least reach)',
         'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
         'holds  : /capacity /jubilee /dynamisrp /abyproc [on|off]',
         'items  : /gce <item> | cancel, /warpring /mea /holla /dem',
@@ -2189,7 +2197,7 @@ function gcinclude.Help()
         'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcbuild [JOB] (the example with your gear, as <JOB>.proposed.lua), /gcimport <file> [JOB] (a GearSwap file\'s sets, the same way), /gcedit [set|last [slot]] (set editor window, Ashita; last: the set your last action used)',
         'bar    : /gcbar [on|off|pos x y|reset|scale N|theme name]',
         'grid   : /gcgear [on|off|pos x y|reset|scale N|alpha N|bg on|off] (worn gear 4x4: locks, holds, RP)',
-        'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
+        'on/off : every toggle takes on|off (no arg flips it, but /wsdistance shows); /def off|dt|mdt|aminon',
         'nuke   : Burst set is automatic on a nuke landing in a live skillchain; /burst = Burst set on every nuke (HUD: * on the nuke cell)',
         'keys   : F7 wm, Shift+F7 wm default, F9 mset, Ctrl+F9 tankset, Alt+F9 wsset, F10 def, Alt+F10 kite,',
         '         Win+F10 hoxne, Shift+F11 nukeset, Alt+F11 burst, Shift+F12 idleset, Alt+F12 def off, Ctrl+Win+Alt+F12 reload',
@@ -2656,10 +2664,11 @@ function gcinclude.CheckWsBailout()
     local target = gData.GetActionTarget()
     local distance = (target ~= nil) and tonumber(target.Distance) or nil
     if gcinclude.settings.WScheck and (distance ~= nil) and (not gcinclude.DistanceWS:contains(ws.Name)) then
-        local reach, swung = gcinclude.WsReach(target)
+        local reach, swung, range, me, mob, floor = gcinclude.WsReach(target, ws.Name)
         if (distance > reach) then
-            gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f%s). Move closer, or /wsdistance off',
-                ws.Name, distance, reach, (swung > 0) and string.format('; swings landed to %.1f', swung) or ''))
+            gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f: WS %g + you %.1f + mob %.1f, swing %s, '
+                .. 'min %g). Move closer, or /wsdistance off', ws.Name, distance, reach, range, me, mob,
+                (swung > 0) and string.format('%.1f', swung) or 'none', floor))
             return false
         end
     end
@@ -2670,21 +2679,42 @@ end
 -- checks it (char_entity.cpp OnWeaponSkillFinished: distance <= range + attacker hitbox + target hitbox; melee weapon
 -- skills have range 3 in its data/weapon_skills.yaml). A big mob is hit from further away than a small one, so a
 -- fixed distance cancels weapon skills your swings still reach. WSdistance (/wsdistance N) stays the least reach, and
--- so does the farthest your auto-attacks on this target went out at (gcauto.SwingReach): a weapon skill reaches
--- further than a swing. Returns the reach and that swing distance (0: none yet).
+-- so does the farthest your auto-attacks on a mob of this name and hitbox went out at (gcauto.SwingReach): a weapon
+-- skill reaches 1' further than a swing. WsRanges: the non-ranged weapon skills whose range isn't 3 (LandSandBoat
+-- data/weapon_skills.yaml): Gust Slash and Cyclone are client range 10 like Mistral Axe (Windower Resources
+-- weapon_skills.lua); ffxiclopedia: Cyclone "can be used from a distance (Up to 15')".
+-- Returns the reach, then its parts: swing distance (0: none yet), WS range, your hitbox, its hitbox, WSdistance.
 gcinclude.WsRange = 3
-function gcinclude.WsReach(target)
+gcinclude.WsRanges = { ['Gust Slash'] = 14, ['Cyclone'] = 14 }
+function gcinclude.WsReach(target, wsName)
     local floor = tonumber(gcinclude.settings.WSdistance) or 0
-    local swung = ((target ~= nil) and (gcauto ~= nil) and (gcauto.SwingReach ~= nil)) and gcauto.SwingReach(target.Id) or 0
-    floor = math.max(floor, swung)
-    local ok, sizes = pcall(function()
+    local okSwing, swung = pcall(function() return gcauto.SwingReach(target.Index) end)
+    swung = (okSwing and (type(swung) == 'number')) and swung or 0
+    local range = gcinclude.WsRanges[wsName or ''] or gcinclude.WsRange
+    local ok, me, mob = pcall(function()
         local mm = AshitaCore:GetMemoryManager()
         local ent = mm:GetEntity()
-        return (tonumber(ent:GetModelHitboxSize(mm:GetParty():GetMemberTargetIndex(0))) or 0)
-            + (tonumber(ent:GetModelHitboxSize(target.Index)) or 0)
+        return (tonumber(ent:GetModelHitboxSize(mm:GetParty():GetMemberTargetIndex(0))) or 0),
+            (tonumber(ent:GetModelHitboxSize(target.Index)) or 0)
     end)
-    if not ok or (target == nil) or (target.Index == nil) then return floor, swung end
-    return math.max(floor, gcinclude.WsRange + sizes), swung
+    if not ok or (target == nil) or (target.Index == nil) then me, mob = 0, 0 end
+    return math.max(floor, swung, range + me + mob), swung, range, me, mob, floor
+end
+
+-- /wsdistance with no word: the check's state, and for your target its distance and reach (nothing changes).
+function gcinclude.WsDistanceStatus()
+    local cfg = gcinclude.settings
+    local line = string.format('WS distance check %s, min %g yalms', cfg.WScheck and 'on' or 'off',
+        tonumber(cfg.WSdistance) or 0)
+    local target = gData.GetTarget()
+    local distance = (target ~= nil) and tonumber(target.Distance) or nil
+    if (distance ~= nil) then
+        local reach, swung, range, me, mob = gcinclude.WsReach(target, nil)
+        line = line .. string.format('; %s %.1f yalms, reach %.1f (WS %g + you %.1f + mob %.1f, swing %s)',
+            tostring(target.Name or 'target'), distance, reach, range, me, mob,
+            (swung > 0) and string.format('%.1f', swung) or 'none')
+    end
+    gcinclude.Say(line .. '. /wsdistance on|off|N')
 end
 
 -- After a teleport ring's use (warped or not): stop keeping that ring on, so the next HandleDefault puts
