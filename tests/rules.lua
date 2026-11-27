@@ -134,8 +134,10 @@ return {
             wear = 'X', exact = true }),
             'When you cast a spell, while either its name has "Temper", or it is on you and your MP is at most 50%: put on X')
     end },
-    { 'words', function()
-        eq(R.Words({ on = 'Midcast', when = { skill = 'Healing Magic', mpp = { le = 40 } }, wear = 'X' }),
-            'mpp <= 40, skill Healing Magic -> X')
+    { "a skill it isn't, and a list of skills, read as plain words", function()
+        eq(R.Say({ on = 'Midcast', when = { skill = { isnt = { 'Dark Magic', 'Healing Magic' } } }, wear = 'X', exact = true }),
+            "When you cast a spell that isn't Dark Magic or Healing Magic: put on X")
+        eq(R.Say({ on = 'Midcast', when = { skill = { 'Dark Magic', 'Healing Magic' } }, wear = 'X', exact = true }),
+            'When you cast a Dark Magic or Healing Magic spell: put on X')
     end },
 }

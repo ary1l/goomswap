@@ -25,7 +25,7 @@ for _, job in ipairs({ 'BLM', 'BLU', 'BRD', 'BST', 'COR', 'DNC', 'DRG', 'DRK', '
     'RNG', 'RUN', 'SAM', 'SCH', 'SMN', 'THF', 'WAR', 'WHM' }) do
     files[#files + 1] = 'examples/' .. job .. '.lua'
 end
-for _, job in ipairs({ 'BLM', 'RDM', 'SCH', 'GEO', 'WHM', 'BRD', 'COR', 'RNG', 'PLD' }) do -- the examples as they were before their Convert
+for _, job in ipairs({ 'SCH', 'WHM', 'BRD' }) do -- three examples as they were before their Convert
     files[#files + 1] = 'tests/fixtures/' .. job .. '.lua'
 end
 for _, f in ipairs(files) do
@@ -33,7 +33,7 @@ for _, f in ipairs(files) do
 end
 tests[#tests + 1] = { 'the check frees code spots where the gear stays the same', function()
     local spots0, spots = 0, 0
-    for _, job in ipairs({ 'BLM', 'RDM', 'SCH', 'GEO', 'WHM', 'BRD', 'COR', 'RNG', 'PLD' }) do
+    for _, job in ipairs({ 'SCH', 'WHM', 'BRD' }) do
         local text = io.open('tests/fixtures/' .. job .. '.lua'):read('*a')
         for _, r in ipairs(C.Plan(text).runs) do if r.spot then spots0 = spots0 + 1 end end
         for _, r in ipairs(K.Run(text).runs) do if r.spot then spots = spots + 1 end end

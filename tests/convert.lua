@@ -31,8 +31,8 @@ return {
     { 'plain LAC: plan converts both ifs', function()
         local plan = assert(C.Plan(LAC))
         eq(#plan.rules, 2)
-        eq(R.Words(plan.rules[1]), 'buff Cover -> Fealty (only)')
-        eq(R.Words(plan.rules[2]), 'name has "Cure" -> Cure (only)')
+        eq(R.Say(plan.rules[1]), 'While not acting (idle, fighting, resting), when Cover is up: put on Fealty')
+        eq(R.Say(plan.rules[2]), 'When you cast a spell with "Cure" in its name: put on Cure')
         local out = F.Apply(LAC, plan.splices)
         eq(string.find(out, 'Cover', 1, true), nil, 'if taken out')
         eq(loadstring(out) ~= nil, true, 'parses')
@@ -345,9 +345,10 @@ return profile;
 ]]
         local plan = assert(C.Plan(text))
         local words = {}
-        for _, r in ipairs(plan.rules) do words[#words + 1] = R.Words(r) end
-        eq(table.concat(words, ' | '), 'skill Healing Magic -> Heal (only) | skill Dark Magic -> Dark (only) | '
-            .. 'mpp < 50, skill Dark Magic -> Low (only) | skill is not "Dark Magic or Healing Magic" -> Other (only) | '
-            .. 'first of: 1) /dt on -> A (only); 2) hpp < 50 -> B (only)')
+        for _, r in ipairs(plan.rules) do words[#words + 1] = R.Say(r) end
+        eq(table.concat(words, ' | '), 'When you cast a Healing Magic spell: put on Heal | When you cast a Dark Magic '
+            .. 'spell: put on Dark | When you cast a Dark Magic spell, while your MP is under 50%: put on Low | When you '
+            .. "cast a spell that isn't Dark Magic or Healing Magic: put on Other | When you cast a spell, the first that "
+            .. 'fits: 1) If /dt is on: put on A  2) If your HP is under 50%: put on B')
     end },
 }

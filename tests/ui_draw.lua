@@ -11,7 +11,7 @@ local function draw(file, hover)
     assert(last == 'drawn', file .. (hover and ' (hovered)' or '') .. ': ' .. out)
 end
 local tests = {}
-for _, f in ipairs({ 'examples/WHM.lua', 'examples/COR.lua', 'examples/PUP.lua', 'tests/fixtures/BLM.lua' }) do
+for _, f in ipairs({ 'examples/WHM.lua', 'examples/COR.lua', 'examples/PUP.lua', 'tests/fixtures/SCH.lua' }) do
     tests[#tests + 1] = { 'the editor draws ' .. f, function() draw(f, false); draw(f, true) end }
 end
 tests[#tests + 1] = { 'the Editor menu draws, its Spacing switch switches', function()

@@ -450,28 +450,6 @@ function R.WhenWords(when)
     end
     return (#out > 0) and table.concat(out, ', ') or 'always'
 end
-function R.WearWords(rule)
-    local out = {}
-    if type(rule.wear) == 'string' then out[#out + 1] = rule.wear .. (rule.exact and ' (only)' or '') end
-    if type(rule.item) == 'table' then
-        for _, slot in ipairs(R.SLOTS) do
-            local it = rule.item[slot]
-            if it ~= nil then out[#out + 1] = slot .. ' ' .. tostring((type(it) == 'table') and it.Name or it) end
-        end
-    end
-    if rule.stop then out[#out + 1] = 'stop the action' end
-    return (#out > 0) and table.concat(out, ', ') or 'nothing'
-end
-function R.Words(rule)
-    if type(rule) ~= 'table' then return '?' end
-    if type(rule.first) == 'table' then
-        local out = {}
-        for i, r in ipairs(rule.first) do out[#out + 1] = i .. ') ' .. R.WhenWords(r.when) .. ' -> ' .. R.WearWords(r) end
-        return 'first of: ' .. table.concat(out, '; ')
-    end
-    return R.WhenWords(rule.when) .. ' -> ' .. R.WearWords(rule)
-end
-
 -- == A rule as a sentence, for the editor: "When a Cure on you, MP at most 50%: wear Cure_LowMP". ==
 -- R.BuffName(id) -> name: the editor sets it (the game's buff names), so 'while 581 is up' reads 'while Flurry II is up'.
 R.BuffName = nil
@@ -703,8 +681,15 @@ local function what_of(when, phase)
     local skill = when.skill
     if skill ~= nil then
         local sk = text_say(skill, function(w, n) return (n and 'not ' or '') .. w end)
+        local only = (type(skill) == 'table') and (skill[1] == nil) and (next(skill, next(skill)) == nil) and next(skill)
         if main == nil then
-            main = ((type(skill) == 'string') and article(sk .. ' ' .. bare)) or (sk .. ' ' .. bare)
+            if only == 'isnt' then -- 'a spell that isn't Dark Magic or Healing Magic'
+                main = article(bare) .. " that isn't " .. either_of(skill.isnt)
+            elseif (type(skill) == 'string') or (skill[1] ~= nil) or (only == 'is') then
+                main = article(sk .. ' ' .. bare)
+            else
+                main = sk .. ' ' .. bare
+            end
         else
             extra[#extra + 1] = sk
         end
