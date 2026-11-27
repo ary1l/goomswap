@@ -118,6 +118,8 @@ data.ENGINE = {
     'Hoxne_Dt',
     'Hoxne_Ws',
     'Buffs',
+    'Buffs_Tp',
+    'Buffs_Idle',
     'Buffs_Ws',
     'Buffs_Midcast',
 }

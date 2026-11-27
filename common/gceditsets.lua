@@ -214,6 +214,9 @@ local function draw_copy_popup(set)
 end
 
 local function drop_new(set)
+    for _, ns in ipairs({ unpack(editorState.document.newSets) }) do -- sets made inside it go with it
+        if ns.parentName == set.name then drop_new(ns) end
+    end
     local mode = pending_weapon_mode(set)
     for i, ns in ipairs(editorState.document.newSets) do
         if ns == set then

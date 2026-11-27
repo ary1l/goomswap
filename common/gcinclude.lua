@@ -2321,8 +2321,9 @@ function gcinclude.CheckAminonLock()
     gcinclude.LockSlots(take, 'aminon')
 end
 
--- Buffs (idle/engaged, HandleDefault), Buffs_Ws (weaponskills) and Buffs_Midcast (spells): { [buff name] = set },
--- each worn while that buff is up, e.g. Buffs_Ws = { ['Aftermath: Lv.3'] = {...} }. Name it as the buff list shows it.
+-- Buffs (idle and engaged, HandleDefault), Buffs_Tp (engaged only) and Buffs_Idle (not engaged) over it, Buffs_Ws
+-- (weaponskills) and Buffs_Midcast (spells): { [buff name] = set }, each worn while that buff is up, e.g.
+-- Buffs_Tp = { ['Saber Dance'] = {...} }. Name it as the buff list shows it.
 local buffSetOrder = setmetatable({}, { __mode = 'k' }) -- A-Z buff names, once per set table
 function gcinclude.CheckBuffSets(setName)
     local buffs = gcinclude.FindSet(setName or 'Buffs')

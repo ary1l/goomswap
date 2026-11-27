@@ -1088,6 +1088,8 @@ do
             gcinclude.CheckTH()
             gcinclude.CheckReceived()
             gcinclude.CheckBuffSets()
+            -- then the engaged-only or idle-only ones, over the plain buff sets
+            gcinclude.CheckBuffSets(((player ~= nil) and (player.Status == 'Engaged')) and 'Buffs_Tp' or 'Buffs_Idle')
             gcinclude.CheckHoxneCombos(player) -- Hoxne + buff sets over the plain buff sets
             gcinclude.CheckXIRoll(player)
         end

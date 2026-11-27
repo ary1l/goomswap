@@ -6,7 +6,8 @@ return function(
     pending_weapon_mode, pill, profiler, red_button, registration_plan, request_context, rp_uses,
     set_status, set_tip, statModel, tag, text_w, use_worn, where, wrap, xy
 )
-local BUFF_HOLDERS = { buffs = true, buffs_ws = true, buffs_midcast = true } -- sets the engine reads per buff
+local BUFF_HOLDERS = { buffs = true, buffs_tp = true, buffs_idle = true, buffs_ws = true, buffs_midcast = true } -- sets
+-- the engine reads per buff
 local CLEAR = { 0, 0, 0, 0 }
 -- A small-caps heading, as in Settings and the set list: dim, upper case.
 local function heading(text)
