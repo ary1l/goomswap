@@ -82,7 +82,8 @@ The set list is grouped under headings (Idle, Defense, Melee, Weapons...). Arran
   `Samba`, `Jig`, `Flourish`, under JOB ABILITIES), then the job abilities and weapon skills you know (not spells: too
   many), under BUFFS `Buffs['Saber Dance']` for each of your JAs the game has a buff by (worn while it is up, idle and
   engaged), and under **More** the one-fight or one-state sets (Aminon, Sleeping, Doomed...) and the abilities a group's
-  set already covers (Curing Waltz III: your `Waltz`); the count leaves those out.
+  set already covers (Curing Waltz III: your `Waltz`), still made from there for a set of their own (Box Step's hands);
+  the count leaves those out.
   Each says what it is for (`Idle_Regain`: *Standing: Regain*) with **Make** (empty) and **from...** (a copy of a set you
   pick); **Your own name** takes any other set (`Cure IV`). The set is made and opened on its first slot (Head; a
   `Weapon_` set's Main) with the picker, under the heading its name puts it in, unsaved until Save. JOB ABILITIES and

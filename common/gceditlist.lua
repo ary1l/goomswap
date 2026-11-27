@@ -722,7 +722,8 @@ local function draw_addable()
     for i, s in ipairs(a.list) do
         if ((s.rank or 1) >= 3) and not more then
             more = true
-            imgui.TextColored(palette.dim, (i > 1) and 'More (few use these):' or 'Few use these:')
+            -- still made from here (a set of its own for one flourish): each row says why it sits lower
+            imgui.TextColored(palette.dim, (i > 1) and 'More:' or 'Less often needed:')
         end
         if imgui.SmallButton('Make##gcadd_mk' .. i) then make_listed(s) end
         imgui.SameLine(0, 2)
