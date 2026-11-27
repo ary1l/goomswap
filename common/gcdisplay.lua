@@ -164,7 +164,7 @@ local COL_BAR_BG = { 0.04, 0.045, 0.06 }
 local CYAN, MAGENTA, PURPLE = { 0.25, 0.88, 1.00, 1.0 }, { 0.94, 0.35, 0.90, 1.0 }, { 0.65, 0.40, 1.00, 1.0 }
 local MODE_COL = {
     MeleeSet = { Acc = CYAN, SubtleBlow = MAGENTA },
-    WsSet = { High = PURPLE, PDL = MAGENTA, Acc = CYAN },
+    WsSet = { High = PURPLE, PDL = MAGENTA, Acc = CYAN, SubtleBlow = MAGENTA },
     -- mp blue, hp green, tp yellow
     IdleSet = { Refresh = { 0.45, 0.70, 1.00, 1.0 }, Regen = { 0.40, 0.90, 0.50, 1.0 },
         Regain = { 0.95, 0.85, 0.35, 1.0 } },
@@ -179,8 +179,9 @@ local MODE_EMPTY = { MeleeSet = 'Default', WsSet = 'Default', NukeSet = 'Power',
 local EMPTY_ANY = { None = true, Off = true, Default = true, Unknown = true }
 -- always something
 local MODE_PLAIN = { Weapons = true, Main = true, Sub = true, Range = true, Ammo = true, Weapon = true, PupMode = true }
-local MODE_TEXT = { MeleeSet = { SubtleBlow = 'sb' }, IdleSet = { Refresh = 'mp', Regen = 'hp', Regain = 'tp' },
-    NukeSet = { OccultAcumen = 'oa' }, Hoxne = { Locked = 'hoxne' } }
+local MODE_TEXT = { MeleeSet = { SubtleBlow = 'sb' }, WsSet = { SubtleBlow = 'sb' },
+    IdleSet = { Refresh = 'mp', Regen = 'hp', Regain = 'tp' }, NukeSet = { OccultAcumen = 'oa' },
+    Hoxne = { Locked = 'hoxne' } }
 local TOGGLE_COL = { DTset = { 1.00, 0.54, 0.24, 1.0 }, MDTset = { 0.43, 0.53, 1.00, 1.0 },
     Aminon = { 0.75, 0.47, 0.85, 1.0 },
     SIR = { 0.24, 0.82, 0.71, 1.0 }, TH = { 0.95, 0.85, 0.35, 1.0 }, Kite = { 0.35, 0.95, 0.45, 1.0 },

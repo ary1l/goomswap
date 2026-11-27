@@ -1081,8 +1081,8 @@ function gcinclude.WrapHoldHandlers()
                 local wsset = gcdisplay.GetCycle('WsSet')
                 if (wsset == 'High') then gcinclude.WearChildren(worn, {'HighBuff'})
                 elseif (wsset == 'PDL') then gcinclude.WearChildren(worn, {'PDL'})
-                elseif (wsset == 'Acc') and (gcdisplay.GetCycle('MeleeSet') ~= 'Acc') then
-                    gcinclude.WearChildren(worn, {'Acc'}) -- /mset acc already wore them
+                elseif ((wsset == 'Acc') or (wsset == 'SubtleBlow')) and (gcdisplay.GetCycle('MeleeSet') ~= wsset) then
+                    gcinclude.WearChildren(worn, {wsset}) -- /mset acc / sb already wore them
                 end
                 -- /dt: Ws_Dt, ['Victory Smite_Dt']
                 if (gcdisplay.GetToggle('DTset') == true) then gcinclude.WearChildren(worn, {'Dt'}) end
@@ -1251,8 +1251,9 @@ end
 
 -- Child sets: while a handler runs, the sets it wears are noted by
 -- name; then each one's <name>_<key> goes on, in the order they went on, and for <prefix>_Default also
--- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: HighBuff / PDL / Acc on
--- weapon skills (/wsset high / pdl / acc); Self or Others (a spell on you / on anyone but a monster) and Burst (BurstWanted) on spells.
+-- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: HighBuff / PDL / Acc /
+-- SubtleBlow on weapon skills (/wsset high / pdl / acc / sb); Self or Others (a spell on you / on anyone but a
+-- monster) and Burst (BurstWanted) on spells.
 gcinclude.WornSets = nil -- the names, while a handler runs
 -- A set's name for the /gcedit layer record: its key in the job file's sets (or a set inside one, as
 -- Buffs['Aftermath: Lv.3']), gcinclude.sets.<key> for the engine's own, else nil (a table built in code).
@@ -2193,7 +2194,7 @@ function gcinclude.Help()
         'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: '
             .. table.concat(thskip,
             ', ')) or '')
-            .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [default|high|pdl|acc] (high: <WS set>_HighBuff, pdl: <WS set>_PDL, acc: <WS set>_Acc)',
+            .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [default|high|pdl|acc|sb] (high: <WS set>_HighBuff, pdl: <WS set>_PDL, acc: <WS set>_Acc, sb: <WS set>_SubtleBlow)',
         'hud    : /gchud [on|off|debug] (the other boxes, dropped under the bar)',
         'checks : /checksets [all], /gcperf (timings in chat every 10s)',
         'ws     : /wsdistance [on|off|N] (no word: the check and your target\'s reach; N = the least reach)',
