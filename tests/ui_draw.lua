@@ -38,4 +38,28 @@ tests[#tests + 1] = { 'To fill: a slot opens its picker with a way back, and a p
     p:close()
     assert(string.find(trace, 'pick1\tseen', 1, true), 'To fill not back after the pick: ' .. trace)
 end }
+tests[#tests + 1] = { 'a Weapon_ set: armor in it, or a set /wm never reaches, is said with its fix', function()
+    local text = io.open('examples/DNC.lua'):read('*a')
+    text = string.gsub(text, '    Tp_Acc = {', "    Weapon_Mpu = { Main = 'Mpu Gandring', Head = 'Nyame Helm' },\n"
+        .. "    Weapon_MpuTP = { Main = 'Mpu Gandring' },\n    Tp_Acc = {", 1)
+    text = string.gsub(text, "gcinclude.WeaponModes = %b{}", "gcinclude.WeaponModes = {'None', 'Mpu'}", 1)
+    local path = os.tmpname()
+    local fh = io.open(path, 'w')
+    fh:write(text)
+    fh:close()
+    local function run(set, clicks, probe)
+        local p = io.popen('OPENSET=' .. set .. ' luajit tests/draw_editor.lua ' .. path .. ' "' .. clicks .. '" "' .. probe
+            .. '" 2>&1')
+        local out = p:read('*a')
+        p:close()
+        assert(string.match(out, '([^\n]*)\n?$') == 'drawn', out)
+        return out
+    end
+    local ok1 = string.find(run('Weapon_Mpu', 'x', 'never worn'), 'Head: never worn', 1, true)
+    local ok2 = string.find(run('Weapon_Mpu', 'x', 'Move to'), 'Move to Tp_Mpu', 1, true)
+    local ok3 = string.find(run('Weapon_MpuTP', 'x', 'Never worn'), '/wm has no MpuTP mode', 1, true)
+    local ok4 = string.find(run('Weapon_MpuTP', 'x', 'Add /wm'), 'Add /wm MpuTP', 1, true)
+    os.remove(path)
+    assert(ok1 and ok2 and ok3 and ok4, 'Weapon_ set checks missing: ' .. tostring(ok1) .. tostring(ok2) .. tostring(ok3) .. tostring(ok4))
+end }
 return tests

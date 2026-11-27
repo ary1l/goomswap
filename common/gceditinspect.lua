@@ -904,6 +904,72 @@ local function draw_set_actions(set)
     return discarded
 end
 
+-- A Weapon_ set's two ways to go wrong, said under its buttons with the fix: armor in it (never worn: a weapon mode
+-- puts on Main, Sub, Range and Ammo only) and a set /wm never reaches (the job file's WeaponModes doesn't name it).
+local function put_value(set, slot, v) -- a slot's value (current()) into another set as is: augments, path, rank
+    local doc = editorState.document
+    editorState.history.entries = editorState.history.entries or {}
+    editorState.history.entries[#editorState.history.entries + 1] = { set = set.name, slot = slot,
+        previous = doc.edits[set.name] and doc.edits[set.name][slot] }
+    doc.edits[set.name] = doc.edits[set.name] or {}
+    doc.edits[set.name][slot] = { kind = v.kind, name = v.name, path = v.path, rank = v.rank, augs = v.augs, raw = v.raw,
+        text = v.text or v.raw }
+    doc.revision = doc.revision + 1
+end
+local function draw_weapon_checks(set, w)
+    imgui.PushTextWrapPos(ctx.CELL_W * ctx.GRID_COLUMNS + 8)
+    if (w.kind == 'unlisted') and not string.find(w.mode, '[_%s]') then
+        imgui.TextColored(palette.warn, 'Never worn: /wm has no ' .. w.mode .. ' mode (the job file\'s /wm modes don\'t '
+            .. 'name it).')
+        if sbutton('Add /wm ' .. w.mode .. '##gcws_addmode', 'plain') then
+            local S = ctx.settingsFiles
+            local list, now = {}, S.Job('WeaponModes')
+            for _, m in ipairs((type(now) == 'table') and now or { 'None' }) do list[#list + 1] = m end
+            list[#list + 1] = w.mode
+            S.StageJob('WeaponModes', list)
+            feedback('/wm ' .. w.mode .. ' added (written on Save).')
+        end
+        if imgui.IsItemHovered() then set_tip('Add ' .. w.mode .. ' to /wm modes (GoomSwap settings, this job options).') end
+    elseif w.kind == 'unlisted' then
+        imgui.TextColored(palette.warn, 'Never worn: not a /wm mode, nor one\'s own _1h or /mset set.')
+    end
+    if #w.armor > 0 then
+        imgui.TextColored(palette.warn, table.concat(w.armor, ', ') .. ': never worn. A Weapon_ set only puts on Main, '
+            .. 'Sub, Range and Ammo.')
+        local target = 'Tp_' .. w.mode
+        if (w.kind == 'mode') and sbutton('Move to ' .. target .. '##gcws_move', 'plain') then
+            local model = editorState.document.model
+            local t = model.byLower[string.lower(target)]
+            if t == nil then
+                make_set(target, nil, true)
+                t = model.byLower[string.lower(target)] or model.byName[target]
+            end
+            local moved, kept = 0, {}
+            for _, slot in ipairs(w.armor) do
+                local v = current(set, slot)
+                if (t ~= nil) and (t.code == nil) and (current(t, slot) == nil) and (v ~= nil) then
+                    put_value(t, slot, v)
+                    moved = moved + 1
+                else
+                    kept[#kept + 1] = slot
+                end
+                edit(set, slot, nil)
+            end
+            feedback('Moved ' .. moved .. ' to ' .. target .. ((#kept > 0) and (' (' .. table.concat(kept, ', ')
+                .. ': ' .. target .. ' has its own, kept)') or '') .. '; unsaved.')
+        end
+        if (w.kind == 'mode') and imgui.IsItemHovered() then
+            set_tip(target .. ' goes on over Tp_Default while /wm ' .. w.mode .. ' is on and you fight. Slots it '
+                .. 'already fills keep its own piece.')
+        end
+        if w.kind == 'mode' then imgui.SameLine() end
+        if sbutton('Clear them##gcws_clear', 'ghost') then
+            for _, slot in ipairs(w.armor) do edit(set, slot, nil) end
+            feedback('Cleared ' .. #w.armor .. ' slots of ' .. set.name .. ' (unsaved).')
+        end
+    end
+    imgui.PopTextWrapPos()
+end
 local function draw_set(set)
     if (editorState.selection.back ~= nil) and (#editorState.selection.back > 0) then
         local prev = editorState.selection.back[#editorState.selection.back]
@@ -1176,11 +1242,15 @@ local function draw_set(set)
         end
         editorPanels.SameLineIfFits(imgui, 140)
     end
+    local winfo = ctx.weapon_set_info(set)
     if sbutton('Use worn##gcedit', 'plain') then
         use_worn(set)
-        feedback('Copied worn gear into ' .. set.name .. ' (unsaved).')
+        feedback('Copied worn ' .. ((winfo ~= nil) and 'weapons' or 'gear') .. ' into ' .. set.name .. ' (unsaved).')
     end
-    if imgui.IsItemHovered() then set_tip('Put what you wear right now into this set (not saved until Save).') end
+    if imgui.IsItemHovered() then
+        set_tip((winfo ~= nil) and 'Put the Main, Sub, Range and Ammo you wear right now into this set: a Weapon_ set '
+            .. 'puts on nothing else (not saved until Save).' or 'Put what you wear right now into this set (not saved until Save).')
+    end
     editorPanels.SameLineIfFits(imgui, 140)
     if sbutton('Copy from...##gcedit', 'plain') then
         editorState.ui.copyFind[1], editorState.ui.pickMode = '', 'copy'
@@ -1206,6 +1276,7 @@ local function draw_set(set)
         editorPanels.SameLineIfFits(imgui, 140)
     end
     if draw_set_actions(set) then return end
+    if winfo ~= nil then draw_weapon_checks(set, winfo) end
     help(
         '- Click a slot: pick gear for it on the right.\n'
             .. '- Right-click a slot: inspect its item, choose gear, undo or clear.\n'

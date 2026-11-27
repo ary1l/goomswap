@@ -249,11 +249,14 @@ end
 -- MNK Victory Smite_Impetus): those show under Worn in when an action looks for them.
 ---------------------------------------------------------------------------------------------------------------------
 
-local function use_worn(set)
+local function use_worn(set) -- a Weapon_ set takes only Main, Sub, Range and Ammo: the rest of it is never worn
     local eq = gData.GetEquipment()
+    local weaponsOnly = (ctx.weapon_set_info ~= nil) and (ctx.weapon_set_info(set) ~= nil)
     for _, slot in ipairs(SCREEN) do
         local cur = set.slots[slot]
-        if (cur == nil) or (cur.value.kind == 'item') then
+        if weaponsOnly and not ctx.WEAPON_SLOT[slot] then
+            -- left as it is
+        elseif (cur == nil) or (cur.value.kind == 'item') then
             local w = eq[slot]
             if (w ~= nil) and (w.Name ~= nil) then
                 local a = (w.Item ~= nil) and augments_of(w.Item) or { augs = {} }

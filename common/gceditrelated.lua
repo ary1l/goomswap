@@ -114,6 +114,38 @@ local function weapon_set_mode(set)
 end
 ctx.weapon_set_mode = weapon_set_mode
 
+-- What a Weapon_ set is to /wm, nil for any other set: { mode, kind, armor }. kind: 'mode' (Weapon_<mode>, the job
+-- file's WeaponModes names it, or Save adds it: made here), 'variant' (a mode's own _1h or /mset set) or 'unlisted'
+-- (WeaponModes doesn't name it, so /wm never puts it on). armor: the slots it fills that a weapon mode never puts on:
+-- the engine takes Main, Sub, Range and Ammo from it (gcruntime, gcinclude.WeaponSlotNames), nothing else.
+local WEAPON_SLOT = { Main = true, Sub = true, Range = true, Ammo = true }
+ctx.WEAPON_SLOT = WEAPON_SLOT
+ctx.weapon_set_info = function(set)
+    local doc = editorState.document
+    if (set == nil) or (set.parentName ~= nil) or (set.code ~= nil) or doc.deleted[set.name] then return nil end
+    local rest = string.match(set.name, '^[Ww]eapon_(.+)$')
+    if rest == nil then return nil end
+    local info = { armor = {} }
+    for _, slot in ipairs(SCREEN) do
+        if (not WEAPON_SLOT[slot]) and (current(set, slot) ~= nil) then info.armor[#info.armor + 1] = slot end
+    end
+    local listed = ctx.settingsFiles.Job('WeaponModes')
+    listed = (type(listed) == 'table') and listed or {}
+    local msets = setFile.MeleeModes(doc.model.text, doc.newModes)
+    for _, m in ipairs(listed) do
+        if (type(m) == 'string') and (string.lower(m) ~= string.lower(rest)) and setFile.WeaponVariantOf(set.name, m, msets) then
+            info.mode, info.kind = m, 'variant'
+            return info
+        end
+    end
+    info.mode, info.kind = rest, 'unlisted'
+    if set.new then info.kind = 'mode' end -- Save adds it to WeaponModes
+    for _, m in ipairs(listed) do
+        if (type(m) == 'string') and (string.lower(m) == string.lower(rest)) then info.kind = 'mode' end
+    end
+    return info
+end
+
 local function weapon_set_rows(mode)
     local doc, lm, rows = editorState.document, string.lower(mode), {}
     local msets = setFile.MeleeModes(doc.model.text, doc.newModes)
@@ -1444,6 +1476,13 @@ local function draw_picker(set)
         imgui.SameLine()
     end
     imgui.TextColored(palette.blue, 'Editing: ' .. set.name .. ' / ' .. editorState.selection.slot)
+    local wi = ctx.weapon_set_info(set)
+    if (wi ~= nil) and not WEAPON_SLOT[editorState.selection.slot] then
+        imgui.PushTextWrapPos(0)
+        imgui.TextColored(palette.warn, 'Not worn: a Weapon_ set only puts on Main, Sub, Range and Ammo. Gear for '
+            .. 'fighting with this mode goes in Tp_' .. wi.mode .. ' (over Tp_Default while /wm ' .. wi.mode .. ' is on).')
+        imgui.PopTextWrapPos()
+    end
     if (cur ~= nil) and (cur.value.kind == 'code') then
         imgui.TextColored(palette.dim, 'Written as code in the file: edit it there.')
         return

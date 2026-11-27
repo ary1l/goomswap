@@ -116,7 +116,7 @@ local include = setmetatable({ Err = function(t) fail = fail or t; print('ERR ' 
     Say = function(t) end, sets = {}, settings = {}, CharConfig = {}, SharedConfig = {} },
     { __index = function(_, k) if string.match(k, '^%u') and not string.match(k, 'Config$') and k ~= 'Rules'
         and k ~= 'Settings' and k ~= 'RulesCompiled' then return nilf end return nil end })
-local ok, err = pcall(gcedit.Open, include)
+local ok, err = pcall(gcedit.Open, include, os.getenv('OPENSET')) -- OPENSET: the set it opens on
 if not ok then print('OPEN ERROR ' .. tostring(err)) os.exit(1) end
 local function draw(n) for i = 1, n or 1 do frame = frame + 1; local f = cbs['gcedit_render']; if f then
     local ok2, e2 = pcall(f); if not ok2 then print('FRAME ERROR ' .. tostring(e2)); os.exit(1) end end end end
