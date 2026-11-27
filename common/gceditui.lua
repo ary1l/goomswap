@@ -272,10 +272,12 @@ end
 -- The editor's first size: about 65% of the screen wide and 63% tall (at least 900 x 520, at most 1420 x 840), so it
 -- leaves room around it: addons such as tHotBar act on clicks under the editor (they don't check whether one was
 -- taken). 1920 wide: 1248, three slot cards a row; 2560 and up: 1420, four. Drag its corner to resize; ImGui keeps it.
+-- The smallest it opens at or can be dragged to: two slot cards a row and a right pane still wide enough to read.
+panels.MIN_SIZE = { 900, 500 }
 function panels.WindowSize(width, height)
     width, height = width or 1700, height or 910
-    local w = math.min(width - 32, math.max(900, math.min(1420, math.floor(width * 0.65))))
-    local h = math.min(height - 32, math.max(520, math.min(840, math.floor(height * 0.63))))
+    local w = math.min(width - 32, math.max(panels.MIN_SIZE[1], math.min(1420, math.floor(width * 0.65))))
+    local h = math.min(height - 32, math.max(panels.MIN_SIZE[2], math.min(840, math.floor(height * 0.63))))
     return { math.max(1, w), math.max(1, h) }
 end
 

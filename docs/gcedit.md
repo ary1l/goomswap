@@ -19,7 +19,7 @@ file; hover one for what it is for in plain words (`Tp_Default`: *Fighting*). Th
 (**< Sets** goes back).
 
 The window opens at about 65% of the screen's width and 63% of its height (four slot cards a row from 2560 wide, three at 1920), leaving room around it: some addons (tHotBar
-among them) act on a click even when the editor is over them, so keep it off them. Drag its corner to resize it.
+among them) act on a click even when the editor is over them, so keep it off them. Drag its corner to resize it, down to 900 × 500 (two slot cards a row and a readable right pane).
 
 ## Rules
 

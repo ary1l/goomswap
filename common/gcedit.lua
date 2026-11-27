@@ -2471,6 +2471,9 @@ local function render()
     local display = imgui.GetIO().DisplaySize
     imgui.SetNextWindowSize(editorPanels.WindowSize(display.x or display[1], display.y or display[2]),
         ImGuiCond_FirstUseEver)
+    if imgui.SetNextWindowSizeConstraints ~= nil then -- dragged no smaller than stays readable; a binding that
+        pcall(imgui.SetNextWindowSizeConstraints, editorPanels.MIN_SIZE, { 100000, 100000 }) -- refuses: no floor
+    end
     imgui.PushStyleColor(ImGuiCol_WindowBg, palette.bg)
     imgui.PushStyleColor(ImGuiCol_ChildBg, palette.panel)
     imgui.PushStyleColor(ImGuiCol_Border, palette.edge)
