@@ -305,6 +305,82 @@ function G.Import(text)
     return out
 end
 
+-- == Item names ==
+-- LuAshitacast finds an item by the game's item name (its resource Name, any case: LuAshitacast equip.lua CheckItem),
+-- and skips a name it doesn't find without a word. GearSwap also takes the log name (Windower resources' enl:
+-- "heathen's sollerets +3" for Heath. Sollerets +3), so files have both. lookup(name): the game's name, or nil. Each
+-- set's items are renamed in place; notes list the log names changed and the names the game doesn't know.
+function G.FixNames(imported, lookup)
+    local changed, unknown, seen, cased = {}, {}, {}, 0
+    local function fix(set)
+        for slot, v in pairs(set or {}) do
+            local name = (type(v) == 'string') and v or ((type(v) == 'table') and v.Name) or nil
+            if (type(name) == 'string') and (name ~= 'remove') then
+                local real = lookup(name)
+                if real == nil then
+                    if not seen[name] then seen[name] = true; unknown[#unknown + 1] = name end
+                elseif real ~= name then
+                    if not seen[name] then
+                        seen[name] = true
+                        if string.lower(real) == string.lower(name) then cased = cased + 1
+                        else changed[#changed + 1] = name .. ' -> ' .. real end
+                    end
+                    if type(v) == 'string' then set[slot] = real else v.Name = real end
+                end
+            end
+        end
+    end
+    for _, n in ipairs(imported.order) do fix(imported.sets[n]) end
+    for _, b in ipairs(imported.buffOrder) do fix(imported.buffs[b]) end
+    local function list(t)
+        table.sort(t)
+        if #t <= 12 then return table.concat(t, ', ') end
+        return table.concat(t, ', ', 1, 12) .. ' and ' .. (#t - 12) .. ' more'
+    end
+    if #changed > 0 then
+        imported.notes[#imported.notes + 1] = #changed .. ' log name' .. ((#changed == 1) and '' or 's')
+            .. ' changed to the game\'s item names (LuAshitacast '
+            .. 'finds only those): ' .. list(changed)
+    end
+    if cased > 0 then
+        imported.notes[#imported.notes + 1] = cased .. ' item name' .. ((cased == 1) and '' or 's')
+            .. ' written in the game\'s capitals (Nyame helm -> Nyame Helm)'
+    end
+    if #unknown > 0 then
+        imported.notes[#imported.notes + 1] = 'not an item name the game knows (left as is; LuAshitacast will skip it, fix '
+            .. 'it in /gcedit): ' .. list(unknown)
+    end
+    return #changed, cased, #unknown
+end
+
+-- The game's item name for a name or log name, any case (G.FixNames' lookup). The by-name lookup first; else every
+-- equippable item read once (its Name and LogNameSingular, Ashita SDK IItem), which takes a moment.
+local function item_lookup()
+    local res = AshitaCore:GetResourceManager()
+    local names, logs = nil, nil
+    return function(name)
+        local r = res:GetItemByName(name, 0)
+        if (r ~= nil) and (r.Name ~= nil) and (type(r.Name[1]) == 'string')
+            and (string.lower(r.Name[1]) == string.lower(name)) then return r.Name[1] end
+        if names == nil then
+            names, logs = {}, {}
+            for id = 1, 65534 do
+                local it = res:GetItemById(id)
+                if (it ~= nil) and (it.Slots ~= 0) and (it.Name ~= nil) and (type(it.Name[1]) == 'string') then
+                    local n = it.Name[1]
+                    names[string.lower(n)] = names[string.lower(n)] or n
+                    local log = (it.LogNameSingular ~= nil) and it.LogNameSingular[1] or nil
+                    if (type(log) == 'string') and (log ~= '') then
+                        logs[string.lower(log)] = logs[string.lower(log)] or n
+                    end
+                end
+            end
+        end
+        local l = string.lower(name)
+        return names[l] or logs[l]
+    end
+end
+
 -- == Writing ==
 -- A set as Lua text (one line), slots in the equipment screen's order.
 function G.SetText(set, quote, key)
@@ -435,6 +511,10 @@ function G.Run(args, say, err, setFile)
     local imported, why = G.Import(text)
     if imported == nil then err('/gcimport: ' .. tostring(why)) return end
     if #imported.order + #imported.buffOrder == 0 then err('/gcimport: no sets found in ' .. name .. '.') return end
+    local okNames, whyNames = pcall(G.FixNames, imported, item_lookup())
+    if not okNames then
+        imported.notes[#imported.notes + 1] = 'item names not checked against the game (' .. tostring(whyNames) .. ')'
+    end
     local ef = io.open(root .. 'examples\\' .. job .. '.lua', 'rb')
     if ef == nil then err('/gcimport: no luashitacast\\examples\\' .. job .. '.lua: copy GoomSwap\'s examples folder there.') return end
     local template = ef:read('*a')
