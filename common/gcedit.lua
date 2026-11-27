@@ -2223,10 +2223,11 @@ local function body()
         editorState.ui.draftLine = editorState.ui.draftLine
             or (
                 string.format(
-                    'Draft (%s). To fill lists the gaps.\nSave writes it as %s%s and loads it.',
+                    'Draft (%s). To fill lists the gaps.\nSave writes it as %s%s%s.',
                     string.match(editorState.document.sourcePath, '[^\\/]+$'),
                     editorState.document.file,
-                    (read_file(editorState.document.path) ~= nil) and ' (the old one is kept as a .gcedit.bak)' or ''
+                    (read_file(editorState.document.path) ~= nil) and ' (the old one is kept as a .gcedit.bak)' or '',
+                    editorState.document.inactive and ': change to its job to use it' or ' and loads it'
                 )
             )
         imgui.PushTextWrapPos(0)
@@ -2613,12 +2614,13 @@ function gcedit.Open(include, setName, slot, draft)
         sourcePath = draft and draft.src,
         reloadCommand = draft and draft.reload,
         draft = draft ~= nil,
-        job = player:GetMainJob(),
-        level = player:GetMainJobLevel(),
+        job = (draft and draft.job) or player:GetMainJob(), -- draft.job: another job's (/gcimport), not loaded
+        level = not (draft and draft.inactive) and player:GetMainJobLevel() or nil,
         preferences = editorPreferences.Load(path),
         fold = GcEditFold or {}, -- folded headings: this game session's
     }))
     editorState.document.characterFolder = char_dir() or path:match('^(.*[\\/])') or ''
+    editorState.document.inactive = (draft ~= nil) and (draft.inactive == true) -- Save file, the active job kept
     local model, err = load_model()
     if model == nil then
         gearEngine.Err('/gcedit: ' .. tostring(err))

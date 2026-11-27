@@ -3133,7 +3133,16 @@ function gcinclude.EditorDraft(job, proposed, dir, cmd)
     cmd = cmd or '/gcbuild'
     local now = gcinclude.JobName(AshitaCore:GetMemoryManager():GetPlayer():GetMainJob())
     local file = job .. '.proposed.lua'
-    if (now ~= job) then
+    -- /gcimport for another job: opened now as that job's file (Save file writes <JOB>.lua; nothing is loaded).
+    -- On that job GoomSwap may not load at all (its <JOB>.lua still the GearSwap file, or none), so no /gcimport
+    -- there. /gcbuild stays on its job: it reads the gear you carry for it.
+    local otherId = nil
+    if (now ~= job) and (cmd == '/gcimport') then
+        for id = 1, 22 do
+            if gcinclude.JobName(id) == job then otherId = id end
+        end
+    end
+    if (now ~= job) and (otherId == nil) then
         gcinclude.Say('Next: change to ' .. job .. ' and run ' .. cmd .. ' there: ' .. file
             .. ' opens in the set editor, and its Save makes it your ' .. job .. '.lua.')
         return
@@ -3155,6 +3164,12 @@ function gcinclude.EditorDraft(job, proposed, dir, cmd)
     local target, reload = dir .. job .. '.lua', '/lac load'
     if (base == (lj .. '.lua')) or (string.sub(base, -(#lj + 5)) == ('_' .. lj .. '.lua')) then
         target, reload = cur, '/lac reload'
+    end
+    if otherId ~= nil then
+        gcinclude.Say(file .. ' opened as your ' .. job .. '.lua (you are on ' .. tostring(now) .. '): Save file writes '
+            .. 'it, the old one kept as a backup; then change to ' .. job .. '.')
+        gcinclude.Editor.Open(gcinclude, nil, nil, { src = proposed, target = target, inactive = true, job = otherId })
+        return
     end
     gcinclude.Editor.Open(gcinclude, nil, nil, { src = proposed, target = target, reload = reload })
 end

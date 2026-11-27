@@ -45,7 +45,9 @@ More pictures of the editor (in game, and mockups of some panels) are in [its do
 ## First use
 
 1. Load the matching example job file. `/lac newlua` can create the profile folder and an empty job file. Coming
-   from GearSwap: put your job file in your character's luashitacast folder and run `/gcimport <file>`.
+   from GearSwap: put your job file in your character's luashitacast folder and, on a job with a GoomSwap file
+   loaded (an example is fine), run `/gcimport <file>`. A GearSwap file named `<JOB>.lua` doesn't load in LuAshitacast:
+   run it from another job, or rename it.
 2. Run `/gcbuild` to create `<JOB>.proposed.lua` with gear you own, or open `/gcedit` and choose **Keep only my gear**.
 3. Use the editor's **To fill** tab to fill empty or missing slots: click one, pick the item, and it takes you back to
    the list for the next. **Use worn** copies your current gear into a set; **+ N to add** under a heading makes a set
