@@ -389,14 +389,13 @@ do
                 end
                 gcinclude.Say('Chat messages ' .. (gcinclude.settings.Messages and 'on' or 'off'))
             elseif args[1] == 'wsdistance' then
-                local w = (args[2] ~= nil) and string.lower(args[2]) or nil
+                local w, n = (args[2] ~= nil) and string.lower(args[2]) or nil, tonumber(args[2])
                 if (w == 'on') or (w == 'off') then
                     gcinclude.settings.WScheck = (w == 'on')
-                    gcinclude.Say('WS distance check is now ' .. tostring(gcinclude.settings.WScheck))
-                elseif tonumber(args[2]) then
-                    gcinclude.settings.WScheck = true
-                    gcinclude.settings.WSdistance = tonumber(args[2])
-                    gcinclude.Say('WS Distance is on and set to ' .. gcinclude.settings.WSdistance)
+                    gcinclude.Say('WS distance check ' .. w)
+                elseif (n ~= nil) then
+                    gcinclude.settings.WScheck, gcinclude.settings.WSdistance = true, n
+                    gcinclude.Say(string.format('WS distance check on, min %g yalms', n))
                 else
                     gcinclude.WsDistanceStatus() -- no word: shows, never turns the check off
                 end

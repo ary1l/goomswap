@@ -3,6 +3,16 @@
 -- The document and inventory are snapshots owned by the editor; callbacks read slots
 -- and host resources. Drawing code consumes the returned view data.
 local actionModel = {}
+-- /wsset modes (gcinclude.WsSetKeys): the child key each wears over the WS sets worn, why, its word in the modes line
+local WSSET = { High = { key = 'HighBuff', why = 'WS high-buff mode (/wsset high)', word = 'WS high-buff' },
+    PDL = { key = 'PDL', why = 'WS PDL mode (/wsset pdl)', word = 'WS PDL' },
+    Acc = { key = 'Acc', why = 'WS acc mode (/wsset acc)', word = 'WS acc' },
+    SubtleBlow = { key = 'SubtleBlow', why = 'WS subtle blow mode (/wsset sb)', word = 'WS subtle blow' } }
+local WSSET_BY_KEY = {}
+for mode, m in pairs(WSSET) do
+    m.mode = mode
+    WSSET_BY_KEY[m.key] = m
+end
 function actionModel.New(context)
     local document, inventory = context.document, context.inventory
     local gcdisplay = context.display
@@ -226,14 +236,7 @@ function actionModel.New(context)
                 return 'Hoxne Locked + Enchantment up'
             end, WearChildren = function()
                 local key = string.match(by, '_([^_]+)$')
-                if key == 'HighBuff' then return 'WS high-buff mode (/wsset high)' end
-                if key == 'PDL' then return 'WS PDL mode (/wsset pdl)' end
-                if (key == 'Acc') and (gcdisplay ~= nil) and (gcdisplay.GetCycle('WsSet') == 'Acc') then
-                    return 'WS acc mode (/wsset acc)'
-                end
-                if (key == 'SubtleBlow') and (gcdisplay ~= nil) and (gcdisplay.GetCycle('WsSet') == 'SubtleBlow') then
-                    return 'WS subtle blow mode (/wsset sb)'
-                end
+                if WSSET_BY_KEY[key or ''] ~= nil then return WSSET_BY_KEY[key].why end
                 if key == 'Dt' then return 'DT mode (/dt)' end
                 if key == 'Self' then return 'the spell is on yourself' end
                 if key == 'Others' then return 'the spell is on someone else' end
@@ -322,10 +325,7 @@ function actionModel.New(context)
             local st, on = pick.state, {}
             if (st.mset ~= nil) and (st.mset ~= 'Default') then on[#on + 1] = 'melee ' .. st.mset end
             if (st.idleset ~= nil) and (st.idleset ~= 'Default') then on[#on + 1] = 'idle ' .. st.idleset end
-            if st.wsset == 'High' then on[#on + 1] = 'WS high-buff' end
-            if st.wsset == 'PDL' then on[#on + 1] = 'WS PDL' end
-            if st.wsset == 'Acc' then on[#on + 1] = 'WS acc' end
-            if st.wsset == 'SubtleBlow' then on[#on + 1] = 'WS subtle blow' end
+            if WSSET[st.wsset or ''] ~= nil then on[#on + 1] = WSSET[st.wsset].word end
             if st.dt then on[#on + 1] = 'DT' end
             if st.kite then on[#on + 1] = 'kite' end
             if st.proc then on[#on + 1] = 'proc' end
@@ -338,10 +338,7 @@ function actionModel.New(context)
         elseif pick.state ~= nil then
             local st, on = pick.state, {}
             if (st.mset ~= nil) and (st.mset ~= 'Default') then on[#on + 1] = 'melee ' .. st.mset end
-            if st.wsset == 'High' then on[#on + 1] = 'WS high-buff' end
-            if st.wsset == 'PDL' then on[#on + 1] = 'WS PDL' end
-            if st.wsset == 'Acc' then on[#on + 1] = 'WS acc' end
-            if st.wsset == 'SubtleBlow' then on[#on + 1] = 'WS subtle blow' end
+            if WSSET[st.wsset or ''] ~= nil then on[#on + 1] = WSSET[st.wsset].word end
             if st.dt then on[#on + 1] = 'DT' end
             if st.mdt then on[#on + 1] = 'MDT' end
             if st.aminon then on[#on + 1] = 'Aminon' end
@@ -552,20 +549,14 @@ function actionModel.New(context)
         end
     end
 
-    -- /wsset modes that are /mset modes too: a WS set's _Acc / _SubtleBlow, when the job's /mset list lacks it
-    local WS_MSET = { Acc = 'WS acc mode (/wsset acc)', SubtleBlow = 'WS subtle blow mode (/wsset sb)' }
     local function action_for(set, st)
         local n, res = set.name, context.resources
         -- weaponToo: Tp_/Ws_ (EquipMode) also take a weapon mode; ws: a WS set (/wsset acc / sb wear its _Acc /
         -- _SubtleBlow)
         local function mset_of(suffix, weaponToo, ws)
-            if suffix == 'HighBuff' then
-                st.wsset = 'High'
-                return 'as if WS high-buff mode (/wsset high)'
-            end
-            if suffix == 'PDL' then
-                st.wsset = 'PDL'
-                return 'as if WS PDL mode (/wsset pdl)'
+            if (suffix == 'HighBuff') or (suffix == 'PDL') then
+                st.wsset = WSSET_BY_KEY[suffix].mode
+                return 'as if ' .. WSSET_BY_KEY[suffix].why
             end
             if suffix == 'Dt' then
                 st.dt = true
@@ -611,9 +602,9 @@ function actionModel.New(context)
                     return 'as if melee mode ' .. m .. ' (/mset)'
                 end
             end
-            if ws and (WS_MSET[suffix] ~= nil) then
-                st.wsset = suffix
-                return 'as if ' .. WS_MSET[suffix]
+            if ws and (WSSET_BY_KEY[suffix] ~= nil) then -- /wsset acc / sb, not an /mset mode here
+                st.wsset = WSSET_BY_KEY[suffix].mode
+                return 'as if ' .. WSSET_BY_KEY[suffix].why
             end
             -- not a mode (MNK's _Impetus, _Footwork): the job file wears it by its own logic, which this view leaves
             -- out
@@ -1100,14 +1091,8 @@ function actionModel.New(context)
                     end
                 end
             end
-            if (st.wsset == 'High') and not st.proc then children('HighBuff', 'WS high-buff mode (/wsset high)') end
-            if (st.wsset == 'PDL') and not st.proc then children('PDL', 'WS PDL mode (/wsset pdl)') end
-            if (st.wsset == 'Acc') and (st.mset ~= 'Acc') and not st.proc then
-                children('Acc', 'WS acc mode (/wsset acc)')
-            end
-            if (st.wsset == 'SubtleBlow') and (st.mset ~= 'SubtleBlow') and not st.proc then
-                children('SubtleBlow', 'WS subtle blow mode (/wsset sb)')
-            end
+            local wm = WSSET[st.wsset or ''] -- as gcinclude: skipped when an /mset mode of that name wore them
+            if (wm ~= nil) and (st.mset ~= wm.key) and not st.proc then children(wm.key, wm.why) end
             if st.dt and not st.proc then children('Dt', 'DT mode (/dt)') end
         elseif a.event == 'Ability' then
             byname(a.action, 'the set named after ' .. a.action)
