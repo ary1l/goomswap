@@ -568,30 +568,17 @@ local function weapon_variant_of(name, mode, msets)
     return false
 end
 
--- Register newly saved top-level Weapon_ sets in /wm, without touching the
--- current mode, default, or any existing list entry. Variants are not modes.
-local WEAPON_VARIANTS = {
-    ['1h'] = true, ['acc'] = true, ['accuracy'] = true,
-    ['atk'] = true, ['attack'] = true, ['tp'] = true, ['ws'] = true,
-    ['dt'] = true, ['pdt'] = true, ['mdt'] = true, ['idle'] = true,
-    ['hybrid'] = true, ['def'] = true, ['eva'] = true,
-}
+-- Register newly saved top-level Weapon_ sets in /wm, without touching the current mode, default, or any existing
+-- list entry. A mode is one word (no _ or space: /wm reads one word); a set the engine wears for another mode is not
+-- one: its _1h, or its /mset version (Weapon_MpuAcc, Weapon_Mpu_Acc with /mset Acc: gcruntime modeSet). Nothing
+-- else counts as a variant: Weapon_MpuTP with no /mset TP is a mode of its own.
 local function weapon_mode(name, existing, msets)
     local mode = type(name) == 'string' and string.match(name, '^Weapon_(.+)$')
-    if not mode or mode == '' then return nil end
-    local lower = string.lower(mode)
-    if lower == 'none' then return nil end
-    -- An existing base mode may have variants with arbitrary names, e.g. _Magic.
+    if not mode or mode == '' or string.find(mode, '[_%s]') then return nil end
+    if string.lower(mode) == 'none' then return nil end
     for _, base in ipairs(existing) do
-        local prefix = string.lower(base) .. '_'
-        if string.sub(lower, 1, #prefix) == prefix then return nil end
-        local stem = string.lower(base)
-        local tail = string.sub(lower, #stem + 1)
-        if string.sub(lower, 1, #stem) == stem and WEAPON_VARIANTS[tail] then return nil end
-        if weapon_variant_of(name, base, msets) then return nil end -- Weapon_MpuSubtleBlow: Mpu with /mset
+        if weapon_variant_of(name, base, msets) then return nil end
     end
-    local suffix = string.match(lower, '_([^_]+)$')
-    if suffix and WEAPON_VARIANTS[suffix] then return nil end
     return mode
 end
 

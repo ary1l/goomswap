@@ -835,7 +835,7 @@ local function draw_sets()
                 end
                 if imgui.SmallButton(label .. '##gch_' .. grp.g) then
                     if (grp.hint.mset ~= nil) then editorState.ui.requestNewMset = true
-                    else editorState.ui.openNewSet = 'Weapon_' end
+                    else editorState.ui.requestNewWm = true end
                 end
                 if imgui.IsItemHovered() then
                     set_tip((grp.hint.mset ~= nil)

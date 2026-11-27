@@ -207,6 +207,8 @@ function state.New(profile)
             rpOnly = { false },
             augOnly = { false },
             newMode = { '' },
+            newWm = { '' }, -- New /wm mode: its name, and whether it starts from the weapons you hold
+            newWmWorn = { true },
             overShow = 'all',
             overShowIgnored = { false },
             newName = { '' },

@@ -19,6 +19,24 @@ return {
         eq(added, "local profile = {};\nprofile.OnLoad = function()\n    profile.Packer = {};\n    gcinclude.Initialize();\nend\n")
         eq(F.JobSetting(job, 'Packer'), nil, 'gcinclude.Packer is another name')
     end },
+    { 'Save adds a new Weapon_ set to /wm unless the engine wears it for another mode (_1h, an /mset version)', function()
+        local job = "local profile = {};\nprofile.OnLoad = function()\n    gcinclude.MeleeModes = {'Default', 'Acc'};\n"
+            .. "    gcinclude.WeaponModes = {'None', 'Mpu'};\n    gcinclude.Initialize();\nend\n"
+        local function adds(names)
+            local sets = {}
+            for i, n in ipairs(names) do sets[i] = { name = n } end
+            local out = {}
+            local ok, added = F.AddWeaponModes(job, sets, out, {})
+            assert(ok)
+            return table.concat(added or {}, ',')
+        end
+        eq(adds({ 'Weapon_MpuTP' }), 'MpuTP') -- no /mset TP: a mode of its own (was taken for a variant)
+        eq(adds({ 'Weapon_MpuAcc' }), '') -- /wm Mpu with /mset Acc
+        eq(adds({ 'Weapon_Mpu_Acc' }), '')
+        eq(adds({ 'Weapon_Mpu_1h' }), '')
+        eq(adds({ 'Weapon_Naegling' }), 'Naegling')
+        eq(adds({ 'Weapon_Mpu_Foo' }), '') -- not one word
+    end },
     { 'editor backups kept: 3 unless set (0 keeps all)', function()
         eq(F.Backups.Keep(nil), 3); eq(F.Backups.Keep('x'), 3); eq(F.Backups.Keep(-1), 3)
         eq(F.Backups.Keep(0), 0); eq(F.Backups.Keep(20), 20)

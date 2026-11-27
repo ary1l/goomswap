@@ -139,7 +139,7 @@ ctx.weapon_set_info = function(set)
         end
     end
     info.mode, info.kind = rest, 'unlisted'
-    if set.new then info.kind = 'mode' end -- Save adds it to WeaponModes
+    if set.new and not string.find(rest, '[_%s]') then info.kind = 'mode' end -- Save adds it to WeaponModes
     for _, m in ipairs(listed) do
         if (type(m) == 'string') and (string.lower(m) == string.lower(rest)) then info.kind = 'mode' end
     end
@@ -345,6 +345,55 @@ local function mset_set_rows(mode)
     end)
     return rows
 end
+-- == New /wm mode: its name first (/wm <name>), checked as the engine reads Weapon_ sets, then Weapon_<Name> made,
+-- from the weapons you hold when ticked; its Weapon sets list opens after (and Weapons on load, when it is the first). ==
+local function wm_name_problem(name)
+    if name == '' then return '' end
+    if string.find(name, '[_%s]') then
+        return "One word: /wm reads one word, and _ joins a mode to an /mset mode's set."
+    end
+    if string.lower(name) == 'none' then return 'None is /wm with no weapons: pick another name.' end
+    local doc = editorState.document
+    if doc.model.byLower['weapon_' .. string.lower(name)] ~= nil then return 'Weapon_' .. name .. ' exists.' end
+    local msets = setFile.MeleeModes(doc.model.text, doc.newModes)
+    for _, m in ipairs(ctx.actions.WeaponModes()) do
+        if setFile.WeaponVariantOf('Weapon_' .. name, m, msets) then
+            return 'Weapon_' .. name .. ' reads as /wm ' .. m .. "'s own set (with an /mset mode): pick another name."
+        end
+    end
+    return nil
+end
+local function draw_wm_mode()
+    local ui = editorState.ui
+    if ui.requestNewWm then
+        ui.requestNewWm, ui.newWm, ui.newWmWorn = nil, { '' }, { true }
+        imgui.OpenPopup('##gcedit_newwm')
+    end
+    if not imgui.BeginPopup('##gcedit_newwm') then return end
+    imgui.TextColored(palette.section, 'New weapon mode (/wm)')
+    imgui.PushItemWidth(260)
+    imgui.InputTextWithHint('##gcedit_wmname', 'Name, one word: Mpu, Naegling, MpuTP', ui.newWm, 24)
+    imgui.PopItemWidth()
+    local name = string.gsub(ui.newWm[1] or '', '^%s*(.-)%s*$', '%1')
+    local problem = wm_name_problem(name)
+    if problem == nil then
+        imgui.TextColored(palette.dim, 'Set: Weapon_' .. name .. '   In game: /wm ' .. string.lower(name))
+    elseif problem ~= '' then
+        imgui.TextColored(palette.bad, problem)
+    end
+    imgui.Checkbox('Start from the weapons you hold (Main, Sub, Range, Ammo)##gcedit_wmworn', ui.newWmWorn)
+    if imgui.Button('Create##gcedit_wmgo') and (problem == nil) then
+        local set = make_set('Weapon_' .. name, nil, false)
+        set = set or editorState.document.model.byLower['weapon_' .. string.lower(name)]
+        if (set ~= nil) and ui.newWmWorn[1] and (ctx.use_worn ~= nil) then ctx.use_worn(set) end
+        ui.requestWeaponSets, ui.newWeaponMode = name, name
+        imgui.CloseCurrentPopup()
+    end
+    imgui.SameLine()
+    if imgui.Button('Cancel##gcedit_wmno') then imgui.CloseCurrentPopup() end
+    imgui.EndPopup()
+end
+
 
 -- + A /mset mode (the MELEE heading, the Related tab): the name, then the sets to make for it, in one go. Save
 -- writes the mode into gcinclude.MeleeModes and the sets into the file.
@@ -2262,6 +2311,7 @@ end
     return { draw_over = draw_over, draw_picker = draw_picker, fill_list = fill_list, draw_fill = draw_fill,
         draw_weapon_sets = draw_weapon_sets,
         draw_mset_mode = draw_mset_mode,
+        draw_wm_mode = draw_wm_mode,
         draw_put_in = draw_put_in, draw_upgrade = draw_upgrade,
         draw_context_menu = draw_context_menu, variants_of = variants_of, rename_problem = rename_problem,
         rename_new = rename_new }

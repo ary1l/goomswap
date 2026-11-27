@@ -59,7 +59,13 @@ tests[#tests + 1] = { 'a Weapon_ set: armor in it, or a set /wm never reaches, i
     local ok2 = string.find(run('Weapon_Mpu', 'x', 'Move to'), 'Move to Tp_Mpu', 1, true)
     local ok3 = string.find(run('Weapon_MpuTP', 'x', 'Never worn'), '/wm has no MpuTP mode', 1, true)
     local ok4 = string.find(run('Weapon_MpuTP', 'x', 'Add /wm'), 'Add /wm MpuTP', 1, true)
+    local ok5 = string.find(run('Weapon_MpuTP', 'x', 'Weapons only'), 'Weapons only.', 1, true) -- its weapon row alone
+    local p = io.popen('POPUP="##gcedit_newwm" luajit tests/draw_editor.lua ' .. path .. ' "gch_Weapons,x" "New weapon mode" 2>&1')
+    local out = p:read('*a')
+    p:close()
+    local ok6 = string.find(out, 'New weapon mode (/wm)', 1, true) and (string.match(out, '([^\n]*)\n?$') == 'drawn')
     os.remove(path)
-    assert(ok1 and ok2 and ok3 and ok4, 'Weapon_ set checks missing: ' .. tostring(ok1) .. tostring(ok2) .. tostring(ok3) .. tostring(ok4))
+    assert(ok1 and ok2 and ok3 and ok4 and ok5 and ok6, 'Weapon_ set checks missing: ' .. tostring(ok1) .. tostring(ok2)
+        .. tostring(ok3) .. tostring(ok4) .. tostring(ok5) .. tostring(ok6) .. '\n' .. out)
 end }
 return tests

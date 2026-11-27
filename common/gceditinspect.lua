@@ -1290,9 +1290,17 @@ local function draw_set(set)
             .. 'Replaced labels (Unsaved > source on an edited slot) use the action selected on the right.'
     )
     imgui.Spacing()
+    -- a Weapon_ set: its weapon row only (Main, Sub, Range, Ammo: all a weapon mode puts on), the rest while old
+    -- armor in it still needs clearing
+    local only = ((winfo ~= nil) and (#winfo.armor == 0)) and 4 or #SCREEN
     for i, slot in ipairs(SCREEN) do
+        if i > only then break end
         if (i - 1) % ctx.GRID_COLUMNS ~= 0 then imgui.SameLine() end
         draw_cell(set, slot)
+    end
+    if only < #SCREEN then
+        imgui.TextColored(palette.dim, 'Weapons only. Armor for fighting with /wm ' .. winfo.mode .. ': Tp_'
+            .. winfo.mode .. ' (Weapon sets... makes it).')
     end
     if set.oneLine then
         imgui.TextColored(palette.dim, 'This set is on one line: saving rewrites it one slot a line.')

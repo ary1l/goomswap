@@ -964,6 +964,7 @@ local suggestions, make_set, copy_from, draw_copy_popup, drop_new, empty_armor, 
     m_gceditsets.empty_armor, m_gceditsets.use_worn, m_gceditsets.save, m_gceditsets.ago, m_gceditsets.red_button,
     m_gceditsets.tag, m_gceditsets.canDraw, m_gceditsets.text_w, m_gceditsets.pill, m_gceditsets.make_button,
     m_gceditsets.left_bar, m_gceditsets.wrap, m_gceditsets.help_icon, m_gceditsets.help
+ctx.use_worn = use_worn -- New /wm mode starts from the weapons you hold
 local m_gceditlist = gFunc.LoadFile('common\\gceditlist.lua')(
     BASE, CHILD_BORDERS, GROUPS, SCREEN, SLOT_BIT, current, editorData, editorPanels, editorPreferences,
     editorState, empty_armor, help, imgui, left_bar, make_set, owned_for, palette, pill, profiler, request_context,
@@ -1965,7 +1966,7 @@ ctx.draw_start = function()
                 if imgui.SmallButton('To fill##gcstart_fill') then editorState.selection.tab = 'fill' end
             elseif st.act == 'wm' then
                 start_right('+ /wm mode')
-                if imgui.SmallButton('+ /wm mode##gcstart_wm') then editorState.ui.openNewSet = 'Weapon_' end
+                if imgui.SmallButton('+ /wm mode##gcstart_wm') then editorState.ui.requestNewWm = true end
                 if imgui.IsItemHovered() then
                     set_tip('A /wm mode: New set Weapon_<Name> with Main and Sub. /wm <name> puts them on. Save adds '
                         .. 'it to gcinclude.WeaponModes.')
@@ -2303,6 +2304,7 @@ local function body()
     draw_delete_confirmation()
     m_gceditrelated.draw_weapon_sets()
     m_gceditrelated.draw_mset_mode()
+    m_gceditrelated.draw_wm_mode()
     m_gceditrelated.draw_put_in()
     draw_copy_jobs()
     draw_find_item()
@@ -2669,7 +2671,7 @@ end
 -- /gcedit <set> while open: go to that set, keeping the changes.
 function gcedit.Request(kind) -- the bar's '+ new mode...' / '+ add...' (gcinclude.EditorRequest), on the next frame
     if not editorState.open then return end
-    if (kind == 'wm') then editorState.ui.openNewSet = 'Weapon_'
+    if (kind == 'wm') then editorState.ui.requestNewWm = true
     elseif (kind == 'mset') then editorState.ui.requestNewMset = true
     elseif (type(kind) == 'string') and string.match(kind, '^%a+Modes$') then -- MainModes...: Settings, found
         editorState.ui.settingsOpen, editorState.ui.settingsFind = { true }, { kind }
