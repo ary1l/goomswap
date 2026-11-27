@@ -24,7 +24,8 @@ G.SLOT = SLOT
 local SCREEN = { 'Main', 'Sub', 'Range', 'Ammo', 'Head', 'Neck', 'Ear1', 'Ear2', 'Body', 'Hands', 'Ring1', 'Ring2',
     'Back', 'Waist', 'Legs', 'Feet' }
 local EMPTY = setmetatable({}, { __tostring = function() return 'empty' end })
-local SET = {} -- marks a table a set_combine made (its slot keys already GoomSwap's)
+local SET = {} -- marks a table a set_combine made (its slot keys already GoomSwap's: slot_of still takes them, and
+-- leaves out a set kept in it, sets.precast.WS['Stardiver'].Acc)
 
 local function slot_of(k) return (type(k) == 'string') and SLOT[string.lower(k)] or nil end
 
@@ -32,14 +33,14 @@ local function slot_of(k) return (type(k) == 'string') and SLOT[string.lower(k)]
 local function evaluator()
     local env = { sets = {}, gear = {}, empty = EMPTY, player = {}, state = {}, buffactive = {}, world = {}, info = {},
         res = {}, windower = {}, options = {} }
-    local unknown = {}
+    local unknown, gearRead = {}, {} -- gearRead: gear.X names read, for those never set
     local eval
     local function combine(args)
         local out = { [SET] = true }
         for _, t in ipairs(args) do
             if type(t) == 'table' then
                 for k, v in pairs(t) do
-                    local s = (k ~= SET) and (t[SET] and k or slot_of(k)) or nil
+                    local s = (k ~= SET) and slot_of(k) or nil
                     if s ~= nil then out[s] = v end
                 end
             end
@@ -62,7 +63,10 @@ local function evaluator()
         if k == 'index' then
             local base = eval(e.obj)
             local key = eval(e.key)
-            if (type(base) == 'table') and (key ~= nil) then return base[key] end
+            if (type(base) == 'table') and (key ~= nil) then
+                if (base == env.gear) and (type(key) == 'string') and (base[key] == nil) then gearRead[key] = true end
+                return base[key]
+            end
             return nil
         end
         if k == 'bin' and e.op == '..' then
@@ -125,7 +129,7 @@ local function evaluator()
             end
         end
     end
-    return env, walk, unknown
+    return env, walk, unknown, gearRead
 end
 
 -- == Names ==
@@ -221,7 +225,7 @@ end
 function G.Import(text)
     local chunk, err = C.Parse(text)
     if chunk == nil then return nil, 'the file does not parse: ' .. tostring(err) end
-    local env, walk, unknown = evaluator()
+    local env, walk, unknown, gearRead = evaluator()
     walk(chunk)
     local out = { sets = {}, order = {}, buffs = {}, buffOrder = {}, notes = {}, from = {} }
     local seen = {}
@@ -230,7 +234,7 @@ function G.Import(text)
         seen[t] = true
         local set, any = {}, false
         for k, v in pairs(t) do
-            local s = (k ~= SET) and (t[SET] and k or slot_of(k)) or nil
+            local s = (k ~= SET) and slot_of(k) or nil
             if s ~= nil then
                 local item, why = G.Item(v)
                 if item ~= nil then
@@ -281,6 +285,17 @@ function G.Import(text)
     table.sort(tops, function(a, b) if at[a] ~= at[b] then return at[a] < at[b] end return a < b end)
     for _, name in ipairs(tops) do
         if type(env.sets[name]) == 'table' then visit(env.sets[name], { name }) end
+    end
+    -- gear.X a set names but this file never sets (Selindrile's and Mote's keep them in another file): those slots
+    -- are left out
+    local nogear = {}
+    for name in pairs(gearRead) do
+        if env.gear[name] == nil then nogear[#nogear + 1] = 'gear.' .. name end
+    end
+    table.sort(nogear)
+    if #nogear > 0 then
+        out.notes[#out.notes + 1] = 'not set in this file, their slots left out (in your globals/items file? paste its '
+            .. 'gear. lines at the top and /gcimport again): ' .. table.concat(nogear, ', ')
     end
     if #unknown > 0 then
         local names, s = {}, {}
