@@ -653,14 +653,16 @@ local function chip(label, value, col)
     imgui.PopStyleColor(4)
     if vars > 0 then imgui.PopStyleVar(vars) end
 end
--- The sets a job file usually has (the engine's, the job's example's, /wm layers: no abilities or spells) that this
--- one lacks, by the heading each would go under; worked out again when the file or its edits change.
+-- The sets a job file usually has (the engine's, the job's example's, /wm layers) and the job abilities and weapon
+-- skills you know (no spells: too many), that this one lacks, by the heading each would go under; worked out again
+-- when the file or its edits change.
 local function addable()
     local c = editorState.cache
     if (c.addRev == editorState.document.revision) and (c.addable ~= nil) then return c.addable end
     local out, ghost = {}, {} -- MELEE's /mset modes with no Tp_ set have their own row (mset_ghosts)
     for _, m in ipairs((ctx.melee_modes ~= nil) and ctx.melee_modes() or {}) do ghost['tp_' .. string.lower(m)] = true end
-    local ok, list = pcall(suggestions, true)
+    local ok, list = pcall(suggestions, false, true)
+    if not ok then ok, list = pcall(suggestions, true) end -- the abilities couldn't be read: the standard sets still
     for _, s in ipairs(ok and list or {}) do
         local g = (ctx.group_of ~= nil) and ctx.group_of(s.name) or nil
         if (g ~= nil) and not ghost[string.lower(s.name)] then
@@ -676,6 +678,9 @@ local function draw_addable()
     local a = editorState.ui.addTo
     if (a == nil) or not imgui.BeginPopup('##gcedit_addable') then return end
     imgui.TextColored(palette.section, 'Add to ' .. tostring(a.head))
+    local long = #a.list > 14 -- a scroll box, not a popup taller than the screen
+    if long then imgui.BeginChild('##gcadd_scroll', { 0, 14 * ((imgui.GetTextLineHeightWithSpacing ~= nil)
+        and imgui.GetTextLineHeightWithSpacing() or 18) }, 0) end
     for i, s in ipairs(a.list) do
         if imgui.SmallButton('Make##gcadd_mk' .. i) then
             make_set(s.name, nil, false)
@@ -690,6 +695,22 @@ local function draw_addable()
             imgui.TextColored(palette.dim, words or s.why)
         end
     end
+    if long then imgui.EndChild() end
+    -- a name of your own: any set (a spell, Cure IV), made empty; it goes under the heading its name puts it in
+    if #a.list > 0 then imgui.Separator() end
+    imgui.TextColored(palette.dim, 'Your own name:')
+    imgui.PushItemWidth(220)
+    imgui.InputTextWithHint('##gcadd_custom', 'Cure IV, Trance, Idle_Pdt...', editorState.ui.addCustom, 64)
+    imgui.PopItemWidth()
+    local name = string.gsub(editorState.ui.addCustom[1] or '', '^%s*(.-)%s*$', '%1')
+    local clash = (name ~= '') and (editorState.document.model.byLower[string.lower(name)] ~= nil)
+    imgui.SameLine()
+    if imgui.SmallButton('Make##gcadd_custom_go') and (name ~= '') and not clash and not string.find(name, '[\r\n]') then
+        make_set(name, nil, false)
+        editorState.ui.addTo, editorState.ui.addCustom[1] = nil, ''
+        imgui.CloseCurrentPopup()
+    end
+    if clash then imgui.TextColored(palette.bad, name .. ' exists (names ignore case).') end
     imgui.EndPopup()
 end
 local function draw_sets()
@@ -781,10 +802,16 @@ local function draw_sets()
         editorState.cache.anyHidden = false
         for _, g in ipairs(ctx.headings.order()) do
             local rows = buckets[g]
-            if (rows == nil) and (find == '') and lib.IsCustom(g, GROUPS) then rows = {} end
-            -- WEAPONS shows with no Weapon_ set too: how this file picks weapons, and how to add a /wm mode
             local filtering = ui.issuesOnly[1] or ui.editedOnly[1] or ui.missingOnly[1] or ui.needsRpOnly[1]
                 or ui.unusedOnly[1]
+            -- JOB ABILITIES / NAMED WEAPON SKILLS show before your first set there, to add one (others need a set first:
+            -- an empty HOXNE on every job would be noise)
+            local actionHeading = (g == 'Job abilities') or (g == 'Named weapon skills')
+            if (rows == nil) and (find == '')
+                and (lib.IsCustom(g, GROUPS) or ((not filtering) and actionHeading and (addable()[g] ~= nil))) then
+                rows = {}
+            end
+            -- WEAPONS shows with no Weapon_ set too: how this file picks weapons, and how to add a /wm mode
             local hint = nil
             if (g == 'Weapons') and (find == '') and not filtering then
                 rows = rows or {}
@@ -1034,23 +1061,22 @@ local function draw_sets()
                 end
             end
         end
-        -- the sets a job file usually has, not made yet, under the heading they would go: one quiet row, a click lists
-        local add = (not folded) and (find == '') and (addable()[grp.g]) or nil
-        if (add ~= nil) and not clip_skip(clip, add) then
-            imgui.PushStyleColor(ImGuiCol_Text, palette.blue) -- a link, not a set: blue like the editor's other links
-            local hit = imgui.Selectable('+ ' .. #add .. ' to add##gcadd_' .. grp.g, false)
-            imgui.PopStyleColor(1)
-            if hit then
-                editorState.ui.addTo = { g = grp.g, head = grp.head, list = add }
+        -- the sets a job file usually has, not made yet, under the heading they would go, and a name of your own: one
+        -- framed button (like the headings' + /wm mode) a click lists them from. WEAPONS has + /wm mode for that.
+        local add = ((not folded) and (find == '') and (grp.g ~= 'Weapons')) and (addable()[grp.g] or NONE) or nil
+        grp.addRow = grp.addRow or {}
+        if (add ~= nil) and not clip_skip(clip, grp.addRow) then
+            if imgui.SmallButton(((#add > 0) and ('+ ' .. #add .. ' to add') or '+ add') .. '##gcadd_' .. grp.g) then
+                editorState.ui.addTo, editorState.ui.addCustom[1] = { g = grp.g, head = grp.head, list = add }, ''
                 imgui.OpenPopup('##gcedit_addable')
             end
             if imgui.IsItemHovered() then
                 local names = {}
                 for i, a in ipairs(add) do if i <= 6 then names[#names + 1] = a.name end end
-                set_tip('Sets this heading usually has that your file doesn\'t: ' .. table.concat(names, ', ')
-                    .. ((#add > 6) and ', ...' or '') .. '. Click to make one.')
+                set_tip(((#add > 0) and ('Sets this heading usually has that your file doesn\'t: ' .. table.concat(names, ', ')
+                    .. ((#add > 6) and ', ...' or '') .. '. ') or '') .. 'Click to make one, or one of your own name.')
             end
-            clip_drawn(clip, add)
+            clip_drawn(clip, grp.addRow)
         end
     end
     clip_end(clip)

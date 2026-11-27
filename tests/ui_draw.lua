@@ -82,5 +82,12 @@ tests[#tests + 1] = { "a heading's '+ N to add' lists the sets a job file usuall
     assert(string.find(list, '\n  Idle_Regain\n', 1, true), 'Idle_Regain not offered: ' .. list)
     local made = run('gcadd_Idle,x,gcadd_mk2,x', 'gcs_Idle_Regain')
     assert(string.find(made, 'Idle_Regain (new)##gcs_Idle_Regain', 1, true), 'Make did not add it: ' .. made)
+    assert(string.find(run('gcadd_Idle,x', 'Your own'), 'Your own name:', 1, true), 'no custom name field')
+    -- a job ability you know: JOB ABILITIES shows before your first set there, and offers it
+    local p = io.popen('JA=1 POPUP="##gcedit_addable" luajit tests/draw_editor.lua examples/WAR.lua "gcadd_Job abilities,x" '
+        .. '"No Foot" 2>&1')
+    local ja = p:read('*a')
+    p:close()
+    assert(string.find(ja, '\n  No Foot Rise\n', 1, true), 'a known job ability not offered: ' .. ja)
 end }
 return tests

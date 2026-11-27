@@ -209,6 +209,7 @@ function state.New(profile)
             newMode = { '' },
             newWm = { '' }, -- New /wm mode: its name, and whether it starts from the weapons you hold
             newWmWorn = { true },
+            addCustom = { '' }, -- the set list's + add: a name of your own (a spell: Cure IV)
             overShow = 'all',
             overShowIgnored = { false },
             newName = { '' },

@@ -18,7 +18,8 @@ local inventory = { GetContainerItem = function(_, c, i)
     if c == 8 and i <= 2 then return { Id = 23000 + i, Count = 1, Extra = string.rep('\0', 24) } end
 end }
 local player = { GetMainJob = function() return 3 end, GetMainJobLevel = function() return 99 end,
-    GetSubJob = function() return 5 end, GetSubJobLevel = function() return 49 end }
+    GetSubJob = function() return 5 end, GetSubJobLevel = function() return 49 end,
+    HasAbility = function(_, id) return (id == 0x2A0) and (os.getenv('JA') ~= nil) end, HasSpell = function() return false end }
 
 AshitaCore = setmetatable({
     GetMemoryManager = function() return setmetatable({ GetPlayer = function() return player end,
@@ -27,7 +28,16 @@ AshitaCore = setmetatable({
     GetFontManager = function() return { GetVisible = function() return true end } end,
     GetGuiManager = function() return { GetVisible = function() return true end } end,
     GetInstallPath = function() return '/tmp/' end,
-    GetResourceManager = function() return setmetatable({ GetItemById = function(_, id) return ITEMS[id] end },
+    GetResourceManager = function() return setmetatable({ GetItemById = function(_, id) return ITEMS[id] end,
+        -- JA=1: one job ability known (No Foot Rise, a resource id over 0x200), for the set list's + N to add
+        GetAbilityById = function(_, id)
+            if os.getenv('JA') and (id == 0x2A0) then return { Id = 0x2A0, Name = { 'No Foot Rise' } } end
+            return nil
+        end,
+        GetAbilityByName = function(_, n)
+            if os.getenv('JA') and (n == 'No Foot Rise') then return { Id = 0x2A0, Name = { 'No Foot Rise' } } end
+            return nil
+        end },
         { __index = function() return nilf end }) end,
 }, { __index = function() return function() return stub('core') end end })
 gState = { PlayerName = 'Me', PlayerId = 1 }; gData = setmetatable({ GetContainerMax = function(c) return (c == 8) and 2 or 0 end },
