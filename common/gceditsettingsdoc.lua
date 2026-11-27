@@ -29,7 +29,7 @@ local settings = {
     SmartSwap = { 'Keeps Main/Sub/Range on for the KeepWeaponsFor spells instead of losing TP to a swap (/smartswap).' },
     SmartSwapTP = { 'SmartSwap acts only at or above this TP.', '1' },
     KeepWeaponsFor = { 'Spells that keep Main/Sub/Range: a name, or Spells (names they start with) while a Worn item is in Main or Sub.', "{ 'Dia II', { Spells = { 'Cure' }, Worn = { 'Daybreak' } } }" },
-    EditorSpacing = { "The set editor's spacing: Compact (tighter rows, more fits) or Comfortable. Its Editor menu sets it too.", 'Comfortable' },
+    EditorSpacing = { "The set editor's slot cards: Compact (icons; name and stats on hover) or Comfortable (each piece named). Its Editor menu sets it too.", 'Comfortable' },
     EditorIgnoreSuggestions = { 'Exact set names /gcedit no longer suggests (Related tab), any case.', "{ 'Singing' }" },
     EditorBackupKeep = { 'Newest dated /gcedit backups kept per job file after a save. 0 = keep all.', '3' },
     EditorGroups = { 'Your /gcedit headings and their order; the heading menus write it.', "{ 'Weapons', 'Idle', { 'Two-handed', 'Tp_Chango' } }" },

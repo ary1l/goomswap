@@ -241,8 +241,10 @@ local function clamp(value, minimum, maximum)
 end
 
 local densities = {
-    Compact = { spacing = { 4, 2 }, padding = { 5, 2 }, cardHeight = 108, icon = 32, rowIcon = 20 }, -- tight; 108: a 2-line name still clears the rank line
-    Comfortable = { spacing = { 9, 7 }, padding = { 9, 5 }, cardHeight = 132, icon = 36, rowIcon = 26 },
+    -- Compact: icon cards (slot, bag and the icon; its name and stats on hover), half as wide: more of the rest fits
+    Compact = { spacing = { 4, 2 }, padding = { 5, 2 }, cardHeight = 66, card = 88, icon = 40, rowIcon = 20, names = false },
+    -- Comfortable: each card names its piece and what is under it (108: a 2-line name still clears the rank line)
+    Comfortable = { spacing = { 4, 2 }, padding = { 5, 2 }, cardHeight = 108, card = 176, icon = 32, rowIcon = 20, names = true },
 }
 
 function panels.Density(name)
@@ -283,10 +285,10 @@ end
 
 -- Fixed pane widths, no dragging: the set list about 34 characters wide (by the font), the middle four slot cards wide,
 -- the right pane the rest; a narrow window gives the middle three, then two cards before the right pane goes under 380.
-local CARD = 176
-function panels.Layout(width, charW, spacing)
+function panels.Layout(width, charW, spacing, card)
     local gap = 4
     spacing = spacing or 8
+    local CARD = card or 176 -- a slot card's width: the spacing's (Compact's icon cards are narrower)
     local left = clamp(math.floor((charW or 7) * 34), 230, 300)
     local function middle_for(cols) return cols * CARD + (cols - 1) * spacing + 30 end
     local cols = 4
@@ -295,9 +297,10 @@ function panels.Layout(width, charW, spacing)
     return { left = left, middle = middle_for(cols), gap = gap }
 end
 
-function panels.Grid(width, spacing)
+function panels.Grid(width, spacing, card)
     spacing = spacing or 8
-    local columns = clamp(math.floor((width + spacing) / (144 + spacing)), 1, 4)
+    local least = math.floor((card or 176) * 0.82) -- a card narrows this far before a column goes
+    local columns = clamp(math.floor((width + spacing) / (least + spacing)), 1, 4)
     return columns, math.max(40, math.floor((width - spacing * (columns - 1)) / columns))
 end
 

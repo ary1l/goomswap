@@ -2083,16 +2083,16 @@ local function body()
         imgui.SameLine(90)
         local dens = ctx.spacing()
         local pickD = ctx.W.Switch('gct_dens', {
-            { 'Compact', 'Compact', 'Tighter rows and slot cards: more fits on screen.' },
-            { 'Comfortable', 'Comfortable', 'More room between rows, taller slot cards.' },
+            { 'Compact', 'Compact', 'Icon cards: each slot as its icon (its name and stats on hover). More fits.' },
+            { 'Comfortable', 'Comfortable', 'Named cards: each slot names its piece and what is under it.' },
         }, dens)
         if pickD ~= nil then -- GoomSwap settings' EditorSpacing, in char.lua: every job, every session
             local ok, err = settingsFiles.Write('own', { EditorSpacing = pickD })
             GcEditSpacing = (not ok) and pickD or nil
             if not ok then feedback('Spacing for this session only (not saved to char.lua: ' .. tostring(err) .. ').') end
         end
-        imgui.TextColored(palette.dim, (dens == 'Comfortable') and 'Comfortable: more room between rows, taller slot cards.'
-            or 'Compact: tighter rows and slot cards, more fits on screen.')
+        imgui.TextColored(palette.dim, (dens == 'Comfortable') and 'Comfortable: each slot card names its piece.'
+            or 'Compact: icon cards, name and stats on hover. More fits.')
         imgui.PopTextWrapPos()
         imgui.Spacing()
         theme_menu()
@@ -2254,7 +2254,7 @@ local function body()
             and editorState.document.model.byName[editorState.selection.setName] or nil
     -- fixed panes (no dragging); the Rules page has its own list on the left and takes the whole width
     local rulesPage = editorState.selection.rules and (ctx.rules ~= nil)
-    local lay = editorPanels.Layout(availableWidth or 1200, text_w('0'), spacing)
+    local lay = editorPanels.Layout(availableWidth or 1200, text_w('0'), spacing, ctx.CARD_W)
     if not rulesPage then
         imgui.BeginChild('##gcedit_left', { lay.left, 0 }, CHILD_BORDERS)
         draw_sets()
@@ -2263,7 +2263,7 @@ local function body()
     end
     imgui.BeginChild('##gcedit_mid', { rulesPage and 0 or lay.middle, 0 }, 0)
     local gridWidth = xy(imgui.GetContentRegionAvail())
-    GRID_COLUMNS, CELL_W = editorPanels.Grid(gridWidth, spacing)
+    GRID_COLUMNS, CELL_W = editorPanels.Grid(gridWidth, spacing, ctx.CARD_W)
     ctx.GRID_COLUMNS, ctx.CELL_W = GRID_COLUMNS, CELL_W
     local inspectorHeight
     if editorState.ui.pinned then
@@ -2467,6 +2467,7 @@ local function render()
     end
     CELL_H, ICON, ROW_ICON = density.cardHeight, density.icon, density.rowIcon
     ctx.CELL_H, ctx.ICON, ctx.ROW_ICON = CELL_H, ICON, ROW_ICON
+    ctx.CARD_W, ctx.CARD_NAMES = density.card, density.names -- Compact: icon cards; Comfortable: named ones
     local timing = profiler.Start()
     local display = imgui.GetIO().DisplaySize
     imgui.SetNextWindowSize(editorPanels.WindowSize(display.x or display[1], display.y or display[2]),

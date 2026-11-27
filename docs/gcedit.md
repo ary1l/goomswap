@@ -182,7 +182,10 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   Over the list, one line says how many pieces need RP and in how many sets (hover: which; click: only those sets), and **On you
   now** shows the sets wearing something on you, the most slots first (click one to open it); their dots get a green
   ring.
-- Spacing is one GoomSwap setting for every job (`EditorSpacing` in char.lua; the **Editor** menu writes it).
+- Spacing is one GoomSwap setting for every job (`EditorSpacing` in char.lua; the **Editor** menu writes it): **Compact**
+  shows each slot as an icon card (slot, bag, icon; the piece's name and stats on hover; unsaved / Needs RP / replaced
+  as the card's outline and fill), half as wide, so the right pane gets the room; **Comfortable** names each piece on
+  its card with what is under it.
 - **Theme** (under **Editor**): the editor's colours. Same as the bar (default), **Match goomui** (the theme goomui saved for
   this character), GoomSwap's own, or any of the 30 presets; hover one to preview. Kept per character
   (`gcedit-theme.txt`); the bar keeps its own.

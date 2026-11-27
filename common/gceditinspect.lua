@@ -258,6 +258,7 @@ local function inherited_of(set, slot)
     return { name = d.name, from = from }
 end
 local function draw_cell(set, slot)
+    local iconOnly = (ctx.CARD_NAMES == false) -- Compact: the slot, its bag and the icon; the rest on hover
     local v = current(set, slot)
     local selected = (editorState.selection.slot == slot)
     local changed = (editorState.document.edits[set.name] ~= nil)
@@ -301,7 +302,7 @@ local function draw_cell(set, slot)
         badgeX = ctx.CELL_W - text_w(badge) - 14
     end
     local res = (v ~= nil) and (v.kind == 'item') and not is_slot_word(v) and resist_of(v, owned)
-    if res then -- its resistances, as the game's element icons: one value when they all match
+    if res and not iconOnly then -- its resistances, as the game's element icons: one value when they all match
         imgui.SameLine(0, 8)
         local room = (badgeX or ctx.CELL_W) - 5 - imgui.GetCursorPosX() - 4 -- the badge's fill starts 5 left
         local dotsW = itemTooltip.ElementDotsWidth(imgui, res)
@@ -329,76 +330,83 @@ local function draw_cell(set, slot)
     local inh = ((v == nil) and (gh == nil) and not changed) and inherited_of(set, slot) or nil
     local faded = ((gh ~= nil) or (inh ~= nil)) and (ImGuiStyleVar_Alpha ~= nil) -- not worn: its icon faint
     if faded then imgui.PushStyleVar(ImGuiStyleVar_Alpha, 0.4) end
+    if iconOnly and (imgui.SetCursorPosX ~= nil) then imgui.SetCursorPosX(math.max(4, (ctx.CELL_W - ctx.ICON) / 2)) end
     draw_icon(
         ((v ~= nil) and (v.kind == 'item') and item_id(v.name)) or ((gh ~= nil) and item_id(gh.name))
             or ((inh ~= nil) and item_id(inh.name)) or nil, ctx.ICON
     )
     if faded then imgui.PopStyleVar() end
-    imgui.SameLine()
-    imgui.BeginGroup()
-    if gh ~= nil then
-        imgui.TextColored(palette.dim, cardText.Name(gh.name, ctx.CELL_W - ctx.ICON - 24, text_w))
-    elseif inh ~= nil then
-        imgui.TextColored(palette.dim, cardText.Name(inh.name, ctx.CELL_W - ctx.ICON - 24, text_w))
-    elseif v == nil then
-        imgui.TextColored(changed and palette.warn or palette.dim, changed and 'Slot cleared' or 'Unchanged')
-    elseif v.kind == 'code' then
-        imgui.TextColored(palette.dim, cardText.Name('code: ' .. v.raw, ctx.CELL_W - ctx.ICON - 24, text_w))
-    else
-        imgui.TextColored(
-            is_slot_word(v) and palette.blue or palette.text, cardText.Name(v.name, ctx.CELL_W - ctx.ICON - 24, text_w)
-        )
-    end
-    imgui.EndGroup()
-    -- Fixed footer rows keep every card aligned, regardless of the item's name or metadata; placed by the font's
-    -- line height from the bottom, so a bigger font never stacks them on each other or on the border.
-    local lh = (imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or 16
-    local statusY = ctx.CELL_H - lh - 6
-    imgui.SetCursorPosY(statusY - lh - 2)
-    imgui.Dummy({ 0, 0 }) -- register the new extent even when this card has no footer text
-    local rankShown = false -- R<rank>/<cap>, in the RP colour while unfinished: Needs RP below would repeat it
-    if v and v.kind == 'item' and not is_slot_word(v) then
-        local meta = {}
-        local path = v.path or (owned and owned.path)
-        if path then meta[#meta + 1] = path end
-        if rp and owned then
-            meta[#meta + 1] = 'R' .. owned.rank .. (owned.cap and ('/' .. owned.cap) or '')
-            rankShown = true
-        end
-        if #meta == 0 and ((v.augs and v.augs ~= '') or (owned and #owned.augs > 0)) then
-            meta[#meta + 1] = 'Augmented'
-        end
-        if #meta > 0 then
+    local menuHit = false
+    if not iconOnly then -- the named card: its piece's name, then the footer rows and the hover's '...'
+        imgui.SameLine()
+        imgui.BeginGroup()
+        if gh ~= nil then
+            imgui.TextColored(palette.dim, cardText.Name(gh.name, ctx.CELL_W - ctx.ICON - 24, text_w))
+        elseif inh ~= nil then
+            imgui.TextColored(palette.dim, cardText.Name(inh.name, ctx.CELL_W - ctx.ICON - 24, text_w))
+        elseif v == nil then
+            imgui.TextColored(changed and palette.warn or palette.dim, changed and 'Slot cleared' or 'Unchanged')
+        elseif v.kind == 'code' then
+            imgui.TextColored(palette.dim, cardText.Name('code: ' .. v.raw, ctx.CELL_W - ctx.ICON - 24, text_w))
+        else
             imgui.TextColored(
-                (rp and rp.unfinished) and palette.rp or palette.dim,
-                cardText.Fit(table.concat(meta, ' / '), ctx.CELL_W - 16, text_w)
+                is_slot_word(v) and palette.blue or palette.text,
+                cardText.Name(v.name, ctx.CELL_W - ctx.ICON - 24, text_w)
             )
         end
-    elseif gh then
-        imgui.TextColored(palette.dim, 'Not in this set')
-    elseif inh then
-        imgui.TextColored(palette.dim, cardText.Fit('from ' .. inh.from, ctx.CELL_W - 16, text_w))
-    elseif changed then
-        imgui.TextColored(palette.warn, 'Cleared on Save')
-    end
-    if changed or cover or ((rp and rp.unfinished) and not rankShown) then
-        imgui.SetCursorPosY(statusY)
-        local status = cover and ((changed and 'Unsaved > ' or 'Replaced: ') .. cover.short)
-            or (changed and 'Unsaved' or 'Needs RP')
-        imgui.TextColored(changed and palette.warn or (cover and palette.override or palette.rp),
-            cardText.Fit(status, ctx.CELL_W - 16, text_w))
-    end
-    local menuHit = false
-    if (editorState.ui.cardShown == slot) and (imgui.SetCursorPosX ~= nil) then -- the card hovered: '...' opens its menu
-        local bw = text_w('...') + 10
-        imgui.SetCursorPosX(ctx.CELL_W - bw - 6)
-        imgui.SetCursorPosY(ctx.CELL_H - lh - 8)
-        imgui.PushStyleColor(ImGuiCol_Button, palette.btn)
-        menuHit = imgui.SmallButton('...##gcedit_cellmenu_' .. slot)
-        imgui.PopStyleColor()
-        if imgui.IsItemHovered() then set_tip('This slot\'s menu: inspect, choose gear, undo, clear (or right-click).') end
-        if menuHit then request_context('slot', set, slot) end
-    end
+        imgui.EndGroup()
+        -- Fixed footer rows keep every card aligned, regardless of the item's name or metadata; placed by the font's
+        -- line height from the bottom, so a bigger font never stacks them on each other or on the border.
+        local lh = (imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or 16
+        local statusY = ctx.CELL_H - lh - 6
+        imgui.SetCursorPosY(statusY - lh - 2)
+        imgui.Dummy({ 0, 0 }) -- register the new extent even when this card has no footer text
+        local rankShown = false -- R<rank>/<cap>, in the RP colour while unfinished: Needs RP below would repeat it
+        if v and v.kind == 'item' and not is_slot_word(v) then
+            local meta = {}
+            local path = v.path or (owned and owned.path)
+            if path then meta[#meta + 1] = path end
+            if rp and owned then
+                meta[#meta + 1] = 'R' .. owned.rank .. (owned.cap and ('/' .. owned.cap) or '')
+                rankShown = true
+            end
+            if #meta == 0 and ((v.augs and v.augs ~= '') or (owned and #owned.augs > 0)) then
+                meta[#meta + 1] = 'Augmented'
+            end
+            if #meta > 0 then
+                imgui.TextColored(
+                    (rp and rp.unfinished) and palette.rp or palette.dim,
+                    cardText.Fit(table.concat(meta, ' / '), ctx.CELL_W - 16, text_w)
+                )
+            end
+        elseif gh then
+            imgui.TextColored(palette.dim, 'Not in this set')
+        elseif inh then
+            imgui.TextColored(palette.dim, cardText.Fit('from ' .. inh.from, ctx.CELL_W - 16, text_w))
+        elseif changed then
+            imgui.TextColored(palette.warn, 'Cleared on Save')
+        end
+        if changed or cover or ((rp and rp.unfinished) and not rankShown) then
+            imgui.SetCursorPosY(statusY)
+            local status = cover and ((changed and 'Unsaved > ' or 'Replaced: ') .. cover.short)
+                or (changed and 'Unsaved' or 'Needs RP')
+            imgui.TextColored(changed and palette.warn or (cover and palette.override or palette.rp),
+                cardText.Fit(status, ctx.CELL_W - 16, text_w))
+        end
+        -- the card hovered: '...' opens its menu
+        if (editorState.ui.cardShown == slot) and (imgui.SetCursorPosX ~= nil) then
+            local bw = text_w('...') + 10
+            imgui.SetCursorPosX(ctx.CELL_W - bw - 6)
+            imgui.SetCursorPosY(ctx.CELL_H - lh - 8)
+            imgui.PushStyleColor(ImGuiCol_Button, palette.btn)
+            menuHit = imgui.SmallButton('...##gcedit_cellmenu_' .. slot)
+            imgui.PopStyleColor()
+            if imgui.IsItemHovered() then
+                set_tip('This slot\'s menu: inspect, choose gear, undo, clear (or right-click).')
+            end
+            if menuHit then request_context('slot', set, slot) end
+        end
+    end -- named card
     imgui.EndChild()
     if focusBorder then imgui.PopStyleVar() end
     if imgui.IsItemHovered() then editorState.ui.hoverSlot, editorState.ui.cardHover = slot, slot end
