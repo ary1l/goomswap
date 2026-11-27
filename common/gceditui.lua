@@ -213,7 +213,7 @@ function state.New(profile)
             overShow = 'all',
             overShowIgnored = { false },
             allRecs = { false },
-            wi = { ms = {}, high = { false }, dt = { false }, hoxne = { false }, proc = { false }, buffs = {
+            wi = { ms = {}, high = { false }, pdl = { false }, dt = { false }, hoxne = { false }, proc = { false }, buffs = {
                 '',
             } },
         },

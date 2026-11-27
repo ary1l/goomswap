@@ -227,6 +227,7 @@ function actionModel.New(context)
             end, WearChildren = function()
                 local key = string.match(by, '_([^_]+)$')
                 if key == 'HighBuff' then return 'WS high-buff mode (/wsset high)' end
+                if key == 'PDL' then return 'WS PDL mode (/wsset pdl)' end
                 if key == 'Dt' then return 'DT mode (/dt)' end
                 if key == 'Self' then return 'the spell is on yourself' end
                 if key == 'Others' then return 'the spell is on someone else' end
@@ -316,6 +317,7 @@ function actionModel.New(context)
             if (st.mset ~= nil) and (st.mset ~= 'Default') then on[#on + 1] = 'melee ' .. st.mset end
             if (st.idleset ~= nil) and (st.idleset ~= 'Default') then on[#on + 1] = 'idle ' .. st.idleset end
             if st.wsset == 'High' then on[#on + 1] = 'WS high-buff' end
+            if st.wsset == 'PDL' then on[#on + 1] = 'WS PDL' end
             if st.dt then on[#on + 1] = 'DT' end
             if st.kite then on[#on + 1] = 'kite' end
             if st.proc then on[#on + 1] = 'proc' end
@@ -329,6 +331,7 @@ function actionModel.New(context)
             local st, on = pick.state, {}
             if (st.mset ~= nil) and (st.mset ~= 'Default') then on[#on + 1] = 'melee ' .. st.mset end
             if st.wsset == 'High' then on[#on + 1] = 'WS high-buff' end
+            if st.wsset == 'PDL' then on[#on + 1] = 'WS PDL' end
             if st.dt then on[#on + 1] = 'DT' end
             if st.mdt then on[#on + 1] = 'MDT' end
             if st.aminon then on[#on + 1] = 'Aminon' end
@@ -545,6 +548,10 @@ function actionModel.New(context)
             if suffix == 'HighBuff' then
                 st.wsset = 'High'
                 return 'as if WS high-buff mode (/wsset high)'
+            end
+            if suffix == 'PDL' then
+                st.wsset = 'PDL'
+                return 'as if WS PDL mode (/wsset pdl)'
             end
             if suffix == 'Dt' then
                 st.dt = true
@@ -1075,6 +1082,7 @@ function actionModel.New(context)
                 end
             end
             if (st.wsset == 'High') and not st.proc then children('HighBuff', 'WS high-buff mode (/wsset high)') end
+            if (st.wsset == 'PDL') and not st.proc then children('PDL', 'WS PDL mode (/wsset pdl)') end
             if st.dt and not st.proc then children('Dt', 'DT mode (/dt)') end
         elseif a.event == 'Ability' then
             byname(a.action, 'the set named after ' .. a.action)
@@ -1280,7 +1288,8 @@ function actionModel.New(context)
                 local m = string.match(c, '^melee mode (.+)$')
                 if (m ~= nil) and not msetOn[m] then return false end
                 if ((c == 'DT mode') and not o.dt) or ((c == 'proc mode') and not o.proc)
-                    or ((c == 'WS high-buff mode') and not o.high) or ((c == 'Hoxne') and not o.hoxne) then
+                    or ((c == 'WS high-buff mode') and not o.high) or ((c == 'WS PDL mode') and not o.pdl)
+                    or ((c == 'Hoxne') and not o.hoxne) then
                     return false
                 end
             end
@@ -1384,7 +1393,7 @@ function actionModel.New(context)
                 for _, s in ipairs(document.model.list) do -- Hoxne_Tp_Impetus, Hoxne_Ws_Impetus&Footwork: any buff name
                     if (s.parentName == nil) and (string.sub(s.lname, 1, #pre) == pre) then
                         local rest = string.sub(s.name, #pre + 1)
-                        local isMode = msetOn[rest] or (rest == 'Dt') or (rest == 'HighBuff')
+                        local isMode = msetOn[rest] or (rest == 'Dt') or (rest == 'HighBuff') or (rest == 'PDL')
                         for _, m in ipairs(o.msets) do
                             if string.sub(rest, -(#m + 1)) == ('_' .. m) then isMode = true end
                         end
@@ -1556,6 +1565,7 @@ function actionModel.New(context)
             end -- FindFilled
             worn = jobWorn
             if o.high then children('HighBuff', 'WS high-buff mode', jobWorn) end
+            if o.pdl then children('PDL', 'WS PDL mode', jobWorn) end
             if o.dt then
                 children('Dt', 'DT mode', jobWorn)
             end -- the proc sets take no _Dt

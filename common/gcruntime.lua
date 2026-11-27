@@ -250,8 +250,9 @@ do
             local melee = (type(gcinclude.MeleeModes) == 'table')
                     and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or { 'Default', 'SubtleBlow', 'Acc' }
             gcdisplay.CreateCycle('MeleeSet', melee)
-            -- /wsset: how buffed you are, for weapon skills only. High wears <WS set>_HighBuff over each WS set.
-            gcdisplay.CreateCycle('WsSet', { 'Mid', 'High' })
+            -- /wsset: how buffed you are, for weapon skills only. High wears <WS set>_HighBuff over each WS set,
+            -- PDL <WS set>_PDL (Physical damage limit+ gear).
+            gcdisplay.CreateCycle('WsSet', { 'Mid', 'High', 'PDL' })
             -- /idleset: Idle_<mode> over Idle while idle (gcinclude.EquipIdle).
             gcdisplay.CreateCycle('IdleSet', { 'Default', 'Refresh', 'Regen', 'Regain' })
             gcinclude.BuildWeaponCycles()

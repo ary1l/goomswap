@@ -1298,6 +1298,8 @@ local function wi_from_game()
         wi.ms[m] = { m == cur }
     end
     wi.high[1] = ok and (gcdisplay.GetCycle('WsSet') == 'High') or false
+    wi.pdl = wi.pdl or { false }
+    wi.pdl[1] = ok and (gcdisplay.GetCycle('WsSet') == 'PDL') or false
     wi.dt[1] = ok and (gcdisplay.GetToggle('DTset') == true) or false
     wi.hoxne[1] = ok and (gcdisplay.GetCycle('Hoxne') == 'Locked') or false
     wi.proc[1] = ok and (gcdisplay.GetToggle('PROC') == true) or false
@@ -1327,6 +1329,8 @@ local function conds_on(conds, now)
             ok = (now.idleset == im)
         elseif c == 'WS high-buff mode' then
             ok = (now.wsset == 'High')
+        elseif c == 'WS PDL mode' then
+            ok = (now.wsset == 'PDL')
         elseif c == 'DT mode' then
             ok = now.dt
         elseif c == 'proc mode' then

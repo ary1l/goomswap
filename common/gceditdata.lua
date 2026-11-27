@@ -102,6 +102,7 @@ data.ENGINE = {
     'Ws_Acc',
     'Ws_SubtleBlow',
     'Ws_HighBuff',
+    'Ws_PDL',
     'Ws_Dt',
     'Ws_Proc',
     'Precast',

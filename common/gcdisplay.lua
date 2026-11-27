@@ -164,7 +164,7 @@ local COL_BAR_BG = { 0.04, 0.045, 0.06 }
 local CYAN, MAGENTA, PURPLE = { 0.25, 0.88, 1.00, 1.0 }, { 0.94, 0.35, 0.90, 1.0 }, { 0.65, 0.40, 1.00, 1.0 }
 local MODE_COL = {
     MeleeSet = { Acc = CYAN, SubtleBlow = MAGENTA },
-    WsSet = { High = PURPLE },
+    WsSet = { High = PURPLE, PDL = MAGENTA },
     -- mp blue, hp green, tp yellow
     IdleSet = { Refresh = { 0.45, 0.70, 1.00, 1.0 }, Regen = { 0.40, 0.90, 0.50, 1.0 },
         Regain = { 0.95, 0.85, 0.35, 1.0 } },

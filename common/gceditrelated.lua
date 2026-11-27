@@ -915,21 +915,24 @@ local function draw_over(set)
     wi.ms, wi.buffs = wi.ms or {}, wi.buffs or { '' }
     wi.dt, wi.high, wi.proc, wi.hoxne = wi.dt or { false }, wi.high or { false }, wi.proc or { false },
         wi.hoxne or { false }
+    wi.pdl = wi.pdl or { false }
     for _, m in ipairs(values) do
         if m ~= 'Default' then wi.ms[m] = wi.ms[m] or { false } end
     end
-    local shown = { ms = nil, dt = false, high = false, proc = false, hoxne = false } -- what the pills light
+    local shown = { ms = nil, dt = false, high = false, pdl = false, proc = false, hoxne = false } -- what the pills light
     if view == 'all' then
-        shown.all, shown.dt, shown.high, shown.proc, shown.hoxne = true, true, true, true, true
+        shown.all, shown.dt, shown.high, shown.pdl, shown.proc, shown.hoxne = true, true, true, true, true, true
     elseif view == 'now' then
         shown.ms = ((now.mset ~= nil) and (now.mset ~= 'Default')) and now.mset or nil
         shown.dt, shown.high, shown.proc, shown.hoxne = now.dt == true, now.wsset == 'High', now.proc == true,
             now.hoxne == 'Locked'
+        shown.pdl = now.wsset == 'PDL'
     else
         for _, m in ipairs(values) do
             if (m ~= 'Default') and wi.ms[m][1] then shown.ms = m end
         end
         shown.dt, shown.high, shown.proc, shown.hoxne = wi.dt[1], wi.high[1], wi.proc[1], wi.hoxne[1]
+        shown.pdl = wi.pdl[1]
     end
     local function to_pick() -- start Pick from what is shown
         if view == 'pick' then return end
@@ -979,7 +982,8 @@ local function draw_over(set)
     end
     if imgui.IsItemHovered() then set_tip('One at a time, as in game (/mset <mode>).') end
     label('Toggles')
-    local TOGGLES = { { 'DT (/dt)', 'dt' }, { 'WS high-buff', 'high' }, { 'Proc', 'proc' }, { 'Hoxne', 'hoxne' } }
+    local TOGGLES = { { 'DT (/dt)', 'dt' }, { 'WS high-buff', 'high' }, { 'WS PDL', 'pdl' }, { 'Proc', 'proc' },
+        { 'Hoxne', 'hoxne' } }
     for i, t in ipairs(TOGGLES) do
         if i > 1 then imgui.SameLine(0, 4) end
         imgui.PushStyleColor(ImGuiCol_Button, shown[t[2]] and palette.okBg or palette.btn)
@@ -1013,10 +1017,10 @@ local function draw_over(set)
         for _, m in ipairs(values) do
             if m ~= 'Default' then o.msets[#o.msets + 1] = m end
         end
-        o.high, o.dt, o.proc, o.hoxne = true, true, true, true -- every option, to make or leave
+        o.high, o.pdl, o.dt, o.proc, o.hoxne = true, true, true, true, true -- every option, to make or leave
     else
         if shown.ms ~= nil then o.msets[1] = shown.ms end
-        o.high, o.dt, o.proc, o.hoxne = shown.high, shown.dt, shown.proc, shown.hoxne
+        o.high, o.pdl, o.dt, o.proc, o.hoxne = shown.high, shown.pdl, shown.dt, shown.proc, shown.hoxne
     end
     -- what_if (resource lookups) and the grouping, redone only when the set, the modes or the set list change
     local ignored, ignoreList = ignored_suggestion_names(), {}
@@ -1031,6 +1035,7 @@ local function draw_over(set)
         table.concat(o.msets, ','),
         tostring(o.dt),
         tostring(o.high),
+        tostring(o.pdl),
         tostring(o.hoxne),
         tostring(o.proc),
         table.concat(o.buffs, ','),
