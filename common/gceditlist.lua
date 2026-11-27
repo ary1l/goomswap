@@ -551,8 +551,9 @@ local function RARE_SET(name)
     local l = string.lower(name)
     return RARE[l] or (string.match(l, '^hoxne_') ~= nil)
 end
--- The buff holders a JA's buff row makes a set in: { holder, button, worn }.
-local BUFF_HOLDERS = { { 'Buffs', 'Idle/TP', 'idle and engaged' }, { 'Buffs_Ws', 'WS', 'on weapon skills' },
+-- The buff holders a JA's buff row makes a set in: { holder, button, worn }. A holder the file lacks is made with it.
+local BUFF_HOLDERS = { { 'Buffs', 'Idle+TP', 'idle and engaged' }, { 'Buffs_Tp', 'TP', 'engaged only' },
+    { 'Buffs_Idle', 'Idle', 'idle only (not engaged)' }, { 'Buffs_Ws', 'WS', 'on weapon skills' },
     { 'Buffs_Midcast', 'Spells', 'on spells (midcast)' } }
 local function addable()
     local c = editorState.cache
@@ -583,26 +584,29 @@ local function addable()
     local ok, sugg = pcall(suggestions, false, true)
     if not ok then ok, sugg = pcall(suggestions, true) end -- the abilities couldn't be read: the standard sets still
     for _, x in ipairs(ok and sugg or {}) do list[#list + 1] = x end
-    -- your own JA's buff (one row each, when the game has a buff by its name): its set in each buff holder the file
-    -- has, worn while it is up: Buffs['Saber Dance'] idle and engaged, Buffs_Ws[...] on weapon skills,
-    -- Buffs_Midcast[...] on spells (the row's buttons; one already made opens it)
+    -- your own JA's buff (one row each, when the game has a buff by its name): its set in each buff holder, worn while
+    -- it is up: Buffs['Saber Dance'] idle and engaged, Buffs_Tp[...] engaged only, Buffs_Idle[...] idle only,
+    -- Buffs_Ws[...] on weapon skills, Buffs_Midcast[...] on spells (the row's buttons; one already made opens it; a
+    -- holder the file lacks is made with it)
     local model = editorState.document.model
     for _, x in ipairs(((ctx.rules ~= nil) and (ctx.rules.IsBuff ~= nil) and ok) and sugg or NONE) do
         if (x.why == 'job ability') and ctx.rules.IsBuff(x.name) and not string.find(x.name, "'", 1, true) then
             local opts, missing = {}, false
             for _, b in ipairs(BUFF_HOLDERS) do
                 local parent, child = model.byName[b[1]], b[1] .. "['" .. x.name .. "']"
-                if (parent ~= nil) and (parent.parentName == nil) then
+                if (parent == nil) or (parent.parentName == nil) then -- not a holder used as a set inside a set
                     local made = model.byLower[string.lower(child)] ~= nil
                     missing = missing or not made
-                    opts[#opts + 1] = { name = child, parent = b[1], key = x.name, label = b[2], when = b[3], made = made }
+                    opts[#opts + 1] = { name = child, parent = b[1], key = x.name, label = b[2], when = b[3], made = made,
+                        newHolder = (parent == nil) }
                 end
             end
             if missing then
                 list[#list + 1] = { name = x.name, id = 'buff:' .. string.lower(x.name), buff = opts, group = 'Buffs',
                     ignore = "Buffs['" .. x.name .. "']", why = 'while it is up',
-                    tip = 'Gear worn while ' .. x.name .. ' is up: Idle/TP (Buffs), on weapon skills (Buffs_Ws), on '
-                        .. 'spells (Buffs_Midcast), each its own set. Green: made already (opens it).' }
+                    tip = 'Gear worn while ' .. x.name .. ' is up: Idle+TP (Buffs: idle and engaged), TP (Buffs_Tp: '
+                        .. 'engaged only), Idle (Buffs_Idle: not engaged), WS (Buffs_Ws: weapon skills), Spells '
+                        .. '(Buffs_Midcast), each its own set. Green: made already (opens it).' }
             end
         end
     end
@@ -652,6 +656,10 @@ end
 local function make_listed(s, from)
     local model = editorState.document.model
     local parent = (s.parent ~= nil) and model.byName[s.parent] or nil
+    if (s.parent ~= nil) and (parent == nil) then -- a holder the file lacks (Buffs_Tp): made with it, saved around it
+        make_set(s.parent)
+        parent = model.byName[s.parent]
+    end
     make_set(s.name, nil, false, parent, s.key)
     go_to(s.name, string.match(s.name, '^[Ww]eapon_') and 'Main' or 'Head', 'gear')
     if from then
@@ -754,7 +762,8 @@ local function draw_addable()
                     if o.made then imgui.PopStyleColor() end
                     if imgui.IsItemHovered() then
                         set_tip(o.made and (o.name .. ' is made: open it.')
-                            or ('Make ' .. o.name .. ': worn ' .. o.when .. ' while ' .. s.name .. ' is up.'))
+                            or ('Make ' .. o.name .. ': worn ' .. o.when .. ' while ' .. s.name .. ' is up.'
+                                .. (o.newHolder and ('\n(' .. o.parent .. ' is made with it.)') or '')))
                     end
                 end
             else

@@ -13,7 +13,8 @@ Later wins, slot by slot.
    `Tp_2h` for a two-handed Main (Great Sword, Great Axe, Scythe, Polearm, Great Katana, Staff), `Tp_1h` for a
    one-handed one (Dagger, Sword, Axe, Katana, Club); Hand-to-Hand takes neither. With no `/wm` mode, the Main worn.
 2. Hoxne sets → auto `Idle_Regen` `Idle_Refresh` `Dt` → `Town`.
-3. Weapon mode → `mdt`/`Aminon` → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → Hoxne + buff
+3. Weapon mode → `mdt`/`Aminon` → Hoxne Ampulla → `TH` → `*_Received` → `Buffs` → `Buffs_Tp` (engaged) or
+   `Buffs_Idle` (not engaged) → Hoxne + buff
    (`Hoxne_Tp_Berserk`: over `Buffs['Berserk']`, it wins the slots both name) → XIRoll.
 4. `Incapacitated` (slept, petrified, stunned, terror), over 1-3: Aminon, else `mdt`, else `Dt` (no weapons), its set.
 5. `Sleeping` → `Doomed`.
@@ -47,7 +48,7 @@ and its toggle wears it. Until then it falls back as the table says (`Aminon` �
 | `Proc` `Ws_Proc` | `/proc`: engaged, `Proc` in place of your sets (weapon mode stays); on WS `Ws_Proc` (else, missing or empty, `Proc`) in place of every WS set |
 | `Incapacitated` `Sleeping` | disabled / asleep (weapons pass the TP hold) |
 | `Absorb` `Absorb_TP` `LightBonus` | Absorb spells / Healing Magic |
-| `Buffs` `Buffs_Ws` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while the buff is up; each is its own set in `/gcedit` |
+| `Buffs` `Buffs_Tp` `Buffs_Idle` `Buffs_Ws` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while the buff is up: `Buffs` idle and engaged, `Buffs_Tp` engaged only, `Buffs_Idle` not engaged (both over `Buffs`), `Buffs_Ws` weapon skills, `Buffs_Midcast` spells; each is its own set in `/gcedit` |
 | `Hoxne_Tp` `_Idle` `_Dt` `_Ws` `Hoxne_<set>_<buff>` | `/hoxne` + Enchantment; each also `_<mset>` (`Hoxne_Dt_Impetus_SubtleBlow`). `Hoxne_<set>_<buff>` (`Hoxne_Tp_Berserk`, `&` for several: `Hoxne_Tp_Berserk&Aggressor`) while those buffs are up too, over the plain buff sets (`Buffs['Berserk']`) |
 | `Ws_Dt` `<ws>_Dt` `<ws>_<mset>_Dt` | WS while `/dt` is on |
 | `XIRoll` | idle with a roll at 11 |

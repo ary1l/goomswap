@@ -35,8 +35,9 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
   `/mset` and `/wm` modes' sets, your ability groups (DNC: `Step`, `Samba`, `Jig`, `Flourish`), then the job
   abilities and weapon skills you know. Spells are left out (too many).
 - Under BUFFS: one row for each of your JAs that has a buff of the same name (Saber Dance). Its buttons make the
-  set worn while the buff is up: **Idle/TP** `Buffs['Saber Dance']`, **WS** `Buffs_Ws['Saber Dance']`, **Spells**
-  `Buffs_Midcast['Saber Dance']` (the ones your file has a holder for). A green button is made already and opens it.
+  set worn while the buff is up: **Idle+TP** `Buffs['Saber Dance']` (idle and engaged), **TP** `Buffs_Tp[...]`
+  (engaged only), **Idle** `Buffs_Idle[...]` (not engaged), **WS** `Buffs_Ws[...]`, **Spells** `Buffs_Midcast[...]`.
+  A holder your file lacks (`Buffs_Tp = {...}`) is made with it. A green button is made already and opens it.
 - An ability group (`Step`) is a set your job file's HandleAbility puts on for every ability with that word in its
   name, under the ability's own set.
 - **More** holds the rarely used ones (Aminon, Sleeping, Doomed...) and abilities a group set covers (Curing Waltz
@@ -59,7 +60,7 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
 | `Savage Blade_Acc`, `Savage Blade_Mpu` | Over it, with `/mset acc` / `/wm mpu` |
 | `Tp_Mpu`, `Ws_Mpu` | Over `Tp_Default` / `Ws_Default` while `/wm mpu` is on |
 | `Tp_2h`, `Tp_1h` (and `Ws_`, `Dt_`, `Idle_`) | For a weapon with no set of its own, by its Main ([How sets stack](sets.md#how-sets-stack)) |
-| `Buffs['Haste']` | While that buff is up. `Buffs_Ws` and `Buffs_Midcast` hold the ones for weapon skills and spells. |
+| `Buffs['Haste']` | While that buff is up, idle and engaged. `Buffs_Tp` / `Buffs_Idle` hold engaged-only / idle-only ones (over `Buffs`), `Buffs_Ws` and `Buffs_Midcast` the ones for weapon skills and spells. |
 
 To add a buff set by hand: open `Buffs`, type the buff's name as the game shows it, **New buff set**.
 

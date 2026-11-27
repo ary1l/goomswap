@@ -874,9 +874,10 @@ function actionModel.New(context)
     -- The sentence for "Used for", and its short label (nil: the sentence's first part). GoomSwap's own triggers
     -- first, then the action the set's name is for, then where the job file's code wears it. Nothing: the marker
     -- 'No built-in trigger' (the editor says whether the job file names it).
-    -- A set inside Buffs / Buffs_Ws / Buffs_Midcast: worn while its buff is up (gcinclude.CheckBuffSets, at the end
-    -- of HandleDefault / weapon skills / midcast).
-    local BUFF_HOLDER = { buffs = { 'idle and engaged', '' }, buffs_ws = { 'on weapon skills', ', weapon skills' },
+    -- A set inside Buffs / Buffs_Tp / Buffs_Idle / Buffs_Ws / Buffs_Midcast: worn while its buff is up
+    -- (gcinclude.CheckBuffSets, at the end of HandleDefault / weapon skills / midcast).
+    local BUFF_HOLDER = { buffs = { 'idle and engaged', '' }, buffs_tp = { 'engaged only', ', engaged' },
+        buffs_idle = { 'idle only (not engaged)', ', idle' }, buffs_ws = { 'on weapon skills', ', weapon skills' },
         buffs_midcast = { 'on spells (midcast)', ', spells' } }
     local function when_description(set)
         local holder = (set.parentName ~= nil) and BUFF_HOLDER[string.lower(set.parentName)] or nil
@@ -1671,6 +1672,8 @@ function actionModel.New(context)
                 add(sn, { table.concat(names, ' / ') .. ' on its way to you' })
             end
             local buffs = buff_sets('Buffs', {})
+            if eng ~= nil then buff_sets('Buffs_Tp', eng) end -- engaged-only / idle-only ones, over the plain buff sets
+            if idle ~= nil then buff_sets('Buffs_Idle', idle) end
             for _, b in ipairs(hbases) do hoxne({ b }, false, 'combos', buffs) end -- over the plain buff sets
             if idle ~= nil then add('XIRoll', plus(idle, 'a roll at 11')) end
             add('Incapacitated', { 'slept, petrified, stunned or terrorized' })

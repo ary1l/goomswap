@@ -748,11 +748,16 @@ local function key_text(name)
     return '[' .. q(name) .. ']'
 end
 
-local function new_set_text(name, edits, ind)
+-- kids: sets made inside this one, also new (Buffs_Tp and its ['Saber Dance']), written inside it; allEdits: their
+-- slot edits by name.
+local function new_set_text(name, edits, ind, kids, allEdits)
     local lines = {}
     for _, slot in ipairs(SCREEN) do
         local e = (edits ~= nil) and edits[slot] or nil
         if (e ~= nil) and not e.remove then lines[#lines + 1] = ind .. step(ind) .. slot .. ' = ' .. e.text .. ',\n' end
+    end
+    for _, k in ipairs(kids or {}) do
+        lines[#lines + 1] = new_set_text(k.key, (allEdits or {})[k.name], ind .. step(ind))
     end
     if #lines == 0 then return ind .. key_text(name) .. ' = {},\n' end
     return ind .. key_text(name) .. ' = {\n' .. table.concat(lines) .. ind .. '},\n'
@@ -797,10 +802,20 @@ end
 -- its nearest relative, else after the file's last set of its group (else after the last set).
 -- news: { set } in the order made (set.name, set.group, set.after); edits: [name] = { [Slot] = edit }.
 -- A set inside a set (ns.parentName) goes after ns.after when that is its sibling, else after the parent's last
--- entry, else into the empty parent.
+-- entry, else into the empty parent; inside a parent made now too, it is written inside that one.
 local function new_set_splices(s, model, news, edits, out)
     local byAnchor, order = {}, {}
+    local kids, top = {}, {}
     for _, ns in ipairs(news) do
+        local p = (ns.parentName ~= nil) and model.byName[ns.parentName] or nil
+        if (p ~= nil) and p.new and (p.parentName == nil) then
+            kids[p.name] = kids[p.name] or {}
+            table.insert(kids[p.name], ns)
+        else
+            top[#top + 1] = ns
+        end
+    end
+    for _, ns in ipairs(top) do
         local anchor, last, parent
         local after = (ns.after ~= nil) and model.byName[ns.after] or nil
         if ns.parentName ~= nil then
@@ -873,7 +888,7 @@ local function new_set_splices(s, model, news, edits, out)
         if at ~= nil then
             local parts = {}
             for _, ns in ipairs(g.sets) do
-                parts[#parts + 1] = new_set_text(ns.key or ns.name, edits[ns.name], ind)
+                parts[#parts + 1] = new_set_text(ns.key or ns.name, edits[ns.name], ind, kids[ns.name], edits)
             end
             out[#out + 1] = { at, at, table.concat(parts) }
         end
