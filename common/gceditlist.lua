@@ -555,6 +555,32 @@ end
 local BUFF_HOLDERS = { { 'Buffs', 'Idle+TP', 'idle and engaged' }, { 'Buffs_Tp', 'TP', 'engaged only' },
     { 'Buffs_Idle', 'Idle', 'idle only (not engaged)' }, { 'Buffs_Ws', 'WS', 'on weapon skills' },
     { 'Buffs_Midcast', 'Spells', 'on spells (midcast)' } }
+-- A buff's row: its set in each buff holder, worn while it is up: Buffs['Saber Dance'] idle and engaged, Buffs_Tp[...]
+-- engaged only, Buffs_Idle[...] idle only, Buffs_Ws[...] on weapon skills, Buffs_Midcast[...] on spells (the row's
+-- buttons; one already made opens it; a holder the file lacks is made with it). nil: made in every holder, or a
+-- name the set file can't key (an apostrophe).
+local function buff_row(name)
+    if string.find(name, "'", 1, true) then return nil end
+    local model = editorState.document.model
+    local opts, missing = {}, false
+    for _, b in ipairs(BUFF_HOLDERS) do
+        local parent, child = model.byName[b[1]], b[1] .. "['" .. name .. "']"
+        if (parent == nil) or (parent.parentName == nil) then -- not a holder used as a set inside a set
+            local made = model.byLower[string.lower(child)] ~= nil
+            missing = missing or not made
+            opts[#opts + 1] = { name = child, parent = b[1], key = name, label = b[2], when = b[3], made = made,
+                newHolder = (parent == nil) }
+        end
+    end
+    if not missing then return nil end
+    return { name = name, id = 'buff:' .. string.lower(name), buff = opts, group = 'Buffs',
+        ignore = "Buffs['" .. name .. "']", why = 'while it is up',
+        tip = 'Gear worn while ' .. name .. ' is up: Idle+TP (Buffs: idle and engaged), TP (Buffs_Tp: engaged only), '
+            .. 'Idle (Buffs_Idle: not engaged), WS (Buffs_Ws: weapon skills), Spells (Buffs_Midcast), each its own '
+            .. 'set. Green: made already (opens it).' }
+end
+local HOLDER_OF = {}
+for _, b in ipairs(BUFF_HOLDERS) do HOLDER_OF[string.lower(b[1])] = true end
 local function addable()
     local c = editorState.cache
     local looked = (ctx.actions ~= nil) and ctx.actions.LookedFor() or NONE -- names an action looked for, made after
@@ -584,30 +610,16 @@ local function addable()
     local ok, sugg = pcall(suggestions, false, true)
     if not ok then ok, sugg = pcall(suggestions, true) end -- the abilities couldn't be read: the standard sets still
     for _, x in ipairs(ok and sugg or {}) do list[#list + 1] = x end
-    -- your own JA's buff (one row each, when the game has a buff by its name): its set in each buff holder, worn while
-    -- it is up: Buffs['Saber Dance'] idle and engaged, Buffs_Tp[...] engaged only, Buffs_Idle[...] idle only,
-    -- Buffs_Ws[...] on weapon skills, Buffs_Midcast[...] on spells (the row's buttons; one already made opens it; a
-    -- holder the file lacks is made with it)
+    -- buff rows (buff_row): your own JA's buffs (when the game has a buff by its name), then every buff a holder of
+    -- the file already has a set for (Buffs_Ws['Aftermath: Lv.3']: its TP, Idle... sets one click away). A buff not
+    -- listed: type its name (draw_addable).
     local model = editorState.document.model
     for _, x in ipairs(((ctx.rules ~= nil) and (ctx.rules.IsBuff ~= nil) and ok) and sugg or NONE) do
-        if (x.why == 'job ability') and ctx.rules.IsBuff(x.name) and not string.find(x.name, "'", 1, true) then
-            local opts, missing = {}, false
-            for _, b in ipairs(BUFF_HOLDERS) do
-                local parent, child = model.byName[b[1]], b[1] .. "['" .. x.name .. "']"
-                if (parent == nil) or (parent.parentName == nil) then -- not a holder used as a set inside a set
-                    local made = model.byLower[string.lower(child)] ~= nil
-                    missing = missing or not made
-                    opts[#opts + 1] = { name = child, parent = b[1], key = x.name, label = b[2], when = b[3], made = made,
-                        newHolder = (parent == nil) }
-                end
-            end
-            if missing then
-                list[#list + 1] = { name = x.name, id = 'buff:' .. string.lower(x.name), buff = opts, group = 'Buffs',
-                    ignore = "Buffs['" .. x.name .. "']", why = 'while it is up',
-                    tip = 'Gear worn while ' .. x.name .. ' is up: Idle+TP (Buffs: idle and engaged), TP (Buffs_Tp: '
-                        .. 'engaged only), Idle (Buffs_Idle: not engaged), WS (Buffs_Ws: weapon skills), Spells '
-                        .. '(Buffs_Midcast), each its own set. Green: made already (opens it).' }
-            end
+        if (x.why == 'job ability') and ctx.rules.IsBuff(x.name) then list[#list + 1] = buff_row(x.name) end
+    end
+    for _, set in ipairs(model.list) do
+        if (set.parentName ~= nil) and (set.key ~= nil) and HOLDER_OF[string.lower(set.parentName)] then
+            list[#list + 1] = buff_row(set.key)
         end
     end
     local ignored = (ctx.ignored_names ~= nil) and ctx.ignored_names() or NONE -- settings.EditorIgnoreSuggestions
@@ -714,6 +726,17 @@ local function draw_addable()
                     rows[#rows + 1] = { more = true }
                 end
                 rows[#rows + 1] = s
+            end
+        end
+    end
+    -- a buff's name typed (Aftermath: Lv.3) that the list doesn't have: its buff row, under BUFFS
+    if (name ~= '') and not listed and (ctx.rules ~= nil) and (ctx.rules.IsBuff ~= nil) and ctx.rules.IsBuff(name) then
+        local r = buff_row(name)
+        if r ~= nil then
+            if (a.g == nil) or (a.g == 'Buffs') then
+                if a.g == nil then rows[#rows + 1] = { g = 'Buffs' } end
+                rows[#rows + 1] = r
+                listed = true
             end
         end
     end
