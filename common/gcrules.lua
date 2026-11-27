@@ -304,6 +304,10 @@ function TEST.petstatus(c, v) local p = c.get('pet'); return R.MatchText(p and p
 function TEST.mode(c, v)
     if (type(v) ~= 'table') or (c.api.cycle == nil) then return false end
     for name, want in pairs(v) do
+        -- /wsset's Mid is Default now: a rule saved with Mid still matches
+        if ((R.CYCLES[name] or name) == 'WsSet') and (type(want) == 'string') and (string.lower(want) == 'mid') then
+            want = 'Default'
+        end
         if not R.MatchText(c.api.cycle(R.CYCLES[name] or name), want) then return false end
     end
     return true

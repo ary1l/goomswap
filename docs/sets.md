@@ -25,7 +25,7 @@ Later wins, slot by slot.
 obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` → `Cure_LowMP` → `Cure_Dt` → obi → `SIR`.
 
 **WS:** job file (`Ws_Default` → `Ws_<weapon>` → `Ws_<mset>` → `Ws_<weapon>_<mset>` → the WS's own set →
-`<WS>_<weapon>` → `<WS>_<mset>` → `<WS>_<weapon>_<mset>`; `<weapon>` falls back to `2h` / `1h` as above) → `_HighBuff` →
+`<WS>_<weapon>` → `<WS>_<mset>` → `<WS>_<weapon>_<mset>`; `<weapon>` falls back to `2h` / `1h` as above) → `_HighBuff` / `_PDL` →
 `_Dt` (`/dt`) → Hoxne (→ its `_Dt`) → `Buffs_Ws` → Hoxne + buff (`Hoxne_Ws_Berserk`, → its `_Dt`) → Moonshade →
 obi/Orpheus/back.
 `/proc`: only `Ws_Proc` (else `Proc`) in place of all of that; the job file's checks still run.
@@ -108,8 +108,8 @@ missing. The examples carry only sets with gear; `/gcedit` → **+ New set** lis
 
 | Set | Worn |
 |---|---|
-| `['Savage Blade']` `['Savage Blade_Acc']` `['Savage Blade_HighBuff']` | that WS; `/mset acc`; `/wsset high` |
-| `Ws_Default` `Ws_Acc` `Ws_HighBuff` | any WS, under its own |
+| `['Savage Blade']` `['Savage Blade_Acc']` `['Savage Blade_HighBuff']` `['Savage Blade_PDL']` | that WS; `/mset acc` or `/wsset acc`; `/wsset high`; `/wsset pdl` |
+| `Ws_Default` `Ws_Acc` `Ws_HighBuff` `Ws_PDL` | any WS, under its own |
 | `['Berserk']` | that job ability |
 | `['Enhancing Magic']` `['Cure']` `['Phalanx']` | skill, then spell or family (`Cure IV` → `Cure`) |
 | `['Healing Magic_Precast']` `['Stoneskin_Precast']` | over `Precast` |

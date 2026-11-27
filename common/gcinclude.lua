@@ -1053,7 +1053,7 @@ function gcinclude.WrapHoldHandlers()
             if gcinclude.MidCast() then return end -- sent as is, the cast keeps its gear
             -- /proc: a weapon skill to proc a mob (Abyssea, Vagary), not to kill it. The job file still runs (its
             -- checks can cancel the WS), but its WS gear is dropped from the buffer: only Ws_Proc (else Proc) goes
-            -- on. Slots the proc set leaves out keep what you have on. No _HighBuff, _Dt, Hoxne, Buffs_Ws,
+            -- on. Slots the proc set leaves out keep what you have on. No _HighBuff, _PDL, _Dt, Hoxne, Buffs_Ws,
             -- Moonshade or obi.
             local proc = (gcdisplay.GetToggle('PROC') == true)
             local result, trail = gcinclude.TrackEars(function(...)
@@ -1078,7 +1078,12 @@ function gcinclude.WrapHoldHandlers()
                 end
                 local worn = gcinclude.WornSets
                 gcinclude.WornSets = nil
-                if (gcdisplay.GetCycle('WsSet') == 'High') then gcinclude.WearChildren(worn, {'HighBuff'}) end
+                local wsset = gcdisplay.GetCycle('WsSet')
+                if (wsset == 'High') then gcinclude.WearChildren(worn, {'HighBuff'})
+                elseif (wsset == 'PDL') then gcinclude.WearChildren(worn, {'PDL'})
+                elseif (wsset == 'Acc') and (gcdisplay.GetCycle('MeleeSet') ~= 'Acc') then
+                    gcinclude.WearChildren(worn, {'Acc'}) -- /mset acc already wore them
+                end
                 -- /dt: Ws_Dt, ['Victory Smite_Dt']
                 if (gcdisplay.GetToggle('DTset') == true) then gcinclude.WearChildren(worn, {'Dt'}) end
                 gcinclude.CheckHoxneWs()
@@ -1246,8 +1251,8 @@ end
 
 -- Child sets: while a handler runs, the sets it wears are noted by
 -- name; then each one's <name>_<key> goes on, in the order they went on, and for <prefix>_Default also
--- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: HighBuff on weapon skills
--- (/wsset high); Self or Others (a spell on you / on anyone but a monster) and Burst (BurstWanted) on spells.
+-- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: HighBuff / PDL / Acc on
+-- weapon skills (/wsset high / pdl / acc); Self or Others (a spell on you / on anyone but a monster) and Burst (BurstWanted) on spells.
 gcinclude.WornSets = nil -- the names, while a handler runs
 -- A set's name for the /gcedit layer record: its key in the job file's sets (or a set inside one, as
 -- Buffs['Aftermath: Lv.3']), gcinclude.sets.<key> for the engine's own, else nil (a table built in code).
@@ -2188,7 +2193,7 @@ function gcinclude.Help()
         'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: '
             .. table.concat(thskip,
             ', ')) or '')
-            .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
+            .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [default|high|pdl|acc] (high: <WS set>_HighBuff, pdl: <WS set>_PDL, acc: <WS set>_Acc)',
         'hud    : /gchud [on|off|debug] (the other boxes, dropped under the bar)',
         'checks : /checksets [all], /gcperf (timings in chat every 10s)',
         'ws     : /wsdistance [on|off|N] (no word: the check and your target\'s reach; N = the least reach)',

@@ -127,7 +127,12 @@ function analysis.New(options)
 
     local function cycle_text(name, v)
         if name == 'MeleeSet' then return 'melee mode ' .. v end
-        if name == 'WsSet' then return (string.lower(v) == 'high') and 'WS high-buff mode' or ('WS mode ' .. v) end
+        if name == 'WsSet' then
+            if string.lower(v) == 'high' then return 'WS high-buff mode' end
+            if string.lower(v) == 'pdl' then return 'WS PDL mode' end
+            if string.lower(v) == 'acc' then return 'WS acc mode' end
+            return 'WS mode ' .. v
+        end
         if name == 'IdleSet' then return 'idle mode ' .. v end
         return (CYCLE_TEXT[name] or name) .. ' ' .. v
     end
