@@ -92,6 +92,19 @@ tests[#tests + 1] = { "a heading's '+ N to add' lists the sets a job file usuall
     -- the ability groups DNC's HandleAbility wears by name (['Step'] on every step) are offered under JOB ABILITIES
     local groups = run('gcadd_Job abilities,x', 'Flourish')
     assert(string.find(groups, '\n  Flourish\n', 1, true), 'the Flourish group not offered: ' .. groups)
+    -- Make opens the new set on its first slot to fill
+    local opened = run('gcadd_Idle,x,gcadd_mk1,x', 'Editing:')
+    assert(string.find(opened, 'Editing: Idle_R%a+ / Head'), 'Make did not open its first slot: ' .. opened)
+    -- your JA with a buff by its name: Buffs['<JA>'] offered under BUFFS, made inside Buffs
+    p = io.popen('JA=1 POPUP="##gcedit_addable" luajit tests/draw_editor.lua examples/DNC.lua "gcadd_Buffs,x" "No Foot" 2>&1')
+    local bf = p:read('*a')
+    p:close()
+    assert(string.find(bf, "\n  Buffs['No Foot Rise']\n", 1, true), 'no Buffs set offered for a JA with a buff: ' .. bf)
+    -- a set's More... > Wear this when... opens the rule builder
+    p = io.popen('POPUP="##set_actions_menu" luajit tests/draw_editor.lua examples/DNC.lua "gcedit_rule,x,x" "Save rule" 2>&1')
+    local rb = p:read('*a')
+    p:close()
+    assert(string.find(rb, 'Save rule##rb_save', 1, true), 'Wear this when... did not open the rule builder: ' .. rb)
     -- the one-fight sets wait under More
     assert(string.find(run('gcadd_Defense,x', 'use these'), 'few use these', 1, true), 'no More in DEFENSE')
 end }

@@ -80,10 +80,14 @@ The set list is grouped under headings (Idle, Defense, Melee, Weapons...). Arran
   usually has under it that yours doesn't yet, most useful first: the engine's usual ones, the job example's, a `/mset`
   mode's `Tp_` and a `/wm` mode's `Tp_`/`Ws_`, the ability groups your `HandleAbility` wears by name (DNC: `Step`,
   `Samba`, `Jig`, `Flourish`, under JOB ABILITIES), then the job abilities and weapon skills you know (not spells: too
-  many), and under **More** the one-fight or one-state sets (Aminon, Sleeping, Doomed...; the count leaves them out). Each
-  says what it is for (`Idle_Regain`: *Standing: Regain*) with **Make**; **Your own name** takes any other set (`Cure IV`):
-  made empty and opened, under the heading its name puts it in, unsaved until Save. JOB ABILITIES and NAMED WEAPON SKILLS
-  show before your first set there.
+  many), under BUFFS `Buffs['Saber Dance']` for each of your JAs the game has a buff by (worn while it is up, idle and
+  engaged), and under **More** the one-fight or one-state sets (Aminon, Sleeping, Doomed...; the count leaves them out).
+  Each says what it is for (`Idle_Regain`: *Standing: Regain*) with **Make** (empty) and **from...** (a copy of a set you
+  pick); **Your own name** takes any other set (`Cure IV`). The set is made and opened on its first slot (Head; a
+  `Weapon_` set's Main) with the picker, under the heading its name puts it in, unsaved until Save. JOB ABILITIES and
+  NAMED WEAPON SKILLS show before your first set there.
+- **Wear this when...** (a set's **More...**): the Rules page's builder with Wear set to that set and a moment by its
+  heading (weapon skills, abilities, casting, else idle/engaged): pick the conditions and **Save rule**.
 - **Share with every character** (heading menu): these headings go into the shared settings file, and every
   character without headings of its own uses them. **Only this character** copies them back into `char.lua`.
 

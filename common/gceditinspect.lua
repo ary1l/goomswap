@@ -844,8 +844,16 @@ end
 
 -- Shared entries keep More and right-click set actions identical.
 -- Revert / Rename / Delete rows. part 'edit': Revert and Rename; 'drop': Delete (Discard for a new set); nil: all.
+-- The moment a rule wearing a set most likely means, by the set's heading (the builder lets you change it).
+local RULE_MOMENT = { ['Weapon skills'] = 'Weaponskill', ['Named weapon skills'] = 'Weaponskill',
+    ['Job abilities'] = 'Ability', Casting = 'Midcast', ['Spells (by name)'] = 'Midcast' }
 local function set_action_entries(set, part)
     local item, doc = ctx.menu_item, editorState.document
+    if (part ~= 'drop') and (ctx.rules ~= nil) and item('Wear this when...##gcedit_rule') then
+        -- the Rules page's builder, Wear set to this set: pick the moment and the conditions
+        ctx.rules.Edit(nil, nil, { on = RULE_MOMENT[set.group or ''] or 'Default', wear = set.name, exact = true })
+        editorState.selection.rules, editorState.ui.rulesView = true, 'all'
+    end
     if set.new then
         if (part ~= 'drop') and item('Rename set...##gcedit_new') then editorState.ui.requestRenameSet = set.name end
         if (part ~= 'edit') and item('Discard new set##gcedit', true, false, palette.bad) then

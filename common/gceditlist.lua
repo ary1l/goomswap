@@ -657,8 +657,21 @@ local function addable()
     local ok, sugg = pcall(suggestions, false, true)
     if not ok then ok, sugg = pcall(suggestions, true) end -- the abilities couldn't be read: the standard sets still
     for _, x in ipairs(ok and sugg or {}) do list[#list + 1] = x end
+    -- a set for while your own JA's buff is up (Buffs['Saber Dance']), when the game has a buff by its name and the
+    -- file has Buffs to put it in: the engine wears it idle and engaged
+    local buffs = editorState.document.model.byName['Buffs']
+    if (buffs ~= nil) and (buffs.parentName == nil) and (ctx.rules ~= nil) and (ctx.rules.IsBuff ~= nil) then
+        for _, x in ipairs(ok and sugg or {}) do
+            local child = "Buffs['" .. x.name .. "']"
+            if (x.why == 'job ability') and ctx.rules.IsBuff(x.name) and not string.find(x.name, "'", 1, true)
+                and (editorState.document.model.byLower[string.lower(child)] == nil) then
+                list[#list + 1] = { name = child, parent = 'Buffs', key = x.name, group = 'Buffs',
+                    why = 'while ' .. x.name .. ' is up (idle and engaged)' }
+            end
+        end
+    end
     for _, x in ipairs(list) do
-        local g = (ctx.group_of ~= nil) and ctx.group_of(x.name) or nil
+        local g = x.group or ((ctx.group_of ~= nil) and ctx.group_of(x.name)) or nil
         if (g ~= nil) and not seen[string.lower(x.name)] then
             seen[string.lower(x.name)] = true
             x.rank = ((x.why == 'job ability') or (x.why == 'weapon skill')) and 2 or (RARE_SET(x.name) and 3 or 1)
@@ -676,7 +689,22 @@ local function addable()
     c.addRev, c.addable = editorState.document.revision, out
     return out
 end
--- "+ N to add" clicked: what each one is for, and Make (made empty and opened, unsaved until Save).
+-- Make from the add list: the set (a Buffs['X'] one inside Buffs), opened on its first slot to fill (Main for a
+-- Weapon_ set, else Head) on the Gear tab; from: then Copy from... picks a set to start it as.
+local function make_listed(s, from)
+    local model = editorState.document.model
+    local parent = (s.parent ~= nil) and model.byName[s.parent] or nil
+    make_set(s.name, nil, false, parent, s.key)
+    go_to(s.name, string.match(s.name, '^[Ww]eapon_') and 'Main' or 'Head', 'gear')
+    if from then
+        editorState.ui.copyFind[1], editorState.ui.pickMode = '', 'copy'
+        editorState.ui.openSetChooser = true
+    end
+    editorState.ui.addTo = nil
+    imgui.CloseCurrentPopup()
+end
+-- "+ N to add" clicked: what each one is for, Make (empty) or from... (a copy of a set you pick), made and opened on
+-- its first slot; unsaved until Save.
 local function draw_addable()
     local a = editorState.ui.addTo
     if (a == nil) or not imgui.BeginPopup('##gcedit_addable') then return end
@@ -690,11 +718,10 @@ local function draw_addable()
             more = true
             imgui.TextColored(palette.dim, (i > 1) and 'More (few use these):' or 'Few use these:')
         end
-        if imgui.SmallButton('Make##gcadd_mk' .. i) then
-            make_set(s.name, nil, false)
-            editorState.ui.addTo = nil
-            imgui.CloseCurrentPopup()
-        end
+        if imgui.SmallButton('Make##gcadd_mk' .. i) then make_listed(s) end
+        imgui.SameLine(0, 2)
+        if imgui.SmallButton('from...##gcadd_from' .. i) then make_listed(s, true) end
+        if imgui.IsItemHovered() then set_tip('Make it as a copy of a set you pick (then change what differs).') end
         imgui.SameLine()
         imgui.TextUnformatted(s.name)
         local words = (ctx.words ~= nil) and ctx.words.Label(s.name) or nil
@@ -713,10 +740,15 @@ local function draw_addable()
     local name = string.gsub(editorState.ui.addCustom[1] or '', '^%s*(.-)%s*$', '%1')
     local clash = (name ~= '') and (editorState.document.model.byLower[string.lower(name)] ~= nil)
     imgui.SameLine()
-    if imgui.SmallButton('Make##gcadd_custom_go') and (name ~= '') and not clash and not string.find(name, '[\r\n]') then
-        make_set(name, nil, false)
-        editorState.ui.addTo, editorState.ui.addCustom[1] = nil, ''
-        imgui.CloseCurrentPopup()
+    local okName = (name ~= '') and not clash and not string.find(name, '[\r\n]')
+    if imgui.SmallButton('Make##gcadd_custom_go') and okName then
+        editorState.ui.addCustom[1] = ''
+        make_listed({ name = name })
+    end
+    imgui.SameLine(0, 2)
+    if imgui.SmallButton('from...##gcadd_custom_from') and okName then
+        editorState.ui.addCustom[1] = ''
+        make_listed({ name = name }, true)
     end
     if clash then imgui.TextColored(palette.bad, name .. ' exists (names ignore case).') end
     imgui.EndPopup()

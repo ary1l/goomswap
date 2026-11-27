@@ -34,6 +34,10 @@ AshitaCore = setmetatable({
             if os.getenv('JA') and (id == 0x2A0) then return { Id = 0x2A0, Name = { 'No Foot Rise' } } end
             return nil
         end,
+        GetString = function(_, key, id) -- JA=1: a buff by that ability's name (Buffs['No Foot Rise'] offered)
+            if os.getenv('JA') and (key == 'buffs.names') and (id == 410) then return 'No Foot Rise' end
+            return nil
+        end,
         GetAbilityByName = function(_, n)
             if os.getenv('JA') and (n == 'No Foot Rise') then return { Id = 0x2A0, Name = { 'No Foot Rise' } } end
             return nil

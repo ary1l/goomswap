@@ -11,27 +11,31 @@ return function(o)
     local Check = gFunc.LoadFile('common\\gcconvertcheck.lua') -- the same-gear check, a little each frame
     -- 'while 265 is up' -> 'while Flurry is up'. The game gives some buffs one name (265 and 581 are both
     -- 'Flurry'): those keep their number, 'Flurry (581)', so two choices never read the same.
-    local buffShared = nil
-    R.BuffName = function(id)
-        local res = AshitaCore:GetResourceManager()
-        local name = res:GetString('buffs.names', id)
-        if (type(name) ~= 'string') or (name == '') then return nil end
-        if buffShared == nil then -- every buff's name, once: which names more than one id has
-            buffShared = {}
-            local seen = {}
+    local buffIndex = nil -- every buff name the game has, lower case -> how many ids carry it (read once)
+    local function buff_index()
+        if buffIndex == nil then
+            buffIndex = {}
+            local res = AshitaCore:GetResourceManager()
             for i = 0, 1023 do
                 local n = res:GetString('buffs.names', i)
                 if (type(n) == 'string') and (n ~= '') then
                     local k = string.lower(n)
-                    if seen[k] then buffShared[k] = true else seen[k] = true end
+                    buffIndex[k] = (buffIndex[k] or 0) + 1
                 end
             end
         end
-        if buffShared[string.lower(name)] then return name .. ' (' .. tostring(id) .. ')' end
+        return buffIndex
+    end
+    R.BuffName = function(id)
+        local name = AshitaCore:GetResourceManager():GetString('buffs.names', id)
+        if (type(name) ~= 'string') or (name == '') then return nil end
+        if (buff_index()[string.lower(name)] or 0) > 1 then return name .. ' (' .. tostring(id) .. ')' end
         return name
     end
     local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip)
     local M = { R = R }
+    -- A buff by this exact name exists (the set list offers Buffs['Saber Dance'] for your Saber Dance).
+    function M.IsBuff(name) return (type(name) == 'string') and ((buff_index()[string.lower(name)] or 0) > 0) end
 
     local OP_WORDS = { is = 'is', isnt = 'is not', has = 'has', hasall = 'has all of', start = 'starts with', ends = 'ends with',
         pattern = 'matches (Lua pattern)',
@@ -526,10 +530,13 @@ return function(o)
         return text
     end
 
-    function M.Edit(index, member)
+    -- start: a new rule to begin from ({ on, wear, exact }: a set's More... > Wear this when...)
+    function M.Edit(index, member, start)
         local list = M.List() or {}
         local rule, phase = nil, 'Midcast'
-        if index ~= nil and list[index] ~= nil then
+        if (index == nil) and (start ~= nil) then
+            rule, phase = copy(start), start.on or phase
+        elseif index ~= nil and list[index] ~= nil then
             phase = list[index].on or phase
             if member ~= nil then
                 rule = copy((list[index].first or {})[member] or {})
