@@ -121,6 +121,7 @@ data.ENGINE = {
     'Buffs_Tp',
     'Buffs_Idle',
     'Buffs_Ws',
+    'Buffs_Precast',
     'Buffs_Midcast',
 }
 

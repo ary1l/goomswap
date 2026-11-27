@@ -11,6 +11,7 @@ return function(editorState)
         Burst = 'Magic burst', Idle_Regen = 'Standing: low HP (Regen)', Idle_Refresh = 'Standing: low MP (Refresh)',
         Idle_Regain = 'Standing: Regain', Buffs = 'While a buff is up', Buffs_Tp = 'Fighting while a buff is up',
         Buffs_Idle = 'Standing while a buff is up', Buffs_Ws = 'Weapon skills while a buff is up',
+        Buffs_Precast = 'Precast while a buff is up',
         Buffs_Midcast = 'Spells while a buff is up', Holy_Water = 'Holy Water',
     }
     local PATTERNS = {

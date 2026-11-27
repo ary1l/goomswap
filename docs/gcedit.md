@@ -38,7 +38,8 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
   holder of your file already has a set for (`Buffs_Ws['Aftermath: Lv.3']`); any other buff: type its name as the
   buff list shows it (`Aftermath: Lv.3`). Its buttons make the
   set worn while the buff is up: **Idle+TP** `Buffs['Saber Dance']` (idle and engaged), **TP** `Buffs_Tp[...]`
-  (engaged only), **Idle** `Buffs_Idle[...]` (not engaged), **WS** `Buffs_Ws[...]`, **Spells** `Buffs_Midcast[...]`.
+  (engaged only), **Idle** `Buffs_Idle[...]` (not engaged), **WS** `Buffs_Ws[...]`, **Precast** `Buffs_Precast[...]`
+  (RDM: `Buffs_Precast['Spontaneity']`, no fast cast needed), **Midcast** `Buffs_Midcast[...]`.
   A holder your file lacks (`Buffs_Tp = {...}`) is made with it. A green button is made already and opens it.
   A line above the first buff row says what each button means.
 - An ability group (`Step`) is a set your job file's HandleAbility puts on for every ability with that word in its
@@ -63,7 +64,7 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
 | `Savage Blade_Acc`, `Savage Blade_Mpu` | Over it, with `/mset acc` / `/wm mpu` |
 | `Tp_Mpu`, `Ws_Mpu` | Over `Tp_Default` / `Ws_Default` while `/wm mpu` is on |
 | `Tp_2h`, `Tp_1h` (and `Ws_`, `Dt_`, `Idle_`) | For a weapon with no set of its own, by its Main ([How sets stack](sets.md#how-sets-stack)) |
-| `Buffs['Haste']` | While that buff is up, idle and engaged. `Buffs_Tp` / `Buffs_Idle` hold engaged-only / idle-only ones (over `Buffs`), `Buffs_Ws` and `Buffs_Midcast` the ones for weapon skills and spells. |
+| `Buffs['Haste']` | While that buff is up, idle and engaged. `Buffs_Tp` / `Buffs_Idle` hold engaged-only / idle-only ones (over `Buffs`), `Buffs_Ws`, `Buffs_Precast` and `Buffs_Midcast` the ones for weapon skills, precast and midcast. |
 
 To add a buff set by hand: open `Buffs`, type the buff's name as the game shows it, **New buff set**.
 
