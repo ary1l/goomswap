@@ -505,35 +505,6 @@ local function fit_cmd(t, room)
     end
     return (lo >= 5) and (string.sub(t, 1, lo) .. '...') or nil
 end
--- A /mset mode with no Tp_ set yet: a grey row, and make to add it (empty).
-local function mset_ghosts()
-    if (ctx.melee_modes == nil) then return end
-    local by = editorState.document.model.byLower
-    for _, m in ipairs(ctx.melee_modes()) do
-        local name = 'Tp_' .. m
-        if (by[string.lower(name)] == nil) and (string.lower(m) ~= 'default') then
-            imgui.TextColored(palette.dim, name .. ' no set')
-            if imgui.IsItemHovered() then
-                set_tip('/mset ' .. string.lower(m) .. ' has no Tp_ set: engaged gear stays as Default. Make adds '
-                    .. 'it, empty: fill only what differs.')
-            end
-            imgui.SameLine()
-            if imgui.SmallButton('make##gcm_ghost_' .. m) then make_set(name, nil, true) end
-            local t = '/mset ' .. string.lower(m)
-            imgui.SameLine()
-            local avail = (imgui.GetContentRegionAvail ~= nil) and ctx.xy(imgui.GetContentRegionAvail()) or nil
-            local shown = ((avail ~= nil) and (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil))
-                and fit_cmd(t, avail - 8) or nil
-            if shown ~= nil then
-                imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - text_w(shown))
-                imgui.TextColored(palette.dim, shown)
-                if (shown ~= t) and imgui.IsItemHovered() then set_tip(t) end
-            else
-                imgui.NewLine()
-            end
-        end
-    end
-end
 
 -- A small filled dot at the cursor (dx from it), centred on the text line; nothing drawn without a draw list.
 local function dot(dx, col)
@@ -618,18 +589,18 @@ local function draw_rp_line()
                 end
             end
         end
-        R.text = (#R.pieces == 1 and '1 piece needs RP: ' or (#R.pieces .. ' pieces need RP: '))
-            .. table.concat(R.pieces, ', ') .. ' (' .. R.sets .. ((R.sets == 1) and ' set)' or ' sets)')
+        -- one line over the list (the pieces on hover): a list of them here pushed the sets down on every set
+        R.text = (#R.pieces == 1 and '1 piece needs RP' or (#R.pieces .. ' pieces need RP')) .. ' (' .. R.sets
+            .. ((R.sets == 1) and ' set)' or ' sets)')
+        R.tip = table.concat(R.pieces, '\n') .. '\n\nClick: only the sets using them (Needs RP), again: all.'
         editorState.cache.rpLine = R
     end
     if #R.pieces == 0 then return end
     dot(4, palette.rp)
     imgui.Dummy({ 9, 1 })
     imgui.SameLine(0, 2)
-    imgui.PushTextWrapPos(0)
     imgui.TextColored(palette.rp, R.text)
-    imgui.PopTextWrapPos()
-    if imgui.IsItemHovered() then set_tip('Click: only the sets using them (Needs RP), again: all.') end
+    if imgui.IsItemHovered() then set_tip(R.tip) end
     if imgui.IsItemClicked(0) then editorState.ui.needsRpOnly[1] = not editorState.ui.needsRpOnly[1] end
 end
 
@@ -656,19 +627,51 @@ end
 -- The sets a job file usually has (the engine's, the job's example's, /wm layers) and the job abilities and weapon
 -- skills you know (no spells: too many), that this one lacks, by the heading each would go under; worked out again
 -- when the file or its edits change.
+-- Engine sets for one fight or one state (Aminon, asleep, doomed...), listed under More: few job files have them.
+local RARE = { aminon = true, incapacitated = true, sleeping = true, doomed = true, sir = true, proc = true,
+    ws_proc = true, lightbonus = true }
+local function RARE_SET(name)
+    local l = string.lower(name)
+    return RARE[l] or (string.match(l, '^hoxne_') ~= nil)
+end
 local function addable()
     local c = editorState.cache
     if (c.addRev == editorState.document.revision) and (c.addable ~= nil) then return c.addable end
-    local out, ghost = {}, {} -- MELEE's /mset modes with no Tp_ set have their own row (mset_ghosts)
-    for _, m in ipairs((ctx.melee_modes ~= nil) and ctx.melee_modes() or {}) do ghost['tp_' .. string.lower(m)] = true end
-    local ok, list = pcall(suggestions, false, true)
-    if not ok then ok, list = pcall(suggestions, true) end -- the abilities couldn't be read: the standard sets still
-    for _, s in ipairs(ok and list or {}) do
-        local g = (ctx.group_of ~= nil) and ctx.group_of(s.name) or nil
-        if (g ~= nil) and not ghost[string.lower(s.name)] then
-            out[g] = out[g] or {}
-            out[g][#out[g] + 1] = s
+    -- rank: 1 the sets most job files have (the engine's usual ones, the example's, an /mset or /wm mode's, the
+    -- ability groups), 2 the abilities and weapon skills you know, 3 the one-fight / one-state ones (RARE): More
+    local out, list, seen = {}, {}, {}
+    for _, m in ipairs((ctx.melee_modes ~= nil) and ctx.melee_modes() or {}) do -- an /mset mode with no Tp_ set
+        local name = 'Tp_' .. m
+        if (string.lower(m) ~= 'default') and (editorState.document.model.byLower[string.lower(name)] == nil) then
+            list[#list + 1] = { name = name, why = '/mset ' .. string.lower(m) .. ' (fighting stays Default without it)' }
         end
+    end
+    if ctx.ability_kinds ~= nil then -- the ability groups the job file wears by name (['Step'] on every step)
+        local _, kinds = ctx.ability_kinds()
+        for _, k in ipairs(kinds or {}) do
+            if editorState.document.model.byLower[string.lower(k)] == nil then
+                list[#list + 1] = { name = k, why = 'worn on every ' .. k .. ' (your job file names it)' }
+            end
+        end
+    end
+    local ok, sugg = pcall(suggestions, false, true)
+    if not ok then ok, sugg = pcall(suggestions, true) end -- the abilities couldn't be read: the standard sets still
+    for _, x in ipairs(ok and sugg or {}) do list[#list + 1] = x end
+    for _, x in ipairs(list) do
+        local g = (ctx.group_of ~= nil) and ctx.group_of(x.name) or nil
+        if (g ~= nil) and not seen[string.lower(x.name)] then
+            seen[string.lower(x.name)] = true
+            x.rank = ((x.why == 'job ability') or (x.why == 'weapon skill')) and 2 or (RARE_SET(x.name) and 3 or 1)
+            out[g] = out[g] or {}
+            out[g][#out[g] + 1] = x
+        end
+    end
+    for _, l in pairs(out) do -- by rank, else as listed
+        for i, x in ipairs(l) do x.at = i end
+        table.sort(l, function(a, b) if a.rank ~= b.rank then return a.rank < b.rank end return a.at < b.at end)
+        local main = 0
+        for _, x in ipairs(l) do if x.rank < 3 then main = main + 1 end end
+        l.main = main
     end
     c.addRev, c.addable = editorState.document.revision, out
     return out
@@ -681,7 +684,12 @@ local function draw_addable()
     local long = #a.list > 14 -- a scroll box, not a popup taller than the screen
     if long then imgui.BeginChild('##gcadd_scroll', { 0, 14 * ((imgui.GetTextLineHeightWithSpacing ~= nil)
         and imgui.GetTextLineHeightWithSpacing() or 18) }, 0) end
+    local more = false
     for i, s in ipairs(a.list) do
+        if ((s.rank or 1) >= 3) and not more then
+            more = true
+            imgui.TextColored(palette.dim, (i > 1) and 'More (few use these):' or 'Few use these:')
+        end
         if imgui.SmallButton('Make##gcadd_mk' .. i) then
             make_set(s.name, nil, false)
             editorState.ui.addTo = nil
@@ -931,7 +939,6 @@ local function draw_sets()
             end
             clip_drawn(clip, grp)
         end
-        if (grp.hint ~= nil) and (grp.hint.mset ~= nil) and not folded then mset_ghosts() end
         for _, set in ipairs(folded and NONE or grp.rows) do
             if (not editorState.ui.issuesOnly[1]) or has_issue(set) then
                 local on = (editorState.selection.setName == set.name)
@@ -1066,7 +1073,8 @@ local function draw_sets()
         local add = ((not folded) and (find == '') and (grp.g ~= 'Weapons')) and (addable()[grp.g] or NONE) or nil
         grp.addRow = grp.addRow or {}
         if (add ~= nil) and not clip_skip(clip, grp.addRow) then
-            if imgui.SmallButton(((#add > 0) and ('+ ' .. #add .. ' to add') or '+ add') .. '##gcadd_' .. grp.g) then
+            local main = add.main or 0 -- the button counts the ones worth a look; More's are inside
+            if imgui.SmallButton(((main > 0) and ('+ ' .. main .. ' to add') or '+ add') .. '##gcadd_' .. grp.g) then
                 editorState.ui.addTo, editorState.ui.addCustom[1] = { g = grp.g, head = grp.head, list = add }, ''
                 imgui.OpenPopup('##gcedit_addable')
             end

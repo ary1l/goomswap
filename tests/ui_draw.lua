@@ -89,5 +89,10 @@ tests[#tests + 1] = { "a heading's '+ N to add' lists the sets a job file usuall
     local ja = p:read('*a')
     p:close()
     assert(string.find(ja, '\n  No Foot Rise\n', 1, true), 'a known job ability not offered: ' .. ja)
+    -- the ability groups DNC's HandleAbility wears by name (['Step'] on every step) are offered under JOB ABILITIES
+    local groups = run('gcadd_Job abilities,x', 'Flourish')
+    assert(string.find(groups, '\n  Flourish\n', 1, true), 'the Flourish group not offered: ' .. groups)
+    -- the one-fight sets wait under More
+    assert(string.find(run('gcadd_Defense,x', 'use these'), 'few use these', 1, true), 'no More in DEFENSE')
 end }
 return tests

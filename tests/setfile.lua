@@ -37,6 +37,33 @@ return {
         eq(adds({ 'Weapon_Naegling' }), 'Naegling')
         eq(adds({ 'Weapon_Mpu_Foo' }), '') -- not one word
     end },
+    { "/gcbuild's notes: its header and slot notes go; the slots it left out, and other comments, stay", function()
+        local text = table.concat({
+            '-- Proposed by /gcbuild for Me: GoomSwap examples/DNC.lua with the gear you own (2026-11-26).',
+            '-- Move to a wardrobe:',
+            '--   Maculele Tiara +3 (Slip 30)',
+            'local profile = {};',
+            '-- DNC example: swap in your own gear.',
+            'local sets = {',
+            "    Idle = { -- standing",
+            "        Head = 'Maculele Tiara +3', -- example: Maculele Tiara +1; yours is in Slip 30: move it to a wardrobe",
+            "        Body = 'Nyame Mail', -- in Slip 23: move it to a wardrobe",
+            "        Hands = 'Nyame Gauntlets', -- your augments differ from the example's: Path A",
+            "        --Neck = 'Bathy Choker +1', -- not owned",
+            "        Feet = 'Gleti\\'s Boots', -- my own note",
+            '    },',
+            '};',
+            'return profile;', '' }, '\n')
+        local n, out = F.BuildNotes(text)
+        eq(n, 4)
+        eq(string.find(out, 'Proposed by', 1, true), nil, out)
+        eq(string.find(out, 'wardrobe', 1, true), nil, out)
+        eq(string.find(out, 'augments differ', 1, true), nil, out)
+        eq(string.find(out, "--Neck = 'Bathy Choker +1', -- not owned", 1, true) ~= nil, true, out)
+        eq(string.find(out, '-- my own note', 1, true) ~= nil, true, out)
+        eq(string.find(out, '-- DNC example', 1, true) ~= nil, true, out)
+        eq(string.sub(out, 1, 20), 'local profile = {};\n')
+    end },
     { 'editor backups kept: 3 unless set (0 keeps all)', function()
         eq(F.Backups.Keep(nil), 3); eq(F.Backups.Keep('x'), 3); eq(F.Backups.Keep(-1), 3)
         eq(F.Backups.Keep(0), 0); eq(F.Backups.Keep(20), 20)

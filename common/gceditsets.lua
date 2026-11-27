@@ -347,6 +347,10 @@ local function save()
     -- a deleted Weapon_ set's mode leaves the /wm list (read again here: the splices above may have rewritten it)
     local gone = ctx.wm_removal().modes
     if (text ~= nil) and (#gone > 0) then text = setFile.RemoveWeaponModes(text, gone) end
+    if (text ~= nil) and editorState.document.dropNotes then -- Editor, Remove /gcbuild notes
+        local _, clean = setFile.BuildNotes(text)
+        text = clean
+    end
     if (text ~= nil) and (editorState.document.wmOrder ~= nil) then -- after the rest: new and renamed modes are in it
         local order = {}
         for i, m in ipairs(editorState.document.wmOrder) do

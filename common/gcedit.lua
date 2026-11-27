@@ -305,6 +305,25 @@ local DEFENSE = editorData.DEFENSE
 local CASTING = editorData.CASTING
 
 -- The built-in heading for a set name. Prefixes in any case, as the engine finds sets (FindSet is case-blind).
+-- The ability groups a job file wears by name: `for _, kind in ipairs({'Waltz', 'Step'}) do ... ByName(kind)` (DNC's
+-- HandleAbility: ['Step'] on every step). Those sets go under JOB ABILITIES, and the set list offers the missing ones.
+local kindsOf = { text = nil, set = {} }
+local function ability_kinds()
+    local doc = editorState and editorState.document
+    local text = (doc ~= nil) and (doc.model ~= nil) and doc.model.text or nil
+    if kindsOf.text ~= text then
+        kindsOf.text, kindsOf.set, kindsOf.list = text, {}, {}
+        for var, list, body in string.gmatch(text or '', 'for%s+_%s*,%s*([%w_]+)%s+in%s+ipairs%(%s*(%b{})%s*%)%s+do(.-)end') do
+            if string.find(body, 'ByName%(%s*' .. var .. '%s*%)') then
+                for _, w in string.gmatch(list, "(['\"])(.-)%1") do
+                    if not kindsOf.set[w] then kindsOf.set[w] = true; kindsOf.list[#kindsOf.list + 1] = w end
+                end
+            end
+        end
+    end
+    return kindsOf.set, kindsOf.list
+end
+ctx.ability_kinds = ability_kinds
 local function builtin_group(n)
     local l = string.lower(n)
     if string.match(l, '^idle') or (l == 'resting') or (l == 'town') then return 'Idle' end
@@ -316,6 +335,7 @@ local function builtin_group(n)
     if string.match(l, '^hoxne') then return 'Hoxne' end
     if string.match(l, '^buffs') then return 'Buffs' end
     if CASTING[n] or string.match(n, ' Magic') or string.match(n, '_Precast$') then return 'Casting' end
+    if ability_kinds()[n] then return 'Job abilities' end -- ['Step']: worn on every step (the job file's own list)
     local res = AshitaCore:GetResourceManager()
     local base = string.match(n, '^(.-)_[%a]+$') or n -- ['Savage Blade_Acc'] sits with Savage Blade
     local ability = res:GetAbilityByName(n, 0) or res:GetAbilityByName(base, 0)
@@ -635,6 +655,7 @@ end
 local function dirty_count()
     local n = #editorState.document.newSets + #editorState.document.newModes
         + ((editorState.document.wmOrder ~= nil) and 1 or 0) + ((editorState.document.convert ~= nil) and 1 or 0)
+        + (editorState.document.dropNotes and 1 or 0)
     for _ in pairs(editorState.document.jobSettings or {}) do
         n = n + 1
     end
@@ -2087,6 +2108,26 @@ local function body()
         if imgui.IsItemHovered() then set_tip('Read your bags again (after moving gear). Keeps your unsaved changes.') end
         tools.reload = imgui.Selectable('Reload file##gct_l', false)
         if imgui.IsItemHovered() then set_tip('Read the file and your bags again.') end
+        -- /gcbuild's notes (its header, a slot's "example: / move it to a wardrobe"): a snapshot that goes stale
+        local doc = editorState.document
+        if (doc.model ~= nil) and (doc.notesText ~= doc.model.text) then
+            doc.notesText, doc.notesN = doc.model.text, (setFile.BuildNotes(doc.model.text))
+        end
+        if doc.dropNotes then
+            if imgui.Selectable('Keep /gcbuild notes (they go on Save)##gct_n', false) then
+                doc.dropNotes, doc.revision = nil, doc.revision + 1
+            end
+        elseif (doc.notesN or 0) > 0 then
+            if imgui.Selectable('Remove /gcbuild notes (' .. doc.notesN .. ')##gct_n', false) then
+                doc.dropNotes, doc.revision = true, doc.revision + 1
+                feedback('/gcbuild notes go on Save (' .. doc.notesN .. ').')
+            end
+            if imgui.IsItemHovered() then
+                set_tip("What /gcbuild wrote that day: the header at the top, and notes after slots (\"example: ...\", "
+                    .. "\"move it to a wardrobe\", \"your augments differ\"). The slots it left out (-- not owned) "
+                    .. 'stay: To fill lists them.')
+            end
+        end
         imgui.Separator()
         if editorPanels.Section(imgui, palette, 'Diagnostics##gcedit_diagnostics') then
             if imgui.Button(profiler.enabled and 'Stop sampling' or 'Start fresh sample') then

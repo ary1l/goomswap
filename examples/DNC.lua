@@ -244,7 +244,7 @@ end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-    for _, kind in ipairs({'Waltz', 'Step', 'Samba', 'Jig'}) do
+    for _, kind in ipairs({'Waltz', 'Step', 'Samba', 'Jig', 'Flourish'}) do -- ['Step'] on every step, then ['Box Step']
         if string.find(ability.Name, kind, 1, true) then ByName(kind) end
     end
     ByName(ability.Name);

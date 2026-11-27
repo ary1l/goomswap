@@ -9,7 +9,8 @@ Edits your loaded job file. Changes stay in memory until you confirm a save. `/g
 The top bar: your character and job, the job file (its menu opens your other job files and **New job file**), the save
 state, then **Rules**, **GoomSwap settings**, **Editor** and **Save + reload**. **Editor** (the editor itself) holds
 **Spacing** (**Compact** | **Comfortable**, with a line saying what the one on does), then the theme, **Backups**,
-**Unused gear**, **Rescan bags**, **Reload file** and Diagnostics.
+**Unused gear**, **Rescan bags**, **Reload file**, **Remove /gcbuild notes** (a `/gcbuild` draft's header and its notes after
+slots, on Save; the slots it left out stay for **To fill**) and Diagnostics.
 
 Three panes of fixed width (nothing to drag): your sets on the left (about 34 characters wide), the open set in the
 middle (four slot cards wide; three or two on a narrow window), and the right pane for the rest: **What goes on**,
@@ -76,10 +77,13 @@ The set list is grouped under headings (Idle, Defense, Melee, Weapons...). Arran
 - **Sets in it** (heading menu): **File order**, **A-Z**, or **Your order** (what Move up / down and dragging make).
 - Folded headings stay folded until you restart the game (Save's reload keeps them).
 - **+ N to add** (a framed button, last row of a heading; **+ add** when it has nothing to suggest): the sets a job file
-  usually has under it that yours doesn't yet (the engine's, the job example's, `Tp_`/`Ws_` for each `/wm` mode, the job
-  abilities and weapon skills you know; not spells: too many), each with what it is for (`Idle_Regain`: *Standing:
-  Regain*) and **Make**, then **Your own name** for any other set (`Cure IV`): made empty and opened, under the heading its
-  name puts it in, unsaved until Save. JOB ABILITIES and NAMED WEAPON SKILLS show before your first set there.
+  usually has under it that yours doesn't yet, most useful first: the engine's usual ones, the job example's, a `/mset`
+  mode's `Tp_` and a `/wm` mode's `Tp_`/`Ws_`, the ability groups your `HandleAbility` wears by name (DNC: `Step`,
+  `Samba`, `Jig`, `Flourish`, under JOB ABILITIES), then the job abilities and weapon skills you know (not spells: too
+  many), and under **More** the one-fight or one-state sets (Aminon, Sleeping, Doomed...; the count leaves them out). Each
+  says what it is for (`Idle_Regain`: *Standing: Regain*) with **Make**; **Your own name** takes any other set (`Cure IV`):
+  made empty and opened, under the heading its name puts it in, unsaved until Save. JOB ABILITIES and NAMED WEAPON SKILLS
+  show before your first set there.
 - **Share with every character** (heading menu): these headings go into the shared settings file, and every
   character without headings of its own uses them. **Only this character** copies them back into `char.lua`.
 
@@ -151,10 +155,10 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 - **Used for** (over the slots) says when a set goes on: GoomSwap's own trigger for it, else where your job file's
   code wears it, read from the file (`moving, not engaged (HandleDefault, line 732)`); hover it for each place.
 - **WEAPONS** and **MELEE** always show, with **+ /wm mode** / **+ /mset mode** at the heading's right end (WEAPONS:
-  New set with `Weapon_` typed, the box says what the name will be; MELEE: the new `/mset` mode and its sets). Each
+  New weapon mode, which asks for the `/wm` name; MELEE: the new `/mset` mode and its sets). Each
   set there says, at its right end, what wears it: `/mset acc` (`Tp_Acc`), `/wm naegling`, `no dual wield`
-  (`Weapon_Naegling_1h`), cut with `...` when the panel is narrow; hover it for the sentence. A `/mset` mode with no `Tp_<mode>` set shows greyed
-  (`Tp_Hybrid no set`) with **make**. With no `Weapon_` set WEAPONS lists the file's picks
+  (`Weapon_Naegling_1h`), cut with `...` when the panel is narrow; hover it for the sentence. A `/mset` mode with no `Tp_<mode>` set is in MELEE's
+  **+ N to add**. With no `Weapon_` set WEAPONS lists the file's picks
   (`Main picks (/mw): ...`, from `MainModes` `SubModes` `RangeModes`). A `DefaultWeapons` or
   `WeaponRoles` naming a weapon or mode nothing offers is flagged there and in **GoomSwap settings**: the engine skips it at
   load without a word.
@@ -171,7 +175,7 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   slots; weapons left out on purpose). After the name, small tags: empty slots (amber) and pieces not owned (red),
   each a count (hover: which), **code** or **empty**, and a violet dot when a piece in it needs RP. The number at
   the right end is how many of the 16 slots it names (MELEE and WEAPONS show the command that puts it on there).
-  Over the list, one line names the pieces that need RP and in how many sets (click: only those sets), and **On you
+  Over the list, one line says how many pieces need RP and in how many sets (hover: which; click: only those sets), and **On you
   now** shows the sets wearing something on you, the most slots first (click one to open it); their dots get a green
   ring.
 - Spacing is one GoomSwap setting for every job (`EditorSpacing` in char.lua; the **Editor** menu writes it).

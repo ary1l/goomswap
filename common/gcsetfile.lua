@@ -556,6 +556,40 @@ end
 
 -- Whether name is one of Weapon_<mode>'s own sets, worn in its place: _1h (no dual wield), _<mset> or <mset>
 -- (Weapon_Mpu_Acc, Weapon_MpuAcc: the engine reads both), each with _1h too. msets: the /mset modes.
+-- /gcbuild's notes in a job file: its header (the comment lines at the top, when the first says "Proposed by
+-- /gcbuild": a snapshot of that day) and its note after a slot ("-- example: X", "-- in Slip 23: move it to a
+-- wardrobe", "-- your augments differ from the example's: ..."). The slots it commented out (-- not owned) stay: the
+-- editor's To fill reads them. Returns how many, and the text without them.
+local BUILD_NOTE = { "^example: ", ": move it to a wardrobe", "your augments differ from the example's" }
+local function build_notes(text)
+    local n, out, head = 0, {}, true
+    local first = true
+    for line, nl in string.gmatch(text or '', '([^\n]*)(\n?)') do
+        if (line == '') and (nl == '') then break end
+        local drop = false
+        if head then
+            if first and string.match(line, '^%-%- Proposed by /gcbuild') then
+                n, drop = n + 1, true
+            elseif (not first) and (n > 0) and string.match(line, '^%-%-') then
+                drop = true
+            else
+                head = false
+            end
+            first = false
+        end
+        if not drop then
+            local code, note = string.match(line, '^(%s*[^%-%s].-,)%s*%-%- (.+)$')
+            local hit = false
+            for _, p in ipairs((note ~= nil) and BUILD_NOTE or {}) do hit = hit or (string.find(note, p) ~= nil) end
+            if hit then
+                n, line = n + 1, code
+            end
+            out[#out + 1] = line .. nl
+        end
+    end
+    return n, table.concat(out)
+end
+
 local function weapon_variant_of(name, mode, msets)
     local rest, lm = string.match(string.lower(name or ''), '^weapon_(.+)$'), string.lower(mode or '')
     if (rest == nil) or (lm == '') or (rest == lm) or (string.sub(rest, 1, #lm) ~= lm) then return false end
@@ -1369,6 +1403,7 @@ return {
     ModeMentions = mode_mentions,
     MeleeModes = melee_modes_of,
     WeaponVariantOf = weapon_variant_of,
+    BuildNotes = build_notes,
     RemoveWeaponModes = weapon_modes_without,
     AddNewSets = new_set_splices,
     AddRenames = rename_all,
