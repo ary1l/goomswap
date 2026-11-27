@@ -242,7 +242,8 @@ end
 
 local densities = {
     -- Compact: icon cards (slot, bag and the icon; its name and stats on hover), half as wide: more of the rest fits
-    Compact = { spacing = { 4, 2 }, padding = { 5, 2 }, cardHeight = 66, card = 88, icon = 40, rowIcon = 20, names = false },
+    -- 80: the card's padding (8 top and bottom), the slot line and the 40px icon, so the icon isn't cut at the bottom
+    Compact = { spacing = { 4, 2 }, padding = { 5, 2 }, cardHeight = 80, card = 88, icon = 40, rowIcon = 20, names = false },
     -- Comfortable: each card names its piece and what is under it (108: a 2-line name still clears the rank line)
     Comfortable = { spacing = { 4, 2 }, padding = { 5, 2 }, cardHeight = 108, card = 176, icon = 32, rowIcon = 20, names = true },
 }
