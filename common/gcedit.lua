@@ -510,7 +510,14 @@ local function load_model(document)
     local text = read_file(document.sourcePath or document.path) -- a /gcbuild draft is read from <JOB>.proposed.lua
     if text == nil then return nil, 'cannot read ' .. (document.sourcePath or document.path) end
     local model, err = setFile.Parse(text)
-    if model == nil then return nil, err end
+    if model == nil then
+        -- a Windower GearSwap file (Mote's / Selindrile's init_gear_sets, get_sets): /gcimport makes a draft of it
+        if string.find(text, 'function%s+init_gear_sets') or string.find(text, 'function%s+get_sets') then
+            err = tostring(err) .. '. It looks like a GearSwap file: /gcimport '
+                .. (string.match(document.path or '', '([^\\/]+)$') or '<file>') .. ' makes a GoomSwap draft of it'
+        end
+        return nil, err
+    end
     model.text = text -- the job file's handlers are read from it (scan_job), once, when All sets first needs them
     model.byLower = {}
     loadingText = text -- its ability groups (['Waltz']) go under JOB ABILITIES
