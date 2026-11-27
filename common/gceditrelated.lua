@@ -5,7 +5,7 @@ return function(
     editorState, feedback, fits, ghost_of, go_to, group_of, has_set, help, help_icon, ignored_suggestion_names,
     imgui, index_all_items, inspect_item, inspection_target, itemTooltip, make_button, make_set, melee_modes,
     owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, setFile,
-    set_action_entries, set_tip, tag, text_w, undo_slot, where, wi_from_game, wrap, xy, suggestions
+    set_action_entries, set_tip, tag, text_w, undo_slot, where, wi_from_game, wrap, xy, known_ws
 )
 -- A submenu (opens on hover) where the imgui binding has one; else its rows inline under a dim title.
 local function submenu(label, title, draw)
@@ -44,20 +44,18 @@ local function draw_weapon_copies(set)
 end
 
 -- Hoxne_Ws: a set for one weapon skill while Hoxne is on, Hoxne_<WS> (Hoxne_Ruthless Stroke), worn over Hoxne_Ws
--- (gcinclude.CheckHoxneWs). From the weapon skills you know that have none yet, read once per edit; a copy of
--- Hoxne_Ws to start, then change what differs. Not written until Save.
+-- (gcinclude.CheckHoxneWs). From the weapon skills you know (a named WS set or not) that have none yet, read once
+-- per file and edit; a copy of Hoxne_Ws to start, then change what differs. Not written until Save.
 local hoxneWsRows = nil
 local function draw_hoxne_ws(set)
     if (string.lower(set.name) ~= 'hoxne_ws') or (set.code ~= nil) or set.extra
         or editorState.document.deleted[set.name] then return end
-    local rev = editorState.document.revision
-    if (hoxneWsRows == nil) or (hoxneWsRows.rev ~= rev) then
-        local ok, list = pcall(suggestions, false, true) -- no spells
-        hoxneWsRows = { rev = rev }
-        for _, x in ipairs(ok and list or NONE) do
-            if (x.why == 'weapon skill') and not has_set('Hoxne_' .. x.name) then
-                hoxneWsRows[#hoxneWsRows + 1] = 'Hoxne_' .. x.name
-            end
+    local doc = editorState.document
+    if (hoxneWsRows == nil) or (hoxneWsRows.rev ~= doc.revision) or (hoxneWsRows.doc ~= doc) then
+        local ok, list = pcall(known_ws)
+        hoxneWsRows = { rev = doc.revision, doc = doc }
+        for _, ws in ipairs(ok and list or NONE) do
+            if not has_set('Hoxne_' .. ws) then hoxneWsRows[#hoxneWsRows + 1] = 'Hoxne_' .. ws end
         end
     end
     if #hoxneWsRows == 0 then return end

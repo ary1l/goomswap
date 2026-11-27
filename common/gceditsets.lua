@@ -91,6 +91,23 @@ local function suggestions(standard, noSpells)
     return list
 end
 
+-- The weapon skills you know now, A-Z, made or not (suggestions leaves out names with a set); none while the file
+-- is another job's.
+local function known_ws()
+    local out = {}
+    if editorState.document.inactive then return out end
+    local res, player = AshitaCore:GetResourceManager(), AshitaCore:GetMemoryManager():GetPlayer()
+    for i = 1, 0x1FF do
+        local r = res:GetAbilityById(i)
+        if (r ~= nil) and (r.Name ~= nil) and (type(r.Name[1]) == 'string') and (r.Name[1] ~= '')
+            and not MENU_FOLDER[r.Name[1]] and player:HasAbility(r.Id) then
+            out[#out + 1] = r.Name[1]
+        end
+    end
+    table.sort(out)
+    return out
+end
+
 -- parent: a set that holds sets (Buffs); the new one is its key `key`, named Buffs['key'].
 local function make_set(name, copyFrom, stay, parent, key)
     if parent ~= nil then name = setFile.ChildName(parent.name, key) end
@@ -557,7 +574,7 @@ end
 
 -- Open another set from the right panel (a have link, To fill): the set you were on goes on a back list, so
 -- '< Back to <set>' over the slots returns to it. Picking in the left list clears that list.
-    return { suggestions = suggestions, make_set = make_set, copy_from = copy_from, draw_copy_popup = draw_copy_popup,
+    return { suggestions = suggestions, known_ws = known_ws, make_set = make_set, copy_from = copy_from, draw_copy_popup = draw_copy_popup,
         drop_new = drop_new, empty_armor = empty_armor, use_worn = use_worn, save = save, ago = ago,
         red_button = red_button, tag = tag, canDraw = canDraw, text_w = text_w, pill = pill, make_button = make_button,
         left_bar = left_bar, wrap = wrap, help_icon = help_icon, help = help }
