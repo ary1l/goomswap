@@ -6,7 +6,7 @@ return function(
 )
 -- What the New set list offers: { name, why } for names the file lacks: the job's example file's sets, the engine's,
 -- then the job abilities, weapon skills and spells you know (found as tHotBar does: HasAbility(Id), HasSpell(Index)).
-local function suggestions()
+local function suggestions(standard) -- standard: no job abilities, weapon skills or spells
     local list, seen = {}, {}
     local function add(name, why)
         local l = string.lower(name)
@@ -50,6 +50,7 @@ local function suggestions()
     end
     table.sort(received)
     for _, n in ipairs(received) do add(n, 'a spell coming at you') end
+    if standard then return list end
     local player = AshitaCore:GetMemoryManager():GetPlayer()
     local acts = {}
     for i = 1, 0x600 do

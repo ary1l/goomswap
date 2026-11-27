@@ -68,4 +68,19 @@ tests[#tests + 1] = { 'a Weapon_ set: armor in it, or a set /wm never reaches, i
     assert(ok1 and ok2 and ok3 and ok4 and ok5 and ok6, 'Weapon_ set checks missing: ' .. tostring(ok1) .. tostring(ok2)
         .. tostring(ok3) .. tostring(ok4) .. tostring(ok5) .. tostring(ok6) .. '\n' .. out)
 end }
+tests[#tests + 1] = { "a heading's '+ N to add' lists the sets a job file usually has and makes one", function()
+    local function run(clicks, probe)
+        local p = io.popen('POPUP="##gcedit_addable" luajit tests/draw_editor.lua examples/DNC.lua "' .. clicks .. '" "'
+            .. probe .. '" 2>&1')
+        local out = p:read('*a')
+        p:close()
+        assert(string.match(out, '([^\n]*)\n?$') == 'drawn', out)
+        return out
+    end
+    assert(string.find(run('x', 'to add'), 'to add##gcadd_Idle', 1, true), 'no + to add under IDLE')
+    local list = run('gcadd_Idle,x', 'Idle_Regain')
+    assert(string.find(list, '\n  Idle_Regain\n', 1, true), 'Idle_Regain not offered: ' .. list)
+    local made = run('gcadd_Idle,x,gcadd_mk2,x', 'gcs_Idle_Regain')
+    assert(string.find(made, 'Idle_Regain (new)##gcs_Idle_Regain', 1, true), 'Make did not add it: ' .. made)
+end }
 return tests

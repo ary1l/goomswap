@@ -367,6 +367,7 @@ local function group_of(n, parent)
     local builtin = builtin_group(n)
     return editorGroups.Assign(n, builtin, headings_setting()), builtin
 end
+ctx.group_of = group_of -- the set list's "+ N to add" sorts sets not made yet under their heading
 
 local function by_name(set)
     local g = set.builtin or set.group

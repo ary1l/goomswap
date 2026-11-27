@@ -75,6 +75,9 @@ The set list is grouped under headings (Idle, Defense, Melee, Weapons...). Arran
   them again, marked hidden; a search always shows them. **Show again** undoes it.
 - **Sets in it** (heading menu): **File order**, **A-Z**, or **Your order** (what Move up / down and dragging make).
 - Folded headings stay folded until you restart the game (Save's reload keeps them).
+- **+ N to add** (last row of a heading): the sets a job file usually has under it that yours doesn't yet (the engine's, the
+  job example's, `Tp_`/`Ws_` for each `/wm` mode; not every ability or spell: **+ New set** has those). Click: each with
+  what it is for (`Idle_Regain`: *Standing: Regain*) and **Make** (made empty and opened; unsaved until Save).
 - **Share with every character** (heading menu): these headings go into the shared settings file, and every
   character without headings of its own uses them. **Only this character** copies them back into `char.lua`.
 

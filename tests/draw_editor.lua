@@ -82,6 +82,7 @@ local imgui = setmetatable({}, { __index = function(_, k)
     if (k == 'GetWindowDrawList') or (k == 'GetForegroundDrawList') then return function() return stub('dl') end end
     if (k == 'GetStyle') then return function() return { ItemSpacing = { x = 8, y = 4 }, FramePadding = { x = 4, y = 3 } } end end
     if (k == 'GetIO') then return function() return { DisplaySize = { x = 1920, y = 1080 }, KeyCtrl = false, KeyShift = false } end end
+    if k == 'TreeNodeEx' then return function(...) return true end end -- open, as SetNextItemOpen asks (the list's headings)
     if (k == 'Begin') or (k == 'BeginChild') or (k == 'BeginTabBar') or (k == 'BeginTable') then
         return function(...) check_args(k, ...) return true end
     end

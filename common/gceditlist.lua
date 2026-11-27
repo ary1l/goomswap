@@ -653,6 +653,45 @@ local function chip(label, value, col)
     imgui.PopStyleColor(4)
     if vars > 0 then imgui.PopStyleVar(vars) end
 end
+-- The sets a job file usually has (the engine's, the job's example's, /wm layers: no abilities or spells) that this
+-- one lacks, by the heading each would go under; worked out again when the file or its edits change.
+local function addable()
+    local c = editorState.cache
+    if (c.addRev == editorState.document.revision) and (c.addable ~= nil) then return c.addable end
+    local out, ghost = {}, {} -- MELEE's /mset modes with no Tp_ set have their own row (mset_ghosts)
+    for _, m in ipairs((ctx.melee_modes ~= nil) and ctx.melee_modes() or {}) do ghost['tp_' .. string.lower(m)] = true end
+    local ok, list = pcall(suggestions, true)
+    for _, s in ipairs(ok and list or {}) do
+        local g = (ctx.group_of ~= nil) and ctx.group_of(s.name) or nil
+        if (g ~= nil) and not ghost[string.lower(s.name)] then
+            out[g] = out[g] or {}
+            out[g][#out[g] + 1] = s
+        end
+    end
+    c.addRev, c.addable = editorState.document.revision, out
+    return out
+end
+-- "+ N to add" clicked: what each one is for, and Make (made empty and opened, unsaved until Save).
+local function draw_addable()
+    local a = editorState.ui.addTo
+    if (a == nil) or not imgui.BeginPopup('##gcedit_addable') then return end
+    imgui.TextColored(palette.section, 'Add to ' .. tostring(a.head))
+    for i, s in ipairs(a.list) do
+        if imgui.SmallButton('Make##gcadd_mk' .. i) then
+            make_set(s.name, nil, false)
+            editorState.ui.addTo = nil
+            imgui.CloseCurrentPopup()
+        end
+        imgui.SameLine()
+        imgui.TextUnformatted(s.name)
+        local words = (ctx.words ~= nil) and ctx.words.Label(s.name) or nil
+        if (words ~= nil) or (s.why ~= nil) then
+            imgui.SameLine()
+            imgui.TextColored(palette.dim, words or s.why)
+        end
+    end
+    imgui.EndPopup()
+end
 local function draw_sets()
     if ctx.rules ~= nil then ctx.rules.ListButton() end -- RULES: the job file's gcinclude.Rules
     if imgui.Button('+ New set##gcedit') then
@@ -995,9 +1034,25 @@ local function draw_sets()
                 end
             end
         end
+        -- the sets a job file usually has, not made yet, under the heading they would go: one quiet row, a click lists
+        local add = (not folded) and (find == '') and (addable()[grp.g]) or nil
+        if (add ~= nil) and not clip_skip(clip, add) then
+            if imgui.Selectable('+ ' .. #add .. ' to add##gcadd_' .. grp.g, false) then
+                editorState.ui.addTo = { g = grp.g, head = grp.head, list = add }
+                imgui.OpenPopup('##gcedit_addable')
+            end
+            if imgui.IsItemHovered() then
+                local names = {}
+                for i, a in ipairs(add) do if i <= 6 then names[#names + 1] = a.name end end
+                set_tip('Sets this heading usually has that your file doesn\'t: ' .. table.concat(names, ', ')
+                    .. ((#add > 6) and ', ...' or '') .. '. Click to make one.')
+            end
+            clip_drawn(clip, add)
+        end
     end
     clip_end(clip)
     draw_heading_menu()
+    draw_addable()
     imgui.EndChild()
 end
 
