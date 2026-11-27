@@ -915,6 +915,7 @@ local function draw_sets()
         .. tostring(ui.missingOnly[1])
         .. tostring(ui.needsRpOnly[1])
         .. ':' .. tostring(ui.showHidden[1]) .. tostring(ui.unusedOnly[1])
+        .. ((gcdisplay ~= nil) and (gcdisplay.GetCycle ~= nil) and tostring(gcdisplay.GetCycle('Hoxne')) or '') -- HOXNE
     if editorState.cache.listKey ~= key then
         local buckets = {}
         for _, set in ipairs(editorState.document.model.list) do
@@ -931,9 +932,13 @@ local function draw_sets()
             local rows = buckets[g]
             local filtering = ui.issuesOnly[1] or ui.editedOnly[1] or ui.missingOnly[1] or ui.needsRpOnly[1]
                 or ui.unusedOnly[1]
-            -- JOB ABILITIES / NAMED WEAPON SKILLS show before your first set there, to add one (others need a set first:
-            -- an empty HOXNE on every job would be noise)
+            -- JOB ABILITIES / NAMED WEAPON SKILLS show before your first set there, to add one; HOXNE too while you own
+            -- a Hoxne Ampulla or /hoxne is on (others need a set first: an empty HOXNE on every job would be noise)
             local actionHeading = (g == 'Job abilities') or (g == 'Named weapon skills')
+            if (g == 'Hoxne') and not actionHeading then
+                actionHeading = ((editorState.inventory.firstByName or NONE)['hoxne ampulla'] ~= nil)
+                    or ((gcdisplay ~= nil) and (gcdisplay.GetCycle ~= nil) and (gcdisplay.GetCycle('Hoxne') == 'Locked'))
+            end
             if (rows == nil) and (find == '')
                 and (lib.IsCustom(g, GROUPS) or ((not filtering) and actionHeading and (addable()[g] ~= nil))) then
                 rows = {}
