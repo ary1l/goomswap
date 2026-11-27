@@ -396,10 +396,7 @@ do
                     gcinclude.settings.WSdistance = tonumber(args[2])
                     gcinclude.Say('WS Distance is on and set to ' .. gcinclude.settings.WSdistance)
                 else
-                    gcinclude.settings.WScheck = not gcinclude.settings.WScheck
-                    gcinclude.Say('WS distance check is now ' .. tostring(gcinclude.settings.WScheck))
-                    gcinclude.Say('/wsdistance N: the least reach in yalms (a big mob reaches further: WS range '
-                        .. gcinclude.WsRange .. ' + both hitboxes)')
+                    gcinclude.WsDistanceStatus() -- no word: shows, never turns the check off
                 end
             elseif args[1] == 'dt' then
                 gcinclude.FlipToggle('DTset', args[2])
@@ -1932,19 +1929,34 @@ function runtime.NewAuto()
     end
 
     -- Your auto-attacks prove reach: a swing (0x0028 category 1 from you: hit, miss, parry or guard alike) only
-    -- happens in melee range, and a weapon skill reaches further than a swing (LandSandBoat: melee 2, weapon skills 3,
-    -- past both hitboxes). The farthest distance a swing went out at on your target: gcinclude.WsReach uses it.
-    local swing = { id = nil, d = 0 }
-    local function swing_packet(P)
-        if (P.me == nil) or (P.actor ~= P.me) or (P.cat ~= 1) or (P.ntgt < 1) then return end
-        local mm = AshitaCore:GetMemoryManager()
-        local ent, index = mm:GetEntity(), mm:GetTarget():GetTargetIndex(0)
-        if (index == 0) or (ent:GetServerId(index) ~= P.tgt[1]) then return end
-        local d = math.sqrt(ent:GetDistance(index))
-        if (swing.id ~= P.tgt[1]) then swing.id, swing.d = P.tgt[1], d
-        elseif (d > swing.d) then swing.d = d end
+    -- happens in melee range, and a weapon skill reaches 1' further ("Weapon Skill range is always 1' longer than melee
+    -- range", ffxiclopedia Distance; LandSandBoat: melee 2, weapon skills 3, past both hitboxes). The farthest distance
+    -- a swing went out at, per kind of mob (name + hitbox: range depends on the target), whatever you have targeted:
+    -- the next mob of that kind has it from its first weapon skill. gcinclude.WsReach uses it. Cleared on zone.
+    local swingSeen = {}
+    local function swing_key(ent, index)
+        local name = ent:GetName(index)
+        if (name == nil) or (name == '') then return nil end
+        return name .. '|' .. math.floor((tonumber(ent:GetModelHitboxSize(index)) or 0) * 10 + 0.5)
     end
-    function gcauto.SwingReach(id) return (id ~= nil) and (swing.id == id) and swing.d or 0 end
+    local function swing_packet(P)
+        if (P.me == nil) or (P.actor ~= P.me) or (P.cat ~= 1) then return end
+        local ent = AshitaCore:GetMemoryManager():GetEntity()
+        for t = 1, P.ntgt do
+            local index = entity_index(P.tgt[t])
+            local key = (index ~= nil) and swing_key(ent, index) or nil
+            if (key ~= nil) then
+                local d = math.sqrt(ent:GetDistance(index) or 0)
+                if (d > (swingSeen[key] or 0)) then swingSeen[key] = d end
+            end
+        end
+    end
+    -- the farthest your swings went out at on a mob like the one at this entity index; 0: none yet
+    function gcauto.SwingReach(index)
+        if (index == nil) or (index == 0) then return 0 end
+        local key = swing_key(AshitaCore:GetMemoryManager():GetEntity(), index)
+        return (key ~= nil) and swingSeen[key] or 0
+    end
 
     -- Learned cast time, so no job needs gSettings.FastCast. XiPackets 0x0028: cmd_no 8 = Magic (Start),
     -- cmd_arg low 16 bits 'ca' (24931) = start, 'sp' (28787) = interrupt; cmd_no 4 = Magic (Finish), cmd_arg = spell
@@ -2263,6 +2275,7 @@ function runtime.NewAuto()
             if (e.id == 0x000A) and (inc ~= nil) and (inc.OnZone ~= nil) then pcall(inc.OnZone) end
             if (e.id == 0x000A) then
                 predicted = {}; gcauto.RollReset(); gcauto.ClearTags(); lastCombat = -1e9; monsterCache = {}; mbres = {}
+                swingSeen = {}
             end
         end)
     end

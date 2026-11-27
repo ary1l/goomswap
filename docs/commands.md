@@ -4,7 +4,7 @@
 
 ## Commands
 
-- **Toggles** take `on` / `off`; no word flips them.
+- **Toggles** take `on` / `off`; no word flips them (`/wsdistance`: no word shows its state).
 - **Modes** take a value in any case: no word = the next one; else its name, its start, its initials, part of it,
   its number, or your own short name in `HUDAbbr` (`/wm max`, `/mset sb`, `/wm 3`).
 
@@ -17,7 +17,7 @@
 | `/mset [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets; `acc` also wears `Midshot_Acc` (COR RNG PLD; `Midshot_<Mode>_Acc` per weapon mode) |
 | `/wsset [mid\|high]` | `high`: WS sets add their `_HighBuff` |
 | `/th` | `TH` until tagged (THF main: always) |
-| `/wsdistance [yalms\|on\|off]` | WS range check: a melee WS out of reach is cancelled (reach = WS range 3 + your and the target's hitboxes, so further on a big mob; at least as far as your auto-attacks on it have landed; `yalms` = the least reach, default 5) |
+| `/wsdistance [yalms\|on\|off]` | No word: the check's state and your target's distance and reach. WS range check: a melee WS out of reach is cancelled (reach = WS range 3 (Gust Slash, Cyclone 14) + your and the target's hitboxes, so further on a big mob; at least as far as your auto-attacks have landed on a mob of that name and size this zone; `yalms` = the least reach, default 5) |
 | `/def [dt\|mdt\|aminon\|off]` | DT → MDT → Aminon → off; `/dt` `/mdt` `/aminon` one |
 | `/sir` `/kite` | SIR over midcasts (not `SIRSkip`) / Movement |
 | `/idleset [refresh\|regen\|regain]` | `Idle_<mode>` over `Idle` while idle |
