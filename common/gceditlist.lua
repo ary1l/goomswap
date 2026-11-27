@@ -588,14 +588,17 @@ local function addable()
     for _, x in ipairs(ok and sugg or {}) do list[#list + 1] = x end
     -- a set for while your own JA's buff is up (Buffs['Saber Dance']), when the game has a buff by its name and the
     -- file has Buffs to put it in: the engine wears it idle and engaged
-    local buffs = editorState.document.model.byName['Buffs']
-    if (buffs ~= nil) and (buffs.parentName == nil) and (ctx.rules ~= nil) and (ctx.rules.IsBuff ~= nil) then
-        for _, x in ipairs(ok and sugg or {}) do
-            local child = "Buffs['" .. x.name .. "']"
-            if (x.why == 'job ability') and ctx.rules.IsBuff(x.name) and not string.find(x.name, "'", 1, true)
-                and (editorState.document.model.byLower[string.lower(child)] == nil) then
-                list[#list + 1] = { name = child, parent = 'Buffs', key = x.name, group = 'Buffs',
-                    why = 'while ' .. x.name .. ' is up (idle and engaged)' }
+    -- and Buffs_Ws / Buffs_Midcast ones (its weapon skills / spells while it is up), for each of those the file has
+    local model = editorState.document.model
+    for _, x in ipairs(((ctx.rules ~= nil) and (ctx.rules.IsBuff ~= nil) and ok) and sugg or NONE) do
+        if (x.why == 'job ability') and ctx.rules.IsBuff(x.name) and not string.find(x.name, "'", 1, true) then
+            for _, b in ipairs({ { 'Buffs', 'idle and engaged' }, { 'Buffs_Ws', 'weapon skills' },
+                { 'Buffs_Midcast', 'spells' } }) do
+                local parent, child = model.byName[b[1]], b[1] .. "['" .. x.name .. "']"
+                if (parent ~= nil) and (parent.parentName == nil) and (model.byLower[string.lower(child)] == nil) then
+                    list[#list + 1] = { name = child, parent = b[1], key = x.name, group = 'Buffs',
+                        why = 'while ' .. x.name .. ' is up (' .. b[2] .. ')' }
+                end
             end
         end
     end

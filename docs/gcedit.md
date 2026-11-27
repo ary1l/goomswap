@@ -33,8 +33,9 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
 - Most useful first: names your actions looked for and didn't find, the engine's sets, the job example's, your
   `/mset` and `/wm` modes' sets, your ability groups (DNC: `Step`, `Samba`, `Jig`, `Flourish`), then the job
   abilities and weapon skills you know. Spells are left out (too many).
-- Under BUFFS: `Buffs['Saber Dance']` for each of your JAs that has a buff of the same name. It is worn while the
-  buff is up.
+- Under BUFFS: `Buffs['Saber Dance']` for each of your JAs that has a buff of the same name, worn while the buff is
+  up; `Buffs_Ws['Saber Dance']` and `Buffs_Midcast['Saber Dance']` for its weapon skills and spells, when your file
+  has `Buffs_Ws` / `Buffs_Midcast`.
 - An ability group (`Step`) is a set your job file's HandleAbility puts on for every ability with that word in its
   name, under the ability's own set.
 - **More** holds the rarely used ones (Aminon, Sleeping, Doomed...) and abilities a group set covers (Curing Waltz
