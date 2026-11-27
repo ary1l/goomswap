@@ -29,6 +29,10 @@ take. Most swaps need no rule: a set with a weapon skill's, ability's or spell's
 `Sentinel`, `Cure`) goes on by itself, with its `/wm` and `/mset` versions; the Rules page says so at the top. See
 [Rules](rules.md).
 
+**Wear this when...** (a set's **More...**): the Rules page's builder with Wear set to that set and a moment by its
+heading (weapon skills, abilities, casting, else idle/engaged): pick the conditions and **Save rule**.
+
+
 ## New job file
 
 The file name menu (top bar) ends with **New job file**: pick a job, then **From my gear** (the example with only what
@@ -39,15 +43,28 @@ current job it loads at once. A GearSwap file: `/gcimport <file>` ([Rules](rules
 A new job file (still the example as is, or a `/gcbuild` draft) gets a **Getting started** list at the top: your own
 gear (**Keep only my gear**), what is left **To fill**, a `/wm` weapon mode (or `/mw` `/sw` picks), one **Save +
 reload**, and the status bar (`/gcbar`). Each step ticks itself; the list goes once all are done, or with **Hide**
-(for that job file).
+(for that job file, until you restart the game).
 
 ## Add a set or mode
 
-1. **+ New set**, type a name, **Create**. Names the engine looks for that your file lacks are suggested as you
+1. **+ New set**, type a name, **Create** (or a heading's **+ N to add**, below). Names the engine looks for that your file lacks are suggested as you
    type (your spells, abilities and weapon skills too), and the box says what would wear a set by that name
    (`Absorb-TP`: *Worn: when Absorb-TP goes off (midcast).*). Tick *Copy slots from ...* to start from the open set.
 2. Click a slot and pick gear from **Gear** (or **Use worn** for everything you have on).
 3. **Save + reload**, check the review, confirm.
+
+**+ N to add** (a framed button, last row of a heading; **+ add** when it has nothing to suggest): the sets a job file
+usually has under it that yours doesn't yet, most useful first: the engine's usual ones, the job example's, a `/mset`
+mode's `Tp_` and a `/wm` mode's `Tp_`/`Ws_`, the ability groups your `HandleAbility` wears by name (DNC: `Step`,
+`Samba`, `Jig`, `Flourish`, under JOB ABILITIES), then the job abilities and weapon skills you know (not spells: too
+many), under BUFFS `Buffs['Saber Dance']` for each of your JAs the game has a buff by (worn while it is up, idle and
+engaged), and under **More** the one-fight or one-state sets (Aminon, Sleeping, Doomed...) and the abilities a group's
+set already covers (Curing Waltz III: your `Waltz`), still made from there for a set of their own (Box Step's hands);
+the count leaves those out.
+Each says what it is for (`Idle_Regain`: *Standing: Regain*) with **Make** (empty) and **from...** (a copy of a set you
+pick); **Your own name** takes any other set (`Cure IV`). The set is made and opened on its first slot (Head; a
+`Weapon_` set's Main) with the picker, under the heading its name puts it in, unsaved until Save. JOB ABILITIES and
+NAMED WEAPON SKILLS show before your first set there.
 
 | To add | Do |
 |---|---|
@@ -55,8 +72,8 @@ reload**, and the status bar (`/gcbar`). Each step ticks itself; the list goes o
 | A weapon mode (`/wm`) | **+ /wm mode** (the WEAPONS heading, Getting started, the bar) asks for its `/wm` name (one word; a name `/wm` would read as another mode's `/mset` set is refused) and makes `Weapon_<Name>` from the weapons you hold (untick to start empty); its card shows the weapon row only. Save adds it to `gcinclude.WeaponModes` (any one-word `Weapon_` set the engine doesn't wear for another mode: `Weapon_MpuTP` is its own mode, `Weapon_MpuAcc` is `/wm Mpu` with `/mset Acc`). A `Weapon_` set puts on Main, Sub, Range and Ammo only: armor in one is flagged under its buttons (**Move to Tp_<Name>**, worn over `Tp_Default` while the mode is on, or **Clear them**), **Use worn** copies only those four, and a `Weapon_` set `/wm` doesn't list is flagged with **Add /wm <Name>**. The job's first one also becomes **Weapons on load** (`DefaultWeapons`) when that was None (**Keep None** in its **Weapon sets...** undoes it). Deleting the set takes it out on Save, with the sets worn only with that mode (`Tp_<Name>`, `Ws_<Name>_Acc`, `Savage Blade_<Name>`, `Weapon_<Name>_1h`...; untick to keep them; ones your code names are kept); a `DefaultWeapons` / `WeaponRoles` still naming it is flagged (change it in **GoomSwap settings**). `Weapon_<Name>_1h` is used when you can't dual wield, `Weapon_<Name>Acc` (or `Weapon_<Name>_Acc`) with `/mset acc`. **Weapon sets...** (the set's header or right-click; offered when you make one) lists every set the mode can have: its `_1h` and `/mset` weapon sets (made as copies of `Weapon_<Name>`, spelled like your file's) and the layers below; tick the missing ones and **Make**. After **Save + reload** the mode is on the bar and HUD (the weapon pill and its right-click menu), coloured by its Main |
 | TP or WS gear for one weapon | `Tp_<Name>` / `Ws_<Name>` (`Tp_Chango`): worn over `Tp_Default` / `Ws_Default` while `/wm <Name>` is on; `Tp_Chango_Acc` with `/mset acc` too. **Weapon sets...** on the `Weapon_<Name>` set makes the ones you tick, empty: fill only what differs, and later changes to the base still apply (or tick **Layers start as a copy of their base**). Right-click `Tp_Default` (or `Tp_Acc`, `Dt`, `Idle`, a WS's set): **Copy as a weapon set** makes one full copy |
 | TP or WS gear for a weapon type | `Tp_2h` / `Tp_1h` (and `Ws_`, `Dt_`, `Idle_`...): for a weapon with no set of its own, by its Main ([How sets stack](sets.md#how-sets-stack)) |
-| A Main/Sub/Range pick (`/mw` `/sw` `/rw`) | Nothing: every item in a `Weapon_` set is one. Others go in `gcinclude.SubModes` (etc.) in the file |
-| A COR/RNG gun | Add its name to `gcinclude.RangeModes` in the file |
+| A Main/Sub/Range pick (`/mw` `/sw` `/rw`) | Nothing: every item in a `Weapon_` set is one. Others: **GoomSwap settings**, this job's options, `/mw` `/sw` `/rw` picks (`gcinclude.MainModes`...) |
+| A COR/RNG gun | **GoomSwap settings**, this job's options, `/rw` picks (`gcinclude.RangeModes`) |
 | A melee mode (`/mset`) | **+ /mset mode** on the **MELEE** heading (also on the **Related** tab): name it, tick the sets to make for it (`Tp_<mode>` and `Ws_<mode>` start ticked; `Dt_<mode>` and each weapon skill's `Savage Blade_<mode>` offered), **Add**. They start empty: fill only what differs. **Save + reload** adds it to `gcinclude.MeleeModes`; `/mset <mode>` then wears each over its base |
 | A set for one buff | Open `Buffs` (idle/engaged), `Buffs_Ws` or `Buffs_Midcast`, type the buff's name as the game shows it, **New buff set**. Each shows under its parent (`Buffs['Aftermath: Lv.3']`) and edits, deletes and copies to other jobs like any set. Renaming one also renames code that takes it from its parent (`sets.Buffs['Haste']`, `sets.Buffs.Haste`) |
 
@@ -76,20 +93,6 @@ The set list is grouped under headings (Idle, Defense, Melee, Weapons...). Arran
   them again, marked hidden; a search always shows them. **Show again** undoes it.
 - **Sets in it** (heading menu): **File order**, **A-Z**, or **Your order** (what Move up / down and dragging make).
 - Folded headings stay folded until you restart the game (Save's reload keeps them).
-- **+ N to add** (a framed button, last row of a heading; **+ add** when it has nothing to suggest): the sets a job file
-  usually has under it that yours doesn't yet, most useful first: the engine's usual ones, the job example's, a `/mset`
-  mode's `Tp_` and a `/wm` mode's `Tp_`/`Ws_`, the ability groups your `HandleAbility` wears by name (DNC: `Step`,
-  `Samba`, `Jig`, `Flourish`, under JOB ABILITIES), then the job abilities and weapon skills you know (not spells: too
-  many), under BUFFS `Buffs['Saber Dance']` for each of your JAs the game has a buff by (worn while it is up, idle and
-  engaged), and under **More** the one-fight or one-state sets (Aminon, Sleeping, Doomed...) and the abilities a group's
-  set already covers (Curing Waltz III: your `Waltz`), still made from there for a set of their own (Box Step's hands);
-  the count leaves those out.
-  Each says what it is for (`Idle_Regain`: *Standing: Regain*) with **Make** (empty) and **from...** (a copy of a set you
-  pick); **Your own name** takes any other set (`Cure IV`). The set is made and opened on its first slot (Head; a
-  `Weapon_` set's Main) with the picker, under the heading its name puts it in, unsaved until Save. JOB ABILITIES and
-  NAMED WEAPON SKILLS show before your first set there.
-- **Wear this when...** (a set's **More...**): the Rules page's builder with Wear set to that set and a moment by its
-  heading (weapon skills, abilities, casting, else idle/engaged): pick the conditions and **Save rule**.
 - **Share with every character** (heading menu): these headings go into the shared settings file, and every
   character without headings of its own uses them. **Only this character** copies them back into `char.lua`.
 
@@ -195,14 +198,14 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 - **Backups** lists this file's editor backups (every Save keeps one; `EditorBackupKeep`, the newest 3), newest
   first, each with the sets that differ from the file now; **Compare** shows them slot by slot (then -> now).
   **Restore** puts one back: the file is backed up first, then replaced and reloaded. Not with unsaved edits.
-- **Recent** (over the slots): the sets you opened last, newest first; a click opens one. Kept per job.
+- **Recent** (over the slots): the sets you opened last, newest first; a click opens one. Kept for the game session.
 - The set you're editing has its title under it: its heading and name (`Idle > Town`), its tags as pills (**2 need
   RP**: click for where else those pieces are; worn by name, renamed, new), one line with what it is used for and how
   many of the 16 slots it names, and a meter of those slots. Under it: **Undo edit** / **Redo** (after an edit),
   **Use worn**, **Copy from...**, **Compare...** (and **Weapon sets...** on a `/wm` set), **More...** (Revert,
   Rename, Delete).
 
-![The main view as the game draws it (Compact, bar theme abyss): the set list with state dots, tags and slot counts, the open set, and Result (drawn from the current code; name changed)](gcedit_list.png)
+![The main view in game (Compact: icon cards, each piece's name and stats on hover), with What goes on: each slot's piece and the set that put it there (character name pixelated; JOB ABILITIES' count is lower now, the abilities a group set covers sit under More)](gcedit_list.png)
 
 - **Unused gear** lists, by bag, the gear in your Inventory and Wardrobes that nothing of this character names:
   none of its job files, char.lua, the shared settings file, GoomSwap's own sets or its code (Moonshade, obis,
@@ -226,6 +229,9 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 | Not in this set | A commented-out placeholder |
 | Unchanged / Replaced: source | The set leaves the slot alone / a later layer of the selected action (What goes on) wins |
 | Faded piece, *from <set>* | Not in this set: the piece an earlier set puts there and that stays (the layers Summary uses) |
+
+On Compact's icon cards the words are left out: the slot, its bag tag and the icon, with the outline and fill above
+saying the rest; hover a card for the piece's name and stats.
 
 - Click a slot, then pick an item from **Gear**; the header shows **Pending** vs **Saved** (paths, augments).
 - **Put in other sets...** (over the picker, or right-click a slot card): that piece, exactly as it is (path,
@@ -280,8 +286,8 @@ a job file's own setting still wins. Details: [Settings](settings.md).
   only worn where your code names it; the dialog warns.
 - **Undo edit** steps back through slot changes; **Undo slot** restores the saved definition.
 - **Redo** puts back what Undo edit took out, until you make another edit.
-- Hover a slot card: its row in **What goes on** lights up (and the other way round), and **...** at the card's
-  bottom right opens the slot's menu (the same as a right-click).
+- Hover a slot card: its row in **What goes on** lights up (and the other way round); on Comfortable's named cards
+  **...** at the bottom right opens the slot's menu, the same as a right-click (on Compact's icon cards: right-click).
 - The gear picker shows what each piece changes against the one in the slot now (`DT -3%  HP +8`): green better,
   red worse, % stats first; hover for all of them, before > after. Read from the item's description and
   augments, as Stats does (conditional effects left out).
@@ -321,4 +327,4 @@ cancelling writes nothing. Saving checks the file didn't change on disk and stil
 then reloads (reopening the editor if ticked). A set written as code (built by a function, not a table of slots) is shown, not
 edited; everything outside the gear definitions, rules and the settings you change is kept as written. The newest three editor backups per file are kept (`EditorBackupKeep` in
 char.lua's `settings`, `0` keeps all). Spacing is a GoomSwap setting (`EditorSpacing`); recent sets and Getting started
-last for the game session. Nothing else is written beside the job file.
+last for the game session. Apart from its dated backups, nothing else is written beside the job file.

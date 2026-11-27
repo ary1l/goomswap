@@ -35,7 +35,7 @@ HUD). Click a line to drive that box.
 - **Click** a pill: cycles it on that box (ctrl+click the weapon: `/mset`). **Right-click** a line's weapon pill:
   that box's weapon modes and Main/Sub/Range/Ammo picks, side by side; any other mode pill: its values. Click one and
   that box takes it. The drop stays open while a menu is. On your own line the weapon menu ends with **+ new
-  mode...** (opens `/gcedit` on New set, `Weapon_` typed) and, under each pick list, **+ add...** (opens `/gcedit`
+  mode...** (opens `/gcedit`'s New weapon mode, which asks for the `/wm` name) and, under each pick list, **+ add...** (opens `/gcedit`
   Settings on `MainModes` / `SubModes` / `RangeModes` / `AmmoModes`; every item in a `Weapon_` set is a pick
   already); **ctrl+click** a mode opens its `Weapon_` set there;
   the melee menu ends with **+ new mode...** (the new `/mset` mode popup). **Hover** a pill: its full value and what each click does.

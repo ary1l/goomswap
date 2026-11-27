@@ -23,7 +23,8 @@ says so at the top, with your file's lines on hover.
   Order only matters between rules that go on at the same moment and place (same moment, same code spot or layer):
   where two put gear in the same slot, the later one wins. **Up** / **Down** show only there, and move a rule past the
   next one that goes on at that place.
-- **+ New rule** opens the builder over the cards, in three steps:
+- **+ New rule** opens the builder over the cards (a set's **More...**, **Wear this when...**, opens it with that set as
+  the Wear and a moment by its heading), in three steps:
   1. **When**: not acting (idle, fighting, resting), your pet's move, starting a spell, casting, a job ability, a
      weapon skill, starting a shot, a ranged shot, using an item.
   2. **If**: conditions from a menu (below), **all of these** or **any of these**. Skills, elements, targets and

@@ -2980,8 +2980,8 @@ end
 
 -- /gcedit [set]: open the set editor on that set, or close it. Saving reloads the job file; GcEditReopen (a
 -- global, so it outlives the reload) brings the editor back on the same set (InitStep).
--- The bar's '+ new mode...' / '+ add...': /gcedit opened (if it isn't) on what was asked. kind: 'wm' (New set,
--- Weapon_ typed), 'mset' (a /mset mode and its sets) or a pick list's setting ('MainModes': Settings, found).
+-- The bar's '+ new mode...' / '+ add...': /gcedit opened (if it isn't) on what was asked. kind: 'wm'
+-- (New weapon mode), 'mset' (a /mset mode and its sets) or a pick list's setting ('MainModes': Settings, found).
 function gcinclude.EditorRequest(kind)
     if not loadEditor() then return end
     if not gcinclude.Editor.IsOpen() then gcinclude.Editor.Open(gcinclude, nil, nil) end

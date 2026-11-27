@@ -5,9 +5,9 @@ abilities, weapon skills, combat modes, defense and utility gear.
 
 For **Ashita v4** (LuAshitacast). Start from an example job file and the in-game set editor (`/gcedit`).
 
-![The set editor (in game, before the v3.30 layout clean-up): the set list, the open set's slots with icons and bags, and Related: every set that goes on with it, in order (character name pixelated)](docs/gcedit_editor.png)
+![The set editor in game (Comfortable spacing): the set list with a + N to add under each heading, a weapon skill's set with its named slot cards (Ammo from Ws_Default), and To fill with nothing left (character name pixelated)](docs/gcedit_editor.png)
 
-More pictures of the editor, some of them mockups of the newest build, are in [its docs](docs/gcedit.md).
+More pictures of the editor (in game, and mockups of some panels) are in [its docs](docs/gcedit.md).
 
 ## Features
 
@@ -26,7 +26,8 @@ More pictures of the editor, some of them mockups of the newest build, are in [i
   drop for its gear.
 - `/gcbuild` to draft a job file from carried gear; `/gcedit` to browse the character's job files, inspect gear,
   fill and compare inherited gear/stat totals (with gear caps: haste, Fast Cast, PDT/MDT), keep item details
-  visible, and resize panels; arrange, hide and sort its headings, copy sets to other jobs, find an item in every
+  visible, add the sets a heading usually has (**+ N to add**: the engine's, the example's, your JAs and weapon skills,
+  a buff set for your own JA), arrange, hide and sort its headings, copy sets to other jobs, find an item in every
   job file, put a piece in many sets or replace it everywhere, see which sets are on you now, restore a backup,
   list gear no job file uses, and edit settings for one character or all of them. `/gcedit last` opens the set
   your last action used.
@@ -57,15 +58,16 @@ More pictures of the editor, some of them mockups of the newest build, are in [i
 1. Load the matching example job file. `/lac newlua` can create the profile folder and an empty job file. Coming
    from GearSwap: put your job file in your character's luashitacast folder and run `/gcimport <file>`.
 2. Run `/gcbuild` to create `<JOB>.proposed.lua` with gear you own, or open `/gcedit` and choose **Keep only my gear**.
-3. Use the editor's **To fill** and **Gear** tabs to fill empty or missing slots. **Use worn** copies your current gear
-   into a set.
+3. Use the editor's **To fill** tab to fill empty or missing slots: click one, pick the item, and it takes you back to
+   the list for the next. **Use worn** copies your current gear into a set; **+ N to add** under a heading makes a set
+   it usually has.
 4. Choose **Save + reload**. The previous file is backed up; the newest three editor backups per job are kept
    by default (`EditorBackupKeep = 0` keeps all). Other job files use **Save file** without changing your active job.
 5. Run `/checksets`; the editor's **What goes on** tab shows what an action actually put on, slot by slot.
 
 While a job file is new (still the example, or a `/gcbuild` draft), the editor shows a **Getting started** list of
 these steps, each ticked from what GoomSwap sees, with a button for each. It goes away once every step is done, or
-with **Hide**.
+with **Hide** (until you restart the game).
 
 ## Weapon modes
 
@@ -77,15 +79,18 @@ picks it (F7 cycles). While it is on, its own sets go over their base: `Tp_<Name
 **Add one** (example: an RDM adding Mpu Gandring as `/wm mpu`):
 
 1. `/gcedit` on that character. For another job's file, click the file name in the top bar.
-2. **+ /wm mode** on the WEAPONS heading (or **+ New set**), name it `Weapon_Mpu` (one word, no spaces or `_`:
-   `/wm mpu`), **Create**.
+2. Hold the weapons. **+ /wm mode** on the WEAPONS heading (or the bar's weapon menu, **+ new mode...**): type `Mpu`
+   (one word: the editor says `Set: Weapon_Mpu   In game: /wm mpu`, and refuses a name `/wm` would read as another
+   mode's `/mset` set), keep **Start from the weapons you hold** ticked, **Create**. `Weapon_Mpu` holds Main, Sub,
+   Range and Ammo only; its card shows just those.
 3. **Weapon sets for /wm Mpu** opens. Tick the sets whose gear should differ with Mpu (`Tp_Mpu`, `Ws_Mpu`, a weapon
    skill's set...) and **Make**. They start empty: fill only what differs, and later changes to the base still apply.
-4. Fill `Weapon_Mpu`: Main Mpu Gandring, Sub your offhand.
+   Your job's first mode also becomes **Weapons on load** (**Keep None** there undoes it).
+4. Check `Weapon_Mpu`: Main Mpu Gandring, Sub your offhand.
 5. **Weapon sets...** (over the slots) again: tick `Weapon_Mpu_1h`, `Weapon_Mpu_Acc`... (spelled like your file's,
    `Weapon_MpuAcc` if it joins them) and **Make**. They start as copies of `Weapon_Mpu`; change their Sub.
-6. Optional: right-click `Weapon_Mpu`, **/wm order**, to place it in the cycle; **GoomSwap settings**, **DefaultWeapons**, to
-   start in it.
+6. Optional: right-click `Weapon_Mpu`, **/wm order**, to place it in the cycle; **GoomSwap settings**, this job's
+   **Weapons on load** (`DefaultWeapons`), to start in another mode.
 7. **Save + reload** (another job's file: **Save file**, in effect when you change to that job). The review lists
    the new `/wm` mode.
 
