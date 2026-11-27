@@ -1037,7 +1037,10 @@ local function draw_sets()
         -- the sets a job file usually has, not made yet, under the heading they would go: one quiet row, a click lists
         local add = (not folded) and (find == '') and (addable()[grp.g]) or nil
         if (add ~= nil) and not clip_skip(clip, add) then
-            if imgui.Selectable('+ ' .. #add .. ' to add##gcadd_' .. grp.g, false) then
+            imgui.PushStyleColor(ImGuiCol_Text, palette.blue) -- a link, not a set: blue like the editor's other links
+            local hit = imgui.Selectable('+ ' .. #add .. ' to add##gcadd_' .. grp.g, false)
+            imgui.PopStyleColor(1)
+            if hit then
                 editorState.ui.addTo = { g = grp.g, head = grp.head, list = add }
                 imgui.OpenPopup('##gcedit_addable')
             end
