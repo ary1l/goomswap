@@ -88,13 +88,6 @@ local function request_context(kind, set, slot, gear, source)
     editorState.ui.openContext = true
 end
 
-local function save_preferences()
-    if not editorState.open or not editorState.preferences then return end
-    local ok, err = editorPreferences.Save(
-        editorState.document.path .. '.gcedit-ui', editorState.preferences, fileWriter.Write
-    )
-    if not ok then gearEngine.Err('Could not save editor preferences: ' .. tostring(err)) end
-end
 
 -- Static editor palette: blue focus, amber edits, violet RP; no animated effects.
 -- /gcedit: palette and its colour-preset recolouring (gctheme, shared with goomui).
@@ -196,10 +189,9 @@ local ICONS_PER_FRAME = 8 -- texture uploads allowed per frame
 local iconBudget = ICONS_PER_FRAME
 local CHILD_BORDERS = ImGuiChildFlags_Borders or ImGuiChildFlags_Border or 1
 
-local function xy(a, b) -- ImGui vectors come back as two numbers or as a table, by Ashita version
-    if type(a) == 'table' then return a.x or a[1], a.y or a[2] end
-    return a, b
-end
+-- ImGui vectors come back as two numbers or as a table, by Ashita version: the editor's one reader (gceditwidgets)
+ctx.W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip) -- the editor's widgets (W.Switch...)
+local xy = ctx.W.Vec
 ctx.xy = xy
 
 -- Game data: icons, owned gear, worn gear.
@@ -313,6 +305,26 @@ local DEFENSE = editorData.DEFENSE
 local CASTING = editorData.CASTING
 
 -- The built-in heading for a set name. Prefixes in any case, as the engine finds sets (FindSet is case-blind).
+-- The ability groups a job file wears by name: `for _, kind in ipairs({'Waltz', 'Step'}) do ... ByName(kind)` (DNC's
+-- HandleAbility: ['Step'] on every step). Those sets go under JOB ABILITIES, and the set list offers the missing ones.
+local kindsOf = { text = nil, set = {} }
+local loadingText = nil -- load_model: the file being read, before it is the document's (its sets get headings first)
+local function ability_kinds()
+    local doc = editorState and editorState.document
+    local text = loadingText or ((doc ~= nil) and (doc.model ~= nil) and doc.model.text) or nil
+    if kindsOf.text ~= text then
+        kindsOf.text, kindsOf.set, kindsOf.list = text, {}, {}
+        for var, list, body in string.gmatch(text or '', 'for%s+_%s*,%s*([%w_]+)%s+in%s+ipairs%(%s*(%b{})%s*%)%s+do(.-)end') do
+            if string.find(body, 'ByName%(%s*' .. var .. '%s*%)') then
+                for _, w in string.gmatch(list, "(['\"])(.-)%1") do
+                    if not kindsOf.set[w] then kindsOf.set[w] = true; kindsOf.list[#kindsOf.list + 1] = w end
+                end
+            end
+        end
+    end
+    return kindsOf.set, kindsOf.list
+end
+ctx.ability_kinds = ability_kinds
 local function builtin_group(n)
     local l = string.lower(n)
     if string.match(l, '^idle') or (l == 'resting') or (l == 'town') then return 'Idle' end
@@ -324,6 +336,7 @@ local function builtin_group(n)
     if string.match(l, '^hoxne') then return 'Hoxne' end
     if string.match(l, '^buffs') then return 'Buffs' end
     if CASTING[n] or string.match(n, ' Magic') or string.match(n, '_Precast$') then return 'Casting' end
+    if ability_kinds()[n] then return 'Job abilities' end -- ['Step']: worn on every step (the job file's own list)
     local res = AshitaCore:GetResourceManager()
     local base = string.match(n, '^(.-)_[%a]+$') or n -- ['Savage Blade_Acc'] sits with Savage Blade
     local ability = res:GetAbilityByName(n, 0) or res:GetAbilityByName(base, 0)
@@ -349,6 +362,18 @@ local settingsFiles = gFunc.LoadFile('common\\gceditsettings.lua')({
     state = function() return editorState end,
 })
 ctx.settingsFiles = settingsFiles -- the job file's own settings are written by Save (gceditsets)
+-- The editor's spacing: GoomSwap settings' EditorSpacing (char.lua, else the shared file, else Compact); this
+-- session's pick when char.lua couldn't take it (GcEditSpacing).
+ctx.spacing = function()
+    local v = GcEditSpacing or settingsFiles.Get('EditorSpacing')
+    return (v == 'Comfortable') and 'Comfortable' or 'Compact'
+end
+ctx.words = gFunc.LoadFile('common\\gceditwords.lua')(editorState) -- plain words for set names (the list's hover)
+ctx.newjob = gFunc.LoadFile('common\\gceditnewjob.lua')({ imgui = imgui, palette = palette, set_tip = set_tip,
+    feedback = feedback }) -- the file menu's New job file
+-- the Rules page (gcinclude.Rules), in ctx: this chunk is at Lua's 200-local limit
+ctx.rules = gFunc.LoadFile('common\\gceditrules.lua')({ imgui = imgui, palette = palette, set_tip = set_tip,
+    editorState = editorState, files = settingsFiles, setFile = setFile, feedback = feedback, ctx = ctx })
 local function headings_setting()
     return settingsFiles.HeadingPref('EditorGroups')
 end
@@ -363,6 +388,7 @@ local function group_of(n, parent)
     local builtin = builtin_group(n)
     return editorGroups.Assign(n, builtin, headings_setting()), builtin
 end
+ctx.group_of = group_of -- the set list's "+ N to add" sorts sets not made yet under their heading
 
 local function by_name(set)
     local g = set.builtin or set.group
@@ -426,7 +452,6 @@ ctx.headings = {
     pref = settingsFiles.HeadingPref, source = settingsFiles.HeadingSource, sorted = sorted, rows = heading_rows,
     order = function() return editorGroups.Order(headings_setting(), GROUPS) end,
     save = function(value, why) return save_prefs((value ~= nil) and { EditorGroups = value } or nil, why) end,
-    saveFolds = function() settingsFiles.SaveFolds(editorState.ui.fold) end,
     share = function() -- this character's headings become the shared ones
         local ok, err = settingsFiles.ShareHeadings()
         if not ok then feedback('Headings not shared: ' .. tostring(err) .. '.'); return false end
@@ -488,6 +513,7 @@ local function load_model(document)
     if model == nil then return nil, err end
     model.text = text -- the job file's handlers are read from it (scan_job), once, when All sets first needs them
     model.byLower = {}
+    loadingText = text -- its ability groups (['Waltz']) go under JOB ABILITIES
     for _, set in ipairs(model.list) do
         set.group, set.builtin = group_of(set.name, set.parentName)
         set.lname = string.lower(set.name)
@@ -498,6 +524,7 @@ local function load_model(document)
         end
         set.count = n
     end
+    loadingText = nil
     return model
 end
 
@@ -630,7 +657,8 @@ end
 
 local function dirty_count()
     local n = #editorState.document.newSets + #editorState.document.newModes
-        + ((editorState.document.wmOrder ~= nil) and 1 or 0)
+        + ((editorState.document.wmOrder ~= nil) and 1 or 0) + ((editorState.document.convert ~= nil) and 1 or 0)
+        + (editorState.document.dropNotes and 1 or 0)
     for _ in pairs(editorState.document.jobSettings or {}) do
         n = n + 1
     end
@@ -781,7 +809,7 @@ function wm.draw(r)
     end
     for _, f in ipairs(r.flags) do
         imgui.TextColored(palette.warn, 'gcinclude.' .. f.list .. ' still names ' .. f.text
-            .. ': change it in Settings (Only in ' .. tostring(editorState.document.file) .. ').')
+            .. ': change it in GoomSwap settings (' .. tostring(editorState.document.file) .. ').')
     end
 end
 
@@ -863,27 +891,6 @@ ctx.weapon_picks = function()
     end
     return out
 end
--- What a new set named Weapon_... will be: a /wm mode of its own, or one mode's own set; nil for other names.
--- Returns the sentence and whether it is a warning.
-ctx.weapon_name_note = function(name)
-    local rest = string.match(name or '', '^[Ww]eapon_(.+)$')
-    if rest == nil then return nil end
-    if string.find(rest, '%s') then
-        return "A space makes /wm read two words: use one word (Weapon_MpuGandring, /wm mpu).", true
-    end
-    local msets = setFile.MeleeModes(editorState.document.model.text, editorState.document.newModes)
-    for _, m in ipairs((ctx.actions ~= nil) and ctx.actions.WeaponModes() or {}) do
-        if (string.lower(m) ~= string.lower(rest)) and setFile.WeaponVariantOf('Weapon_' .. rest, m, msets) then
-            return 'Weapon_' .. m .. "'s own set: worn in its place (_1h: when you can't dual wield; an /mset "
-                .. 'mode: with it).', false
-        end
-    end
-    if string.find(rest, '_', 1, true) then
-        return 'Use one word after Weapon_: a name with _ reads as another mode\'s own set.', true
-    end
-    return 'A new /wm mode: /wm ' .. string.lower(rest) .. ' (added to gcinclude.WeaponModes on Save).', false
-end
-
 local function undo_slot(set, slot)
     local edits = editorState.document.edits[set.name]
     if not edits or not edits[slot] then return end
@@ -906,6 +913,9 @@ local function choose_item(set, slot, gear)
     else
         edit(set, slot, gear)
         feedback('Selected ' .. gear.name .. ' for ' .. set.name .. ' / ' .. slot .. ' (unsaved).')
+    end
+    if editorState.ui.fromFill then -- picked from To fill's list: back to it, for the next one
+        editorState.ui.fromFill, editorState.selection.tab = nil, 'fill'
     end
 end
 
@@ -933,7 +943,8 @@ local function bind_actions()
             return ability ~= nil and ability.Id < 0x200
         end,
         itemId = item_id, setFile = setFile,
-        readFile = read_file, resources = resources, display = live and gcdisplay or nil, getRecords = function()
+        readFile = read_file, abilityKinds = ability_kinds, resources = resources, display = live and gcdisplay or nil,
+        getRecords = function()
             return live and GcRecords or nil
         end, getPlayer = function()
             if live then return AshitaCore:GetMemoryManager():GetPlayer() end
@@ -949,7 +960,7 @@ end
 
 local m_gceditsets = gFunc.LoadFile('common\\gceditsets.lua')(
     ARMOR, BASE, ENGINE, SCREEN, augments_of, ctx, current, edit, editorPreferences, editorState, feedback,
-    fileWriter, gcedit, group_of, imgui, palette, pending_weapon_mode, read_file, save_preferences, setFile,
+    fileWriter, gcedit, group_of, imgui, palette, pending_weapon_mode, read_file, setFile,
     set_tip, xy
 )
 local suggestions, make_set, copy_from, draw_copy_popup, drop_new, empty_armor, use_worn, save, ago, red_button, tag,
@@ -958,6 +969,7 @@ local suggestions, make_set, copy_from, draw_copy_popup, drop_new, empty_armor, 
     m_gceditsets.empty_armor, m_gceditsets.use_worn, m_gceditsets.save, m_gceditsets.ago, m_gceditsets.red_button,
     m_gceditsets.tag, m_gceditsets.canDraw, m_gceditsets.text_w, m_gceditsets.pill, m_gceditsets.make_button,
     m_gceditsets.left_bar, m_gceditsets.wrap, m_gceditsets.help_icon, m_gceditsets.help
+ctx.use_worn = use_worn -- New /wm mode starts from the weapons you hold
 local m_gceditlist = gFunc.LoadFile('common\\gceditlist.lua')(
     BASE, CHILD_BORDERS, GROUPS, SCREEN, SLOT_BIT, current, editorData, editorPanels, editorPreferences,
     editorState, empty_armor, help, imgui, left_bar, make_set, owned_for, palette, pill, profiler, request_context,
@@ -972,7 +984,7 @@ local m_gceditinspect = gFunc.LoadFile('common\\gceditinspect.lua')(
     BASE, CHILD_BORDERS, ELEM_ICON, NONE, SCREEN, SJIS, ago, augmentInfo, by_name, cardText, ctx, current,
     descs, draw_icon, drop_new, edit, editorInspect, editorPanels, editorPreferences, editorState, empty_armor,
     feedback, ghost_of, go_to, help, imgui, is_slot_word, itemTooltip, item_id, make_set, owned_for, palette,
-    pending_weapon_mode, pill, profiler, red_button, registration_plan, request_context, rp_uses, save_preferences,
+    pending_weapon_mode, pill, profiler, red_button, registration_plan, request_context, rp_uses,
     set_status, set_tip, statModel, tag, text_w, use_worn, where, wrap, xy
 )
 local describe, cmp_of, inspection_target, inspect_item, set_stats, ignored_suggestion_names, draw_layers,
@@ -981,12 +993,26 @@ local describe, cmp_of, inspection_target, inspect_item, set_stats, ignored_sugg
     m_gceditinspect.ignored_suggestion_names, m_gceditinspect.draw_layers, m_gceditinspect.set_action_entries,
     m_gceditinspect.draw_set, m_gceditinspect.wi_from_game, m_gceditinspect.melee_modes, m_gceditinspect.conds_on
 ctx.melee_modes = melee_modes -- the list's MELEE heading names them
+ctx.ignored_names = ignored_suggestion_names -- the add list leaves these out
+-- The add list's x: the name joins EditorIgnoreSuggestions in char.lua (every job on this character).
+ctx.ignore_suggestion = function(name)
+    local cur, list = settingsFiles.Get('EditorIgnoreSuggestions'), {}
+    for k, v in pairs((type(cur) == 'table') and cur or {}) do
+        local n = (type(k) == 'number') and v or ((v == true) and k or nil)
+        if type(n) == 'string' then list[#list + 1] = n end
+    end
+    list[#list + 1] = name
+    local ok, err = settingsFiles.Write('own', { EditorIgnoreSuggestions = list })
+    if not ok then feedback('Not hidden: ' .. tostring(err) .. '.'); return end
+    editorState.cache.addable = nil
+    feedback(name .. ' hidden from the add list (GoomSwap settings, Hidden set suggestions, takes it back).')
+end
 local m_gceditrelated = gFunc.LoadFile('common\\gceditrelated.lua')(
     LAC_WORDS, NONE, SCREEN, allItems, canDraw, cardText, choose_item, clip_begin, clip_drawn, clip_end, clip_skip,
     conds_on, ctx, current, describe, draw_icon, draw_png, edit, editorPanels, editorPreferences,
     editorState, feedback, fits, ghost_of, go_to, group_of, has_set, help, help_icon, ignored_suggestion_names,
     imgui, index_all_items, inspect_item, inspection_target, itemTooltip, make_button, make_set, melee_modes,
-    owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, save_preferences, setFile,
+    owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, setFile,
     set_action_entries, set_tip, tag, text_w, undo_slot, where, wi_from_game, wrap, xy
 )
 local draw_over, draw_picker, fill_list, draw_fill, draw_context_menu, variants_of, rename_problem,
@@ -1154,7 +1180,14 @@ local function draw_save_review()
     local width, height = display and (display.x or display[1]) or 1024, display and (display.y or display[2]) or 768
     imgui.BeginChild('##save_changes', { math.max(260, math.min(760, width - 80)),
         math.max(120, math.min(360, height - 240)) }, CHILD_BORDERS)
-    saveReview.Draw(imgui, palette, cached.model)
+    if saveReview.Draw(imgui, palette, cached.model) == 'drop empty' then -- the new sets with no gear: left out
+        for _, name in ipairs(cached.model.empty) do
+            local set = editorState.document.model.byName[name]
+            if (set ~= nil) and set.new then drop_new(set) end
+        end
+        local n = #cached.model.empty
+        feedback('Left out ' .. n .. ' empty new set' .. ((n == 1) and '' or 's') .. '.')
+    end
     local gone = wm.removal()
     if (#gone.remove > 0) or (#gone.flags > 0) then
         imgui.TextColored(palette.blue, 'Weapon cycle removals on Save')
@@ -1173,9 +1206,24 @@ local function draw_save_review()
         table.sort(names)
         for _, name in ipairs(names) do
             local e = staged[name]
-            imgui.TextUnformatted('  gcinclude.' .. name .. (e.remove and ': taken out'
+            if (name == 'Rules') and (not e.remove) and (ctx.rules ~= nil) then -- a rule a line, in words
+                imgui.TextUnformatted('  gcinclude.Rules: ' .. #e.value .. ((#e.value == 1) and ' rule' or ' rules'))
+                for i, rule in ipairs(e.value) do
+                    imgui.TextColored(palette.dim, '    ' .. i .. '. ' .. tostring(rule.on) .. ': '
+                        .. ctx.rules.R.Say(rule) .. ((rule.layer == 'top') and ' (over everything)' or '')
+                        .. (rule.off and ' (off)' or ''))
+                end
+            else
+            imgui.TextUnformatted('  ' .. (string.match(name, '^profile%.') and '' or 'gcinclude.') .. name
+                .. (e.remove and ': taken out'
                 or (' = ' .. string.gsub(settingsFiles.JobText(e, ''), '%s*\n%s*', ' '))))
+            end
         end
+    end
+    local conv = editorState.document.convert
+    if conv ~= nil then -- Rules page: Convert / Adopt, taken out of (or put into) the handlers' code
+        imgui.TextColored(palette.blue, conv.title or 'Code made into rules')
+        for _, l in ipairs(conv.lines or {}) do imgui.TextColored(palette.dim, '  ' .. l) end
     end
     if editorState.document.sourcePath then
         imgui.TextWrapped('This draft replaces the job file. The previous file is backed up.')
@@ -1185,7 +1233,7 @@ local function draw_save_review()
     local keep = fileWriter.Backups.Keep((gearEngine.settings or {}).EditorBackupKeep)
     imgui.TextColored(palette.dim, keep == 0 and 'Backup cleanup off: keep all editor backups.'
         or ('Keep newest ' .. keep .. ' editor backups for this file.'))
-    help('EditorBackupKeep in char.lua settings controls retention (default 10; 0 keeps all).\n'
+    help('EditorBackupKeep in char.lua settings controls retention (default 3; 0 keeps all).\n'
         .. 'Only this job file\'s dated .gcedit.bak files are pruned, after a successful save.\n'
         .. 'The backup just created is always kept. Host/addset backups are untouched.')
     if imgui.Button(editorState.document.inactive and 'Confirm save file' or 'Confirm save + reload')
@@ -1379,7 +1427,6 @@ ctx.restore_backup = function(b) -- true when written
     end
     gearEngine.Say('/gcedit: restored ' .. editorState.document.file .. ' from ' .. b.when .. '; reloading')
     ui.saving, ui.notice, ui.noticeBad = true, 'Restored: reloading the job file...', false
-    save_preferences()
     GcEditReopen = nil
     fileWriter.Write(path .. '.gcedit-reopen', tostring(os.time()) .. '\n' .. (editorState.selection.setName or '')
         .. '\n' .. (editorState.selection.slot or ''))
@@ -1413,7 +1460,7 @@ ctx.draw_backups = function()
         return
     end
     imgui.TextUnformatted(editorState.document.file .. ' backups, newest first')
-    imgui.TextColored(palette.dim, 'Every Save keeps one (EditorBackupKeep: the newest 10). Compare: then -> now.')
+    imgui.TextColored(palette.dim, 'Every Save keeps one (EditorBackupKeep: the newest 3). Compare: then -> now.')
     local listH = math.min(380, 40 + #B.list * 26 + ((B.compare ~= nil) and 220 or 0))
     imgui.BeginChild('##gcedit_backups_list', { 560, listH }, CHILD_BORDERS)
     if #B.list == 0 then imgui.TextColored(palette.dim, 'None yet: the first Save makes one.') end
@@ -1518,8 +1565,7 @@ ctx.used_in = function(name)
     return 'In ' .. #list .. ((#list == 1) and ' set: ' or ' sets: ') .. table.concat(shown, ', ')
         .. ((#list > 6) and (' +' .. (#list - 6)) or '')
 end
--- Recent (over the slots): the sets opened last, newest first, kept with the job's editor preferences; a click opens
--- one.
+-- Recent (over the slots): the sets opened last, newest first, for this game session; a click opens one.
 ctx.draw_recent = function(set)
     local p = editorState.preferences
     p.recent = (type(p.recent) == 'table') and p.recent or {}
@@ -1529,7 +1575,6 @@ ctx.draw_recent = function(set)
         end
         table.insert(p.recent, 1, set.name)
         while #p.recent > 7 do table.remove(p.recent) end
-        p.dirty = true
     end
     local shown = 0
     imgui.PushStyleColor(ImGuiCol_Button, palette.chipBg) -- quieter than the strip under it
@@ -1698,6 +1743,7 @@ local function draw_job_files()
         if imgui.IsItemHovered() then set_tip(file.path) end
     end
     imgui.EndChild()
+    ctx.newjob.Draw()
     if target then imgui.CloseCurrentPopup() end
     imgui.EndPopup()
     if target then gcedit.SwitchFile(target); return true end
@@ -1902,8 +1948,7 @@ ctx.draw_start = function()
     if doc.inactive or (p == nil) or (p.start == 'off') then return false end
     if p.start == nil then -- only a new job file starts it: not one you already set up
         if not (doc.example or (doc.sourcePath ~= nil)) then return false end
-        p.start, p.dirty = 'on', true
-        save_preferences()
+        p.start = 'on'
     end
     local steps = start_steps()
     local done = 0
@@ -1911,8 +1956,7 @@ ctx.draw_start = function()
         if st.done then done = done + 1 end
     end
     if done == #steps then
-        p.start, p.dirty = 'off', true
-        save_preferences()
+        p.start = 'off'
         feedback('Getting started: all ' .. #steps .. ' steps done.')
         return false
     end
@@ -1932,8 +1976,7 @@ ctx.draw_start = function()
     imgui.TextColored(palette.dim, done .. ' of ' .. #steps .. ' done')
     start_right('Hide')
     if imgui.SmallButton('Hide##gcstart_hide') then
-        p.start, p.dirty = 'off', true
-        save_preferences()
+        p.start = 'off'
         feedback('Getting started hidden for ' .. tostring(doc.file) .. '.')
     end
     if imgui.IsItemHovered() then set_tip('Not shown again for ' .. tostring(doc.file) .. '.') end
@@ -1949,7 +1992,7 @@ ctx.draw_start = function()
                 if imgui.SmallButton('To fill##gcstart_fill') then editorState.selection.tab = 'fill' end
             elseif st.act == 'wm' then
                 start_right('+ /wm mode')
-                if imgui.SmallButton('+ /wm mode##gcstart_wm') then editorState.ui.openNewSet = 'Weapon_' end
+                if imgui.SmallButton('+ /wm mode##gcstart_wm') then editorState.ui.requestNewWm = true end
                 if imgui.IsItemHovered() then
                     set_tip('A /wm mode: New set Weapon_<Name> with Main and Sub. /wm <name> puts them on. Save adds '
                         .. 'it to gcinclude.WeaponModes.')
@@ -1977,8 +2020,11 @@ end
 local function body()
     editorPreferences.TickFeedback(editorState, imgui.GetIO().DeltaTime or 0)
     editorState.ui.frame = (editorState.ui.frame or 0) + 1
+    -- the slot hovered last frame (a card or its row in What goes on): both light up this frame
+    editorState.ui.hoverShown, editorState.ui.hoverSlot = editorState.ui.hoverSlot, nil
+    editorState.ui.cardShown, editorState.ui.cardHover = editorState.ui.cardHover, nil -- the card itself, for its ...
     if editorState.history.revision ~= editorState.document.revision then
-        editorState.history.entries = {}
+        editorState.history.entries, editorState.history.redo = {}, nil
         editorState.history.revision = editorState.document.revision
     end
     editorState.cache.head = editorState.cache.head
@@ -1993,21 +2039,97 @@ local function body()
     pill(editorState.cache.head, palette.text, palette.chipBg)
     imgui.SameLine(0, 14)
     if draw_job_files() then return end
-    tag('v3.30', palette.dim)
+    -- the left: who, which file, saved or not; the right: Rules, Settings, ... (view, density, theme, the file's
+    -- tools) and Save
+    local n = dirty_count()
+    imgui.SameLine(0, 10)
+    if n > 0 then
+        imgui.PushStyleColor(ImGuiCol_Button, palette.warnBg)
+        imgui.PushStyleColor(ImGuiCol_Text, palette.warn)
+        if imgui.SmallButton(string.format('%d unsaved##gcedit_unsaved', n)) then show_unsaved_sets() end
+        imgui.PopStyleColor(2)
+        if imgui.IsItemHovered() then set_tip(n .. ' unsaved change' .. ((n == 1) and '' or 's') .. ': show the '
+            .. unsaved_set_count() .. ' sets with them.') end
+    else
+        pill('saved', palette.ok, palette.okBg)
+    end
+    local d = editorPanels.Density(ctx.spacing())
+    local saveLabel = editorState.document.inactive and 'Save file' or 'Save + reload'
+    local need = text_w(ctx.rules.TopLabel()) + text_w('GoomSwap settings') + text_w('Editor') + text_w(saveLabel)
+        + 8 * d.padding[1] + 3 * d.spacing[1]
     imgui.SameLine()
-    if imgui.SmallButton('Settings##gcsettings') then editorState.ui.settingsOpen = { true } end
-    if imgui.IsItemHovered() then set_tip('GoomSwap settings: this character (char.lua) or every character.') end
+    local avail = imgui.GetContentRegionAvail()
+    avail = (type(avail) == 'number') and avail or (avail.x or avail[1])
+    if avail < need then
+        imgui.NewLine()
+    elseif (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil) then
+        imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - need)
+    end
+    ctx.rules.TopButton() -- the Rules page (and how many ifs Convert could take)
     imgui.SameLine()
-    if imgui.SmallButton(editorState.preferences.density .. '##density') then imgui.OpenPopup('##density_options') end
-    if imgui.BeginPopup('##density_options') then
-        imgui.TextUnformatted('Display density')
-        for _, name in ipairs({ 'Compact', 'Comfortable' }) do
-            if imgui.Button(name .. '##density_' .. name) then
-                editorState.preferences.density = name
-                editorState.preferences.dirty = true
-                save_preferences()
-                feedback('Display density: ' .. name .. '.')
-                imgui.CloseCurrentPopup()
+    if imgui.Button('GoomSwap settings##gcsettings') then editorState.ui.settingsOpen = { true } end
+    if imgui.IsItemHovered() then
+        set_tip('How GoomSwap behaves in game, for every job file that loads it: what an include file\'s settings are '
+            .. 'in GearSwap or LuAshitacast (DT gear below HP, Moonshade TP, keys, the bar...). For you on every job, '
+            .. 'on this job, or for everyone.\n\nThe editor\'s own spacing and theme: Editor.')
+    end
+    imgui.SameLine()
+    local tools = { backups = false, cleanup = false, rescan = false, reload = false }
+    if imgui.Button('Editor##gcedit_more') then imgui.OpenPopup('##gcedit_tools') end
+    if imgui.IsItemHovered() then
+        set_tip('This editor itself: its spacing and theme; this file\'s Backups, Unused gear, Rescan bags, Reload '
+            .. 'file. (How GoomSwap behaves in game: GoomSwap settings.)')
+    end
+    if imgui.BeginPopup('##gcedit_tools') then
+        -- either/or choices as switches, each with what the one on does
+        imgui.PushTextWrapPos(imgui.GetCursorPosX() + 330)
+        imgui.TextColored(palette.dim, 'Spacing')
+        imgui.SameLine(90)
+        local dens = ctx.spacing()
+        local pickD = ctx.W.Switch('gct_dens', {
+            { 'Compact', 'Compact', 'Icon cards: each slot as its icon (its name and stats on hover). More fits.' },
+            { 'Comfortable', 'Comfortable', 'Named cards: each slot names its piece and what is under it.' },
+        }, dens)
+        if pickD ~= nil then -- GoomSwap settings' EditorSpacing, in char.lua: every job, every session
+            local ok, err = settingsFiles.Write('own', { EditorSpacing = pickD })
+            GcEditSpacing = (not ok) and pickD or nil
+            if not ok then feedback('Spacing for this session only (not saved to char.lua: ' .. tostring(err) .. ').') end
+        end
+        imgui.TextColored(palette.dim, (dens == 'Comfortable') and 'Comfortable: each slot card names its piece.'
+            or 'Compact: icon cards, name and stats on hover. More fits.')
+        imgui.PopTextWrapPos()
+        imgui.Spacing()
+        theme_menu()
+        imgui.Separator()
+        imgui.TextColored(palette.dim, 'This file')
+        tools.backups = imgui.Selectable('Backups##gct_b', false)
+        if imgui.IsItemHovered() then set_tip('Every Save keeps a dated copy of the file: see what each changed, and put one back.') end
+        tools.cleanup = imgui.Selectable('Unused gear##gct_u', false)
+        if imgui.IsItemHovered() then
+            set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap names. Read only.')
+        end
+        tools.rescan = imgui.Selectable('Rescan bags##gct_r', false)
+        if imgui.IsItemHovered() then set_tip('Read your bags again (after moving gear). Keeps your unsaved changes.') end
+        tools.reload = imgui.Selectable('Reload file##gct_l', false)
+        if imgui.IsItemHovered() then set_tip('Read the file and your bags again.') end
+        -- /gcbuild's notes (its header, a slot's "example: / move it to a wardrobe"): a snapshot that goes stale
+        local doc = editorState.document
+        if (doc.model ~= nil) and (doc.notesText ~= doc.model.text) then
+            doc.notesText, doc.notesN = doc.model.text, (setFile.BuildNotes(doc.model.text))
+        end
+        if doc.dropNotes then
+            if imgui.Selectable('Keep /gcbuild notes (they go on Save)##gct_n', false) then
+                doc.dropNotes, doc.revision = nil, doc.revision + 1
+            end
+        elseif (doc.notesN or 0) > 0 then
+            if imgui.Selectable('Remove /gcbuild notes (' .. doc.notesN .. ')##gct_n', false) then
+                doc.dropNotes, doc.revision = true, doc.revision + 1
+                feedback('/gcbuild notes go on Save (' .. doc.notesN .. ').')
+            end
+            if imgui.IsItemHovered() then
+                set_tip("What /gcbuild wrote that day: the header at the top, and notes after slots (\"example: ...\", "
+                    .. "\"move it to a wardrobe\", \"your augments differ\"). The slots it left out (-- not owned) "
+                    .. 'stay: To fill lists them.')
             end
         end
         imgui.Separator()
@@ -2017,75 +2139,29 @@ local function body()
                 if profiler.enabled then profiler.Reset() end
             end
             imgui.TextUnformatted('Up to 600 samples per section. CPU time, not FPS.')
-            for _, name in ipairs({
-                'Render',
-                'Bag scan',
-                'Item tooltip',
-                'Action view rebuild',
-                'RP usage rebuild',
-                'Set stats build',
-            }) do
+            for _, name in ipairs({ 'Render', 'Bag scan', 'Item tooltip', 'Action view rebuild', 'RP usage rebuild',
+                'Set stats build' }) do
                 imgui.TextUnformatted(profiler.Report(name))
             end
         end
+        imgui.TextColored(palette.dim, 'GoomSwap v3.30')
         imgui.EndPopup()
     end
-    imgui.SameLine()
-    theme_menu()
-    local n = dirty_count()
-    imgui.SameLine(0, 14)
-    if n > 0 then
-        imgui.PushStyleColor(ImGuiCol_Button, palette.warnBg)
-        imgui.PushStyleColor(ImGuiCol_Text, palette.warn)
-        if imgui.SmallButton(string.format('%d unsaved change%s##gcedit_unsaved', n, (n == 1) and '' or 's')) then
-            show_unsaved_sets()
-        end
-        imgui.PopStyleColor(2)
-        if imgui.IsItemHovered() then set_tip('Show the ' .. unsaved_set_count() .. ' sets with unsaved changes.') end
-    else
-        pill('saved', palette.ok, palette.okBg)
-    end
-    -- the file's actions at the right edge, apart from the view's (on a line of their own when they don't fit)
-    local d = editorPanels.Density(editorState.preferences.density)
-    local need = text_w('Backups') + text_w('Unused gear') + text_w('Rescan bags') + text_w('Reload file')
-        + text_w(editorState.document.inactive and 'Save file' or 'Save + reload') + 10 * d.padding[1] + 4 * d.spacing[1]
-    imgui.SameLine()
-    local avail = imgui.GetContentRegionAvail()
-    avail = (type(avail) == 'number') and avail or (avail.x or avail[1])
-    if avail < need then
-        imgui.NewLine()
-    elseif (imgui.SetCursorPosX ~= nil) and (imgui.GetCursorPosX ~= nil) then
-        imgui.SetCursorPosX(imgui.GetCursorPosX() + avail - need)
-    end
-    if imgui.Button('Backups##gcedit') then editorState.ui.backups = { open = true } end
-    if imgui.IsItemHovered() then
-        set_tip('Every Save keeps a dated copy of the file: see what each changed, and put one back.')
-    end
+    if tools.backups then editorState.ui.backups = { open = true } end
     ctx.draw_backups()
-    imgui.SameLine()
-    if imgui.Button('Unused gear##gcedit') then editorState.ui.cleanup = { open = true } end
-    if imgui.IsItemHovered() then
-        set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap names: '
-            .. 'to store or move off a wardrobe. Read only.')
-    end
+    if tools.cleanup then editorState.ui.cleanup = { open = true } end
     ctx.draw_cleanup()
-    imgui.SameLine()
-    if imgui.Button('Rescan bags##gcedit') then
+    if tools.rescan then
         rescan()
         feedback('Bags rescanned: ' .. #editorState.inventory.items .. ' items. Unsaved edits kept.')
     end
-    if imgui.IsItemHovered() then set_tip('Read your bags again (after moving gear). Keeps your unsaved changes.') end
-    imgui.SameLine()
-    if imgui.Button('Reload file##gcedit') then
+    if tools.reload then
         if n > 0 then
             editorState.ui.confirm = 'reload'
         else
             gcedit.Reload()
             return
         end
-    end
-    if imgui.IsItemHovered() then
-        set_tip('Read the file and your bags again (after editing it in a text editor or moving gear).')
     end
     imgui.SameLine()
     -- a draft saves as it is too
@@ -2140,7 +2216,7 @@ local function body()
         editorState.ui.draftLine = editorState.ui.draftLine
             or (
                 string.format(
-                    'Draft from /gcbuild (%s). To fill lists the gaps.\nSave writes it as %s%s and loads it.',
+                    'Draft (%s). To fill lists the gaps.\nSave writes it as %s%s and loads it.',
                     string.match(editorState.document.sourcePath, '[^\\/]+$'),
                     editorState.document.file,
                     (read_file(editorState.document.path) ~= nil) and ' (the old one is kept as a .gcedit.bak)' or ''
@@ -2175,34 +2251,32 @@ local function body()
     imgui.Separator()
 
     local availableWidth, availableHeight = xy(imgui.GetContentRegionAvail())
-    local sizes = editorPanels.Resolve(availableWidth, editorState.preferences.left, editorState.preferences.middle)
-    imgui.BeginChild('##gcedit_left', { sizes.left, 0 }, CHILD_BORDERS)
-    draw_sets()
-    imgui.EndChild()
-    imgui.SameLine(0, 0)
-    local left, leftChanged = editorPanels.Splitter(imgui, palette, 'sets', availableHeight, sizes.left, 280)
-    if leftChanged then
-        local nextSizes = editorPanels.Resolve(availableWidth, left, sizes.middle)
-        editorState.preferences.left = nextSizes.left
-        editorState.preferences.middle = nextSizes.middle
-        editorState.preferences.dirty = true
-    end
-    imgui.SameLine(0, 0)
-    local set = (editorState.selection.setName ~= nil)
-            and editorState.document.model.byName[editorState.selection.setName] or nil
-    imgui.BeginChild('##gcedit_mid', { sizes.middle, 0 }, 0)
-    local gridWidth = xy(imgui.GetContentRegionAvail())
     local spacing = 8
     local style = imgui.GetStyle and imgui.GetStyle()
     if style and style.ItemSpacing then spacing = style.ItemSpacing.x or style.ItemSpacing[1] or spacing end
-    GRID_COLUMNS, CELL_W = editorPanels.Grid(gridWidth, spacing)
+    local set = (editorState.selection.setName ~= nil)
+            and editorState.document.model.byName[editorState.selection.setName] or nil
+    -- fixed panes (no dragging); the Rules page has its own list on the left and takes the whole width
+    local rulesPage = editorState.selection.rules and (ctx.rules ~= nil)
+    local lay = editorPanels.Layout(availableWidth or 1200, text_w('0'), spacing, ctx.CARD_W)
+    if not rulesPage then
+        imgui.BeginChild('##gcedit_left', { lay.left, 0 }, CHILD_BORDERS)
+        draw_sets()
+        imgui.EndChild()
+        imgui.SameLine(0, lay.gap)
+    end
+    imgui.BeginChild('##gcedit_mid', { rulesPage and 0 or lay.middle, 0 }, 0)
+    local gridWidth = xy(imgui.GetContentRegionAvail())
+    GRID_COLUMNS, CELL_W = editorPanels.Grid(gridWidth, spacing, ctx.CARD_W)
     ctx.GRID_COLUMNS, ctx.CELL_W = GRID_COLUMNS, CELL_W
     local inspectorHeight
     if editorState.ui.pinned then
         inspectorHeight = math.min(320, math.max(150, availableHeight * (gridWidth < 500 and 0.40 or 0.32)))
         imgui.BeginChild('##gcedit_grid', { 0, math.max(1, availableHeight - inspectorHeight - 8) }, 0)
     end
-    if set ~= nil then
+    if editorState.selection.rules and (ctx.rules ~= nil) then
+        ctx.rules.Draw()
+    elseif set ~= nil then
         ctx.draw_recent(set)
         draw_set(set)
         m_gceditrelated.draw_upgrade(set) -- a piece changed here that other sets still have: offer it there
@@ -2214,22 +2288,18 @@ local function body()
         editorInspect.DrawPinned(imgui, palette, editorState, itemTooltip, inspectorHeight, draw_icon)
     end
     imgui.EndChild()
-    imgui.SameLine(0, 0)
-    local middle, middleChanged = editorPanels.Splitter(imgui, palette, 'details', availableHeight, sizes.middle, 744)
-    if middleChanged then
-        editorState.preferences.middle = editorPanels.Resolve(availableWidth, sizes.left, middle).middle
-        editorState.preferences.dirty = true
-    end
-    if editorState.ui.resizing and not imgui.IsMouseDown(0) then save_preferences() end
-    editorState.ui.resizing = leftChanged or middleChanged or (editorState.ui.resizing and imgui.IsMouseDown(0))
-    imgui.SameLine(0, 0)
+    if not rulesPage then
+    imgui.SameLine(0, lay.gap)
     imgui.BeginChild('##gcedit_right', { 0, 0 }, CHILD_BORDERS)
     local nf = fill_list().n
-    local tabs = { { 'Result', 'action' }, { 'Gear', 'gear' }, { 'Summary', 'summary' } }
+    -- one set of tabs: what the set does in game, picking gear, its stats; Compare while one is picked
+    local tabs = { { 'What goes on', 'action' }, { 'Gear', 'gear' }, { 'Stats', 'summary' } }
     if set and cmp_of(set) then tabs[#tabs + 1] = { 'Compare', 'compare' } end
     tabs[#tabs + 1] = { 'Related', 'over' }
     tabs[#tabs + 1] = { nf > 0 and ('To fill (' .. nf .. ')') or 'To fill', 'fill' }
-    editorState.selection.tab = editorPanels.Tabs(imgui, palette, editorState.selection.tab, tabs)
+    local tab = editorPanels.Tabs(imgui, palette, editorState.selection.tab, tabs)
+    if tab ~= editorState.selection.tab then editorState.ui.fromFill = nil end -- a tab of your own choosing
+    editorState.selection.tab = tab
     imgui.Separator()
     if editorState.selection.tab == 'compare' then
         if set then
@@ -2270,6 +2340,7 @@ local function body()
         end
     end
     imgui.EndChild()
+    end
     if editorState.ui.openSetChooser then
         imgui.OpenPopup('##gcedit_copy')
         editorState.ui.openSetChooser = nil
@@ -2279,6 +2350,7 @@ local function body()
     draw_delete_confirmation()
     m_gceditrelated.draw_weapon_sets()
     m_gceditrelated.draw_mset_mode()
+    m_gceditrelated.draw_wm_mode()
     m_gceditrelated.draw_put_in()
     draw_copy_jobs()
     draw_find_item()
@@ -2389,19 +2461,24 @@ local function render()
     if (AshitaCore:GetFontManager():GetVisible() == false) or (AshitaCore:GetGuiManager():GetVisible() == false) then
         return
     end
-    local density = editorPanels.Density(editorState.preferences.density)
-    if editorState.cache.density ~= editorState.preferences.density then
-        editorState.cache.density = editorState.preferences.density
+    local spacing = ctx.spacing()
+    local density = editorPanels.Density(spacing)
+    if editorState.cache.density ~= spacing then
+        editorState.cache.density = spacing
         editorState.cache.rowH, editorState.cache.listKey = nil, nil
         editorState.cache.fill, editorState.cache.fillVer, editorState.ui.over = nil, nil, nil
         for _, set in ipairs(editorState.document.model.list) do set.clipH = nil end
     end
     CELL_H, ICON, ROW_ICON = density.cardHeight, density.icon, density.rowIcon
     ctx.CELL_H, ctx.ICON, ctx.ROW_ICON = CELL_H, ICON, ROW_ICON
+    ctx.CARD_W, ctx.CARD_NAMES = density.card, density.names -- Compact: icon cards; Comfortable: named ones
     local timing = profiler.Start()
     local display = imgui.GetIO().DisplaySize
     imgui.SetNextWindowSize(editorPanels.WindowSize(display.x or display[1], display.y or display[2]),
         ImGuiCond_FirstUseEver)
+    if imgui.SetNextWindowSizeConstraints ~= nil then -- dragged no smaller than stays readable; a binding that
+        pcall(imgui.SetNextWindowSizeConstraints, editorPanels.MIN_SIZE, { 100000, 100000 }) -- refuses: no floor
+    end
     imgui.PushStyleColor(ImGuiCol_WindowBg, palette.bg)
     imgui.PushStyleColor(ImGuiCol_ChildBg, palette.panel)
     imgui.PushStyleColor(ImGuiCol_Border, palette.edge)
@@ -2523,6 +2600,7 @@ function gcedit.Open(include, setName, slot, draft)
             rescued = nil -- another job's file: the old edits do not apply
         end
     end
+    if GcEditFold == nil then settingsFiles.RemoveOldFolds() end
     set_state(editorPreferences.New({
         path = path,
         sourcePath = draft and draft.src,
@@ -2530,8 +2608,8 @@ function gcedit.Open(include, setName, slot, draft)
         draft = draft ~= nil,
         job = player:GetMainJob(),
         level = player:GetMainJobLevel(),
-        preferences = editorPreferences.Load(path .. '.gcedit-ui'),
-        fold = GcEditFold or settingsFiles.LoadFolds(), -- folded headings: this session's, else the saved ones
+        preferences = editorPreferences.Load(path),
+        fold = GcEditFold or {}, -- folded headings: this game session's
     }))
     editorState.document.characterFolder = char_dir() or path:match('^(.*[\\/])') or ''
     local model, err = load_model()
@@ -2583,14 +2661,13 @@ function gcedit.SwitchFile(target, discard, setName)
     local live = fileWriter.FileKey(target.path) == fileWriter.FileKey(gProfile and gProfile.FilePath)
     local nextState = editorPreferences.New({ path = target.path, job = target.job,
         level = live and AshitaCore:GetMemoryManager():GetPlayer():GetMainJobLevel() or nil,
-        preferences = editorPreferences.Load(target.path .. '.gcedit-ui'), fold = editorState.ui.fold })
+        preferences = editorPreferences.Load(target.path), fold = editorState.ui.fold })
     local model, err = load_model(nextState.document)
     if not model then
         editorState.ui.notice,
             editorState.ui.noticeBad = 'Could not open ' .. target.name .. ': ' .. tostring(err), true
         return false
     end
-    save_preferences()
     nextState.document.model, nextState.document.inactive = model, not live
     nextState.document.characterFolder = editorState.document.characterFolder
     nextState.inventory, nextState.ui.jobFiles = editorState.inventory, editorState.ui.jobFiles
@@ -2617,10 +2694,10 @@ function gcedit.Reload()
         return
     end
     editorState.document.model, editorState.document.edits, editorState.document.newSets, editorState.ui.notice,
-        editorState.ui.sugg, editorState.ui.confirm, editorState.document.newModes, editorState.document.deleted =
-        model, {}, {}, nil, nil, nil, {}, {}
+        editorState.ui.confirm, editorState.document.newModes, editorState.document.deleted =
+        model, {}, {}, nil, nil, {}, {}
     editorState.document.renames, editorState.document.renameRefs, editorState.document.wmOrder = {}, {}, nil
-    editorState.document.jobSettings = nil
+    editorState.document.jobSettings, editorState.document.convert = nil, nil
     editorState.history.entries, editorState.history.revision, editorState.cache.cover, editorState.cache.view =
         {}, nil, nil, nil
     editorState.document.revision = editorState.document.revision + 1
@@ -2644,7 +2721,7 @@ end
 -- /gcedit <set> while open: go to that set, keeping the changes.
 function gcedit.Request(kind) -- the bar's '+ new mode...' / '+ add...' (gcinclude.EditorRequest), on the next frame
     if not editorState.open then return end
-    if (kind == 'wm') then editorState.ui.openNewSet = 'Weapon_'
+    if (kind == 'wm') then editorState.ui.requestNewWm = true
     elseif (kind == 'mset') then editorState.ui.requestNewMset = true
     elseif (type(kind) == 'string') and string.match(kind, '^%a+Modes$') then -- MainModes...: Settings, found
         editorState.ui.settingsOpen, editorState.ui.settingsFind = { true }, { kind }
@@ -2661,7 +2738,7 @@ function gcedit.Show(setName, slot) -- slot: select it too (the /gcgear right-cl
     go_to(hit.name, slot, 'action')
 end
 
--- /gcedit last: the Result tab on that use of the set (a gcaction record's key: 'Weaponskill Leaden Salute').
+-- /gcedit last: the What goes on tab on that use of the set (a gcaction record's key: 'Weaponskill Leaden Salute').
 function gcedit.PickRecord(setName, key)
     if (not editorState.open) or (setName == nil) or (key == nil) then return end
     local hit = editorState.document.model.byLower[string.lower(setName)]
@@ -2670,7 +2747,6 @@ function gcedit.PickRecord(setName, key)
 end
 
 function gcedit.Close()
-    save_preferences()
     ashita.events.unregister('d3d_present', 'gcedit_render')
     set_state(nil)
 end

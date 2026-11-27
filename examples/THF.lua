@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 gcinclude.THFullTime = true; -- /th keeps the TH set on the whole fight (THF default anyway; false = only until the mob is tagged)
 
 local sets = {
@@ -241,6 +240,16 @@ profile.OnLoad = function()
     gcinclude.MainModes = {'None', 'Mpu Gandring', 'Naegling'};
     gcinclude.SubModes = {'None', 'Gleti\'s Knife', 'Fusetto +2', 'Gandring'};
     gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
+    -- Rules (/gcedit, RULES): when this, wear that, as data.
+    gcinclude.Rules = {
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Default', first = {
+            { when = { allbuffs = { 'Sneak Attack', 'Trick Attack' } }, wear = 'SATA', exact = true },
+            { when = { buff = 'Sneak Attack' }, wear = 'SA', exact = true },
+            { when = { buff = 'Trick Attack' }, wear = 'TA', exact = true },
+        } },
+    };
     gcinclude.Initialize();
 end
 
@@ -254,8 +263,6 @@ end
 
 profile.HandleDefault = function()
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
-    local sa = gcinclude.BuffCount('Sneak Attack');
-    local ta = gcinclude.BuffCount('Trick Attack');
 
     local player = gData.GetPlayer();
     if (player.Status == 'Engaged') then
@@ -266,17 +273,8 @@ profile.HandleDefault = function()
         gFunc.EquipSet(sets.Movement);
     end
 
-    if (sa == 1) and (ta == 1) then
-        gFunc.EquipSet(sets.SATA);
-    elseif (sa == 1) then
-        gFunc.EquipSet(sets.SA);
-    elseif (ta == 1) then
-        gFunc.EquipSet(sets.TA);
-    end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end;
     gcinclude.CheckDefault ();
 end
 
@@ -317,15 +315,7 @@ profile.HandleWeaponskill = function()
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
     ByName(ws.Name); -- e.g. ['Rudra\'s Storm'], then ['Rudra\'s Storm_<mset>']
-    -- Sneak/Trick Attack on top: ['<WS>_SA'] / _TA / _SATA (['<WS>_Acc_SA'] with /mset acc), else Ws_<mset>_SA ...
-    local sa, ta = gcinclude.BuffCount('Sneak Attack'), gcinclude.BuffCount('Trick Attack');
-    local suffix = ((sa > 0) and (ta > 0) and 'SATA') or ((sa > 0) and 'SA') or ((ta > 0) and 'TA') or nil;
-    if (suffix ~= nil) then
-        local mode = gcdisplay.GetCycle('MeleeSet');
-        local set = gcinclude.FindSet(ws.Name .. ((mode == 'Default') and '' or ('_' .. mode)) .. '_' .. suffix);
-        if (set == nil) or (next(set) == nil) then set = gcinclude.FindSet('Ws_' .. mode .. '_' .. suffix) end
-        if (set ~= nil) then gFunc.EquipSet(set) end
-    end
+    gcinclude.EquipSATA(ws.Name); -- SA/TA up: ['<WS>_SA'] / _TA / _SATA (['<WS>_Acc_SA'] with /mset acc), else Ws_<mset>_SA ...
 end
 
 return profile;

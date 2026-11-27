@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 gcinclude.settings.SmartSwap = false; -- always swap to the casting weapons: TP isn't used on this job
 gcinclude.settings.WeaponTPGuard = 0; -- no 1000+ TP weapon hold either (nukes, Dark, Divine swap too)
 gcinclude.CureObi = true; -- Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts); false = never
@@ -567,8 +566,7 @@ local sets = {
 };
 profile.Sets = sets;
 
--- LuAshitacast's own list, for /lac gear and /lac validate (Packer plugin). GoomSwap's /packer (Bellhop) reads
--- gcinclude.Packer at the top of this file instead.
+-- Kept in your bags for this job by /lac gear (the Packer plugin), with every set's gear; /gcedit Settings edits it.
 profile.Packer = {
     --{Name = 'Tropical Crepe', Quantity = 'all'},
     --{Name = 'Rolan. Daifuku', Quantity = 'all'},
@@ -581,6 +579,23 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None', 'Idris', 'Maxentius', 'Tishtrya'};
     gcinclude.DefaultWeapons = 'Idris';
     gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
+    -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
+    gcinclude.Rules = {
+        { on = 'Default', when = { pet = true, status = { isnt = 'Engaged' } }, wear = 'Idle_Pet', exact = true },
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { any = { { toggle = { kite = true } }, { moving = true } } }, wear = 'Movement', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Healing Magic', target = 'me' }, wear = 'Self_Cure', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { family = { 'Cure', 'Cura', 'Curaga' }, mpp = { le = 50 }, skill = 'Healing Magic', weather = 'Light' }, wear = 'Cure_LowMP_Storm', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { family = { 'Cure', 'Cura', 'Curaga' }, mpp = { le = 50 }, skill = 'Healing Magic', weather = { isnt = { 'Light' } } }, wear = 'Cure_LowMP', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { family = { 'Cure', 'Cura', 'Curaga' }, skill = 'Healing Magic', toggle = { dt = true } }, wear = 'Cure_Dt', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mode = { nukeset = 'Macc' }, skill = 'Elemental Magic' }, wear = 'NukeACC', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { burst = true, skill = 'Elemental Magic' }, wear = 'Burst', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mode = { nukeset = 'OccultAcumen' }, skill = 'Elemental Magic' }, wear = 'OccultAcumen', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mpp = { le = 40 }, skill = 'Elemental Magic' }, wear = 'Mp_Body', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mode = { nukeset = 'Macc' }, skill = 'Enfeebling Magic' }, wear = 'Macc', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Dark Magic' }, wear = 'Macc', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { name = { has = 'Indi' }, skill = 'Geomancy' }, wear = 'Indi', exact = true },
+    };
     gcinclude.Initialize();
 end
 
@@ -604,11 +619,6 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (player.Status ~= 'Engaged') and (gData.GetPet() ~= nil) then
-        gFunc.EquipSet(sets.Idle_Pet);
-    end
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) or (player.IsMoving == true) then gFunc.EquipSet(sets.Movement) end -- any status, over Dt
     gcinclude.CheckDefault ();
 end
 
@@ -628,38 +638,11 @@ end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
-    local target = gData.GetActionTarget() or {}; -- {} when LAC has no entity for the target: no Self_ sets
-    local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
     local family = Family(spell.Name); -- 'Cure IV' -> 'Cure'
     gFunc.EquipSet(sets.Midcast);
     ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Elemental Magic']
     -- Enhancing Magic: Phalanx, Stoneskin, Regen, Refresh go on by name below
-    if (spell.Skill == 'Healing Magic') then
-        if (target.Name == me) then gFunc.EquipSet(sets.Self_Cure) end
-        if T{'Cure', 'Cura', 'Curaga'}:contains(family) then
-            if (gData.GetPlayer().MPP <= 50) then
-                -- Light weather: Aurorastorm counts (LAC GetEnvironment reads storm buffs as weather), so does natural Light
-                local env = gData.GetEnvironment();
-                if (env ~= nil) and (env.WeatherElement == 'Light') then
-                    gFunc.EquipSet(sets.Cure_LowMP_Storm);
-                else
-                    gFunc.EquipSet(sets.Cure_LowMP);
-                end
-            end
-            if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Cure_Dt) end
-        end
-    elseif (spell.Skill == 'Elemental Magic') then
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.NukeACC) end
-        if gcinclude.BurstWanted() then gFunc.EquipSet(sets.Burst) end
-        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
-        if (gData.GetPlayer().MPP <= 40) then gFunc.EquipSet(sets.Mp_Body) end
-    elseif (spell.Skill == 'Enfeebling Magic') then
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.Macc) end
-    elseif (spell.Skill == 'Dark Magic') then
-        gFunc.EquipSet(sets.Macc);
-    elseif (spell.Skill == 'Geomancy') then
-        if string.contains(spell.Name, 'Indi') then gFunc.EquipSet(sets.Indi) end -- over ['Geomancy']
-    end
+    gcinclude.RulesAt('Midcast 1');
     if not ByName(spell.Name) then ByName(family) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna'], ['Drain']
     gcinclude.CheckTH();
 end

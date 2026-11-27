@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 gcinclude.settings.WeaponTPGuard = 100; -- weapons held from 100 TP, so soda TP survives JAs; 0 = always swap
 -- gcinclude.CureObi = true; -- uncomment: Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts)
 gcinclude.SIRSkip = T{'Phalanx','Reprisal'}; -- /sir leaves these midcasts alone, on top of the default Absorb-TP and Stun
@@ -769,6 +768,13 @@ profile.OnLoad = function()
     gcinclude.MainModes = {'None', 'Burtgang', 'Caliburnus'};
     gcinclude.SubModes = {'None', 'Aegis', 'Duban'}; -- shields: /sw cycles them, /sw duban picks one (add force at 1000+ TP)
     gcinclude.DefaultWeapons = { Main = 'Burtgang', Sub = 'Aegis' };
+    -- Rules (/gcedit, RULES): when this, wear that, as data.
+    gcinclude.Rules = {
+        { on = 'Default', when = { buff = 'Cover' }, wear = 'Fealty', exact = true },
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'kite', exact = true },
+        { on = 'Midcast', when = { familyset = false, nameset = false }, wear = 'Enmity', exact = true },
+    };
     gcinclude.Initialize();
 end
 
@@ -794,14 +800,8 @@ profile.HandleDefault = function()
         gFunc.EquipSet(sets.Movement);
     end
 
-    local cover = gcinclude.BuffCount('Cover');
-    if (cover >= 1) then
-        gFunc.EquipSet(sets.Fealty); -- same set as fealty
-    end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.kite) end;
     gcinclude.CheckDefault ();
 end
 
@@ -824,8 +824,8 @@ profile.HandleMidcast = function()
     local spell = gData.GetAction();
     gFunc.EquipSet(sets.Midcast);
     ByName(spell.Skill); -- e.g. ['Enhancing Magic']
-    -- a set named after the spell or its family (['Cure'], ['Protect'], ['Phalanx'], ['Flash']); none: Enmity
-    if not (ByName(spell.Name) or ByName(Family(spell.Name))) then gFunc.EquipSet(sets.Enmity) end
+    -- a set named after the spell or its family (['Cure'], ['Protect'], ['Phalanx'], ['Flash']); none: Enmity (a rule)
+    if not ByName(spell.Name) then ByName(Family(spell.Name)) end
     gcinclude.CheckTH();
 end
 

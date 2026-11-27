@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 
 -- DNC example: swap in your own gear.
 -- Sets named after an ability, spell, skill or weapon skill (['Trance'], ['Savage Blade'])
@@ -198,8 +197,7 @@ local sets = {
 };
 profile.Sets = sets;
 
--- LuAshitacast's own list, for /lac gear and /lac validate (Packer plugin). GoomSwap's /packer (Bellhop) reads
--- gcinclude.Packer at the top of this file instead.
+-- Kept in your bags for this job by /lac gear (the Packer plugin), with every set's gear; /gcedit Settings edits it.
 profile.Packer = {
 };
 
@@ -210,6 +208,14 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None'}; -- e.g. {'None', 'Example'} with a Weapon_Example set
     gcinclude.DefaultWeapons = 'None';
     gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
+    -- Rules (/gcedit, RULES): when this, wear that, as data.
+    gcinclude.Rules = {
+        { on = 'Default', when = { buff = 'Climactic Flourish' }, wear = 'Climactic Flourish', exact = true },
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Weaponskill', when = { buff = 'Striking Flourish' }, wear = 'Striking Flourish', exact = true },
+        { on = 'Weaponskill', when = { buff = 'Climactic Flourish' }, wear = 'Climactic Flourish', exact = true },
+    };
     gcinclude.Initialize();
 end
 
@@ -233,15 +239,12 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcinclude.BuffCount('Climactic Flourish') > 0) then gFunc.EquipSet(sets['Climactic Flourish']) end
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end
     gcinclude.CheckDefault();
 end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-    for _, kind in ipairs({'Waltz', 'Step', 'Samba', 'Jig'}) do
+    for _, kind in ipairs({'Waltz', 'Step', 'Samba', 'Jig', 'Flourish'}) do -- ['Step'] on every step, then ['Box Step']
         if string.find(ability.Name, kind, 1, true) then ByName(kind) end
     end
     ByName(ability.Name);
@@ -275,8 +278,6 @@ profile.HandleWeaponskill = function()
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
     ByName(ws.Name);
-    if (gcinclude.BuffCount('Striking Flourish') > 0) then gFunc.EquipSet(sets['Striking Flourish']) end
-    if (gcinclude.BuffCount('Climactic Flourish') > 0) then gFunc.EquipSet(sets['Climactic Flourish']) end
 end
 
 return profile;

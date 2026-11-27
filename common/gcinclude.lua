@@ -15,7 +15,8 @@ gcauto = runtime.NewAuto()
 gcaction = gFunc.LoadFile('common\\gcaction.lua')
 gcauto.Bind(gcinclude) -- bound now, not in SetVariables: the handlers are wrapped at
 gcaction.Bind(gcinclude) -- Initialize, before InitStep's player wait ends (/item then hit a nil 'inc')
-local gcpacker = gFunc.LoadFile('common\\gcpacker.lua') -- Bellhop packer, separate from the gear/action engine
+local gcpackerlist = gFunc.LoadFile('common\\gcpackerlist.lua') -- what /lac gear (Packer plugin) gets on top of the sets
+local gcrules = gFunc.LoadFile('common\\gcrules.lua') -- gcinclude.Rules: the job file's conditions as data
 local hudOk, hudModule = pcall(gFunc.LoadFile, 'common\\gchud.lua')
 if (hudOk == true) and (type(hudModule) == 'table') then
     gchud = hudModule
@@ -32,9 +33,9 @@ else
 end
 
 gcinclude.AliasList = T{'gcmessages','wsdistance','dt','mdt','th','kite','mset','wsset','nukeset','burst','weapon',
-    'death','sir','tankset','proc','packer','pupmode','wm','mw','sw','rw','ammoset','aminon','gchud','lock','unlock',
+    'death','sir','tankset','proc','pupmode','wm','mw','sw','rw','ammoset','aminon','gchud','lock','unlock',
     'hoxne','gchelp','gckey','def','gce','checksets','gcperf','smartswap','autogear','gcbar','forcestring','songlock',
-    'siphon','warpring','mea','holla','dem','capacity','jubilee','abyproc','dw','dynamisrp','gcbuild','gcedit',
+    'siphon','warpring','mea','holla','dem','capacity','jubilee','abyproc','dw','dynamisrp','gcbuild','gcimport','gcedit',
     'gcconfig','idleset','gcgear'}
 -- Exit/use-on-self items: key = /command, value = exact /item name. Add a line, /lac reload.
 gcinclude.ExitItems = { ontic = 'ontic extremity', shard = 'v. con. shard', }
@@ -532,8 +533,8 @@ function gcinclude.PerfAdd(name, t0)
     e.n, e.total = e.n + 1, e.total + ms
     if (ms > e.max) then e.max = ms end
 end
-local PERF_ORDER = { { 'default', 'idle/engaged handler' }, { 'bar', 'bar' }, { 'gear', 'gear grid' },
-    { 'tick', 'engine tick' } }
+local PERF_ORDER = { { 'default', 'idle/engaged handler' }, { 'rules', 'rules' }, { 'bar', 'bar' },
+    { 'gear', 'gear grid' }, { 'tick', 'engine tick' } }
 function gcinclude.PerfReport(force)
     local p = gcinclude.Perf
     if (p == nil) then return end
@@ -862,13 +863,140 @@ function gcinclude.CheckDaybreak()
     if (action ~= nil) and (action.Name == 'Dispelga') then gFunc.Equip('Main', 'Daybreak') end
 end
 
+-- == Rules (gcinclude.Rules, gcrules.lua): the job file's "when this, wear that" as data. Compiled at Initialize and
+-- run from the wrappers below: 'job' rules where a job file's own code goes (under GoomSwap's layers), 'top' rules
+-- over them. Each run reads the game once per value (gData, buffs from WithBuffs' list). ==
+gcinclude.RulesCompiled = nil
+gcinclude.RuleWhy = {} -- [the set or item a rule wore] = that rule in words, for /gcedit's Equip order
+local function ruleNote(entry, label)
+    if (label ~= nil) and (entry ~= nil) then gcinclude.RuleWhy[label] = entry.note or entry.words end
+end
+-- Named so /gcedit's layer record says a rule put it on (gceditactions: ruleWear, ruleEquip).
+local function ruleWear(name, exact, entry)
+    ruleNote(entry, name)
+    if exact then
+        local set = gcinclude.FindSet(name)
+        if (set ~= nil) then gFunc.EquipSet(set) end
+    else
+        gcinclude.ByName(name)
+    end
+end
+local function ruleEquip(slot, item, entry)
+    ruleNote(entry, 'ruleEquip()')
+    gFunc.Equip(slot, item)
+end
+local rulesApi = {
+    player = function() return gData.GetPlayer() end,
+    action = function() return gData.GetAction() end,
+    target = function() return gData.GetActionTarget() end,
+    env = function() return gData.GetEnvironment() end,
+    pet = function() return gData.GetPet() end,
+    petAction = function() return gData.GetPetAction() end,
+    me = function()
+        local party = AshitaCore:GetMemoryManager():GetParty()
+        return (party ~= nil) and party:GetMemberName(0) or nil
+    end,
+    buff = function(b) return gcinclude.BuffCount(b) end,
+    cycle = function(n) return gcdisplay.GetCycle(n) end,
+    toggle = function(n) return gcdisplay.GetToggle(n) end,
+    burst = function() return gcinclude.BurstWanted() end,
+    dualWield = function() return gcinclude.CanDualWield() end,
+    inCombat = function() return gcinclude.InCombat(gData.GetPlayer()) end,
+    family = function(n) return gcinclude.Family(n) end,
+    hasSet = function(n) return gcinclude.FindSet(n) ~= nil end, -- 'has a set named after it / its family'
+    weaponPick = function() return gcinclude.IsWeaponValue(gcdisplay.GetCycle('Weapons')) == true end,
+    inList = function(list, name) -- "in GoomSwap's spell list": gcinclude.BluMagPhysical...
+        local l = (type(list) == 'string') and rawget(gcinclude, list) or nil
+        return (type(l) == 'table') and (type(l.contains) == 'function') and (l:contains(name) == true)
+    end,
+    wear = function(name, exact, entry) ruleWear(name, exact, entry) end,
+    equip = function(slot, item, entry) ruleEquip(slot, item, entry) end,
+    cancel = function(entry)
+        gFunc.CancelAction()
+        gcinclude.Say('Stopped by a rule: ' .. tostring(entry.note or entry.words))
+    end,
+}
+gcinclude.RulesApi = rulesApi
+-- The code spots rules are tied to whose gcinclude.RulesAt line is not in the job file (deleted or renamed by
+-- hand): those rules would never go on. { { spot, n } }, empty when the file can't be read.
+local function missing_spots(compiled)
+    local out = {}
+    if (compiled == nil) or (next(compiled.at or {}) == nil) or (gProfile == nil)
+        or (type(gProfile.FilePath) ~= 'string') then
+        return out
+    end
+    local f = io.open(gProfile.FilePath, 'r')
+    if f == nil then return out end
+    local text = string.gsub(f:read('*a') or '', '%-%-[^\n]*', '') -- a commented-out line doesn't count
+    f:close()
+    for spot, list in pairs(compiled.at) do
+        local pat = "RulesAt%s*%(%s*['\"]" .. string.gsub(spot, '%p', '%%%0') .. "['\"]%s*%)"
+        if not string.find(text, pat) then out[#out + 1] = { spot = spot, n = #list } end
+    end
+    table.sort(out, function(a, b) return a.spot < b.spot end)
+    return out
+end
+function gcinclude.CompileRules()
+    local compiled, problems = gcrules.Compile(gcinclude.Rules)
+    gcinclude.RulesCompiled, gcinclude.RuleProblems = compiled, problems
+    for _, p in ipairs(problems) do gcinclude.Err('gcinclude.Rules, ' .. p .. ': left out.') end
+    for _, m in ipairs(missing_spots(compiled)) do
+        gcinclude.Err('gcinclude.Rules: ' .. m.n .. ((m.n == 1) and ' rule goes' or ' rules go') .. " on at code spot '"
+            .. m.spot .. "', but the job file has no gcinclude.RulesAt('" .. m.spot .. "') line: "
+            .. ((m.n == 1) and 'it never goes' or 'they never go') .. ' on. /gcedit, Rules: Edit, More, Use a layer instead.')
+    end
+end
+function gcinclude.HasRules(phase) return gcrules.Count(gcinclude.RulesCompiled, phase) > 0 end
+-- One phase's layer ('job' or 'top'). true when a rule stopped the action; and how many rules went on.
+function gcinclude.RunRules(phase, layer)
+    local c = gcinclude.RulesCompiled
+    local list = (c ~= nil) and (c[phase] ~= nil) and c[phase][layer] or nil
+    if (list == nil) or (#list == 0) then return false, 0 end
+    -- an action the job file (CheckCancels, a bailout) already cancelled: its gear doesn't go on, rules' neither
+    if (phase ~= 'Default') and (phase ~= 'Pet') and (gState ~= nil) and (gState.PlayerAction ~= nil)
+        and (gState.PlayerAction.Block == true) then
+        return true, 0
+    end
+    local t0 = (gcinclude.Perf ~= nil) and perfNow() or nil
+    local stopped, n = gcrules.Run(c, phase, layer, rulesApi)
+    gcinclude.PerfAdd('rules', t0)
+    return stopped, n
+end
+-- The rules at a spot in the job file's code (/gcedit's Convert leaves `gcinclude.RulesAt('Midcast 1')` where the
+-- `if`s it turned into rules were): they go on right there. true when one stopped the action.
+function gcinclude.RulesAt(at)
+    local c = gcinclude.RulesCompiled
+    if (c == nil) or (c.at == nil) or (c.at[at] == nil) then return false end
+    local list = c.at[at]
+    local phase = list[1].phase
+    if (phase ~= 'Default') and (phase ~= 'Pet') and (gState ~= nil) and (gState.PlayerAction ~= nil)
+        and (gState.PlayerAction.Block == true) then
+        return true
+    end
+    local t0 = (gcinclude.Perf ~= nil) and perfNow() or nil
+    local stopped = gcrules.RunAt(c, at, rulesApi)
+    gcinclude.PerfAdd('rules', t0)
+    return stopped
+end
+
+-- The handler names LAC calls, and the rule phase each one runs.
+local RULE_PHASE = { HandlePrecast = 'Precast', HandleMidcast = 'Midcast', HandleAbility = 'Ability',
+    HandleWeaponskill = 'Weaponskill', HandlePreshot = 'Preshot', HandleMidshot = 'Midshot', HandleItem = 'Item' }
+-- The job file's handler, or (a job file without one, rules for its phase) a stand-in so the rules still run.
+local function handlerFor(name)
+    local f = gProfile[name]
+    if (type(f) == 'function') then return f end
+    if gcinclude.HasRules(RULE_PHASE[name]) then return function() end end
+    return nil
+end
+
 -- Trace phase per handler: 'pre' waits for its 'mid' so a spell or shot prints one line.
 gcinclude.Checked = T{'HandlePrecast', 'HandleAbility'}
 
 function gcinclude.WrapHoldHandlers()
     if (gProfile == nil) or (gProfile.GcHoldWrapped == true) then return end
     for _, name in ipairs(T{'HandlePrecast', 'HandleAbility', 'HandleMidcast'}) do
-        local original = gProfile[name]
+        local original = handlerFor(name)
         if (type(original) == 'function') then
             gProfile[name] = function(...)
                 if gcinclude.Checked:contains(name) and gcaction.Check() then gFunc.CancelAction(); return end
@@ -883,6 +1011,15 @@ function gcinclude.WrapHoldHandlers()
                 gcinclude.THWorn = false
                 gcinclude.WornSets = (name == 'HandleMidcast') and {} or nil
                 local result = original(...)
+                local phase = RULE_PHASE[name]
+                -- job rules: where the job file's own code ends (their sets noted, so _Self/_Burst follow them)
+                local stopped, ran = gcinclude.RunRules(phase, 'job')
+                if stopped then
+                    gcinclude.WornSets = nil
+                    return result
+                end
+                -- TH this cast already wore stays over the rules' gear, as over the job file's (CheckAbsorb does the same)
+                if (ran > 0) and (name == 'HandleMidcast') and (gcinclude.THWorn == true) then gcinclude.CheckTH() end
                 local worn = gcinclude.WornSets
                 gcinclude.WornSets = nil
                 if (name == 'HandleMidcast') then
@@ -896,6 +1033,8 @@ function gcinclude.WrapHoldHandlers()
                 elseif (name == 'HandleAbility') then
                     gcinclude.CheckElementGear() -- Quick Draw
                 end
+                -- top rules: over GoomSwap's layers; SmartSwap's weapon keep and Dispelga's Daybreak still win
+                if gcinclude.RunRules(phase, 'top') then return result end
                 if (gcinclude.SmartKeep == true) and ((name == 'HandlePrecast') or (name == 'HandleMidcast')) then
                     gcinclude.StripWeaponSwaps()
                 end
@@ -905,7 +1044,7 @@ function gcinclude.WrapHoldHandlers()
             end
         end
     end
-    local ws = gProfile.HandleWeaponskill
+    local ws = handlerFor('HandleWeaponskill')
     if (type(ws) == 'function') then
         gProfile.HandleWeaponskill = function(...)
             if gcaction.Check() then gFunc.CancelAction(); return end
@@ -926,6 +1065,15 @@ function gcinclude.WrapHoldHandlers()
                     gcinclude.WornSets = nil
                     return r
                 end
+                if (gState.PlayerAction ~= nil) and (gState.PlayerAction.Block == true) then -- cancelled
+                    gcinclude.WornSets = nil
+                    return r
+                end
+                -- job rules: after the job file's WS code (their sets noted for _HighBuff / _Dt, ears for Moonshade)
+                if gcinclude.RunRules('Weaponskill', 'job') then
+                    gcinclude.WornSets = nil
+                    return r
+                end
                 local worn = gcinclude.WornSets
                 gcinclude.WornSets = nil
                 if (gcdisplay.GetCycle('WsSet') == 'High') then gcinclude.WearChildren(worn, {'HighBuff'}) end
@@ -941,11 +1089,12 @@ function gcinclude.WrapHoldHandlers()
             if proc then return result end
             gcinclude.CheckMoonshade(trail)
             gcinclude.CheckElementGear()
+            gcinclude.RunRules('Weaponskill', 'top') -- over every WS layer
             return result
         end
     end
     for _, name in ipairs(T{'HandlePreshot', 'HandleMidshot', 'HandleItem'}) do
-        local original = gProfile[name]
+        local original = handlerFor(name)
         -- HandleItem: every job, the job file needs none
         if (type(original) == 'function') or (name == 'HandleItem') then
             gProfile[name] = function(...)
@@ -967,6 +1116,8 @@ function gcinclude.WrapHoldHandlers()
                 end
                 local result
                 if (type(original) == 'function') then result = original(...) end
+                local phase = RULE_PHASE[name]
+                if not gcinclude.RunRules(phase, 'job') then gcinclude.RunRules(phase, 'top') end
                 return result
             end
         end
@@ -975,10 +1126,24 @@ function gcinclude.WrapHoldHandlers()
     -- not once each: LAC runs HandleDefault on every outgoing packet chunk.
     local default = gProfile.HandleDefault
     if (type(default) == 'function') then
+        -- Rules: a pet action's (LAC brings those here, not to a handler of their own), else the idle/engaged ones
+        -- when the job file didn't call CheckDefault (which runs them in their places).
+        local function run(...)
+            gcinclude.RulesRanDefault = false
+            default(...)
+            local pet, idle = gcinclude.HasRules('Pet'), gcinclude.HasRules('Default')
+            if not (pet or idle) then return end
+            if gData.GetPetAction() ~= nil then
+                if pet and not gcinclude.RunRules('Pet', 'job') then gcinclude.RunRules('Pet', 'top') end
+            elseif (gcinclude.RulesRanDefault == false) and idle then
+                gcinclude.RunRules('Default', 'job')
+                gcinclude.RunRules('Default', 'top')
+            end
+        end
         gProfile.HandleDefault = function(...)
-            if (gcinclude.Perf == nil) then gcinclude.WithBuffs(default, ...); return end
+            if (gcinclude.Perf == nil) then gcinclude.WithBuffs(run, ...); return end
             local t0 = perfNow() -- /gcperf
-            gcinclude.WithBuffs(default, ...)
+            gcinclude.WithBuffs(run, ...)
             gcinclude.PerfAdd('default', t0)
         end
     end
@@ -1050,6 +1215,20 @@ function gcinclude.FindSet(name)
         end
     end
     local hit = setIndex[string.lower(name)]
+    if (hit == nil) then -- a set inside a set, by the name /gcedit gives it: Buffs['Boost']
+        local parent, key = string.match(name, "^(.-)%['(.+)'%]$")
+        local holder = (parent ~= nil) and setIndex[string.lower(parent)] or nil
+        if (type(holder) == 'table') then
+            hit = holder[key]
+            if (hit == nil) then
+                local l = string.lower(key)
+                for k, v in pairs(holder) do
+                    if (type(k) == 'string') and (string.lower(k) == l) then hit = v break end
+                end
+            end
+            if (type(hit) ~= 'table') then hit = nil end
+        end
+    end
     -- a set looked for and not there, during an action: /gcedit lists it (gcaction.RecMiss)
     if (hit == nil) and (name ~= '') and (gcaction ~= nil) and (gcaction.RecMiss ~= nil) then gcaction.RecMiss(name) end
     return hit
@@ -1127,37 +1306,62 @@ function gcinclude.NoteSet(set)
     if (type(name) == 'string') then table.insert(gcinclude.WornSets, name) end
 end
 
--- Items to keep in Inventory. Each layer adds or replaces a name; false removes it.
--- gcpacker handles inventory counts and in-flight Bellhop requests.
-function gcinclude.PackerList()
-    local want, order = {}, {}
-    local function add(name, n)
-        if (type(name) ~= 'string') then return end
-        local k = string.lower(name)
-        if (want[k] == nil) then order[#order + 1] = k end
-        want[k] = { name = name, n = n }
+-- LuAshitacast's Packer list (profile.Packer), for /lac gear and /lac validate (the Packer plugin). Filled once per
+-- load, in memory: char.lua's Packer, sets inside sets (Buffs), GoomSwap's own sets and the items its commands and
+-- layers wear, the ones you own (gcpackerlist.lua). The job file itself is never written here.
+local PACKER_BAGS = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 } -- every container (gceditbags BAGS)
+function gcinclude.PackerItems()
+    local s, j = gcinclude.settings, gcinclude
+    local items = gcpackerlist.Names({ s.warp_Ring, s.mea_Ring, s.dem_Ring, s.holla_Ring, s.HoxneItem, s.CapacityCapes,
+        s.XIRollSet, s.ElementGear, j.SafeAmmo, j.RangeAmmo })
+    for _, name in ipairs({ 'Moonshade Earring', 'Daybreak', 'Jubilee Ring' }) do items[#items + 1] = name end
+    return items
+end
+-- An item's stack size (Packer's 'stack'), 1 when the game doesn't know it. The editor's Packer rows use it too.
+function gcinclude.StackOf(name)
+    local r = AshitaCore:GetResourceManager():GetItemByName(name, 0)
+    return (r ~= nil) and (r.StackSize or 1) or 1
+end
+function gcinclude.FillPacker(again) -- again: rebuild (char.lua's Packer changed; Get gear: what you own now)
+    if gProfile == nil then return end
+    if gProfile.GcPackerFilled == true then
+        if again ~= true then return end
+        gProfile.Packer, gProfile.GcPackerFilled = gcinclude.FilePacker, nil
     end
-    for name, n in pairs(gcinclude.settings.PackerItems or {}) do add(name, n) end
-    for name, n in pairs(gcinclude.CharPacker or {}) do add(name, n) end -- char.lua, else goomswap-shared.lua
-    for name, n in pairs(gcinclude.Packer or {}) do add(name, n) end -- the job file
-    local list, res = {}, AshitaCore:GetResourceManager()
-    for _, k in ipairs(order) do
-        local w = want[k]
-        if (w.n ~= false) then
-            local r = res:GetItemByName(w.name, 0)
-            if (r == nil) then
-                gcinclude.Err('/packer: no item named ' .. w.name)
-            else
-                local n = ((w.n == 'stack') or (w.n == true)) and (r.StackSize or 1) or tonumber(w.n)
-                if (n ~= nil) and (n > 0) then list[#list + 1] = { name = r.Name[1], id = r.Id, n = n } end
+    local res, inv = AshitaCore:GetResourceManager(), AshitaCore:GetMemoryManager():GetInventory()
+    local owned = nil
+    local function owns(name)
+        if owned == nil then
+            owned = {}
+            for _, c in ipairs(PACKER_BAGS) do
+                for i = 1, (gData.GetContainerMax(c) or 0) do -- as the bag scans do (gceditbags, gcgear)
+                    local it = inv:GetContainerItem(c, i)
+                    if (it ~= nil) and (it.Id ~= 0) and (it.Id ~= 65535) then
+                        local r = res:GetItemById(it.Id)
+                        if (r ~= nil) and (r.Name ~= nil) and (r.Name[1] ~= nil) then owned[string.lower(r.Name[1])] = true end
+                    end
+                end
             end
         end
+        return owned[string.lower(name)] == true
     end
-    return list
+    gcinclude.FilePacker = gProfile.Packer -- as the job file has it
+    gProfile.Packer = gcpackerlist.Build({ file = gProfile.Packer, char = gcinclude.CharPacker, sets = gProfile.Sets,
+        engineSets = gcinclude.sets, items = gcinclude.PackerItems(), stackOf = gcinclude.StackOf, owns = owns })
+    gProfile.GcPackerFilled = true
 end
-
-function gcinclude.RunPacker(quiet)
-    return gcpacker.Run(gcinclude, quiet)
+-- /lac gear: the Packer plugin collects every set's gear plus the list above. false and why when it can't run.
+function gcinclude.PackerReady()
+    local pm = AshitaCore:GetPluginManager()
+    if (pm == nil) or (not pm:IsLoaded('Packer')) then return false, 'the Packer plugin: /load packer' end
+    return true
+end
+function gcinclude.GetGear()
+    local ok, why = gcinclude.PackerReady()
+    if not ok then gcinclude.Err('/lac gear needs ' .. why); return false end
+    gcinclude.FillPacker(true) -- again: what you own now (gear bought or moved since the job file loaded)
+    AshitaCore:GetChatManager():QueueCommand(1, '/lac gear')
+    return true
 end
 
 function gcinclude.WearChildren(names, keys)
@@ -1977,12 +2181,12 @@ function gcinclude.Help()
             ', ')) or '')
             .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [mid|high] (high: <WS set>_HighBuff)',
         'hud    : /gchud [on|off|debug] (the other boxes, dropped under the bar)',
-        'checks : /checksets, /gcperf (timings in chat every 10s)',
+        'checks : /checksets [all], /gcperf (timings in chat every 10s)',
         'swap   : /smartswap [on|off], /dw [on|off|auto] (dual wield: shows why; off = 1h weapon sets)',
         'holds  : /capacity /jubilee /dynamisrp /abyproc [on|off]',
         'items  : /gce <item> | cancel, /warpring /mea /holla /dem',
         'checks : failing actions cancel, reason in chat',
-        'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcbuild [JOB] (the example with your gear, as <JOB>.proposed.lua), /gcedit [set|last [slot]] (set editor window, Ashita; last: the set your last action used)',
+        'gear   : /autogear [on|off|regen N|refresh N|dt N|petdt N], /gcbuild [JOB] (the example with your gear, as <JOB>.proposed.lua), /gcimport <file> [JOB] (a GearSwap file\'s sets, the same way), /gcedit [set|last [slot]] (set editor window, Ashita; last: the set your last action used)',
         'bar    : /gcbar [on|off|pos x y|reset|scale N|theme name]',
         'grid   : /gcgear [on|off|pos x y|reset|scale N|alpha N|bg on|off] (worn gear 4x4: locks, holds, RP)',
         'on/off : every toggle takes on|off (no arg flips it); /def off|dt|mdt|aminon',
@@ -2222,7 +2426,7 @@ function gcinclude.ItemSide(name)
     return sideCache[key] or nil
 end
 
-function gcinclude.CheckSets()
+function gcinclude.CheckSets(all) -- all: every line, not the first 8 of each kind
     if (gProfile == nil) or (type(gProfile.Sets) ~= 'table') then return end
     local empty = T{}
     local unknown = T{}
@@ -2304,7 +2508,8 @@ function gcinclude.CheckSets()
     -- the same sets against your bags: not owned, one copy worn twice, other augments, wrong bag (common/gcbuild.lua)
     local ok, build = pcall(gFunc.LoadFile, 'common\\gcbuild.lua')
     if ok and (type(build) == 'table') and (build.CheckSets ~= nil) then
-        local okc, e = pcall(build.CheckSets, gProfile.Sets, gcinclude.WeaponModes, gcinclude.Say, gcinclude.Err)
+        local okc, e = pcall(build.CheckSets, gProfile.Sets, gcinclude.WeaponModes, gcinclude.Say, gcinclude.Err,
+            all and 1000 or nil)
         if not okc then gcinclude.Err('checksets: the bag check failed: ' .. tostring(e)) end
     end
 end
@@ -2426,6 +2631,19 @@ function gcinclude.SetRegenRefreshGear(player)
     end
 end
 
+-- THF, on a weapon skill while Sneak Attack and/or Trick Attack is up: <WS>_SATA / _SA / _TA (with /mset acc:
+-- <WS>_Acc_SA...), else Ws_<mset>_SATA / _SA / _TA (Ws_Default_SA). Each only when the job file has it.
+function gcinclude.EquipSATA(name)
+    if (type(name) ~= 'string') then return end
+    local sa, ta = gcinclude.BuffCount('Sneak Attack'), gcinclude.BuffCount('Trick Attack')
+    local suffix = ((sa > 0) and (ta > 0) and 'SATA') or ((sa > 0) and 'SA') or ((ta > 0) and 'TA') or nil
+    if (suffix == nil) then return end
+    local mode = gcdisplay.GetCycle('MeleeSet')
+    local set = gcinclude.FindSet(name .. ((mode == 'Default') and '' or ('_' .. mode)) .. '_' .. suffix)
+    if (set == nil) or (next(set) == nil) then set = gcinclude.FindSet('Ws_' .. mode .. '_' .. suffix) end
+    if (set ~= nil) then gFunc.EquipSet(set) end
+end
+
 function gcinclude.CheckWsBailout()
     local player = gData.GetPlayer()
     local ws = gData.GetAction()
@@ -2438,10 +2656,10 @@ function gcinclude.CheckWsBailout()
     local target = gData.GetActionTarget()
     local distance = (target ~= nil) and tonumber(target.Distance) or nil
     if gcinclude.settings.WScheck and (distance ~= nil) and (not gcinclude.DistanceWS:contains(ws.Name)) then
-        local reach = gcinclude.WsReach(target)
+        local reach, swung = gcinclude.WsReach(target)
         if (distance > reach) then
-            gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f). Move closer, or /wsdistance off',
-                ws.Name, distance, reach))
+            gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f%s). Move closer, or /wsdistance off',
+                ws.Name, distance, reach, (swung > 0) and string.format('; swings landed to %.1f', swung) or ''))
             return false
         end
     end
@@ -2451,18 +2669,22 @@ end
 -- How far a melee weapon skill reaches, center to center: its range past both bodies, as the LandSandBoat server
 -- checks it (char_entity.cpp OnWeaponSkillFinished: distance <= range + attacker hitbox + target hitbox; melee weapon
 -- skills have range 3 in its data/weapon_skills.yaml). A big mob is hit from further away than a small one, so a
--- fixed distance cancels weapon skills your swings still reach. WSdistance (/wsdistance N) stays the least reach.
+-- fixed distance cancels weapon skills your swings still reach. WSdistance (/wsdistance N) stays the least reach, and
+-- so does the farthest your auto-attacks on this target went out at (gcauto.SwingReach): a weapon skill reaches
+-- further than a swing. Returns the reach and that swing distance (0: none yet).
 gcinclude.WsRange = 3
 function gcinclude.WsReach(target)
     local floor = tonumber(gcinclude.settings.WSdistance) or 0
+    local swung = ((target ~= nil) and (gcauto ~= nil) and (gcauto.SwingReach ~= nil)) and gcauto.SwingReach(target.Id) or 0
+    floor = math.max(floor, swung)
     local ok, sizes = pcall(function()
         local mm = AshitaCore:GetMemoryManager()
         local ent = mm:GetEntity()
         return (tonumber(ent:GetModelHitboxSize(mm:GetParty():GetMemberTargetIndex(0))) or 0)
             + (tonumber(ent:GetModelHitboxSize(target.Index)) or 0)
     end)
-    if not ok or (target == nil) or (target.Index == nil) then return floor end
-    return math.max(floor, gcinclude.WsRange + sizes)
+    if not ok or (target == nil) or (target.Index == nil) then return floor, swung end
+    return math.max(floor, gcinclude.WsRange + sizes), swung
 end
 
 -- After a teleport ring's use (warped or not): stop keeping that ring on, so the next HandleDefault puts
@@ -2691,6 +2913,7 @@ checkDefault = function()
         -- only
         -- Proc goes on, then the weapon mode (the WS you proc with needs it). No Dt, mdt/Aminon, Hoxne, auto, TH,
         -- received, buff or XIRoll sets; sleep/doom safety and the locks (/lock, Aminon, Hoxne Ampulla) still apply.
+        gcinclude.RulesRanDefault = true -- /proc: no rules either
         if (gEquip ~= nil) and (gEquip.ClearBuffer ~= nil) then gEquip.ClearBuffer() end
         local proc = gcinclude.FindSet('Proc')
         if (proc ~= nil) then gFunc.EquipSet(proc) end
@@ -2701,21 +2924,25 @@ checkDefault = function()
         gcdisplay.Update()
         return
     end
+    -- job rules (gcinclude.Rules): where the job file's own code goes, just before this call; not during a pet action
+    gcinclude.RulesRanDefault = true
+    local rules = gcinclude.HasRules('Default') and (gData.GetPetAction() == nil)
+    if rules then gcinclude.RunRules('Default', 'job') end
     gcinclude.CheckHoxneSets(me)
     gcinclude.SetRegenRefreshGear(me)
     gcinclude.SetTownGear()
     gcinclude.CheckWeapons(me)
+    if rules then gcinclude.RunRules('Default', 'top') end -- top rules: over all of that, under the debuff sets
     gcinclude.CheckCommonDebuffs()
     gcinclude.CheckLockingRings()
     gcdisplay.Update()
 end
 
 function gcinclude.Unload()
-    gcinclude.Stopped = true -- a pending InitStep retry or delayed packer run of this load does nothing now
+    gcinclude.Stopped = true -- a pending InitStep retry of this load does nothing now
     gcinclude.ClearKeybinds()
     gcauto.Stop()
     ashita.events.unregister('d3d_present', 'gcinclude_tick')
-    gcpacker.Stop()
     if (gchud ~= nil) then gchud.Stop() end
     if (gcgear ~= nil) then gcgear.Stop() end
     gcinclude.UnlockSlots(nil)
@@ -2757,8 +2984,8 @@ end
 
 -- /gcedit [set]: open the set editor on that set, or close it. Saving reloads the job file; GcEditReopen (a
 -- global, so it outlives the reload) brings the editor back on the same set (InitStep).
--- The bar's '+ new mode...' / '+ add...': /gcedit opened (if it isn't) on what was asked. kind: 'wm' (New set,
--- Weapon_ typed), 'mset' (a /mset mode and its sets) or a pick list's setting ('MainModes': Settings, found).
+-- The bar's '+ new mode...' / '+ add...': /gcedit opened (if it isn't) on what was asked. kind: 'wm'
+-- (New weapon mode), 'mset' (a /mset mode and its sets) or a pick list's setting ('MainModes': Settings, found).
 function gcinclude.EditorRequest(kind)
     if not loadEditor() then return end
     if not gcinclude.Editor.IsOpen() then gcinclude.Editor.Open(gcinclude, nil, nil) end
@@ -2869,18 +3096,19 @@ end
 
 -- After /gcbuild: the draft opens in the set editor; its Save writes it as this job's file (the old one
 -- backed up) and reloads. Another job's draft is only written: LAC loads that job's file on the job change.
-function gcinclude.EditorDraft(job, proposed, dir)
+function gcinclude.EditorDraft(job, proposed, dir, cmd)
+    cmd = cmd or '/gcbuild'
     local now = gcinclude.JobName(AshitaCore:GetMemoryManager():GetPlayer():GetMainJob())
     local file = job .. '.proposed.lua'
     if (now ~= job) then
-        gcinclude.Say('Next: on ' .. job .. ', open ' .. file .. ', fill the commented slots, save it as ' .. job
-            .. '.lua; or run /gcbuild there to finish it in the set editor.')
+        gcinclude.Say('Next: change to ' .. job .. ' and run ' .. cmd .. ' there: ' .. file
+            .. ' opens in the set editor, and its Save makes it your ' .. job .. '.lua.')
         return
     end
     if not loadEditor() then return end
     if gcinclude.Editor.IsOpen() then
         if gcinclude.Editor.Dirty() then
-            gcinclude.Err('/gcbuild: the set editor has unsaved changes: save or close it, then /gcbuild again.')
+            gcinclude.Err(cmd .. ': the set editor has unsaved changes: save or close it, then ' .. cmd .. ' again.')
             return
         end
         gcinclude.Editor.Close()
@@ -2948,9 +3176,7 @@ function gcinclude.InitStep(tries)
     gcinclude.ApplyLockstyle()
     gcauto.Start()
     ashita.events.register('d3d_present', 'gcinclude_tick', gcinclude.Tick)
-    gcpacker.Start(gcinclude);
-    -- job change: fetch what inventory lacks
-    (function() if (gcinclude.Stopped ~= true) then gcinclude.RunPacker(true) end end):once(3)
+    gcinclude.FillPacker() -- what /lac gear gets on top of the sets
     if (gchud ~= nil) then gchud.Start() end
     if (gcgear ~= nil) then gcgear.Start() end
     if (GcEditReopen == nil) and (gcinclude.UnchangedExample() ~= nil) then -- a new user's first load: say what to do
@@ -3048,6 +3274,7 @@ function gcinclude.CastLeft()
 end
 
 function gcinclude.Initialize()
+    gcinclude.CompileRules() -- before the wrappers: a phase with rules gets one even with no handler of its own
     gcinclude.WrapHoldHandlers()
     gcinclude.WrapEquip()
     gcinclude.WrapBuffer()
@@ -3056,7 +3283,7 @@ function gcinclude.Initialize()
 end
 
 -- Install cohesive services after their private host dependencies are defined.
-runtime.Commands.Install(gcinclude, gcpacker)
+runtime.Commands.Install(gcinclude)
 runtime.Weapons.Install(gcinclude, {slotOf = slotOf, thFullTime = thFullTime})
 runtime.Elements.Install(gcinclude, {slotOf = slotOf})
 enchantRuntime = runtime.Enchants.Install(gcinclude, {slotOf = slotOf, carriedId = carriedId})

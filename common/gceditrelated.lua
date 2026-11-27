@@ -4,7 +4,7 @@ return function(
     conds_on, ctx, current, describe, draw_icon, draw_png, edit, editorPanels, editorPreferences,
     editorState, feedback, fits, ghost_of, go_to, group_of, has_set, help, help_icon, ignored_suggestion_names,
     imgui, index_all_items, inspect_item, inspection_target, itemTooltip, make_button, make_set, melee_modes,
-    owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, save_preferences, setFile,
+    owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, setFile,
     set_action_entries, set_tip, tag, text_w, undo_slot, where, wi_from_game, wrap, xy
 )
 -- A submenu (opens on hover) where the imgui binding has one; else its rows inline under a dim title.
@@ -114,6 +114,38 @@ local function weapon_set_mode(set)
 end
 ctx.weapon_set_mode = weapon_set_mode
 
+-- What a Weapon_ set is to /wm, nil for any other set: { mode, kind, armor }. kind: 'mode' (Weapon_<mode>, the job
+-- file's WeaponModes names it, or Save adds it: made here), 'variant' (a mode's own _1h or /mset set) or 'unlisted'
+-- (WeaponModes doesn't name it, so /wm never puts it on). armor: the slots it fills that a weapon mode never puts on:
+-- the engine takes Main, Sub, Range and Ammo from it (gcruntime, gcinclude.WeaponSlotNames), nothing else.
+local WEAPON_SLOT = { Main = true, Sub = true, Range = true, Ammo = true }
+ctx.WEAPON_SLOT = WEAPON_SLOT
+ctx.weapon_set_info = function(set)
+    local doc = editorState.document
+    if (set == nil) or (set.parentName ~= nil) or (set.code ~= nil) or doc.deleted[set.name] then return nil end
+    local rest = string.match(set.name, '^[Ww]eapon_(.+)$')
+    if rest == nil then return nil end
+    local info = { armor = {} }
+    for _, slot in ipairs(SCREEN) do
+        if (not WEAPON_SLOT[slot]) and (current(set, slot) ~= nil) then info.armor[#info.armor + 1] = slot end
+    end
+    local listed = ctx.settingsFiles.Job('WeaponModes')
+    listed = (type(listed) == 'table') and listed or {}
+    local msets = setFile.MeleeModes(doc.model.text, doc.newModes)
+    for _, m in ipairs(listed) do
+        if (type(m) == 'string') and (string.lower(m) ~= string.lower(rest)) and setFile.WeaponVariantOf(set.name, m, msets) then
+            info.mode, info.kind = m, 'variant'
+            return info
+        end
+    end
+    info.mode, info.kind = rest, 'unlisted'
+    if set.new and not string.find(rest, '[_%s]') then info.kind = 'mode' end -- Save adds it to WeaponModes
+    for _, m in ipairs(listed) do
+        if (type(m) == 'string') and (string.lower(m) == string.lower(rest)) then info.kind = 'mode' end
+    end
+    return info
+end
+
 local function weapon_set_rows(mode)
     local doc, lm, rows = editorState.document, string.lower(mode), {}
     local msets = setFile.MeleeModes(doc.model.text, doc.newModes)
@@ -181,6 +213,19 @@ local function draw_weapon_sets()
         local mode = ui.requestWeaponSets
         ui.requestWeaponSets, ui.weaponSets = nil, { mode = mode, copy = { false }, rows = weapon_set_rows(mode),
             base = editorState.document.model.byLower['weapon_' .. string.lower(mode)] }
+        -- just made, the job's only /wm mode, and nothing on load yet: it goes on at load (Weapons on load)
+        if ui.newWeaponMode == mode then
+            local S, only = ctx.settingsFiles, true
+            for _, w in ipairs(ctx.actions.WeaponModes()) do
+                if (string.lower(w) ~= 'none') and (string.lower(w) ~= string.lower(mode)) then only = false end
+            end
+            local cur = S.Job('DefaultWeapons')
+            if only and ((cur == nil) or ((type(cur) == 'string') and (string.lower(cur) == 'none'))) then
+                S.StageJob('DefaultWeapons', mode)
+                ui.weaponSets.onLoad, ui.weaponSets.onLoadWas = cur or 'None', cur -- what Keep puts back
+            end
+        end
+        ui.newWeaponMode = nil
         imgui.OpenPopup('##gcedit_weapon_sets')
     end
     if not imgui.BeginPopup('##gcedit_weapon_sets') then return end
@@ -188,6 +233,19 @@ local function draw_weapon_sets()
     if W ~= nil then
         local filled = (W.base ~= nil) and (current(W.base, 'Main') ~= nil) -- weapon sets copy it: needs its Main
         imgui.TextColored(palette.section, 'Weapon sets for /wm ' .. W.mode)
+        if W.onLoad ~= nil then -- the job's first /wm mode: worn at load from now on, unless you keep the old one
+            imgui.TextColored(palette.ok, 'Weapons on load: ' .. W.mode .. ' (your first /wm mode; Save writes it).')
+            imgui.SameLine()
+            if imgui.SmallButton('Keep ' .. tostring(W.onLoad) .. '##gcws_keep') then
+                local S = ctx.settingsFiles
+                S.StageJob('DefaultWeapons', (W.onLoadWas == nil) and S.REMOVE or W.onLoadWas)
+                W.onLoad = nil
+            end
+            if imgui.IsItemHovered() then
+                set_tip('Load with ' .. tostring(W.onLoad) .. ' as before; GoomSwap settings, this job options, '
+                    .. 'Weapons on load changes it later.')
+            end
+        end
         imgui.PushTextWrapPos(520)
         imgui.TextColored(palette.dim, 'Tick the ones whose gear should differ, then Make. Nothing is written until '
             .. 'Save + reload.')
@@ -287,6 +345,57 @@ local function mset_set_rows(mode)
     end)
     return rows
 end
+-- == New /wm mode: its name first (/wm <name>), checked as the engine reads Weapon_ sets, then Weapon_<Name> made,
+-- from the weapons you hold when ticked; its Weapon sets list opens after (and Weapons on load, when it is the first). ==
+local function wm_name_problem(name)
+    if name == '' then return '' end
+    if string.find(name, '[_%s]') then
+        return "One word: /wm reads one word, and _ joins a mode to an /mset mode's set."
+    end
+    if string.lower(name) == 'none' then return 'None is /wm with no weapons: pick another name.' end
+    local doc = editorState.document
+    if doc.model.byLower['weapon_' .. string.lower(name)] ~= nil then return 'Weapon_' .. name .. ' exists.' end
+    local msets = setFile.MeleeModes(doc.model.text, doc.newModes)
+    for _, m in ipairs(ctx.actions.WeaponModes()) do
+        if setFile.WeaponVariantOf('Weapon_' .. name, m, msets) then
+            return 'Weapon_' .. name .. ' reads as /wm ' .. m .. "'s own set (with an /mset mode): pick another name."
+        end
+    end
+    return nil
+end
+local function draw_wm_mode()
+    local ui = editorState.ui
+    if ui.requestNewWm then
+        -- a name typed in + New set (Weapon_Mpu: Mpu), else empty
+        ui.newWm, ui.newWmWorn = { (type(ui.requestNewWm) == 'string') and ui.requestNewWm or '' }, { true }
+        ui.requestNewWm = nil
+        imgui.OpenPopup('##gcedit_newwm')
+    end
+    if not imgui.BeginPopup('##gcedit_newwm') then return end
+    imgui.TextColored(palette.section, 'New weapon mode (/wm)')
+    imgui.PushItemWidth(260)
+    imgui.InputTextWithHint('##gcedit_wmname', 'Name, one word: Mpu, Naegling, MpuTP', ui.newWm, 24)
+    imgui.PopItemWidth()
+    local name = string.gsub(ui.newWm[1] or '', '^%s*(.-)%s*$', '%1')
+    local problem = wm_name_problem(name)
+    if problem == nil then
+        imgui.TextColored(palette.dim, 'Set: Weapon_' .. name .. '   In game: /wm ' .. string.lower(name))
+    elseif problem ~= '' then
+        imgui.TextColored(palette.bad, problem)
+    end
+    imgui.Checkbox('Start from the weapons you hold (Main, Sub, Range, Ammo)##gcedit_wmworn', ui.newWmWorn)
+    if imgui.Button('Create##gcedit_wmgo') and (problem == nil) then
+        local set = make_set('Weapon_' .. name, nil, false)
+        set = set or editorState.document.model.byLower['weapon_' .. string.lower(name)]
+        if (set ~= nil) and ui.newWmWorn[1] and (ctx.use_worn ~= nil) then ctx.use_worn(set) end
+        ui.requestWeaponSets, ui.newWeaponMode = name, name
+        imgui.CloseCurrentPopup()
+    end
+    imgui.SameLine()
+    if imgui.Button('Cancel##gcedit_wmno') then imgui.CloseCurrentPopup() end
+    imgui.EndPopup()
+end
+
 
 -- + A /mset mode (the MELEE heading, the Related tab): the name, then the sets to make for it, in one go. Save
 -- writes the mode into gcinclude.MeleeModes and the sets into the file.
@@ -1380,6 +1489,7 @@ local function draw_over(set)
     end
 end
 
+local fill_list -- To fill's list (below): the picker's way back to it counts what is left
 local function draw_picker(set)
     if (editorState.selection.slot == nil) or (set.code ~= nil) or set.extra then
         imgui.TextColored(palette.dim, 'Click a slot to pick gear for it.')
@@ -1409,7 +1519,21 @@ local function draw_picker(set)
         imgui.SameLine()
         if imgui.SmallButton('Cancel##gcedit_fa') then editorState.ui.fillAll = nil end
     end
+    if editorState.ui.fromFill then -- came from To fill: one click back to the list
+        if imgui.SmallButton('< To fill (' .. fill_list().n .. ' left)##gcedit_backfill') then
+            editorState.ui.fromFill, editorState.selection.tab = nil, 'fill'
+        end
+        if imgui.IsItemHovered() then set_tip('Back to the list of what still needs gear. Picking an item here does that too.') end
+        imgui.SameLine()
+    end
     imgui.TextColored(palette.blue, 'Editing: ' .. set.name .. ' / ' .. editorState.selection.slot)
+    local wi = ctx.weapon_set_info(set)
+    if (wi ~= nil) and not WEAPON_SLOT[editorState.selection.slot] then
+        imgui.PushTextWrapPos(0)
+        imgui.TextColored(palette.warn, 'Not worn: a Weapon_ set only puts on Main, Sub, Range and Ammo. Gear for '
+            .. 'fighting with this mode goes in Tp_' .. wi.mode .. ' (over Tp_Default while /wm ' .. wi.mode .. ' is on).')
+        imgui.PopTextWrapPos()
+    end
     if (cur ~= nil) and (cur.value.kind == 'code') then
         imgui.TextColored(palette.dim, 'Written as code in the file: edit it there.')
         return
@@ -1579,6 +1703,17 @@ local function draw_picker(set)
     imgui.Separator()
     imgui.BeginChild('##gcedit_picks', { 0, 0 }, 0)
     local bagX = imgui.GetCursorPosX() + bagColumn
+    -- what each piece changes against the slot's piece now: a column before the bag, when there is room
+    local slotNow = editorState.selection.slot
+    local dkey = set.name .. '\0' .. slotNow .. '\0' .. editorState.document.revision
+    local DC = editorState.cache.pickDelta
+    if (DC == nil) or (DC.key ~= dkey) then
+        DC = { key = dkey, by = {} }
+        editorState.cache.pickDelta = DC
+    end
+    local statW = (ctx.piece_delta ~= nil) and math.min(190, (bagX - imgui.GetCursorPosX()) * 0.45) or 0
+    if statW < 90 then statW = 0 end
+    local statX = bagX - statW
     if editorState.ui.resetPickerScroll then
         imgui.SetScrollY(0)
         editorState.ui.resetPickerScroll = nil
@@ -1614,7 +1749,7 @@ local function draw_picker(set)
         local isNow = selectedCopy ~= nil and selectedCopy.key == g.key
         if g.progress and g.progress.unfinished then imgui.PushStyleColor(ImGuiCol_Text, palette.rp) end
         local label = cardText.Fit(picker.Caption(g, isNow and (changed and 'Pending' or 'Saved')),
-            math.max(30, bagX - imgui.GetCursorPosX() - 10), text_w)
+            math.max(30, statX - imgui.GetCursorPosX() - 10), text_w)
             .. '##pick' .. i
         local picked = imgui.Selectable(label, isNow)
         if g.progress and g.progress.unfinished then imgui.PopStyleColor() end
@@ -1647,9 +1782,32 @@ local function draw_picker(set)
             )
             profiler.Finish('Item tooltip', tooltipStarted)
         end
-        imgui.SameLine(bagX)
-        imgui.TextColored(row.equippable and palette.dim or palette.warn,
-            cardText.Fit(picker.BagCaption(row.bags, g.bag), bagWidth - 8, text_w))
+        if (statW > 0) and not isNow then -- its stat changes: green better, red worse, fitted to the column
+            local parts = DC.by[g.key]
+            if parts == nil then
+                DC.before = DC.before or ctx.slot_stats(set, slotNow)
+                local ok, res = pcall(ctx.piece_delta, slotNow, g, DC.before)
+                parts = ok and res or {}
+                DC.by[g.key] = parts
+            end
+            local used, full = 0, {}
+            for k, p in ipairs(parts) do
+                local w = text_w(p.text) + ((k > 1) and 6 or 0)
+                if used + w > statW - 8 then break end
+                if k == 1 then imgui.SameLine(statX) else imgui.SameLine(0, 6) end
+                imgui.TextColored((p.better == true) and palette.ok or ((p.better == false) and palette.bad or palette.dim),
+                    p.text)
+                if imgui.IsItemHovered() then
+                    for _, q in ipairs(parts) do full[#full + 1] = q.full end
+                    set_tip('Against the piece in ' .. slotNow .. ' now:\n' .. table.concat(full, '\n'))
+                end
+                used = used + w
+            end
+        end
+        imgui.SameLine(bagX + 5) -- its bag as a tag: green worn here, amber not in a bag you can wear from
+        pill(cardText.Fit(picker.BagCaption(row.bags, g.bag), bagWidth - 18, text_w),
+            isNow and palette.ok or (row.equippable and palette.dim or palette.warn),
+            isNow and palette.okBg or (row.equippable and palette.chipBg or palette.warnBg))
         if y0 ~= nil then
             editorState.cache.rowH = imgui.GetCursorPosY() - y0
         end -- first frame: every row drawn, the height measured
@@ -1673,7 +1831,7 @@ end
 
 -- To fill: what still needs gear, across every set: slots left out (commented out, as /gcbuild leaves them), pieces
 -- you do not own, pieces in a bag you cannot equip from, weapon modes with no weapon you own. Rebuilt on each change.
-local function fill_list()
+fill_list = function()
     if editorState.cache.fillVer == editorState.document.revision then return editorState.cache.fill end
     local F = { left = {}, notOwned = {}, move = {}, modes = {}, n = 0 }
     local idx = {}
@@ -1753,7 +1911,7 @@ local function draw_fill()
         imgui.TextColored(palette.dim, 'What still needs gear, in every set.')
         help(
             'Everything that still needs gear, in every set.\n'
-                .. '- Click a set and slot: it opens on the Gear tab.\n'
+                .. '- Click a set and slot: it opens on the Gear tab; your pick brings you back here.\n'
                 .. '- Left out: commented out in the file (how /gcbuild leaves gear you lack).\n'
                 .. 'Nothing is saved until Save + reload.'
         )
@@ -1847,6 +2005,7 @@ local function draw_fill()
                             end
                             editorState.ui.fillAll = { name = e.name, slot = slot, sets = sets, n = #e.places }
                             go_to(e.places[1].set, slot, 'gear')
+                            editorState.ui.fromFill = true
                         end
                         if imgui.IsItemHovered() then
                             set_tip('Pick once on the Gear tab: it goes in all ' .. #e.places .. ' sets.')
@@ -1873,6 +2032,7 @@ local function draw_fill()
                     if imgui.Selectable( pl.id,
                         (editorState.selection.setName == pl.set) and (editorState.selection.slot == pl.slot) ) then
                         go_to(pl.set, pl.slot, 'gear')
+                        editorState.ui.fromFill = true
                     end
                     if x0 ~= nil then
                         imgui.SameLine(x0 + 14)
@@ -1907,6 +2067,7 @@ local function draw_fill()
             if m.set ~= nil then
                 if imgui.Selectable(m.mode .. '##gcfm' .. i, editorState.selection.setName == m.set.name) then
                     go_to(m.set.name, 'Main', 'gear')
+                    editorState.ui.fromFill = true
                 end
             else
                 if imgui.SmallButton('Make##gcfm' .. i) then make_set('Weapon_' .. m.mode, nil, true) end
@@ -2152,6 +2313,7 @@ end
     return { draw_over = draw_over, draw_picker = draw_picker, fill_list = fill_list, draw_fill = draw_fill,
         draw_weapon_sets = draw_weapon_sets,
         draw_mset_mode = draw_mset_mode,
+        draw_wm_mode = draw_wm_mode,
         draw_put_in = draw_put_in, draw_upgrade = draw_upgrade,
         draw_context_menu = draw_context_menu, variants_of = variants_of, rename_problem = rename_problem,
         rename_new = rename_new }

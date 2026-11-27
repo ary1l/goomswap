@@ -1,12 +1,20 @@
 -- /gcedit: new sets, copying, Use worn and saving.
 return function(
     ARMOR, BASE, ENGINE, SCREEN, augments_of, ctx, current, edit, editorPreferences, editorState, feedback,
-    fileWriter, gcedit, group_of, imgui, palette, pending_weapon_mode, read_file, save_preferences, setFile,
+    fileWriter, gcedit, group_of, imgui, palette, pending_weapon_mode, read_file, setFile,
     set_tip, xy
 )
 -- What the New set list offers: { name, why } for names the file lacks: the job's example file's sets, the engine's,
 -- then the job abilities, weapon skills and spells you know (found as tHotBar does: HasAbility(Id), HasSpell(Index)).
-local function suggestions()
+-- standard: no job abilities, weapon skills or spells; noSpells: the abilities and weapon skills you know, no spells
+-- The ability menu's folders: in the game's ability list, never an action's name (Stutter Step is used, not Steps),
+-- so a set by one of these names never goes on by itself (Windower resources: job_abilities 97, 124, 182, 183, 198,
+-- 199, 200, 213, 223, 251, 263, 357, 379, 380; pet menus 91, 172).
+local MENU_FOLDER = { ['Phantom Roll'] = true, ['Quick Draw'] = true, Sambas = true, Waltzes = true, Jigs = true,
+    Steps = true, ['Flourishes I'] = true, ['Flourishes II'] = true, ['Flourishes III'] = true, Stratagems = true,
+    Ready = true, ['Rune Enchantment'] = true, Ward = true, Effusion = true, ['Blood Pact: Rage'] = true,
+    ['Blood Pact: Ward'] = true }
+local function suggestions(standard, noSpells)
     local list, seen = {}, {}
     local function add(name, why)
         local l = string.lower(name)
@@ -50,17 +58,18 @@ local function suggestions()
     end
     table.sort(received)
     for _, n in ipairs(received) do add(n, 'a spell coming at you') end
+    if standard then return list end
     local player = AshitaCore:GetMemoryManager():GetPlayer()
     local acts = {}
     for i = 1, 0x600 do
         local r = res:GetAbilityById(i)
         if (r ~= nil) and (r.Name ~= nil) and (type(r.Name[1]) == 'string') and (r.Name[1] ~= '')
-            and not editorState.document.inactive and player:HasAbility(r.Id) then
+            and not MENU_FOLDER[r.Name[1]] and not editorState.document.inactive and player:HasAbility(r.Id) then
             acts[#acts + 1] = { r.Name[1], (i < 0x200) and 'weapon skill' or 'job ability' }
         end
     end
     local main, sub, subLv = editorState.profile.job, player:GetSubJob(), player:GetSubJobLevel()
-    for i = 1, 0x400 do
+    for i = 1, noSpells and 0 or 0x400 do
         local r = res:GetSpellById(i)
         if (r ~= nil) and (r.Name ~= nil) and (type(r.Name[1]) == 'string') and (r.Name[1] ~= '')
             and player:HasSpell(r.Index) then
@@ -130,7 +139,6 @@ local function make_set(name, copyFrom, stay, parent, key)
             { Ring2 = { kind = 'item', name = "Roller's Ring", text = setFile.FormatItem("Roller's Ring") } }
     end
     if not stay then editorPreferences.Select(editorState, name, nil) end
-    editorState.ui.sugg = nil
     local mode = pending_weapon_mode(set)
     feedback(mode and (name .. ' created; /wm ' .. mode .. ' will be added on Save.')
         or (name .. ' created (unsaved).'))
@@ -249,11 +257,14 @@ end
 -- MNK Victory Smite_Impetus): those show under Worn in when an action looks for them.
 ---------------------------------------------------------------------------------------------------------------------
 
-local function use_worn(set)
+local function use_worn(set) -- a Weapon_ set takes only Main, Sub, Range and Ammo: the rest of it is never worn
     local eq = gData.GetEquipment()
+    local weaponsOnly = (ctx.weapon_set_info ~= nil) and (ctx.weapon_set_info(set) ~= nil)
     for _, slot in ipairs(SCREEN) do
         local cur = set.slots[slot]
-        if (cur == nil) or (cur.value.kind == 'item') then
+        if weaponsOnly and not ctx.WEAPON_SLOT[slot] then
+            -- left as it is
+        elseif (cur == nil) or (cur.value.kind == 'item') then
             local w = eq[slot]
             if (w ~= nil) and (w.Name ~= nil) then
                 local a = (w.Item ~= nil) and augments_of(w.Item) or { augs = {} }
@@ -318,6 +329,15 @@ local function save()
             'Not saved: no gcinclude.Initialize() line to register new weapon modes.', true
         return
     end
+    -- Rules page: Convert's / Adopt's splices, read against this same text (the handlers, apart from the sets)
+    local conv = editorState.document.convert
+    if conv ~= nil then
+        if conv.text ~= disk then
+            editorState.ui.notice, editorState.ui.noticeBad = 'Not saved: the file changed since Convert read it.', true
+            return
+        end
+        for _, sp in ipairs(conv.splices) do splices[#splices + 1] = { sp[1], sp[2], sp[3] } end
+    end
     local text = setFile.Apply(disk, splices)
     -- Settings, This job: each staged gcinclude.<name> line, on the text with the edits above
     for name, e in pairs((text ~= nil) and editorState.document.jobSettings or {}) do
@@ -333,6 +353,10 @@ local function save()
     -- a deleted Weapon_ set's mode leaves the /wm list (read again here: the splices above may have rewritten it)
     local gone = ctx.wm_removal().modes
     if (text ~= nil) and (#gone > 0) then text = setFile.RemoveWeaponModes(text, gone) end
+    if (text ~= nil) and editorState.document.dropNotes then -- Editor, Remove /gcbuild notes
+        local _, clean = setFile.BuildNotes(text)
+        text = clean
+    end
     if (text ~= nil) and (editorState.document.wmOrder ~= nil) then -- after the rest: new and renamed modes are in it
         local order = {}
         for i, m in ipairs(editorState.document.wmOrder) do
@@ -400,11 +424,10 @@ local function save()
         editorState.selection.setName = renames[editorState.selection.setName]
     end
     if (editorState.preferences ~= nil) and (editorState.preferences.start == 'on') then -- Getting started: saved once
-        editorState.preferences.start, editorState.preferences.dirty = 'saved', true
+        editorState.preferences.start = 'saved'
     end
     if editorState.document.inactive then
         ctx.gearEngine.Say('/gcedit: saved ' .. editorState.document.file .. '; active job left loaded')
-        save_preferences()
         gcedit.Reload()
         editorState.ui.notice, editorState.ui.noticeBad = cleanupError
             and ('Saved, but backup cleanup failed: ' .. tostring(cleanupError))
@@ -418,7 +441,6 @@ local function save()
     )
     editorState.ui.saving, editorState.ui.notice, editorState.ui.noticeBad =
         true, 'Saved: reloading the job file...', false -- a second click would find the file changed
-    save_preferences()
     GcEditReopen = nil
     if editorState.ui.reopen == nil or editorState.ui.reopen[1] then
         local ok, reopenErr = fileWriter.Write(
@@ -478,17 +500,7 @@ end
 local function text_w(t)
     return (imgui.CalcTextSize ~= nil) and (tonumber((xy(imgui.CalcTextSize(t)))) or 0) or (#t * 7)
 end
-local function pill(text, fg, bg)
-    if canDraw() then
-        local x, y = xy(imgui.GetCursorScreenPos())
-        local w, h = xy(imgui.CalcTextSize(text))
-        if (x ~= nil) and (y ~= nil) and (w ~= nil) and (h ~= nil) then
-            PA[1], PA[2], PB[1], PB[2] = x - 5, y - 1, x + w + 5, y + h + 1
-            imgui.GetWindowDrawList():AddRectFilled(PA, PB, imgui.GetColorU32(bg), 7)
-        end
-    end
-    imgui.TextColored(fg, text)
-end
+local pill = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip).Pill -- the editor's one pill
 
 local function make_button(label) -- adds a set: blue, like the open tab
     imgui.PushStyleColor(ImGuiCol_Button, palette.selBg)

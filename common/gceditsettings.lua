@@ -42,6 +42,7 @@ return {
     end
 
     function S.Reset() cache = {} end -- another character may have changed the shared file
+    function S.Engine() return o.engine() end -- the loaded gcinclude the editor was opened with
     function S.Defaults() return o.engine().DefaultSettings or {} end
     function S.Path(which) return path_of(which) end
     function S.Layer(which) return layer(which).settings end
@@ -58,6 +59,23 @@ return {
     end
 
     S.REMOVE = setmetatable({}, { __tostring = function() return '(taken out)' end }) -- a value of false is a value
+    -- text written to path (old: what it held, nil when new): the first write this session backs old up first; a
+    -- failed write puts old back.
+    local function commit(path, old, text)
+        if (old ~= nil) and (backedUp[path] == nil) then
+            local backup, berr = F.Backups.Path(path, function(p) return ashita.fs.exists(p) end)
+            local ok, werr = false, berr
+            if backup ~= nil then ok, werr = F.Write(backup, old) end
+            if not ok then return false, 'backup failed: ' .. tostring(werr) end
+            backedUp[path] = backup
+        end
+        local ok, werr = F.Write(path, text)
+        if not ok then
+            if old ~= nil then F.Write(path, old) end
+            return false, tostring(werr)
+        end
+        return true
+    end
     -- Each key of changes set in which ('own' or 'shared'; S.REMOVE: taken out), in one write; then in use at once (a
     -- job file's own value comes back on its next load). A missing file is made from its template.
     function S.Write(which, changes)
@@ -79,18 +97,8 @@ return {
             local fine, why = e.CheckConfig(values)
             if not fine then return false, tostring(why) end
         end
-        if (old ~= nil) and (backedUp[path] == nil) then
-            local backup, berr = F.Backups.Path(path, function(p) return ashita.fs.exists(p) end)
-            local ok, werr = false, berr
-            if backup ~= nil then ok, werr = F.Write(backup, old) end
-            if not ok then return false, 'backup failed: ' .. tostring(werr) end
-            backedUp[path] = backup
-        end
-        local ok, werr = F.Write(path, text)
-        if not ok then
-            if old ~= nil then F.Write(path, old) end
-            return false, tostring(werr)
-        end
+        local ok, werr = commit(path, old, text)
+        if not ok then return false, werr end
         local L = layer(which).settings
         for k, v in pairs(changes) do
             if v == S.REMOVE then L[k] = nil else L[k] = v end
@@ -104,6 +112,31 @@ return {
                 end
                 e.settings[k] = v
             end
+        end
+        return true
+    end
+
+    -- == The return table's own keys beside settings (Packer: kept on every job, /lac gear). ==
+    function S.Top(which, key) return layer(which)[key] end
+    -- key set to value in which ('own' or 'shared'; S.REMOVE: taken out), written at once after a backup; the engine's
+    -- Packer list (char.lua's, else the shared file's) follows.
+    function S.WriteTop(which, key, value)
+        local e, path = o.engine(), path_of(which)
+        if path == nil then return false, 'no character folder yet' end
+        local old = o.readFile(path)
+        local text, err = F.SetCharTop(old or ((which == 'own') and e.CharConfigTemplate or SHARED_TEMPLATE), key,
+            function(ind)
+                if value == S.REMOVE then return nil end
+                return G.SerializeValue(value, F.QuoteText, F.FormatKey, ind)
+            end)
+        if text == nil then return false, tostring(err) end
+        if (loadstring or load)(text) == nil then return false, 'the file would not load after the change' end
+        local ok, werr = commit(path, old, text)
+        if not ok then return false, werr end
+        layer(which)[key] = (value ~= S.REMOVE) and value or nil
+        if key == 'Packer' then
+            e.CharPacker = layer('own').Packer or layer('shared').Packer
+            if e.FillPacker ~= nil then e.FillPacker(true) end
         end
         return true
     end
@@ -128,6 +161,7 @@ return {
         end
         return true
     end
+    S.ValueOf, S.Same = value_of, same -- the Settings panel reads typed values with them
     local function doc()
         local st = (o.state ~= nil) and o.state() or nil
         return (st ~= nil) and st.document or nil
@@ -172,7 +206,7 @@ return {
     function S.JobInFile(name) return from_file(name) end
     -- Staged for the job file's Save (S.REMOVE: its line taken out). t: written as T{...} (a T{} default's methods).
     -- Back to what the file has: nothing staged.
-    function S.StageJob(name, v, t)
+    function S.StageJob(name, v, t, textFor) -- textFor(value, indent): its own Lua text (gcinclude.Rules: a rule a line)
         local staged = S.JobStaged()
         local fv, why = from_file(name)
         if v == S.REMOVE then
@@ -180,13 +214,14 @@ return {
         elseif (why == 'file') and same(fv, v) then
             staged[name] = nil
         else
-            staged[name] = { value = v, T = t }
+            staged[name] = { value = v, T = t, text = textFor }
         end
         local d = doc()
         if d ~= nil then d.revision = (d.revision or 0) + 1 end
     end
     -- A staged value as Lua text at an indent (the Save writes it).
     function S.JobText(entry, ind)
+        if entry.text ~= nil then return entry.text(entry.value, ind) end
         return (entry.T and 'T' or '') .. G.SerializeValue(entry.value, F.QuoteText, F.FormatKey, ind)
     end
     -- A setting's value for the job open in the editor: its own line, else S.Get's. Also 'job' as where from.
@@ -228,26 +263,12 @@ return {
         return S.Write('own', changes)
     end
 
-    -- == Folded headings, per character across game restarts (gcedit-folds.txt beside char.lua, a heading a line). ==
-    local function folds_path()
+    -- Folded headings last the game session (GcEditFold); the gcedit-folds.txt they were once kept in, beside
+    -- char.lua, is removed.
+    function S.RemoveOldFolds()
         local own = path_of('own')
         local dir = (own ~= nil) and string.match(own, '^(.*[\\/])') or nil
-        return (dir ~= nil) and (dir .. 'gcedit-folds.txt') or nil
-    end
-    function S.LoadFolds()
-        local out, path = {}, folds_path()
-        for line in string.gmatch(((path ~= nil) and o.readFile(path)) or '', '[^\r\n]+') do out[line] = true end
-        return out
-    end
-    function S.SaveFolds(fold)
-        local path = folds_path()
-        if (path == nil) or (type(fold) ~= 'table') then return end
-        local names = {}
-        for name, folded in pairs(fold) do
-            if folded == true then names[#names + 1] = name end
-        end
-        table.sort(names)
-        F.Write(path, table.concat(names, '\n'))
+        if dir ~= nil then os.remove(dir .. 'gcedit-folds.txt') end
     end
 
     return S

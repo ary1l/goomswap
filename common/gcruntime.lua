@@ -73,14 +73,12 @@ do
                 'Dia', 'Dia II', 'Dia III', 'Diaga', 'Blink', 'Ice Spikes', 'Blaze Spikes', 'Shock Spikes',
                 { Spells = T{ 'Cure', 'Cura' }, Worn = T{ 'Daybreak', "Bunzi's Rod" } },
             },
-            -- kept in inventory on every job: { ['Echo Drops'] = 'stack', ['Holy Water'] = 12 }; a job adds its own
-            -- with gcinclude.Packer (/packer)
-            PackerItems = { ['Grape Daifuku +1'] = 'stack' },
-            PackerPutAway = true, -- on a job change, /packer puts back (Bellhop) what only the previous job's list kept
             -- set names hidden from /gcedit's Related tab, e.g. T{'Singing'}
             EditorIgnoreSuggestions = T{},
             -- newest dated /gcedit backups kept per job file, after a successful save; 0 = keep all
-            EditorBackupKeep = 10,
+            EditorBackupKeep = 3,
+            -- /gcedit spacing: 'Compact' or 'Comfortable' (its Editor menu sets it here)
+            EditorSpacing = 'Compact',
             -- /gcedit heading order and your own headings ({ 'Weapons', 'Idle', { 'Two-handed', 'Tp_Chango' } }); the
             -- editor's right-click menus write it to char.lua (docs/gcedit.md, Headings)
             EditorGroups = nil,
@@ -304,7 +302,7 @@ end
 do
     -- Command routing and aliases. Public gcinclude entry points are installed unchanged.
     local commands = {}
-    function commands.Install(gcinclude, gcpacker)
+    function commands.Install(gcinclude)
         function gcinclude.CycleDefense(arg)
             local want = string.lower(tostring(arg or ''))
             if want ~= '' then -- /def off|none, or a set by name (dt, mdt, aminon)
@@ -431,12 +429,6 @@ do
                 end -- a Weapon_<mode>Acc: you asked, swaps at any TP
                 toggle = 'Melee mode'
                 status = gcinclude.ModeLabel('MeleeSet', gcdisplay.GetCycle('MeleeSet'))
-            elseif args[1] == 'packer' then
-                if args[2] == 'reset' then
-                    gcpacker.Reset(gcinclude)
-                else
-                    gcinclude.RunPacker(false)
-                end
             elseif args[1] == 'wsset' then
                 gcinclude.PickCycle('WsSet', args[2])
                 toggle = 'WS Set'
@@ -475,6 +467,17 @@ do
                     if (job ~= nil) then
                         gcinclude.EditorDraft(job, proposed, dir)
                     end
+                end
+            elseif args[1] == 'gcimport' then -- a GearSwap job file's sets as a draft (common/gcgsimport.lua)
+                local ok, mod = pcall(gFunc.LoadFile, 'common\\gcgsimport.lua')
+                local okF, setFile = pcall(gFunc.LoadFile, 'common\\gcsetfile.lua')
+                if not ok or (type(mod) ~= 'table') or not okF then
+                    gcinclude.Err('/gcimport: common\\gcgsimport.lua failed to load')
+                else
+                    local rest = {}
+                    for i = 2, #args do rest[#rest + 1] = args[i] end
+                    local job, proposed, dir = mod.Run(rest, gcinclude.Say, gcinclude.Err, setFile)
+                    if (job ~= nil) then gcinclude.EditorDraft(job, proposed, dir, '/gcimport') end
                 end
             elseif args[1] == 'gcedit' then -- the set editor window (common/gcedit.lua, Ashita, loaded on use)
                 local words = {}
@@ -524,7 +527,7 @@ do
             elseif args[1] == 'gcperf' then
                 gcinclude.PerfCommand(args[2] and string.lower(args[2]))
             elseif args[1] == 'checksets' then
-                gcinclude.CheckSets()
+                gcinclude.CheckSets(string.lower(tostring(args[2] or '')) == 'all')
             elseif args[1] == 'kite' then
                 gcinclude.FlipToggle('Kite', args[2])
                 toggle = 'Kite Set'
@@ -1593,7 +1596,7 @@ return {
         -- Use the same main's name in each box's char.lua.
         -- HUDOwners = { 'YourMain' }, -- replace YourMain with the actual name
         -- Keybinds = {},             -- disable all GoomSwap keybinds
-        -- EditorBackupKeep = 10,     -- newest editor backups per job file; 0 = keep all
+        -- EditorBackupKeep = 3,      -- newest editor backups per job file; 0 = keep all
         -- EditorGroups = { 'Weapons', 'Idle' }, -- /gcedit heading order; its right-click menus write this
 
         -- For custom binds, use this INSTEAD of Keybinds = {} above.
@@ -1601,8 +1604,8 @@ return {
         -- Keybinds = { { 'F7', 'wm' }, { 'F9', 'mset' } },
     },
 
-    -- Optional supplies belong OUTSIDE settings, alongside it.
-    -- Uncomment the whole block you want. These apply to every job.
+    -- Optional supplies belong OUTSIDE settings, alongside it: /lac gear (Packer plugin) fetches them on every job.
+    -- Uncomment the whole block you want. A count, 'stack' or 'all'.
     -- Packer = {
     --     ['Echo Drops'] = 'stack',
     --     ['Holy Water'] = 'stack',
@@ -1693,13 +1696,13 @@ return {
         end
         engine.Say('Character config: ' .. path)
         engine.Say('Shared by every character: ' .. config.SharedPath()
-            .. (exists(config.SharedPath()) and '' or ' (none yet; /gcedit Settings makes it)'))
+            .. (exists(config.SharedPath()) and '' or ' (none yet; /gcedit, GoomSwap settings makes it)'))
         local owners = engine.settings.HUDOwners
         local binds = engine.settings.Keybinds
         engine.Say('Effective HUDOwners: ' .. (type(owners) == 'table' and #owners > 0
             and table.concat(owners, ', ') or '(none)') .. '; GoomSwap keybinds: '
             .. (type(binds) == 'table' and #binds or 0))
-        engine.Say(exists(path) and 'Edit its settings table (or /gcedit Settings), then reload the job. char.lua wins over the shared file; job files win over both.'
+        engine.Say(exists(path) and 'Edit its settings table (or /gcedit, GoomSwap settings), then reload the job. char.lua wins over the shared file; job files win over both.'
             or 'Run /gcconfig init to create it. Put personal preferences here, outside common/.')
     end
 
@@ -1927,6 +1930,21 @@ function runtime.NewAuto()
             end
         end
     end
+
+    -- Your auto-attacks prove reach: a swing (0x0028 category 1 from you: hit, miss, parry or guard alike) only
+    -- happens in melee range, and a weapon skill reaches further than a swing (LandSandBoat: melee 2, weapon skills 3,
+    -- past both hitboxes). The farthest distance a swing went out at on your target: gcinclude.WsReach uses it.
+    local swing = { id = nil, d = 0 }
+    local function swing_packet(P)
+        if (P.me == nil) or (P.actor ~= P.me) or (P.cat ~= 1) or (P.ntgt < 1) then return end
+        local mm = AshitaCore:GetMemoryManager()
+        local ent, index = mm:GetEntity(), mm:GetTarget():GetTargetIndex(0)
+        if (index == 0) or (ent:GetServerId(index) ~= P.tgt[1]) then return end
+        local d = math.sqrt(ent:GetDistance(index))
+        if (swing.id ~= P.tgt[1]) then swing.id, swing.d = P.tgt[1], d
+        elseif (d > swing.d) then swing.d = d end
+    end
+    function gcauto.SwingReach(id) return (id ~= nil) and (swing.id == id) and swing.d or 0 end
 
     -- Learned cast time, so no job needs gSettings.FastCast. XiPackets 0x0028: cmd_no 8 = Magic (Start),
     -- cmd_arg low 16 bits 'ca' (24931) = start, 'sp' (28787) = interrupt; cmd_no 4 = Magic (Finish), cmd_arg = spell
@@ -2234,7 +2252,7 @@ function runtime.NewAuto()
                 if ok then
                     pcall(roll_packet, P); pcall(combat_packet, P); pcall(cast_packet, P); pcall(mb_packet,
                         P); pcall(item_packet, P); pcall(incoming_cast, P); pcall(incoming_end,
-                        P); pcall(predict_packet, P)
+                        P); pcall(predict_packet, P); pcall(swing_packet, P)
                 end
             end
             if (e.id == 0x0029) then pcall(refused_packet, e.data) end

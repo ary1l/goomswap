@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 gcinclude.settings.SmartSwap = false; -- always swap to the casting weapons: TP isn't used on this job
 gcinclude.settings.WeaponTPGuard = 0; -- no 1000+ TP weapon hold either (nukes, Dark, Divine swap too)
 gcinclude.CureObi = true; -- Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts); false = never
@@ -426,8 +425,7 @@ local sets = {
 };
 profile.Sets = sets;
 
--- LuAshitacast's own list, for /lac gear and /lac validate (Packer plugin). GoomSwap's /packer (Bellhop) reads
--- gcinclude.Packer at the top of this file instead.
+-- Kept in your bags for this job by /lac gear (the Packer plugin), with every set's gear; /gcedit Settings edits it.
 profile.Packer = {
     {Name = 'Tropical Crepe', Quantity = 'all'},
     {Name = 'Rolan. Daifuku', Quantity = 'all'},
@@ -438,6 +436,32 @@ local ByName, Family = gcinclude.ByName, gcinclude.Family;
 profile.OnLoad = function()
     gSettings.AllowAddSet = true;
     gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
+    -- Rules (/gcedit, RULES): when this, wear that, as data.
+    gcinclude.Rules = {
+        { on = 'Default', when = { mode = { weapon = 'Staff' } }, wear = 'Idle_Staff', exact = true },
+        { on = 'Default', when = { buff = 'Sublimation: Activated' }, wear = 'Sublimation', exact = true },
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Precast', when = { mode = { weapon = 'Staff' } }, wear = 'Idle_Staff', exact = true },
+        { on = 'Midcast', when = { family = 'Refresh', target = 'me' }, wear = 'Self_Refresh', exact = true },
+        { on = 'Midcast', when = { buff = { 'Ebullience', 'Rapture' } }, wear = 'Power', exact = true },
+        { on = 'Midcast', when = { mode = { weapon = 'Staff' } }, wear = 'Idle_Staff', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Enhancing Magic', target = 'me' }, wear = 'Self_Enhancing', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { name = { has = 'storm' }, skill = 'Enhancing Magic' }, wear = 'Storm', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Healing Magic', target = 'me' }, wear = 'Self_Cure', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { family = { 'Cure', 'Cura', 'Curaga' }, mpp = { le = 50 }, skill = 'Healing Magic', weather = 'Light' }, wear = 'Cure_LowMP_Storm', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { family = { 'Cure', 'Cura', 'Curaga' }, mpp = { le = 50 }, skill = 'Healing Magic', weather = { isnt = { 'Light' } } }, wear = 'Cure_LowMP', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { family = { 'Cure', 'Cura', 'Curaga' }, skill = 'Healing Magic', toggle = { dt = true } }, wear = 'Cure_Dt', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mode = { nukeset = 'Macc' }, skill = 'Elemental Magic' }, wear = 'NukeACC', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { burst = true, skill = 'Elemental Magic' }, wear = 'Burst', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mode = { nukeset = 'OccultAcumen' }, skill = 'Elemental Magic' }, wear = 'OccultAcumen', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { buff = 'Klimaform', element = 'weather', skill = 'Elemental Magic' }, wear = 'Klimaform', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mpp = { le = 40 }, skill = 'Elemental Magic' }, wear = 'Mp_Body', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { name = { has = 'helix' }, skill = 'Elemental Magic' }, wear = 'Helix', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { burst = true, name = { has = 'helix' }, skill = 'Elemental Magic' }, wear = 'HelixBurst', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { name = { hasall = { 'helix', 'Nocto' } }, skill = 'Elemental Magic' }, item = { Head = 'Pixie Hairpin +1' } },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Dark Magic' }, wear = 'Enfeebling Magic', exact = true },
+    };
     gcinclude.Initialize();
 
     AshitaCore:GetChatManager():QueueCommand(1, '/macro book 8');
@@ -454,7 +478,6 @@ end
 
 profile.HandleDefault = function()
     local player = gData.GetPlayer();
-    local sub = gcinclude.BuffCount('Sublimation: Activated');
     gcinclude.EquipIdle(); -- Idle, then Idle_<mode> (/idleset)
 
     if (player.Status == 'Engaged') then
@@ -466,14 +489,6 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then
-        gFunc.EquipSet(sets.Idle_Staff);
-    end
-    if (sub > 0) then
-        gFunc.EquipSet(sets.Sublimation);
-    end
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end;
     gcinclude.CheckDefault ();
 end
 
@@ -489,55 +504,15 @@ profile.HandlePrecast = function()
     ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
     ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
     gcinclude.CheckCancels();
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then gFunc.EquipSet(sets.Idle_Staff) end
 end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
-    local target = gData.GetActionTarget() or {}; -- {} when LAC has no entity for the target: no Self_ sets
-    local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
-    local power = gcinclude.BuffCount('Ebullience') + gcinclude.BuffCount('Rapture');
     local family = Family(spell.Name); -- 'Cure IV' -> 'Cure'
     gFunc.EquipSet(sets.Midcast);
     ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Elemental Magic']
-    if (spell.Skill == 'Enhancing Magic') then
-        if (target.Name == me) then gFunc.EquipSet(sets.Self_Enhancing) end
-        if string.contains(spell.Name, 'storm') then gFunc.EquipSet(sets.Storm) end
-    elseif (spell.Skill == 'Healing Magic') then
-        if (target.Name == me) then gFunc.EquipSet(sets.Self_Cure) end
-        if T{'Cure', 'Cura', 'Curaga'}:contains(family) then
-            if (gData.GetPlayer().MPP <= 50) then
-                -- Light weather: Aurorastorm counts (LAC GetEnvironment reads storm buffs as weather), so does natural Light
-                local env = gData.GetEnvironment();
-                if (env ~= nil) and (env.WeatherElement == 'Light') then
-                    gFunc.EquipSet(sets.Cure_LowMP_Storm);
-                else
-                    gFunc.EquipSet(sets.Cure_LowMP);
-                end
-            end
-            if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Cure_Dt) end
-        end
-    elseif (spell.Skill == 'Elemental Magic') then
-        local burst = gcinclude.BurstWanted();
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.NukeACC) end
-        if burst then gFunc.EquipSet(sets.Burst) end
-        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
-        if (gcinclude.BuffCount('Klimaform') > 0) and (spell.Element == gData.GetEnvironment().WeatherElement) then
-            gFunc.EquipSet(sets.Klimaform);
-        end
-        if (gData.GetPlayer().MPP <= 40) then gFunc.EquipSet(sets.Mp_Body) end
-        if string.contains(spell.Name, 'helix') then
-            gFunc.EquipSet(sets.Helix);
-            if burst then gFunc.EquipSet(sets.HelixBurst) end
-            if string.contains(spell.Name, 'Nocto') then gFunc.Equip('Head', 'Pixie Hairpin +1') end
-        end
-    elseif (spell.Skill == 'Dark Magic') then
-        gFunc.EquipSet(sets['Enfeebling Magic']); -- mostly macc anyways; Kaustra by name below
-    end
+    gcinclude.RulesAt('Midcast 1');
     if not ByName(spell.Name) then ByName(family) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna'], ['Drain']
-    if (family == 'Refresh') and (target.Name == me) then gFunc.EquipSet(sets.Self_Refresh) end
-    if (power > 0) then gFunc.EquipSet(sets.Power) end
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then gFunc.EquipSet(sets.Idle_Staff) end
     gcinclude.CheckTH();
 end
 

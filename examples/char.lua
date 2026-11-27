@@ -14,7 +14,7 @@ return {
         -- Use the same main's name in each box's char.lua.
         -- HUDOwners = { 'YourMain' }, -- replace YourMain with the actual name
         -- Keybinds = {},             -- disable all GoomSwap keybinds
-        -- EditorBackupKeep = 10,     -- newest editor backups per job file; 0 = keep all
+        -- EditorBackupKeep = 3,      -- newest editor backups per job file; 0 = keep all
         -- EditorGroups = { 'Weapons', 'Idle' }, -- /gcedit heading order; its right-click menus write this
 
         -- For custom binds, use this INSTEAD of Keybinds = {} above.
@@ -22,8 +22,8 @@ return {
         -- Keybinds = { { 'F7', 'wm' }, { 'F9', 'mset' } },
     },
 
-    -- Optional supplies belong OUTSIDE settings, alongside it.
-    -- Uncomment the whole block you want. These apply to every job.
+    -- Optional supplies belong OUTSIDE settings, alongside it: /lac gear (Packer plugin) fetches them on every job.
+    -- Uncomment the whole block you want (or use /gcedit Settings). A count, 'stack' or 'all'.
     -- Packer = {
     --     ['Echo Drops'] = 'stack',
     --     ['Holy Water'] = 'stack',

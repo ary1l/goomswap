@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 
 local sets = {
     Idle = {
@@ -458,6 +457,28 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None', 'Tizona', 'Caliburnus'};
     gcinclude.DefaultWeapons = 'Tizona';
     gcinclude.SubModes = {'None', 'Bunzi\'s Rod'}; -- /sw bunzi: nuke offhand (Tizona stays), /sw none: back to the mode's Thibron. A Sub swap resets TP
+    -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
+    gcinclude.Rules = {
+        { on = 'Default', at = 'Default 1', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', at = 'Default 1', when = { toggle = { kite = true } }, wear = 'Evasion', exact = true },
+        { on = 'Ability', at = 'Ability 1', when = { name = 'Provoke' }, wear = 'Enmity', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { buff = 'Chain Affinity' }, wear = 'Ca', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { buff = 'Burst Affinity' }, wear = 'Ba', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { buff = 'Efflux' }, wear = 'Efflux', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { buff = 'Diffusion' }, wear = 'Diffusion', exact = true },
+        { on = 'Default', when = { zone = { has = 'Remnants' } }, wear = 'Salvage', exact = true, note = 'lazy equip weapons for salvage runs' },
+        { on = 'Midcast', at = 'Midcast 2', when = { inlist = 'BluMagPhysical', skill = 'Blue Magic' }, wear = 'BluPhysical', exact = true },
+        { on = 'Midcast', at = 'Midcast 2', when = { inlist = { isnt = 'BluMagPhysical' }, skill = 'Blue Magic' }, wear = 'BluMagical', exact = true },
+        { on = 'Midcast', at = 'Midcast 2', first = {
+            { when = { inlist = 'BluMagDebuff' }, wear = 'BluMagicAccuracy', exact = true },
+            { when = { inlist = 'BluMagStun' }, wear = 'BluStun', exact = true },
+            { when = { inlist = 'BluMagBuff' }, wear = 'CMP', exact = true },
+            { when = { inlist = 'BluMagSkill' }, wear = 'BluSkill', exact = true },
+            { when = { inlist = 'BluMagCure' }, wear = 'Cure', exact = true },
+            { when = { inlist = 'BluMagEnmity' }, wear = 'Enmity', exact = true },
+            { when = { any = { { name = { pattern = 'Evryone. Grudge' } }, { name = { has = 'Tenebral Crush' } } } }, wear = 'BluDark', exact = true },
+        } },
+    };
     gcinclude.Initialize();
 
 end
@@ -483,19 +504,13 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Evasion) end;
-    --lazy equip weapons for salvage runs
-    local area = AshitaCore:GetResourceManager():GetString('zones.names', AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0));
-    if (area ~= nil) and area:contains('Remnants') then
-        gFunc.EquipSet(sets.Salvage);
-    end
+    gcinclude.RulesAt('Default 1');
     gcinclude.CheckDefault ();
 end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
-    if (ability.Name == 'Provoke') then gFunc.EquipSet(sets.Enmity) end
+    gcinclude.RulesAt('Ability 1');
     ByName(ability.Name); -- a set named after the ability, e.g. ['Azure Lore']
     gcinclude.CheckCancels();
 end
@@ -509,28 +524,13 @@ profile.HandlePrecast = function()
 end
 
 profile.HandleMidcast = function()
-    local diff = gcinclude.BuffCount('Diffusion');
-    local ca = gcinclude.BuffCount('Chain Affinity');
-    local ba = gcinclude.BuffCount('Burst Affinity');
-    local ef = gcinclude.BuffCount('Efflux');
     local spell = gData.GetAction();
 
     gFunc.EquipSet(sets.Midcast);
-    if (spell.Skill == 'Blue Magic') then gFunc.EquipSet(gcinclude.BluMagPhysical:contains(spell.Name) and sets.BluPhysical or sets.BluMagical) end -- non-blue spells (Utsusemi etc.) keep precast gear
-    if (gcinclude.BluMagDebuff:contains(spell.Name)) then gFunc.EquipSet(sets.BluMagicAccuracy)
-    elseif (gcinclude.BluMagStun:contains(spell.Name)) then gFunc.EquipSet(sets.BluStun);
-    elseif (gcinclude.BluMagBuff:contains(spell.Name)) then gFunc.EquipSet(sets.CMP);
-    elseif (gcinclude.BluMagSkill:contains(spell.Name)) then gFunc.EquipSet(sets.BluSkill);
-    elseif (gcinclude.BluMagCure:contains(spell.Name)) then gFunc.EquipSet(sets.Cure);
-    elseif (gcinclude.BluMagEnmity:contains(spell.Name)) then gFunc.EquipSet(sets.Enmity);
-    elseif string.match(spell.Name, 'Evryone. Grudge') or string.match(spell.Name, 'Tenebral Crush') then gFunc.EquipSet(sets.BluDark);
-    end
+    gcinclude.RulesAt('Midcast 2');
     ByName(spell.Name); -- a set named after the spell, e.g. ['White Wind']
 
-    if (ca>=1) then gFunc.EquipSet(sets.Ca) end
-    if (ba>=1) then gFunc.EquipSet(sets.Ba) end
-    if (ef>=1) then gFunc.EquipSet(sets.Efflux) end
-    if (diff>=1) then gFunc.EquipSet(sets.Diffusion) end
+    gcinclude.RulesAt('Midcast 1');
 
     if gcinclude.BluMagTH:contains(spell.Name) then gcinclude.CheckTH(true) end -- AoE: tags the adds too
 end

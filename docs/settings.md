@@ -9,7 +9,7 @@ Run `/gcconfig` to print its exact path and effective HUD/keybind settings.
 
 It is `config/addons/luashitacast/<Name>_<Id>/char.lua`. Every job on that character uses
 it. Reload the job after editing. A later job-specific override still wins.
-`/gcedit` → **Settings** edits it for you ([Settings](gcedit.md#settings)).
+`/gcedit` → **GoomSwap settings** edits it for you ([Settings](gcedit.md#settings)).
 
 For example:
 
@@ -20,7 +20,7 @@ return {
         Keybinds = {}, -- disable GoomSwap's default bindings
         RefreshGearMPP = 50,
     },
-    Packer = { ['Grape Daifuku +1'] = 'stack' },
+    Packer = { ['Grape Daifuku +1'] = 'stack' }, -- /lac gear on every job (Packer plugin)
     sets = {
         Doomed = { Ring1 = 'Purity Ring', Waist = 'Gishdubar Sash' },
     },
@@ -36,7 +36,7 @@ settings. A job's own gear table remains in that job file.
 | Every character | `goomswap-shared.lua`, inside `settings` ([below](#every-character-goomswap-sharedlua)) |
 | Every job on one character | `char.lua`, inside `settings` |
 | One job | `gcinclude.settings.X = value` before `gcinclude.Initialize()` (`/gcedit` → Settings → **This job**) |
-| One job's packer/style | `gcinclude.Packer`, `gcinclude.LockstyleSet` |
+| One job's packer/style | `profile.Packer` (LuAshitacast's list, `/lac gear`), `gcinclude.LockstyleSet` |
 
 Keep character files and customized job files when applying shared-code updates.
 Existing personal edits in shared code need a one-time move into char.lua; updates
@@ -47,7 +47,8 @@ Most changed:
 | Setting | Default | Does |
 |---|---|---|
 | `Messages` | `false` | chat line on every mode change (`/gcmessages`) |
-| `EditorBackupKeep` | `10` | newest dated `/gcedit` backups retained per job file after successful saves; `0` keeps all |
+| `EditorSpacing` | `'Compact'` | `/gcedit` slot cards: `'Compact'` (icons, name and stats on hover) or `'Comfortable'` (each piece named); the editor's **Editor** menu sets it |
+| `EditorBackupKeep` | `3` | newest dated `/gcedit` backups retained per job file after successful saves; `0` keeps all |
 | `EditorGroups` | none | `/gcedit` heading order and your own headings; the editor's right-click menus write it ([Headings](gcedit.md#headings)) |
 | `EditorHidden` `EditorSort` `EditorOrder` | none | `/gcedit` headings hidden per job or on every job, how each heading sorts its sets, your own order ([Headings](gcedit.md#headings)) |
 | `HUDOwners` | `T{}` | boxes whose bar drops the others in (the HUD) |
@@ -67,12 +68,12 @@ More, by area:
 
 | Area | Settings |
 |---|---|
-| Set editor | `EditorBackupKeep` `EditorIgnoreSuggestions` `EditorGroups` `EditorHidden` `EditorSort` `EditorOrder` |
+| Set editor | `EditorSpacing` `EditorBackupKeep` `EditorIgnoreSuggestions` `EditorGroups` `EditorHidden` `EditorSort` `EditorOrder` |
 | Weapons | `AftermathHold` `HoldExempt` `SmartSwap` `SmartSwapTP` `KeepWeaponsFor` |
 | Casting | `SIRSkip` `THSkip` `ElementGear` `ElementSkills` `OrpheusPoints` `MBWindow` `MBSkills` |
 | Idle | `AutoGear` `PetDTGearHPP` |
 | Weapon skills | `WScheck` `WSdistance` `MoonshadeSlot` `MoonshadeSkip` `ElementalWS` |
-| Items | `PackerItems` `PackerPutAway` `EnchantDelays` `EnchantWindow` |
+| Items | `EnchantDelays` `EnchantWindow` (Packer: beside `settings`, see above) |
 | Hoxne | `HoxneItem` `HoxneLockSlots` `HoxneAutoUse` |
 | Received sets | `ReceivedSets` `ReceivedWindow` `MyBoxes` |
 | Bar and HUD | `DisplayBar` `DisplayBarX` `DisplayBarY` `HUDOwners` `HUDAbbr` `WeaponClass` `Theme` |
@@ -95,7 +96,7 @@ Exact set names, any case; the editor's **Show ignored** checkbox reveals them f
 `config/addons/luashitacast/goomswap-shared.lua` has the same layout as `char.lua` (`settings`, `Packer`,
 `sets`) and applies to every character. The engine reads the defaults, then this file, then the character's
 `char.lua`: a setting in `char.lua` wins, and a job file wins over both. A `Packer` in `char.lua` replaces the
-shared one. `/gcconfig` prints both paths. `/gcedit` → **Settings** with **Save to: Every character** writes it
+shared one. `/gcconfig` prints both paths. `/gcedit` → **GoomSwap settings** with **Applies to: Everyone** writes it
 (and makes it the first time); heading **Share with every character** puts your headings there.
 
 ```lua

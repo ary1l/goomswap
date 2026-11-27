@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 gcinclude.settings.SmartSwap = false; -- always swap to the casting weapons: TP isn't used on this job
 gcinclude.settings.WeaponTPGuard = 0; -- no 1000+ TP weapon hold either (nukes, Dark, Divine swap too)
 gcinclude.CureObi = true; -- Hachirin-no-Obi on Cure/Cura/Curaga in Light day/weather (Aurorastorm counts); false = never
@@ -387,6 +386,21 @@ local ByName, Family = gcinclude.ByName, gcinclude.Family;
 profile.OnLoad = function()
     gSettings.AllowAddSet = true;
     gcinclude.settings.KeepWeaponsFor = T{'Dia', 'Dia II', 'Dia III', 'Diaga', 'Blink', 'Ice Spikes', 'Blaze Spikes', 'Shock Spikes'}; -- no Cure rule: cures pick Main/Sub by MP (HandleMidcast)
+    -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
+    gcinclude.Rules = {
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Divine Magic' }, wear = 'Enfeebling Magic', exact = true },
+        { on = 'Midcast', at = 'Midcast 2', when = { skill = 'Enhancing Magic', target = 'me' }, wear = 'Self_Enhancing', exact = true },
+        { on = 'Midcast', at = 'Midcast 2', when = { skill = 'Healing Magic', target = 'me' }, wear = 'Self_Cure', exact = true },
+        { on = 'Midcast', at = 'Midcast 2', when = { family = { 'Cure', 'Cura', 'Curaga' }, mpp = { le = 50 }, skill = 'Healing Magic', weather = 'Light' }, wear = 'Cure_LowMP_Storm', exact = true },
+        { on = 'Midcast', at = 'Midcast 2', when = { family = { 'Cure', 'Cura', 'Curaga' }, mpp = { le = 50 }, skill = 'Healing Magic', weather = { isnt = { 'Light' } } }, wear = 'Cure_LowMP', exact = true },
+        { on = 'Midcast', at = 'Midcast 2', when = { family = { 'Cure', 'Cura', 'Curaga' }, skill = 'Healing Magic', toggle = { dt = true } }, wear = 'Cure_Dt', exact = true },
+        { on = 'Midcast', at = 'Midcast 2', when = { name = { 'Paralyna', 'Erase', 'Blindna', 'Silena', 'Poisona', 'Stona', 'Viruna' }, skill = 'Healing Magic' }, wear = 'erase', exact = true },
+        { on = 'Midcast', at = 'Midcast 2', when = { mode = { nukeset = 'Macc' }, skill = 'Elemental Magic' }, wear = 'NukeACC', exact = true },
+        { on = 'Midcast', at = 'Midcast 2', when = { skill = 'Dark Magic' }, wear = 'Enfeebling Magic', exact = true },
+        { on = 'Midcast', when = { family = 'Refresh', target = 'me' }, wear = 'Self_Refresh', exact = true },
+    };
     gcinclude.Initialize();
 end
 
@@ -412,8 +426,6 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end;
     gcinclude.CheckDefault ();
 end
 
@@ -433,38 +445,12 @@ end
 
 profile.HandleMidcast = function()
     local spell = gData.GetAction();
-    local target = gData.GetActionTarget() or {}; -- {} when LAC has no entity for the target: no Self_ sets
-    local me = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
     local family = Family(spell.Name); -- 'Cure IV' -> 'Cure'
     gFunc.EquipSet(sets.Midcast);
-    if (spell.Skill == 'Divine Magic') then gFunc.EquipSet(sets['Enfeebling Magic']) end -- under ['Divine Magic']
+    gcinclude.RulesAt('Midcast 1');
     ByName(spell.Skill); -- e.g. ['Enhancing Magic'], ['Healing Magic'], ['Elemental Magic']
-    if (spell.Skill == 'Enhancing Magic') then
-        if (target.Name == me) then gFunc.EquipSet(sets.Self_Enhancing) end
-    elseif (spell.Skill == 'Healing Magic') then
-        if (target.Name == me) then gFunc.EquipSet(sets.Self_Cure) end
-        if T{'Cure', 'Cura', 'Curaga'}:contains(family) then
-            if (gData.GetPlayer().MPP <= 50) then
-                -- Light weather: Aurorastorm counts (LAC GetEnvironment reads storm buffs as weather), so does natural Light
-                local env = gData.GetEnvironment();
-                if (env ~= nil) and (env.WeatherElement == 'Light') then
-                    gFunc.EquipSet(sets.Cure_LowMP_Storm);
-                else
-                    gFunc.EquipSet(sets.Cure_LowMP);
-                end
-            end
-            if (gcdisplay.GetToggle('DTset') == true) then gFunc.EquipSet(sets.Cure_Dt) end
-        end
-        if T{'Paralyna', 'Erase', 'Blindna', 'Silena', 'Poisona', 'Stona', 'Viruna'}:contains(spell.Name) then
-            gFunc.EquipSet(sets.erase);
-        end
-    elseif (spell.Skill == 'Elemental Magic') then
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.NukeACC) end
-    elseif (spell.Skill == 'Dark Magic') then
-        gFunc.EquipSet(sets['Enfeebling Magic']); -- mostly macc anyways
-    end
+    gcinclude.RulesAt('Midcast 2');
     if not ByName(spell.Name) then ByName(family) end -- a set named after the spell or its family, e.g. ['Phalanx'], ['Cursna'], ['Drain']
-    if (family == 'Refresh') and (target.Name == me) then gFunc.EquipSet(sets.Self_Refresh) end
     gcinclude.CheckTH();
 end
 

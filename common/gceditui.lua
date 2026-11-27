@@ -132,57 +132,24 @@ end
 
 -- == State ==
 do
--- Editor preferences and navigation. Data is decoded as text, never evaluated as Lua.
+-- Editor memory per job file for this game session: the sets opened last (recent) and Getting started (start).
+-- Kept in GcEditSession, a global, so it outlives Save's reload; nothing is written to disk. Spacing is a GoomSwap
+-- setting (EditorSpacing, char.lua).
 local state = {}
 
 function state.Defaults()
-    return { left = 280, middle = 744, density = 'Compact', dirty = false }
+    return {}
 end
 
-function state.Decode(text)
-    local preferences = state.Defaults()
-    if not text or text:match('^([^\n]+)') ~= 'GoomSwap editor preferences 1' then return preferences end
-    for key, value in text:gmatch('([^\n\t]+)\t([^\n]*)') do
-        if key == 'left' or key == 'middle' then
-            local width = tonumber(value)
-            if width and width == width and width >= 80 and width <= 4000 then preferences[key] = width end
-        elseif key == 'density' and (value == 'Compact' or value == 'Comfortable') then
-            preferences.density = value
-        elseif (key == 'start') and ((value == 'on') or (value == 'saved') or (value == 'off')) then
-            preferences.start = value -- Getting started: shown, shown and saved once, done or hidden
-        elseif key == 'recent' then -- the sets opened last, newest first (tab between names)
-            preferences.recent = {}
-            for name in value:gmatch('[^\t]+') do
-                if #preferences.recent < 7 then preferences.recent[#preferences.recent + 1] = name end
-            end
-        end -- others (favorite: removed) are left out, and gone at the next save
-    end
-    return preferences
-end
-
-function state.Encode(preferences)
-    local lines = { 'GoomSwap editor preferences 1', 'left\t' .. preferences.left, 'middle\t' .. preferences.middle }
-    lines[#lines + 1] = 'density\t' .. (preferences.density == 'Comfortable' and 'Comfortable' or 'Compact')
-    if (type(preferences.recent) == 'table') and (#preferences.recent > 0) then
-        lines[#lines + 1] = 'recent\t' .. table.concat(preferences.recent, '\t')
-    end
-    if preferences.start ~= nil then lines[#lines + 1] = 'start\t' .. preferences.start end
-    return table.concat(lines, '\n') .. '\n'
-end
-
+-- path: the job file. Its old <file>.gcedit-ui (where this was kept before) is removed.
 function state.Load(path)
-    local file = io.open(path, 'rb')
-    if not file then return state.Defaults() end
-    local text = file:read(65536)
-    file:close()
-    return state.Decode(text)
-end
-
-function state.Save(path, preferences, write)
-    if not preferences or not preferences.dirty then return true end
-    local ok, err = write(path, state.Encode(preferences))
-    if ok then preferences.dirty = false end
-    return ok, err
+    GcEditSession = GcEditSession or {}
+    local key = string.lower(tostring(path))
+    if GcEditSession[key] == nil then
+        GcEditSession[key] = state.Defaults()
+        if type(path) == 'string' then os.remove(path .. '.gcedit-ui') end
+    end
+    return GcEditSession[key]
 end
 
 function state.Feedback(editor, text)
@@ -240,10 +207,11 @@ function state.New(profile)
             rpOnly = { false },
             augOnly = { false },
             newMode = { '' },
+            newWm = { '' }, -- New /wm mode: its name, and whether it starts from the weapons you hold
+            newWmWorn = { true },
+            addCustom = { '' }, -- the set list's + add: a name of your own (a spell: Cure IV)
             overShow = 'all',
             overShowIgnored = { false },
-            newName = { '' },
-            newCopy = { false },
             allRecs = { false },
             wi = { ms = {}, high = { false }, dt = { false }, hoxne = { false }, proc = { false }, buffs = {
                 '',
@@ -253,6 +221,7 @@ function state.New(profile)
 end
 
 function state.Select(editor, name, slot, tab)
+    editor.selection.rules = false -- a set picked: the middle pane leaves the Rules page
     editor.selection.setName, editor.selection.slot = name, slot
     editor.cache.cover, editor.ui.drag = nil, nil
     editor.selection.tab = tab or (slot and 'gear') or (editor.selection.tab == 'summary' and 'summary') or 'action'
@@ -265,14 +234,16 @@ end
 do
 -- Panel geometry and common editor controls. No gear or file operations.
 local panels = {}
-local HANDLE = 8
 local function clamp(value, minimum, maximum)
     return math.max(minimum, math.min(value, maximum))
 end
 
 local densities = {
-    Compact = { spacing = { 6, 4 }, padding = { 6, 3 }, cardHeight = 114, icon = 32, rowIcon = 20 },
-    Comfortable = { spacing = { 9, 7 }, padding = { 9, 5 }, cardHeight = 132, icon = 36, rowIcon = 26 },
+    -- Compact: icon cards (slot, bag and the icon; its name and stats on hover), half as wide: more of the rest fits
+    -- 80: the card's padding (8 top and bottom), the slot line and the 40px icon, so the icon isn't cut at the bottom
+    Compact = { spacing = { 4, 2 }, padding = { 5, 2 }, cardHeight = 80, card = 88, icon = 40, rowIcon = 20, names = false },
+    -- Comfortable: each card names its piece and what is under it (108: a 2-line name still clears the rank line)
+    Comfortable = { spacing = { 4, 2 }, padding = { 5, 2 }, cardHeight = 108, card = 176, icon = 32, rowIcon = 20, names = true },
 }
 
 function panels.Density(name)
@@ -299,52 +270,37 @@ function panels.Tip(imgui, colors, text)
     imgui.PopStyleColor()
 end
 
+-- The editor's first size: about 65% of the screen wide and 63% tall (at least 900 x 520, at most 1420 x 840), so it
+-- leaves room around it: addons such as tHotBar act on clicks under the editor (they don't check whether one was
+-- taken). 1920 wide: 1248, three slot cards a row; 2560 and up: 1420, four. Drag its corner to resize; ImGui keeps it.
+-- The smallest it opens at or can be dragged to: two slot cards a row and a right pane still wide enough to read.
+panels.MIN_SIZE = { 900, 500 }
 function panels.WindowSize(width, height)
-    return { math.max(1, math.min(1360, (width or 1700) - 32)), math.max(1, math.min(840, (height or 910) - 32)) }
+    width, height = width or 1700, height or 910
+    local w = math.min(width - 32, math.max(panels.MIN_SIZE[1], math.min(1420, math.floor(width * 0.65))))
+    local h = math.min(height - 32, math.max(panels.MIN_SIZE[2], math.min(840, math.floor(height * 0.63))))
+    return { math.max(1, w), math.max(1, h) }
 end
 
-function panels.Resolve(width, left, middle)
-    local usable = math.max(3, width - HANDLE * 2)
-    local scale = math.min(1, usable / 740)
-    local minimumLeft, minimumMiddle, minimumRight = 160 * scale, 320 * scale, 260 * scale
-    left = clamp(left or 280, minimumLeft, usable - minimumMiddle - minimumRight)
-    middle = clamp(middle or 744, minimumMiddle, usable - left - minimumRight)
-    return { left = left, middle = middle, right = usable - left - middle, handle = HANDLE }
-end
-
-function panels.Grid(width, spacing)
+-- Fixed pane widths, no dragging: the set list about 34 characters wide (by the font), the middle four slot cards wide,
+-- the right pane the rest; a narrow window gives the middle three, then two cards before the right pane goes under 380.
+function panels.Layout(width, charW, spacing, card)
+    local gap = 4
     spacing = spacing or 8
-    local columns = clamp(math.floor((width + spacing) / (144 + spacing)), 1, 4)
-    return columns, math.max(40, math.floor((width - spacing * (columns - 1)) / columns))
+    local CARD = card or 176 -- a slot card's width: the spacing's (Compact's icon cards are narrower)
+    local left = clamp(math.floor((charW or 7) * 34), 230, 300)
+    local function middle_for(cols) return cols * CARD + (cols - 1) * spacing + 30 end
+    local cols = 4
+    while (cols > 2) and ((width - left - middle_for(cols) - 2 * gap) < 380) do cols = cols - 1 end
+    if (width - left - middle_for(cols) - 2 * gap) < 300 then left = 200 end
+    return { left = left, middle = middle_for(cols), gap = gap }
 end
 
-function panels.Splitter(imgui, colors, id, height, value, default)
-    imgui.InvisibleButton('##gcedit_split_' .. id, { HANDLE, height })
-    local hovered, active = imgui.IsItemHovered(), imgui.IsItemActive()
-    if imgui.GetWindowDrawList and imgui.GetColorU32 then
-        local a, b = imgui.GetItemRectMin(), imgui.GetItemRectMax()
-        local x1, y1, x2, y2
-        if type(a) == 'number' then
-            x1, y1 = imgui.GetItemRectMin()
-            x2, y2 = imgui.GetItemRectMax()
-        else
-            x1, y1 = a.x or a[1], a.y or a[2]
-            x2, y2 = b.x or b[1], b.y or b[2]
-        end
-        imgui.GetWindowDrawList():AddRectFilled(
-            { x1 + 3, y1 }, { x2 - 3, y2 }, imgui.GetColorU32((active or hovered) and colors.sel or colors.edge), 1
-        )
-    end
-    if hovered and imgui.SetMouseCursor and ImGuiMouseCursor_ResizeEW then
-        imgui.SetMouseCursor(ImGuiMouseCursor_ResizeEW)
-    end
-    if hovered and imgui.IsMouseDoubleClicked and imgui.IsMouseDoubleClicked(0) then return default, true end
-    if active then
-        local delta = imgui.GetIO().MouseDelta
-        local x = delta.x or delta[1]
-        if x ~= 0 then return value + x, true end
-    end
-    return value, false
+function panels.Grid(width, spacing, card)
+    spacing = spacing or 8
+    local least = math.floor((card or 176) * 0.82) -- a card narrows this far before a column goes
+    local columns = clamp(math.floor((width + spacing) / (least + spacing)), 1, 4)
+    return columns, math.max(40, math.floor((width - spacing * (columns - 1)) / columns))
 end
 
 -- A collapsing section header in the button greys: blue stays for what is selected.
@@ -376,15 +332,16 @@ function panels.Tabs(imgui, colors, selected, entries)
         local size = imgui.CalcTextSize(entry[1])
         local labelWidth = (type(size) == 'number' and size or (size.x or size[1])) + 18
         if used > 0 and used + labelWidth + 4 <= width then
-            imgui.SameLine(0, 4)
+            imgui.SameLine(0, 1) -- one segmented control
         else
             used = 0
         end
         local on = selected == entry[2]
-        imgui.PushStyleColor(ImGuiCol_Button, on and colors.selBg or colors.btn)
+        imgui.PushStyleColor(ImGuiCol_Button, on and colors.selBg or colors.chipBg or colors.btn)
+        imgui.PushStyleColor(ImGuiCol_ButtonHovered, on and colors.selBg or colors.btnHi)
         imgui.PushStyleColor(ImGuiCol_Text, on and colors.blue or colors.dim)
         if imgui.Button(entry[1] .. '###gcedit_tab_' .. entry[2]) then selected = entry[2] end
-        imgui.PopStyleColor(2)
+        imgui.PopStyleColor(3)
         used = used + labelWidth + 4
     end
     return selected
@@ -1084,7 +1041,11 @@ end
 
 function review.Build(document, slots, weaponModes, canRegister)
     local model = { groups = {}, weaponModes = weaponModes or {}, modes = document.newModes,
-        created = 0, edited = 0, deleted = 0, renamed = 0, slots = 0, canRegister = canRegister ~= false }
+        created = 0, edited = 0, deleted = 0, renamed = 0, slots = 0, canRegister = canRegister ~= false, empty = {} }
+    local holds = {} -- sets that hold sets (a new Buffs with sets in it is not empty)
+    for _, set in ipairs(document.model.list) do
+        if set.parentName ~= nil then holds[set.parentName] = true end
+    end
     for _, set in ipairs(document.model.list) do
         local new = (document.renames or {})[set.name]
         if new and not document.deleted[set.name] then
@@ -1121,14 +1082,30 @@ function review.Build(document, slots, weaponModes, canRegister)
                 end
             end
             model.groups[#model.groups + 1] = group
+            if set.new and not deleted and (#group.rows == 0) and not holds[set.name] then
+                group.empty = true
+                model.empty[#model.empty + 1] = set.name -- changes nothing: Drop empty offers to leave them out
+            end
         end
     end
     return model
 end
 
+-- Returns 'drop empty' when Drop empty was pressed (the caller discards those new sets).
 function review.Draw(imgui, colors, model)
     imgui.TextUnformatted(string.format('Sets: %d new, %d edited, %d deleted, %d renamed | Slot changes: %d',
         model.created, model.edited, model.deleted, model.renamed, model.slots))
+    local asked = nil
+    if #model.empty > 0 then
+        local n = #model.empty
+        imgui.TextColored(colors.warn, n .. ' new set' .. ((n == 1) and ' is' or 's are') .. ' empty: '
+            .. ((n == 1) and 'it changes' or 'they change') .. ' nothing until given gear.')
+        imgui.SameLine()
+        if imgui.SmallButton('Drop empty (' .. n .. ')##review_drop') then asked = 'drop empty' end
+        if imgui.IsItemHovered() then
+            imgui.SetTooltip('Leave out: ' .. table.concat(model.empty, ', ') .. '. Keep them to fill later.')
+        end
+    end
     imgui.Separator()
     for index, group in ipairs(model.groups) do
         local color = group.kind == 'Delete set' and colors.bad or colors.blue
@@ -1139,7 +1116,7 @@ function review.Draw(imgui, colors, model)
             imgui.TextColored(colors.dim,
                 group.refs .. ' reference' .. (group.refs == 1 and '' or 's') .. ' in code renamed too.')
         elseif #group.rows == 0 then
-            imgui.TextColored(colors.dim, 'Empty set: no slot overrides.')
+            imgui.TextColored(group.empty and colors.warn or colors.dim, 'Empty set: no slot overrides.')
         elseif imgui.BeginTable('##review_set_' .. index, 3,
             (ImGuiTableFlags_Borders or 0) + (ImGuiTableFlags_SizingStretchProp or 0)) then
             imgui.TableSetupColumn('Slot', 0, 0.55)
@@ -1173,6 +1150,7 @@ function review.Draw(imgui, colors, model)
             or 'No gcinclude.Initialize() line was found. Save will refuse this registration.')
     end
     for _, mode in ipairs(model.modes) do imgui.TextUnformatted('New melee mode: ' .. mode) end
+    return asked
 end
 
 ui.Review = review

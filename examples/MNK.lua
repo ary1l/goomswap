@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 
 local sets = {
     Idle = {
@@ -219,8 +218,7 @@ local sets = {
 };
 profile.Sets = sets;
 
--- LuAshitacast's own list, for /lac gear and /lac validate (Packer plugin). GoomSwap's /packer (Bellhop) reads
--- gcinclude.Packer at the top of this file instead.
+-- Kept in your bags for this job by /lac gear (the Packer plugin), with every set's gear; /gcedit Settings edits it.
 profile.Packer = {
 };
 
@@ -232,6 +230,14 @@ profile.OnLoad = function()
     gcinclude.DefaultWeapons = 'Godhands';
     gcinclude.MeleeModes = {'Default', 'SubtleBlow', 'Acc', 'Hybrid'}; -- /mset hybrid: Tp_Hybrid (mid DT)
     gcinclude.settings.RefreshGearMPP = 0; -- no auto Idle_Refresh on this job; /autogear refresh 60 (or set it here) to turn it on
+    -- Rules (/gcedit, RULES): when this, wear that, as data.
+    gcinclude.Rules = {
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { buff = 'Impetus', toggle = { dt = true } }, wear = 'Dt_Impetus' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Weaponskill', when = { buff = 'Impetus', name = 'Victory Smite' }, wear = 'Victory Smite_Impetus' },
+        { on = 'Ability', when = { name = 'Boost' }, wear = "Buffs['Boost']", exact = true, note = 'sash on from the start' },
+    };
     gcinclude.Initialize();
 end
 
@@ -258,18 +264,12 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetToggle('DTset') == true) then
-        ByName('Dt'); -- then Dt_<mset> (Dt_SubtleBlow)
-        if (gcinclude.BuffCount('Impetus') > 0) then ByName('Dt_Impetus') end -- then Dt_Impetus_<mset>
-    end
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end;
     gcinclude.CheckDefault ();
 end
 
 profile.HandleAbility = function()
     local ability = gData.GetAction();
     ByName(ability.Name); -- a set named after the ability, e.g. ['Focus'], ['Hundred Fists']
-    if (ability.Name == 'Boost') then gFunc.EquipSet(sets.Buffs.Boost) end -- sash on from the start
     gcinclude.CheckCancels();
 end
 
@@ -303,7 +303,6 @@ profile.HandleWeaponskill = function()
     local ws = gData.GetAction();
     gcinclude.EquipMode('Ws');
     ByName(ws.Name); -- e.g. ['Victory Smite'], then ['Victory Smite_<mset>']
-    if (ws.Name == 'Victory Smite') and (gcinclude.BuffCount('Impetus') > 0) then ByName('Victory Smite_Impetus') end
 end
 
 return profile;

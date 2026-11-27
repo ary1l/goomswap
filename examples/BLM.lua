@@ -1,6 +1,5 @@
 local profile = {};
 gcinclude = gFunc.LoadFile('common\\gcinclude.lua');
--- gcinclude.Packer = { ['Echo Drops'] = 'stack', ['Holy Water'] = 'stack' }; -- kept in inventory on job change (/packer, Bellhop plugin)
 gcinclude.settings.SmartSwap = false; -- always swap to the casting weapons: TP isn't used on this job
 gcinclude.settings.WeaponTPGuard = 0; -- no 1000+ TP weapon hold either (nukes, Dark, Divine swap too)
 
@@ -349,8 +348,7 @@ local sets = {
 };
 profile.Sets = sets;
 
--- LuAshitacast's own list, for /lac gear and /lac validate (Packer plugin). GoomSwap's /packer (Bellhop) reads
--- gcinclude.Packer at the top of this file instead.
+-- Kept in your bags for this job by /lac gear (the Packer plugin), with every set's gear; /gcedit Settings edits it.
 profile.Packer = {
     {Name = 'Tropical Crepe', Quantity = 'all'},
     {Name = 'Rolan. Daifuku', Quantity = 'all'},
@@ -363,6 +361,22 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None'}; -- e.g. {'None', 'Example'} with a Weapon_Example set
     gcinclude.DefaultWeapons = 'None';
     gcinclude.NukeModes = {'Power', 'Macc', 'OccultAcumen'}; -- /nukeset oa (or oc, occult, acumen): OccultAcumen set on nukes
+    -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
+    gcinclude.Rules = {
+        { on = 'Default', when = { mode = { weapon = 'Staff' } }, wear = 'Idle_Staff', exact = true },
+        { on = 'Default', when = { toggle = { dt = true } }, wear = 'Dt' },
+        { on = 'Default', when = { toggle = { kite = true } }, wear = 'Movement', exact = true },
+        { on = 'Precast', when = { mode = { weapon = 'Staff' } }, wear = 'Idle_Staff', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Elemental Magic' }, wear = 'Nuke', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mode = { nukeset = 'Macc' }, skill = 'Elemental Magic' }, wear = 'NukeACC', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { burst = true, skill = 'Elemental Magic' }, wear = 'Burst', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { mode = { nukeset = 'OccultAcumen' }, skill = 'Elemental Magic' }, wear = 'OccultAcumen', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { name = { has = 'helix' }, skill = 'Elemental Magic' }, wear = 'Helix', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { burst = true, name = { has = 'helix' }, skill = 'Elemental Magic' }, wear = 'Burst', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Elemental Magic', toggle = { death = true } }, wear = 'Death_Mode', exact = true },
+        { on = 'Midcast', at = 'Midcast 1', when = { skill = 'Healing Magic', target = 'me' }, wear = 'Self_Cure', exact = true },
+        { on = 'Midcast', when = { mode = { weapon = 'Staff' } }, wear = 'Idle_Staff', exact = true },
+    };
     gcinclude.Initialize();
 end
 
@@ -386,9 +400,6 @@ profile.HandleDefault = function()
     end
 
     -- job layers go before CheckDefault so engine layers (weapons, mdt/Aminon, Hoxne, TH, received, buffs, XIRoll) sit on top
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then gFunc.EquipSet(sets.Idle_Staff) end
-    if (gcdisplay.GetToggle('DTset') == true) then ByName('Dt') end -- then Dt_<mset> (Dt_SubtleBlow)
-    if (gcdisplay.GetToggle('Kite') == true) then gFunc.EquipSet(sets.Movement) end
     gcinclude.CheckDefault();
 end
 
@@ -403,7 +414,6 @@ profile.HandlePrecast = function()
     gFunc.EquipSet(sets.Precast);
     ByName(spell.Skill .. '_Precast'); -- e.g. ['Healing Magic_Precast']
     ByName(Family(spell.Name) .. '_Precast'); -- e.g. ['Stoneskin_Precast'], on top
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then gFunc.EquipSet(sets.Idle_Staff) end
     gcinclude.CheckCancels();
 end
 
@@ -411,23 +421,8 @@ profile.HandleMidcast = function()
     local spell = gData.GetAction();
     gFunc.EquipSet(sets.Midcast);
     ByName(spell.Skill);
-    if (spell.Skill == 'Elemental Magic') then
-        gFunc.EquipSet(sets.Nuke);
-        if (gcdisplay.GetCycle('NukeSet') == 'Macc') then gFunc.EquipSet(sets.NukeACC) end
-        if gcinclude.BurstWanted() then gFunc.EquipSet(sets.Burst) end
-        if (gcdisplay.GetCycle('NukeSet') == 'OccultAcumen') then gFunc.EquipSet(sets.OccultAcumen) end -- /nukeset oa: TP from nukes, over Nuke/Burst
-        if string.find(spell.Name, 'helix', 1, true) then -- e.g. Pyrohelix II
-            gFunc.EquipSet(sets.Helix);
-            if gcinclude.BurstWanted() then gFunc.EquipSet(sets.Burst) end
-        end
-        if (gcdisplay.GetToggle('Death') == true) then gFunc.EquipSet(sets.Death_Mode) end
-    end
-    local target = gData.GetActionTarget();
-    if (spell.Skill == 'Healing Magic') and (target ~= nil) and (target.Name == gData.GetPlayer().Name) then
-        gFunc.EquipSet(sets.Self_Cure);
-    end
+    gcinclude.RulesAt('Midcast 1');
     if not ByName(spell.Name) then ByName(Family(spell.Name)) end
-    if (gcdisplay.GetCycle('Weapon') == 'Staff') then gFunc.EquipSet(sets.Idle_Staff) end
     gcinclude.CheckTH();
 end
 

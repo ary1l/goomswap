@@ -556,6 +556,40 @@ end
 
 -- Whether name is one of Weapon_<mode>'s own sets, worn in its place: _1h (no dual wield), _<mset> or <mset>
 -- (Weapon_Mpu_Acc, Weapon_MpuAcc: the engine reads both), each with _1h too. msets: the /mset modes.
+-- /gcbuild's notes in a job file: its header (the comment lines at the top, when the first says "Proposed by
+-- /gcbuild": a snapshot of that day) and its note after a slot ("-- example: X", "-- in Slip 23: move it to a
+-- wardrobe", "-- your augments differ from the example's: ..."). The slots it commented out (-- not owned) stay: the
+-- editor's To fill reads them. Returns how many, and the text without them.
+local BUILD_NOTE = { "^example: ", ": move it to a wardrobe", "your augments differ from the example's" }
+local function build_notes(text)
+    local n, out, head = 0, {}, true
+    local first = true
+    for line, nl in string.gmatch(text or '', '([^\n]*)(\n?)') do
+        if (line == '') and (nl == '') then break end
+        local drop = false
+        if head then
+            if first and string.match(line, '^%-%- Proposed by /gcbuild') then
+                n, drop = n + 1, true
+            elseif (not first) and (n > 0) and string.match(line, '^%-%-') then
+                drop = true
+            else
+                head = false
+            end
+            first = false
+        end
+        if not drop then
+            local code, note = string.match(line, '^(%s*[^%-%s].-,)%s*%-%- (.+)$')
+            local hit = false
+            for _, p in ipairs((note ~= nil) and BUILD_NOTE or {}) do hit = hit or (string.find(note, p) ~= nil) end
+            if hit then
+                n, line = n + 1, code
+            end
+            out[#out + 1] = line .. nl
+        end
+    end
+    return n, table.concat(out)
+end
+
 local function weapon_variant_of(name, mode, msets)
     local rest, lm = string.match(string.lower(name or ''), '^weapon_(.+)$'), string.lower(mode or '')
     if (rest == nil) or (lm == '') or (rest == lm) or (string.sub(rest, 1, #lm) ~= lm) then return false end
@@ -568,30 +602,17 @@ local function weapon_variant_of(name, mode, msets)
     return false
 end
 
--- Register newly saved top-level Weapon_ sets in /wm, without touching the
--- current mode, default, or any existing list entry. Variants are not modes.
-local WEAPON_VARIANTS = {
-    ['1h'] = true, ['acc'] = true, ['accuracy'] = true,
-    ['atk'] = true, ['attack'] = true, ['tp'] = true, ['ws'] = true,
-    ['dt'] = true, ['pdt'] = true, ['mdt'] = true, ['idle'] = true,
-    ['hybrid'] = true, ['def'] = true, ['eva'] = true,
-}
+-- Register newly saved top-level Weapon_ sets in /wm, without touching the current mode, default, or any existing
+-- list entry. A mode is one word (no _ or space: /wm reads one word); a set the engine wears for another mode is not
+-- one: its _1h, or its /mset version (Weapon_MpuAcc, Weapon_Mpu_Acc with /mset Acc: gcruntime modeSet). Nothing
+-- else counts as a variant: Weapon_MpuTP with no /mset TP is a mode of its own.
 local function weapon_mode(name, existing, msets)
     local mode = type(name) == 'string' and string.match(name, '^Weapon_(.+)$')
-    if not mode or mode == '' then return nil end
-    local lower = string.lower(mode)
-    if lower == 'none' then return nil end
-    -- An existing base mode may have variants with arbitrary names, e.g. _Magic.
+    if not mode or mode == '' or string.find(mode, '[_%s]') then return nil end
+    if string.lower(mode) == 'none' then return nil end
     for _, base in ipairs(existing) do
-        local prefix = string.lower(base) .. '_'
-        if string.sub(lower, 1, #prefix) == prefix then return nil end
-        local stem = string.lower(base)
-        local tail = string.sub(lower, #stem + 1)
-        if string.sub(lower, 1, #stem) == stem and WEAPON_VARIANTS[tail] then return nil end
-        if weapon_variant_of(name, base, msets) then return nil end -- Weapon_MpuSubtleBlow: Mpu with /mset
+        if weapon_variant_of(name, base, msets) then return nil end
     end
-    local suffix = string.match(lower, '_([^_]+)$')
-    if suffix and WEAPON_VARIANTS[suffix] then return nil end
     return mode
 end
 
@@ -1089,16 +1110,32 @@ local function weapon_modes_without(s, modes)
     end
 end
 
--- char.lua (`return { settings = { ... } }`): the settings table's `key = ...` replaced, or added as its first entry
--- (a settings table is added when there is none). valueFor(indent) gives the value's Lua text for a key line with
--- that indent, or nil to take the key out. Comments and every other line stay. nil, why when the file has no
--- `return {` table.
-local function set_char_setting(text, key, valueFor)
+-- char.lua's `return {` table: its opening brace, entries and close; nil, why when there is none.
+local function char_return(text)
     local r = string.find(code_only(text), '%f[%w_]return%s*{')
     if r == nil then return nil, 'no `return {` table' end
     local open = string.find(text, '{', r, true)
     local entries, close = scan_table(text, open)
     if close == nil then return nil, 'its table never closes' end
+    return open, entries
+end
+-- The span an entry takes out: its whole line when nothing else is on it.
+local function entry_span(text, hit)
+    local first, finish = hit.start, hit.sep and (hit.sep + 1) or hit.vend
+    local ls, le = line_start(text, first), line_end(text, finish)
+    if string.match(string.sub(text, ls, first - 1), '^%s*$') and string.match(string.sub(text, finish, le - 1), '^%s*$') then
+        first, finish = ls, le
+    end
+    return first, finish
+end
+
+-- char.lua (`return { settings = { ... } }`): the settings table's `key = ...` replaced, or added as its first entry
+-- (a settings table is added when there is none). valueFor(indent) gives the value's Lua text for a key line with
+-- that indent, or nil to take the key out. Comments and every other line stay. nil, why when the file has no
+-- `return {` table.
+local function set_char_setting(text, key, valueFor)
+    local open, entries = char_return(text)
+    if open == nil then return nil, entries end
     local settings = nil
     for _, e in ipairs(entries) do
         if (e.key == 'settings') and (string.sub(text, e.vstart, e.vstart) == '{') then settings = e end
@@ -1119,11 +1156,7 @@ local function set_char_setting(text, key, valueFor)
         end
         local value = valueFor(indent_at(text, (hit or sEntries[1] or settings).start))
         if (hit ~= nil) and (value == nil) then -- taken out: its line goes when nothing else is on it
-            local first, finish = hit.start, hit.sep and (hit.sep + 1) or hit.vend
-            local ls, le = line_start(text, first), line_end(text, finish)
-            if string.match(string.sub(text, ls, first - 1), '^%s*$') and string.match(string.sub(text, finish, le - 1), '^%s*$') then
-                first, finish = ls, le
-            end
+            local first, finish = entry_span(text, hit)
             out[1] = { first, finish, '' }
         elseif value == nil then
             return text
@@ -1138,7 +1171,34 @@ local function set_char_setting(text, key, valueFor)
     return apply(text, out)
 end
 
--- == A job file's own settings: `gcinclude.<name> = <value>` statements (name 'settings.X' or 'X'). ==
+-- The text with the return table's own key (beside settings: Packer, sets) set to valueFor(indent) (nil: taken out).
+local function set_char_top(text, key, valueFor)
+    local open, entries = char_return(text)
+    if open == nil then return nil, entries end
+    local hit = nil
+    for _, e in ipairs(entries) do
+        if e.key == key then hit = e end
+    end
+    local ind = (#entries > 0) and indent_at(text, entries[1].start) or (indent_at(text, open) .. '    ')
+    local value = valueFor((hit ~= nil) and indent_at(text, hit.start) or ind)
+    if hit == nil then
+        if value == nil then return text end
+        local at = (#entries > 0) and (entries[#entries].sep and (entries[#entries].sep + 1) or entries[#entries].vend) or (open + 1)
+        local comma = ((#entries > 0) and (entries[#entries].sep == nil)) and ',' or ''
+        return apply(text, { { at, at, comma .. '\n' .. ind .. key .. ' = ' .. value .. ',' } })
+    end
+    if value ~= nil then return apply(text, { { hit.vstart, hit.vend, value } }) end
+    local first, finish = entry_span(text, hit)
+    return apply(text, { { first, finish, '' } })
+end
+
+-- == A job file's own settings: `gcinclude.<name> = <value>` statements (name 'settings.X' or 'X'), and the profile's
+-- own `profile.Packer = <value>` (name 'profile.Packer': LAC's Packer list, read when /lac gear runs). ==
+-- The statement's owner and name: 'profile.Packer' as it is, anything else under gcinclude.
+local function owned_name(name)
+    if string.match(name, '^profile%.') then return name end
+    return 'gcinclude.' .. name
+end
 
 -- The end (the index after it) of a data value at i: a string, a number, true/false/nil, or a table ({...}, T{...})
 -- with nothing but a ';' or a comment after it on its line. nil: the value is code.
@@ -1168,8 +1228,8 @@ end
 
 local function job_lines(s, name)
     local code, out = code_only(s), {}
-    local dotted = string.gsub(name, '%.', '%%s*%%.%%s*')
-    for at, v in string.gmatch(code, '()%f[%w_]gcinclude%s*%.%s*' .. dotted .. '%s*=()') do
+    local dotted = string.gsub(owned_name(name), '%.', '%%s*%%.%%s*')
+    for at, v in string.gmatch(code, '()%f[%w_]' .. dotted .. '%s*=()') do
         if string.sub(code, v, v) ~= '=' then -- '==' is a test
             local vstart = string.match(s, '^[ \t]*()', v)
             out[#out + 1] = { at = at, vstart = vstart, vend = data_value_end(s, vstart) }
@@ -1193,10 +1253,10 @@ end
 local function set_job_setting(s, name, value)
     local function text_at(i) return (type(value) == 'function') and value(indent_at(s, i)) or value end
     local lines = job_lines(s, name)
-    if #lines > 1 then return nil, 'gcinclude.' .. name .. ' is set in ' .. #lines .. ' places: edit it in the file' end
+    if #lines > 1 then return nil, owned_name(name) .. ' is set in ' .. #lines .. ' places: edit it in the file' end
     local hit = lines[1]
     if hit ~= nil then
-        if hit.vend == nil then return nil, 'gcinclude.' .. name .. ' is code in the file: edit it there' end
+        if hit.vend == nil then return nil, owned_name(name) .. ' is code in the file: edit it there' end
         if value ~= nil then return apply(s, { { hit.vstart, hit.vend, text_at(hit.at) } }) end
         local finish = string.match(s, '^[ \t]*;()', hit.vend) or hit.vend
         local ls, le = line_start(s, hit.at), line_end(s, finish)
@@ -1213,11 +1273,11 @@ local function set_job_setting(s, name, value)
         local nl = string.find(code, '\n', p, true) or (#code + 1)
         local ind = string.match(string.sub(code, p, nl - 1), '^([ \t]*)gcinclude%.Initialize%s*%(%s*%)')
         if ind ~= nil then
-            return apply(s, { { p, p, ind .. 'gcinclude.' .. name .. ' = ' .. text_at(p) .. ';\n' } })
+            return apply(s, { { p, p, ind .. owned_name(name) .. ' = ' .. text_at(p) .. ';\n' } })
         end
         p = nl + 1
     end
-    return nil, 'no gcinclude.Initialize() line to put gcinclude.' .. name .. ' before'
+    return nil, 'no gcinclude.Initialize() line to put ' .. owned_name(name) .. ' before'
 end
 
 -- Lua text for a string: single quotes, or double ones when it has an apostrophe and no double quote (as it reads).
@@ -1263,7 +1323,7 @@ end
 local backups = {}
 function backups.Keep(value)
     value = tonumber(value)
-    if not value or value ~= value or value < 0 or value == math.huge then return 10 end
+    if not value or value ~= value or value < 0 or value == math.huge then return 3 end
     return math.min(1000, math.floor(value)) -- zero explicitly keeps every backup
 end
 function backups.Path(path, exists, stamp)
@@ -1328,6 +1388,7 @@ return {
     ReadString = read_string,
     Quote = q,
     SetCharSetting = set_char_setting,
+    SetCharTop = set_char_top,
     slots = SCREEN,
     Parse = parse_file,
     ChildName = child_name,
@@ -1347,6 +1408,7 @@ return {
     ModeMentions = mode_mentions,
     MeleeModes = melee_modes_of,
     WeaponVariantOf = weapon_variant_of,
+    BuildNotes = build_notes,
     RemoveWeaponModes = weapon_modes_without,
     AddNewSets = new_set_splices,
     AddRenames = rename_all,
