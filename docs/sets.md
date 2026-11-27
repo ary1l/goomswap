@@ -51,7 +51,7 @@ and its toggle wears it. Until then it falls back as the table says (`Aminon` â†
 | `Incapacitated` `Sleeping` | disabled / asleep (weapons pass the TP hold) |
 | `Absorb` `Absorb_TP` `LightBonus` | Absorb spells / Healing Magic |
 | `Buffs` `Buffs_Tp` `Buffs_Idle` `Buffs_Ws` `Buffs_Precast` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while the buff is up: `Buffs` idle and engaged, `Buffs_Tp` engaged only, `Buffs_Idle` not engaged (both over `Buffs`), `Buffs_Ws` weapon skills, `Buffs_Precast` / `Buffs_Midcast` spells (precast / midcast); each is its own set in `/gcedit` |
-| `Hoxne_Tp` `_Idle` `_Dt` `_Ws` `Hoxne_<set>_<buff>` | `/hoxne` + Enchantment; each also `_<mset>` (`Hoxne_Dt_Impetus_SubtleBlow`). `Hoxne_<set>_<buff>` (`Hoxne_Tp_Berserk`, `&` for several: `Hoxne_Tp_Berserk&Aggressor`) while those buffs are up too, over the plain buff sets (`Buffs['Berserk']`) |
+| `Hoxne_Tp` `_Idle` `_Dt` `_Ws` `Hoxne_<WS>` `Hoxne_<set>_<buff>` | `/hoxne` + Enchantment; `Hoxne_<WS>` (`Hoxne_Ruthless Stroke`) over `Hoxne_Ws` on that WS (`/gcedit`: right-click `Hoxne_Ws`, **Add a set for one WS**); each also `_<mset>` (`Hoxne_Dt_Impetus_SubtleBlow`). `Hoxne_<set>_<buff>` (`Hoxne_Tp_Berserk`, `&` for several: `Hoxne_Tp_Berserk&Aggressor`) while those buffs are up too, over the plain buff sets (`Buffs['Berserk']`) |
 | `Ws_Dt` `<ws>_Dt` `<ws>_<mset>_Dt` | WS while `/dt` is on |
 | `XIRoll` | idle with a roll at 11 |
 | `*_Received` | a spell coming at you (`ReceivedSets`, 8s max) |

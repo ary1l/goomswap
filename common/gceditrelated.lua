@@ -5,7 +5,7 @@ return function(
     editorState, feedback, fits, ghost_of, go_to, group_of, has_set, help, help_icon, ignored_suggestion_names,
     imgui, index_all_items, inspect_item, inspection_target, itemTooltip, make_button, make_set, melee_modes,
     owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, setFile,
-    set_action_entries, set_tip, tag, text_w, undo_slot, where, wi_from_game, wrap, xy
+    set_action_entries, set_tip, tag, text_w, undo_slot, where, wi_from_game, wrap, xy, suggestions
 )
 -- A submenu (opens on hover) where the imgui binding has one; else its rows inline under a dim title.
 local function submenu(label, title, draw)
@@ -38,6 +38,35 @@ local function draw_weapon_copies(set)
                     and ('Worn over ' .. set.name .. ' with a ' .. ((r.w == '2h') and 'two' or 'one')
                         .. '-handed weapon that has no set of its own here.')
                     or ('Worn over ' .. set.name .. ' while /wm ' .. r.w .. ' is on.'))
+            end
+        end
+    end)
+end
+
+-- Hoxne_Ws: a set for one weapon skill while Hoxne is on, Hoxne_<WS> (Hoxne_Ruthless Stroke), worn over Hoxne_Ws
+-- (gcinclude.CheckHoxneWs). From the weapon skills you know that have none yet, read once per edit; a copy of
+-- Hoxne_Ws to start, then change what differs. Not written until Save.
+local hoxneWsRows = nil
+local function draw_hoxne_ws(set)
+    if (string.lower(set.name) ~= 'hoxne_ws') or (set.code ~= nil) or set.extra
+        or editorState.document.deleted[set.name] then return end
+    local rev = editorState.document.revision
+    if (hoxneWsRows == nil) or (hoxneWsRows.rev ~= rev) then
+        local ok, list = pcall(suggestions, false, true) -- no spells
+        hoxneWsRows = { rev = rev }
+        for _, x in ipairs(ok and list or NONE) do
+            if (x.why == 'weapon skill') and not has_set('Hoxne_' .. x.name) then
+                hoxneWsRows[#hoxneWsRows + 1] = 'Hoxne_' .. x.name
+            end
+        end
+    end
+    if #hoxneWsRows == 0 then return end
+    submenu('Add a set for one WS##hoxnews', 'Add a set for one WS:', function()
+        for _, name in ipairs(hoxneWsRows) do
+            if ctx.menu_item(name .. '##hoxnews') then make_set(name, set) end
+            if imgui.IsItemHovered() then
+                set_tip('Worn over Hoxne_Ws on ' .. string.sub(name, 7) .. ' while Hoxne is on. Starts as a copy of '
+                    .. 'Hoxne_Ws: change what differs.')
             end
         end
     end)
@@ -2191,6 +2220,7 @@ local function draw_context_menu()
                 end
             end)
             draw_weapon_copies(set)
+            draw_hoxne_ws(set)
             draw_wm_order(set)
             local wmode = weapon_set_mode(set)
             if (wmode ~= nil) and item('Weapon sets for /wm ' .. wmode .. '...##gcws_menu') then

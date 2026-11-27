@@ -1013,7 +1013,7 @@ local m_gceditrelated = gFunc.LoadFile('common\\gceditrelated.lua')(
     editorState, feedback, fits, ghost_of, go_to, group_of, has_set, help, help_icon, ignored_suggestion_names,
     imgui, index_all_items, inspect_item, inspection_target, itemTooltip, make_button, make_set, melee_modes,
     owned_for, palette, picker, pill, profiler, red_button, request_context, saveReview, setFile,
-    set_action_entries, set_tip, tag, text_w, undo_slot, where, wi_from_game, wrap, xy
+    set_action_entries, set_tip, tag, text_w, undo_slot, where, wi_from_game, wrap, xy, suggestions
 )
 local draw_over, draw_picker, fill_list, draw_fill, draw_context_menu, variants_of, rename_problem,
     rename_new = m_gceditrelated.draw_over, m_gceditrelated.draw_picker, m_gceditrelated.fill_list,
