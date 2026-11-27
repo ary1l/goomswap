@@ -1334,7 +1334,7 @@ local CHECKED = { ['gcinclude.ByName'] = true, ['gcinclude.EquipSet'] = true, ['
     ['gFunc.Message'] = true, ['gFunc.Echo'] = true, ['gFunc.Error'] = true, ['gFunc.CancelAction'] = true,
     T = true, tostring = true, tonumber = true, type = true, pairs = true, ipairs = true, next = true, select = true,
     print = true }
-C.CHECKED = CHECKED -- gcconvertcheck must stand in for each gcinclude.* here (tests/convert_sim.lua holds it)
+C.CHECKED = CHECKED -- gcconvertcheck must stand in for each gcinclude.* here (K.Modeled lists its stand-ins)
 local READ_METHOD = { contains = true, find = true, match = true, lower = true, upper = true, sub = true, gsub = true,
     format = true, len = true }
 local function checked_call(p)

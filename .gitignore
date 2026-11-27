@@ -1,0 +1,2 @@
+# Dev-only: the offline tests (luajit tests/run.lua) stay out of the repo
+tests/

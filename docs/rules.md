@@ -145,10 +145,6 @@ What converts:
   and 1 is the same only for a buff that never shows twice. If yours don't, press **Count 1 as up** on that line: it
   moves to **Can become rules** (with **Undo** there). Your call, not Convert's: it can't know which buffs stack.
 
-`tests/convert_sim.lua` runs the same check (`common/gcconvertcheck.lua`) on every example and on three of them (SCH,
-WHM, BRD) as they were before their Convert, again with other random states, and makes sure it catches a rule that wears the
-wrong set.
-
 ## Adopt: a plain LuAshitacast file
 
 Open it from the file name menu: the Rules page offers **Adopt**. GoomSwap then loads at the top of the file, starts
