@@ -2144,15 +2144,22 @@ function gcinclude.CheckSleepStoneskin(now)
 end
 
 -- Entering a Dynamis - Divergence zone (named "Dynamis - <city> [D]", per SE's Nov 2025 update notes): a reminder
--- that /dynamisrp holds the job neck.
-gcinclude.LastZone = nil
+-- that /dynamisrp holds the job neck. Leaving one for a zone that isn't: /dynamisrp goes off by itself, so your normal
+-- neck comes back (a /dynamisrp turned on outside Dynamis stays). Run from the hold tick, never mid-zone.
+gcinclude.LastZone, gcinclude.LastZoneDivergence = nil, false
 function gcinclude.CheckZoneNotes()
     local zone = AshitaCore:GetMemoryManager():GetParty():GetMemberZone(0)
-    if (zone == gcinclude.LastZone) then return end
+    if (zone == nil) or (zone == 0) or (zone == gcinclude.LastZone) then return end
     gcinclude.LastZone = zone
     local name = AshitaCore:GetResourceManager():GetString('zones.names', zone) or ''
-    if (string.find(name, 'Dynamis', 1, true) ~= nil) and (string.find(name, '[D]', 1, true) ~= nil) then
+    local divergence = (string.find(name, 'Dynamis', 1, true) ~= nil) and (string.find(name, '[D]', 1, true) ~= nil)
+    local left = gcinclude.LastZoneDivergence and not divergence
+    gcinclude.LastZoneDivergence = divergence
+    if divergence then
         gcinclude.Say('Dynamis - Divergence: /dynamisrp holds your best job neck (RP)')
+    elseif left and (gcinclude.Holds['dynamisrp'] ~= nil) then
+        gcinclude.ReleaseHold('dynamisrp')
+        gcinclude.Say('dynamisrp: off (left Dynamis - Divergence)')
     end
 end
 

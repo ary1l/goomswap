@@ -30,7 +30,7 @@
 | `/hoxne [off\|use]` | Hoxne Ampulla in Ammo, used |
 | `/gce <item>` `/gce cancel` | Equip enchanted item, wait, use, free the slot |
 | `/warpring` `/mea` `/holla` `/dem` `/ontic` `/shard` | Warp/dim rings, exit items |
-| `/capacity` `/jubilee` `/dynamisrp` | Hold cape / Jubilee Ring / Dynamis neck |
+| `/capacity` `/jubilee` `/dynamisrp` | Hold cape / Jubilee Ring / Dynamis neck (`/dynamisrp` goes off by itself when you leave a Dynamis - Divergence zone) |
 | `/abyproc` | Head, hands, legs, feet bare until off (Abyssea procs) |
 | `/tankset` `/proc` `/pupmode` | PLD RUN tank set / `Proc` only (engaged; a WS: `Ws_Proc`, else `Proc`; turns `/hoxne` `/aminon` off), every job / PUP mode |
 | `/forcestring` `/songlock` `/siphon` | BRD: Daurdabla on every song / keep Main/Sub on every enemy song (the BRD example's Lullaby always keeps them; instruments still swap, no TP lost) / SMN |
