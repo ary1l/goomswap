@@ -266,8 +266,12 @@ function panels.Tip(imgui, colors, text)
     imgui.PopStyleColor()
 end
 
+-- The editor's first size: up to 1360 x 840, and no taller than about 70% of the screen, so it opens clear of a
+-- hotbar along the bottom (tHotBar acts on clicks under the editor: it doesn't check whether one was taken). Drag its
+-- corner to resize; ImGui keeps your size.
 function panels.WindowSize(width, height)
-    return { math.max(1, math.min(1360, (width or 1700) - 32)), math.max(1, math.min(840, (height or 910) - 32)) }
+    return { math.max(1, math.min(1360, (width or 1700) - 32)),
+        math.max(1, math.min(840, math.floor((height or 910) * 0.7))) }
 end
 
 -- Fixed pane widths, no dragging: the set list about 34 characters wide (by the font), the middle four slot cards wide,
