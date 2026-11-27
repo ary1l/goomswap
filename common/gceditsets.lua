@@ -448,6 +448,8 @@ local function save()
     end
     if editorState.document.inactive then
         ctx.gearEngine.Say('/gcedit: saved ' .. editorState.document.file .. '; active job left loaded')
+        -- a draft (/gcimport for another job) is the job file now: read from it from here on
+        editorState.document.sourcePath, editorState.document.draft, editorState.ui.draftLine = nil, false, nil
         gcedit.Reload()
         editorState.ui.notice, editorState.ui.noticeBad = cleanupError
             and ('Saved, but backup cleanup failed: ' .. tostring(cleanupError))
