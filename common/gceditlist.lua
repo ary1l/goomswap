@@ -659,7 +659,8 @@ end
 -- When a listed set goes on, for its hover (the Used for sentence); false: nothing by its name wears it.
 local function when_of(s)
     if (s.when == nil) and (ctx.actions ~= nil) and (ctx.actions.When ~= nil) then
-        local ok, text = pcall(ctx.actions.When, { name = s.name, lname = string.lower(s.name) })
+        local ok, text = pcall(ctx.actions.When, { name = s.name, lname = string.lower(s.name), parentName = s.parent,
+            key = s.key })
         s.when = (ok and (type(text) == 'string') and (string.find(text, '^No built%-in trigger') == nil)) and text
             or false
     end

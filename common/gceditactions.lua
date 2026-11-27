@@ -874,7 +874,16 @@ function actionModel.New(context)
     -- The sentence for "Used for", and its short label (nil: the sentence's first part). GoomSwap's own triggers
     -- first, then the action the set's name is for, then where the job file's code wears it. Nothing: the marker
     -- 'No built-in trigger' (the editor says whether the job file names it).
+    -- A set inside Buffs / Buffs_Ws / Buffs_Midcast: worn while its buff is up (gcinclude.CheckBuffSets, at the end
+    -- of HandleDefault / weapon skills / midcast).
+    local BUFF_HOLDER = { buffs = { 'idle and engaged', '' }, buffs_ws = { 'on weapon skills', ', weapon skills' },
+        buffs_midcast = { 'on spells (midcast)', ', spells' } }
     local function when_description(set)
+        local holder = (set.parentName ~= nil) and BUFF_HOLDER[string.lower(set.parentName)] or nil
+        if (holder ~= nil) and (set.key ~= nil) then
+            return 'While ' .. set.key .. ' is up, ' .. holder[1] .. ': GoomSwap puts it on over your sets (name it as '
+                .. 'the buff list shows it).', set.key .. ' up' .. holder[2]
+        end
         local wtext, wshort = weapon_set_when(set)
         if wtext ~= nil then return wtext, wshort end
         local text, short

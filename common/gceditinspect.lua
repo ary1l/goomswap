@@ -963,11 +963,14 @@ local function draw_set(set)
     imgui.BeginChild('##gcedit_title', { 0, 0 },
         (ImGuiChildFlags_AutoResizeY or 32) + (ImGuiChildFlags_AlwaysUseWindowPadding or 2),
         ImGuiWindowFlags_NoScrollbar or 0)
-    if (set.group ~= nil) and (set.group ~= '') and (string.lower(set.group) ~= set.lname) then -- not 'Idle > Idle'
-        imgui.TextColored(palette.dim, set.group .. ' >')
+    -- a set inside a set: its holder, then its key (Buffs_Ws > ['Aftermath: Lv.3'])
+    local crumb = (set.parentName ~= nil) and set.parentName or set.group
+    if (crumb ~= nil) and (crumb ~= '') and (string.lower(crumb) ~= set.lname) then -- not 'Idle > Idle'
+        imgui.TextColored(palette.dim, crumb .. ' >')
         imgui.SameLine()
     end
-    imgui.TextColored(palette.text, set.bracket and ("['" .. set.name .. "']") or set.name)
+    imgui.TextColored(palette.text, ((set.parentName ~= nil) and (set.key ~= nil)) and ("['" .. set.key .. "']")
+        or (set.bracket and ("['" .. set.name .. "']") or set.name))
     if by_name(set) then badge('worn by name', palette.blue, palette.invBg) end
     if (editorState.document.renames or {})[set.name] then
         badge('renamed to ' .. editorState.document.renames[set.name] .. ' on Save', palette.warn, palette.warnBg)
