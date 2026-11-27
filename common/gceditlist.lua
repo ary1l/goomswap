@@ -609,19 +609,31 @@ local function addable()
     end
     local ok, sugg = pcall(suggestions, false, true)
     if not ok then ok, sugg = pcall(suggestions, true) end -- the abilities couldn't be read: the standard sets still
-    for _, x in ipairs(ok and sugg or {}) do list[#list + 1] = x end
-    -- buff rows (buff_row): your own JA's buffs (when the game has a buff by its name), then every buff a holder of
-    -- the file already has a set for (Buffs_Ws['Aftermath: Lv.3']: its TP, Idle... sets one click away). A buff not
-    -- listed: type its name (draw_addable).
+    -- buff rows (buff_row), at the top of BUFFS: every buff a holder of the file already has a set for
+    -- (Buffs_Ws['Aftermath: Lv.3']), then the example's (its Buffs['Aftermath: Lv.3'] is a buff row, not a plain set to
+    -- make: TP makes it engaged only), then your own JA's buffs (when the game has a buff by its name), then the rest.
+    -- A buff not listed: type its name (draw_addable).
     local model = editorState.document.model
-    for _, x in ipairs(((ctx.rules ~= nil) and (ctx.rules.IsBuff ~= nil) and ok) and sugg or NONE) do
-        if (x.why == 'job ability') and ctx.rules.IsBuff(x.name) then list[#list + 1] = buff_row(x.name) end
-    end
     for _, set in ipairs(model.list) do
         if (set.parentName ~= nil) and (set.key ~= nil) and HOLDER_OF[string.lower(set.parentName)] then
             list[#list + 1] = buff_row(set.key)
         end
     end
+    local rest = {}
+    for _, x in ipairs(ok and sugg or {}) do
+        local holder, key = string.match(x.name, "^([%w_]+)%['(.+)'%]$")
+        if (holder ~= nil) and HOLDER_OF[string.lower(holder)] then
+            local r = buff_row(key)
+            if r ~= nil then r.tip = r.tip .. '\n(' .. x.why .. ': ' .. x.name .. ')' end
+            list[#list + 1] = r
+        else
+            rest[#rest + 1] = x
+        end
+    end
+    for _, x in ipairs(((ctx.rules ~= nil) and (ctx.rules.IsBuff ~= nil) and ok) and sugg or NONE) do
+        if (x.why == 'job ability') and ctx.rules.IsBuff(x.name) then list[#list + 1] = buff_row(x.name) end
+    end
+    for _, x in ipairs(rest) do list[#list + 1] = x end -- the rest (Buffs_Idle, Buffs_Midcast...) under the buffs
     local ignored = (ctx.ignored_names ~= nil) and ctx.ignored_names() or NONE -- settings.EditorIgnoreSuggestions
     local ruled = {} -- moments a rule (on, not off) can put gear on at: 'no change' isn't sure there
     for _, r in ipairs(((ctx.rules ~= nil) and ctx.rules.List()) or NONE) do
