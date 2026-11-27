@@ -910,6 +910,9 @@ local function choose_item(set, slot, gear)
         edit(set, slot, gear)
         feedback('Selected ' .. gear.name .. ' for ' .. set.name .. ' / ' .. slot .. ' (unsaved).')
     end
+    if editorState.ui.fromFill then -- picked from To fill's list: back to it, for the next one
+        editorState.ui.fromFill, editorState.selection.tab = nil, 'fill'
+    end
 end
 
 local ENGINE = editorData.ENGINE
@@ -2247,7 +2250,9 @@ local function body()
     if set and cmp_of(set) then tabs[#tabs + 1] = { 'Compare', 'compare' } end
     tabs[#tabs + 1] = { 'Related', 'over' }
     tabs[#tabs + 1] = { nf > 0 and ('To fill (' .. nf .. ')') or 'To fill', 'fill' }
-    editorState.selection.tab = editorPanels.Tabs(imgui, palette, editorState.selection.tab, tabs)
+    local tab = editorPanels.Tabs(imgui, palette, editorState.selection.tab, tabs)
+    if tab ~= editorState.selection.tab then editorState.ui.fromFill = nil end -- a tab of your own choosing
+    editorState.selection.tab = tab
     imgui.Separator()
     if editorState.selection.tab == 'compare' then
         if set then

@@ -48,7 +48,7 @@ reload**, and the status bar (`/gcbar`). Each step ticks itself; the list goes o
 | To add | Do |
 |---|---|
 | A set for an action | Name it after the action: `Barrage`, `Cure`, `Savage Blade` |
-| A weapon mode (`/wm`) | Name it `Weapon_<Name>` with Main/Sub; Save adds it to `gcinclude.WeaponModes`. Deleting the set takes it out on Save, with the sets worn only with that mode (`Tp_<Name>`, `Ws_<Name>_Acc`, `Savage Blade_<Name>`, `Weapon_<Name>_1h`...; untick to keep them; ones your code names are kept); a `DefaultWeapons` / `WeaponRoles` still naming it is flagged (change it in **GoomSwap settings**). `Weapon_<Name>_1h` is used when you can't dual wield, `Weapon_<Name>Acc` (or `Weapon_<Name>_Acc`) with `/mset acc`. **Weapon sets...** (the set's header or right-click; offered when you make one) lists every set the mode can have: its `_1h` and `/mset` weapon sets (made as copies of `Weapon_<Name>`, spelled like your file's) and the layers below; tick the missing ones and **Make**. After **Save + reload** the mode is on the bar and HUD (the weapon pill and its right-click menu), coloured by its Main |
+| A weapon mode (`/wm`) | Name it `Weapon_<Name>` with Main/Sub; Save adds it to `gcinclude.WeaponModes`. The job's first one also becomes **Weapons on load** (`DefaultWeapons`) when that was None (**Keep None** in its **Weapon sets...** undoes it). Deleting the set takes it out on Save, with the sets worn only with that mode (`Tp_<Name>`, `Ws_<Name>_Acc`, `Savage Blade_<Name>`, `Weapon_<Name>_1h`...; untick to keep them; ones your code names are kept); a `DefaultWeapons` / `WeaponRoles` still naming it is flagged (change it in **GoomSwap settings**). `Weapon_<Name>_1h` is used when you can't dual wield, `Weapon_<Name>Acc` (or `Weapon_<Name>_Acc`) with `/mset acc`. **Weapon sets...** (the set's header or right-click; offered when you make one) lists every set the mode can have: its `_1h` and `/mset` weapon sets (made as copies of `Weapon_<Name>`, spelled like your file's) and the layers below; tick the missing ones and **Make**. After **Save + reload** the mode is on the bar and HUD (the weapon pill and its right-click menu), coloured by its Main |
 | TP or WS gear for one weapon | `Tp_<Name>` / `Ws_<Name>` (`Tp_Chango`): worn over `Tp_Default` / `Ws_Default` while `/wm <Name>` is on; `Tp_Chango_Acc` with `/mset acc` too. **Weapon sets...** on the `Weapon_<Name>` set makes the ones you tick, empty: fill only what differs, and later changes to the base still apply (or tick **Layers start as a copy of their base**). Right-click `Tp_Default` (or `Tp_Acc`, `Dt`, `Idle`, a WS's set): **Copy as a weapon set** makes one full copy |
 | TP or WS gear for a weapon type | `Tp_2h` / `Tp_1h` (and `Ws_`, `Dt_`, `Idle_`...): for a weapon with no set of its own, by its Main ([How sets stack](sets.md#how-sets-stack)) |
 | A Main/Sub/Range pick (`/mw` `/sw` `/rw`) | Nothing: every item in a `Weapon_` set is one. Others go in `gcinclude.SubModes` (etc.) in the file |
@@ -290,7 +290,8 @@ a job file's own setting still wins. Details: [Settings](settings.md).
 ![Related: modes as the game has them, the weapon loadouts in one entry, a buff set and its Hoxne version (mockup of the current build)](gcedit_related.png)
 
 - **To fill** lists placeholders, missing or unusable items and empty weapon modes; **Fill all** stages one choice
-  for every listed use. When nothing is left, it says **Nothing left to fill.**
+  for every listed use. Click a set's slot: its picker opens (**< To fill** goes back), and your pick brings you back
+  to the list for the next one. When nothing is left, it says **Nothing left to fill.**
 
 ## Save
 

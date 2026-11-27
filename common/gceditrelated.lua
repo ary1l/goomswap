@@ -181,6 +181,19 @@ local function draw_weapon_sets()
         local mode = ui.requestWeaponSets
         ui.requestWeaponSets, ui.weaponSets = nil, { mode = mode, copy = { false }, rows = weapon_set_rows(mode),
             base = editorState.document.model.byLower['weapon_' .. string.lower(mode)] }
+        -- just made, the job's only /wm mode, and nothing on load yet: it goes on at load (Weapons on load)
+        if ui.newWeaponMode == mode then
+            local S, only = ctx.settingsFiles, true
+            for _, w in ipairs(ctx.actions.WeaponModes()) do
+                if (string.lower(w) ~= 'none') and (string.lower(w) ~= string.lower(mode)) then only = false end
+            end
+            local cur = S.Job('DefaultWeapons')
+            if only and ((cur == nil) or ((type(cur) == 'string') and (string.lower(cur) == 'none'))) then
+                S.StageJob('DefaultWeapons', mode)
+                ui.weaponSets.onLoad, ui.weaponSets.onLoadWas = cur or 'None', cur -- what Keep puts back
+            end
+        end
+        ui.newWeaponMode = nil
         imgui.OpenPopup('##gcedit_weapon_sets')
     end
     if not imgui.BeginPopup('##gcedit_weapon_sets') then return end
@@ -188,6 +201,19 @@ local function draw_weapon_sets()
     if W ~= nil then
         local filled = (W.base ~= nil) and (current(W.base, 'Main') ~= nil) -- weapon sets copy it: needs its Main
         imgui.TextColored(palette.section, 'Weapon sets for /wm ' .. W.mode)
+        if W.onLoad ~= nil then -- the job's first /wm mode: worn at load from now on, unless you keep the old one
+            imgui.TextColored(palette.ok, 'Weapons on load: ' .. W.mode .. ' (your first /wm mode; Save writes it).')
+            imgui.SameLine()
+            if imgui.SmallButton('Keep ' .. tostring(W.onLoad) .. '##gcws_keep') then
+                local S = ctx.settingsFiles
+                S.StageJob('DefaultWeapons', (W.onLoadWas == nil) and S.REMOVE or W.onLoadWas)
+                W.onLoad = nil
+            end
+            if imgui.IsItemHovered() then
+                set_tip('Load with ' .. tostring(W.onLoad) .. ' as before; GoomSwap settings, this job options, '
+                    .. 'Weapons on load changes it later.')
+            end
+        end
         imgui.PushTextWrapPos(520)
         imgui.TextColored(palette.dim, 'Tick the ones whose gear should differ, then Make. Nothing is written until '
             .. 'Save + reload.')
@@ -1380,6 +1406,7 @@ local function draw_over(set)
     end
 end
 
+local fill_list -- To fill's list (below): the picker's way back to it counts what is left
 local function draw_picker(set)
     if (editorState.selection.slot == nil) or (set.code ~= nil) or set.extra then
         imgui.TextColored(palette.dim, 'Click a slot to pick gear for it.')
@@ -1408,6 +1435,13 @@ local function draw_picker(set)
         )
         imgui.SameLine()
         if imgui.SmallButton('Cancel##gcedit_fa') then editorState.ui.fillAll = nil end
+    end
+    if editorState.ui.fromFill then -- came from To fill: one click back to the list
+        if imgui.SmallButton('< To fill (' .. fill_list().n .. ' left)##gcedit_backfill') then
+            editorState.ui.fromFill, editorState.selection.tab = nil, 'fill'
+        end
+        if imgui.IsItemHovered() then set_tip('Back to the list of what still needs gear. Picking an item here does that too.') end
+        imgui.SameLine()
     end
     imgui.TextColored(palette.blue, 'Editing: ' .. set.name .. ' / ' .. editorState.selection.slot)
     if (cur ~= nil) and (cur.value.kind == 'code') then
@@ -1707,7 +1741,7 @@ end
 
 -- To fill: what still needs gear, across every set: slots left out (commented out, as /gcbuild leaves them), pieces
 -- you do not own, pieces in a bag you cannot equip from, weapon modes with no weapon you own. Rebuilt on each change.
-local function fill_list()
+fill_list = function()
     if editorState.cache.fillVer == editorState.document.revision then return editorState.cache.fill end
     local F = { left = {}, notOwned = {}, move = {}, modes = {}, n = 0 }
     local idx = {}
@@ -1787,7 +1821,7 @@ local function draw_fill()
         imgui.TextColored(palette.dim, 'What still needs gear, in every set.')
         help(
             'Everything that still needs gear, in every set.\n'
-                .. '- Click a set and slot: it opens on the Gear tab.\n'
+                .. '- Click a set and slot: it opens on the Gear tab; your pick brings you back here.\n'
                 .. '- Left out: commented out in the file (how /gcbuild leaves gear you lack).\n'
                 .. 'Nothing is saved until Save + reload.'
         )
@@ -1881,6 +1915,7 @@ local function draw_fill()
                             end
                             editorState.ui.fillAll = { name = e.name, slot = slot, sets = sets, n = #e.places }
                             go_to(e.places[1].set, slot, 'gear')
+                            editorState.ui.fromFill = true
                         end
                         if imgui.IsItemHovered() then
                             set_tip('Pick once on the Gear tab: it goes in all ' .. #e.places .. ' sets.')
@@ -1907,6 +1942,7 @@ local function draw_fill()
                     if imgui.Selectable( pl.id,
                         (editorState.selection.setName == pl.set) and (editorState.selection.slot == pl.slot) ) then
                         go_to(pl.set, pl.slot, 'gear')
+                        editorState.ui.fromFill = true
                     end
                     if x0 ~= nil then
                         imgui.SameLine(x0 + 14)
@@ -1941,6 +1977,7 @@ local function draw_fill()
             if m.set ~= nil then
                 if imgui.Selectable(m.mode .. '##gcfm' .. i, editorState.selection.setName == m.set.name) then
                     go_to(m.set.name, 'Main', 'gear')
+                    editorState.ui.fromFill = true
                 end
             else
                 if imgui.SmallButton('Make##gcfm' .. i) then make_set('Weapon_' .. m.mode, nil, true) end

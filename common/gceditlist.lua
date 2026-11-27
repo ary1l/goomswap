@@ -11,6 +11,7 @@ local function go_to(name, slot, tab)
         if #editorState.selection.back > 10 then table.remove(editorState.selection.back, 1) end
     end
     editorPreferences.Select(editorState, name, slot, tab)
+    editorState.ui.fromFill = nil -- To fill sets it again after this: a pick there goes back to the list
 end
 
 local function draw_new_popup()
@@ -82,7 +83,7 @@ local function draw_new_popup()
         -- a new /wm mode: offer its weapon sets and layers (reopened from its header's Weapon sets...)
         local made = editorState.document.model.byName[name]
         local wmode = (ctx.weapon_set_mode ~= nil) and ctx.weapon_set_mode(made) or nil
-        if wmode ~= nil then editorState.ui.requestWeaponSets = wmode end
+        if wmode ~= nil then editorState.ui.requestWeaponSets, editorState.ui.newWeaponMode = wmode, wmode end
         imgui.CloseCurrentPopup()
     end
     imgui.SameLine()

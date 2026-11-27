@@ -21,4 +21,21 @@ tests[#tests + 1] = { 'the Editor menu draws, its Spacing switch switches', func
     assert(string.match(out, '([^\n]*)\n?$') == 'drawn', out)
     assert(string.find(out, '\n  Comfortable:', 1, true), 'Spacing switch to Comfortable not shown: ' .. out)
 end }
+tests[#tests + 1] = { 'To fill: a slot opens its picker with a way back, and a pick goes back to the list', function()
+    local function run(clicks, probe)
+        local p = io.popen('luajit tests/draw_editor.lua examples/DNC.lua "' .. clicks .. '" "' .. probe .. '" 2>&1')
+        local out = p:read('*a')
+        p:close()
+        assert(string.match(out, '([^\n]*)\n?$') == 'drawn', out)
+        return out
+    end
+    local out = run('#gcedit_tab_fill,x,gcf_notOwnedIdleHead,x', 'backfill')
+    assert(string.find(out, '< To fill (', 1, true), 'no way back to To fill: ' .. out)
+    -- after the pick, To fill's list is up again (its first line is seen anew only if it was drawn after the pick)
+    local p = io.popen('TRACE="What still needs gear, in every set." luajit tests/draw_editor.lua examples/DNC.lua '
+        .. '"#gcedit_tab_fill,x,gcf_notOwnedIdleHead,x,pick1,x" "zzz" 2>&1')
+    local trace = p:read('*a')
+    p:close()
+    assert(string.find(trace, 'pick1\tseen', 1, true), 'To fill not back after the pick: ' .. trace)
+end }
 return tests
