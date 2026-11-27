@@ -2,7 +2,7 @@
 -- the gear of every set in profile.Sets. LAC only looks at those sets' own slots (integration.lua CreateOrderStruct),
 -- so at load GoomSwap adds, in memory only (the file is never written), what that misses:
 --   - char.lua's Packer (else goomswap-shared.lua's): items kept on every job, as { ['Echo Drops'] = 'stack' };
---   - sets inside sets (Buffs = { ['Haste'] = {...} }, Buffs_Ws, Buffs_Midcast);
+--   - sets inside sets (Buffs = { ['Haste'] = {...} }, Buffs_Ws, Buffs_Precast, Buffs_Midcast);
 --   - GoomSwap's own sets (Holy_Water, Sleeping, Doomed) and char.lua's `sets`, the pieces you own;
 --   - the items its commands and layers wear (Warp Ring, obis, Moonshade...), only the ones you own.
 -- LAC counts: a number or 'all'; 'stack' (or true) becomes the item's stack size. The larger count of two entries for

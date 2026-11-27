@@ -874,11 +874,11 @@ function actionModel.New(context)
     -- The sentence for "Used for", and its short label (nil: the sentence's first part). GoomSwap's own triggers
     -- first, then the action the set's name is for, then where the job file's code wears it. Nothing: the marker
     -- 'No built-in trigger' (the editor says whether the job file names it).
-    -- A set inside Buffs / Buffs_Tp / Buffs_Idle / Buffs_Ws / Buffs_Midcast: worn while its buff is up
-    -- (gcinclude.CheckBuffSets, at the end of HandleDefault / weapon skills / midcast).
+    -- A set inside Buffs / Buffs_Tp / Buffs_Idle / Buffs_Ws / Buffs_Precast / Buffs_Midcast: worn while its buff is up
+    -- (gcinclude.CheckBuffSets, at the end of HandleDefault / weapon skills / precast / midcast).
     local BUFF_HOLDER = { buffs = { 'idle and engaged', '' }, buffs_tp = { 'engaged only', ', engaged' },
         buffs_idle = { 'idle only (not engaged)', ', idle' }, buffs_ws = { 'on weapon skills', ', weapon skills' },
-        buffs_midcast = { 'on spells (midcast)', ', spells' } }
+        buffs_precast = { 'on spells (precast)', ', precast' }, buffs_midcast = { 'on spells (midcast)', ', spells' } }
     local function when_description(set)
         local holder = (set.parentName ~= nil) and BUFF_HOLDER[string.lower(set.parentName)] or nil
         if (holder ~= nil) and (set.key ~= nil) then
@@ -1402,7 +1402,7 @@ function actionModel.New(context)
             if dtKids and o.dt then children('Dt', 'DT mode', worn) end
             worn = keep
         end
-        -- the buff sets a holder (Buffs, Buffs_Ws, Buffs_Midcast) has, and the buffs typed: each one's set, worn
+        -- the buff sets a holder (Buffs, Buffs_Ws, Buffs_Precast, Buffs_Midcast) has, and the buffs typed: each one's set, worn
         -- while that buff is up (CheckBuffSets); its names, for the Hoxne combos after it. Nil: no such holder.
         local function buff_sets(holder, conds)
             if not has_set(holder) then return nil end
@@ -1603,6 +1603,11 @@ function actionModel.New(context)
             add('SIR', { 'SIR mode' })
             if mbuffs == nil then
                 notes[#notes + 1] = 'Buffs_Midcast: a set per buff, worn while it is up; make Buffs_Midcast to list them.'
+            end
+        elseif ev == 'Precast' then
+            if buff_sets('Buffs_Precast', {}) == nil then
+                notes[#notes + 1] = "Buffs_Precast: a set per buff (Buffs_Precast = { ['Spontaneity'] = {...} }), worn "
+                    .. 'while it is up; make Buffs_Precast to list them.'
             end
         elseif ev == 'Default' then
             local eng, idle = st('Engaged'), st('Idle')

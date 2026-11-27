@@ -19,6 +19,8 @@ Later wins, slot by slot.
 4. `Incapacitated` (slept, petrified, stunned, terror), over 1-3: Aminon, else `mdt`, else `Dt` (no weapons), its set.
 5. `Sleeping` → `Doomed`.
 
+**Precast:** job file → `Buffs_Precast` (`['Spontaneity']`: next spell near-instant, skip fast cast).
+
 **Midcast:** job file → `TH` → `_Self` `_Others` `_Burst` → `Absorb` → `Buffs_Midcast` → `LightBonus` →
 obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` → `Cure_LowMP` → `Cure_Dt` → obi → `SIR`.
 
@@ -48,7 +50,7 @@ and its toggle wears it. Until then it falls back as the table says (`Aminon` �
 | `Proc` `Ws_Proc` | `/proc`: engaged, `Proc` in place of your sets (weapon mode stays); on WS `Ws_Proc` (else, missing or empty, `Proc`) in place of every WS set |
 | `Incapacitated` `Sleeping` | disabled / asleep (weapons pass the TP hold) |
 | `Absorb` `Absorb_TP` `LightBonus` | Absorb spells / Healing Magic |
-| `Buffs` `Buffs_Tp` `Buffs_Idle` `Buffs_Ws` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while the buff is up: `Buffs` idle and engaged, `Buffs_Tp` engaged only, `Buffs_Idle` not engaged (both over `Buffs`), `Buffs_Ws` weapon skills, `Buffs_Midcast` spells; each is its own set in `/gcedit` |
+| `Buffs` `Buffs_Tp` `Buffs_Idle` `Buffs_Ws` `Buffs_Precast` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while the buff is up: `Buffs` idle and engaged, `Buffs_Tp` engaged only, `Buffs_Idle` not engaged (both over `Buffs`), `Buffs_Ws` weapon skills, `Buffs_Precast` / `Buffs_Midcast` spells (precast / midcast); each is its own set in `/gcedit` |
 | `Hoxne_Tp` `_Idle` `_Dt` `_Ws` `Hoxne_<set>_<buff>` | `/hoxne` + Enchantment; each also `_<mset>` (`Hoxne_Dt_Impetus_SubtleBlow`). `Hoxne_<set>_<buff>` (`Hoxne_Tp_Berserk`, `&` for several: `Hoxne_Tp_Berserk&Aggressor`) while those buffs are up too, over the plain buff sets (`Buffs['Berserk']`) |
 | `Ws_Dt` `<ws>_Dt` `<ws>_<mset>_Dt` | WS while `/dt` is on |
 | `XIRoll` | idle with a roll at 11 |
