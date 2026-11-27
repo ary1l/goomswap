@@ -578,7 +578,9 @@ local function addable()
     end
     for _, k in ipairs(kinds) do
         if editorState.document.model.byLower[string.lower(k)] == nil then
-            list[#list + 1] = { name = k, why = 'worn on every ' .. k .. ' (your job file names it)' }
+            list[#list + 1] = { name = k, why = 'every ability with ' .. k .. ' in its name',
+                tip = 'Your job file\'s HandleAbility puts on a set named ' .. k .. ' for every ability with ' .. k
+                    .. ' in its name, then the ability\'s own set over it. Make it once for all of them.' }
         end
     end
     local ok, sugg = pcall(suggestions, false, true)
@@ -598,19 +600,31 @@ local function addable()
         end
     end
     local ignored = (ctx.ignored_names ~= nil) and ctx.ignored_names() or NONE -- settings.EditorIgnoreSuggestions
+    local ruled = {} -- moments a rule (on, not off) can put gear on at: 'no change' isn't sure there
+    for _, r in ipairs(((ctx.rules ~= nil) and ctx.rules.List()) or NONE) do
+        if (type(r) == 'table') and not r.off and (r.on ~= nil) then ruled[r.on] = true end
+    end
     for _, x in ipairs(list) do
         local g = x.group or ((ctx.group_of ~= nil) and ctx.group_of(x.name)) or nil
         if (g ~= nil) and not seen[string.lower(x.name)] and not ignored[string.lower(x.name)] then
             seen[string.lower(x.name)] = true
             x.rank = ((x.why == 'job ability') or (x.why == 'weapon skill')) and 2 or (RARE_SET(x.name) and 3 or 1)
-            for _, k in ipairs((x.why == 'job ability') and kinds or NONE) do
-                if (x.name ~= k) and string.find(x.name, k, 1, true) then
-                    local made = editorState.document.model.byLower[string.lower(k)] ~= nil
-                    x.rank, x.why = 3, made and ('gets your ' .. k .. ' set (a set by its own name goes on top)')
-                        or ('gets your ' .. k .. ' set once you make it')
-                    break
+            -- an action: what it wears until this set is made (now: a set's name, false: no gear change)
+            local by = editorState.document.model.byLower
+            if x.why == 'weapon skill' then x.now = (by['ws_default'] ~= nil) and 'Ws_Default' or false end
+            local moment = (x.why == 'weapon skill') and 'Weaponskill' or 'Ability'
+            if x.why == 'job ability' then
+                x.now = false -- no base set for job abilities: only one by its name, or its group's
+                for _, k in ipairs(kinds) do
+                    if (x.name ~= k) and string.find(x.name, k, 1, true) then
+                        local made = by[string.lower(k)] ~= nil
+                        x.rank, x.why = 3, made and ('your ' .. k .. ' set covers it') or (k .. ' would cover it')
+                        x.now = made and k or false
+                        break
+                    end
                 end
             end
+            if (x.now == false) and ruled[moment] then x.ruled = true end
             out[g] = out[g] or {}
             out[g][#out[g] + 1] = x
         end
@@ -693,6 +707,7 @@ local function draw_addable()
         if (s.name ~= nil) and (s.rowW == nil) then
             s.words = ((ctx.words ~= nil) and ctx.words.Label(s.name)) or s.why or ''
             s.rowW = btn + text_w(s.name) + 8 + text_w(s.words)
+                + ((s.now ~= nil) and (12 + text_w('now: ' .. (s.now or 'no change, rules aside'))) or 0)
         end
         wide = math.max(wide, s.rowW or 0)
     end
@@ -717,7 +732,20 @@ local function draw_addable()
                 imgui.SameLine(0, 8)
                 imgui.TextColored(palette.dim, s.words)
             end
-            if imgui.IsItemHovered() and (when_of(s) ~= nil) then set_tip(s.when) end
+            local tip = s.tip or when_of(s)
+            if imgui.IsItemHovered() and (tip ~= nil) then set_tip(tip) end
+            if s.now ~= nil then -- what the action wears until this set is made
+                imgui.SameLine(0, 12)
+                imgui.TextColored(palette.dim, 'now:')
+                imgui.SameLine(0, 4)
+                imgui.TextColored(s.now and palette.blue or palette.warn,
+                    s.now or (s.ruled and 'no change, rules aside' or 'no change'))
+                if imgui.IsItemHovered() then
+                    set_tip(s.now and ('Until you make ' .. s.name .. ', it wears ' .. s.now .. '.')
+                        or ('Until you make ' .. s.name .. ', it changes no gear: you keep what you have on'
+                            .. (s.ruled and ', except what a rule of yours puts on for it (Rules).' or '.')))
+                end
+            end
         end
     end
     if #rows > 0 then

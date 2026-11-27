@@ -35,8 +35,12 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
   abilities and weapon skills you know. Spells are left out (too many).
 - Under BUFFS: `Buffs['Saber Dance']` for each of your JAs that has a buff of the same name. It is worn while the
   buff is up.
+- An ability group (`Step`) is a set your job file's HandleAbility puts on for every ability with that word in its
+  name, under the ability's own set.
 - **More** holds the rarely used ones (Aminon, Sleeping, Doomed...) and abilities a group set covers (Curing Waltz
-  III gets your `Waltz`). You can still make them, for a set of their own.
+  III: `Waltz`). You can still make them, for a set of their own.
+- Job abilities and weapon skills show **now:** what the action wears until you make its set (`Ws_Default`, your
+  `Waltz`, or **no change**: you keep what you have on).
 - Each says what it is for; hover it for when it goes on. **Make** creates it empty; **from...** starts it as a copy
   of a set you pick. The new set opens on its first slot, ready to fill.
 - Typing filters the list. A name it doesn't have gets its own **Make** (any set, like `Cure IV`), with when it would
