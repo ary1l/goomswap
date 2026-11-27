@@ -2656,10 +2656,10 @@ function gcinclude.CheckWsBailout()
     local target = gData.GetActionTarget()
     local distance = (target ~= nil) and tonumber(target.Distance) or nil
     if gcinclude.settings.WScheck and (distance ~= nil) and (not gcinclude.DistanceWS:contains(ws.Name)) then
-        local reach = gcinclude.WsReach(target)
+        local reach, swung = gcinclude.WsReach(target)
         if (distance > reach) then
-            gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f). Move closer, or /wsdistance off',
-                ws.Name, distance, reach))
+            gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f%s). Move closer, or /wsdistance off',
+                ws.Name, distance, reach, (swung > 0) and string.format('; swings landed to %.1f', swung) or ''))
             return false
         end
     end
@@ -2669,18 +2669,22 @@ end
 -- How far a melee weapon skill reaches, center to center: its range past both bodies, as the LandSandBoat server
 -- checks it (char_entity.cpp OnWeaponSkillFinished: distance <= range + attacker hitbox + target hitbox; melee weapon
 -- skills have range 3 in its data/weapon_skills.yaml). A big mob is hit from further away than a small one, so a
--- fixed distance cancels weapon skills your swings still reach. WSdistance (/wsdistance N) stays the least reach.
+-- fixed distance cancels weapon skills your swings still reach. WSdistance (/wsdistance N) stays the least reach, and
+-- so does the farthest your auto-attacks on this target went out at (gcauto.SwingReach): a weapon skill reaches
+-- further than a swing. Returns the reach and that swing distance (0: none yet).
 gcinclude.WsRange = 3
 function gcinclude.WsReach(target)
     local floor = tonumber(gcinclude.settings.WSdistance) or 0
+    local swung = ((target ~= nil) and (gcauto ~= nil) and (gcauto.SwingReach ~= nil)) and gcauto.SwingReach(target.Id) or 0
+    floor = math.max(floor, swung)
     local ok, sizes = pcall(function()
         local mm = AshitaCore:GetMemoryManager()
         local ent = mm:GetEntity()
         return (tonumber(ent:GetModelHitboxSize(mm:GetParty():GetMemberTargetIndex(0))) or 0)
             + (tonumber(ent:GetModelHitboxSize(target.Index)) or 0)
     end)
-    if not ok or (target == nil) or (target.Index == nil) then return floor end
-    return math.max(floor, gcinclude.WsRange + sizes)
+    if not ok or (target == nil) or (target.Index == nil) then return floor, swung end
+    return math.max(floor, gcinclude.WsRange + sizes), swung
 end
 
 -- After a teleport ring's use (warped or not): stop keeping that ring on, so the next HandleDefault puts

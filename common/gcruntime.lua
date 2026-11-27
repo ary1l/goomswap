@@ -1931,6 +1931,21 @@ function runtime.NewAuto()
         end
     end
 
+    -- Your auto-attacks prove reach: a swing (0x0028 category 1 from you: hit, miss, parry or guard alike) only
+    -- happens in melee range, and a weapon skill reaches further than a swing (LandSandBoat: melee 2, weapon skills 3,
+    -- past both hitboxes). The farthest distance a swing went out at on your target: gcinclude.WsReach uses it.
+    local swing = { id = nil, d = 0 }
+    local function swing_packet(P)
+        if (P.me == nil) or (P.actor ~= P.me) or (P.cat ~= 1) or (P.ntgt < 1) then return end
+        local mm = AshitaCore:GetMemoryManager()
+        local ent, index = mm:GetEntity(), mm:GetTarget():GetTargetIndex(0)
+        if (index == 0) or (ent:GetServerId(index) ~= P.tgt[1]) then return end
+        local d = math.sqrt(ent:GetDistance(index))
+        if (swing.id ~= P.tgt[1]) then swing.id, swing.d = P.tgt[1], d
+        elseif (d > swing.d) then swing.d = d end
+    end
+    function gcauto.SwingReach(id) return (id ~= nil) and (swing.id == id) and swing.d or 0 end
+
     -- Learned cast time, so no job needs gSettings.FastCast. XiPackets 0x0028: cmd_no 8 = Magic (Start),
     -- cmd_arg low 16 bits 'ca' (24931) = start, 'sp' (28787) = interrupt; cmd_no 4 = Magic (Finish), cmd_arg = spell
     -- id.
@@ -2237,7 +2252,7 @@ function runtime.NewAuto()
                 if ok then
                     pcall(roll_packet, P); pcall(combat_packet, P); pcall(cast_packet, P); pcall(mb_packet,
                         P); pcall(item_packet, P); pcall(incoming_cast, P); pcall(incoming_end,
-                        P); pcall(predict_packet, P)
+                        P); pcall(predict_packet, P); pcall(swing_packet, P)
                 end
             end
             if (e.id == 0x0029) then pcall(refused_packet, e.data) end

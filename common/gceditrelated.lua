@@ -366,7 +366,9 @@ end
 local function draw_wm_mode()
     local ui = editorState.ui
     if ui.requestNewWm then
-        ui.requestNewWm, ui.newWm, ui.newWmWorn = nil, { '' }, { true }
+        -- a name typed in + New set (Weapon_Mpu: Mpu), else empty
+        ui.newWm, ui.newWmWorn = { (type(ui.requestNewWm) == 'string') and ui.requestNewWm or '' }, { true }
+        ui.requestNewWm = nil
         imgui.OpenPopup('##gcedit_newwm')
     end
     if not imgui.BeginPopup('##gcedit_newwm') then return end

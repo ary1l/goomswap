@@ -7,6 +7,13 @@ return function(
 -- What the New set list offers: { name, why } for names the file lacks: the job's example file's sets, the engine's,
 -- then the job abilities, weapon skills and spells you know (found as tHotBar does: HasAbility(Id), HasSpell(Index)).
 -- standard: no job abilities, weapon skills or spells; noSpells: the abilities and weapon skills you know, no spells
+-- The ability menu's folders: in the game's ability list, never an action's name (Stutter Step is used, not Steps),
+-- so a set by one of these names never goes on by itself (Windower resources: job_abilities 97, 124, 182, 183, 198,
+-- 199, 200, 213, 223, 251, 263, 357, 379, 380; pet menus 91, 172).
+local MENU_FOLDER = { ['Phantom Roll'] = true, ['Quick Draw'] = true, Sambas = true, Waltzes = true, Jigs = true,
+    Steps = true, ['Flourishes I'] = true, ['Flourishes II'] = true, ['Flourishes III'] = true, Stratagems = true,
+    Ready = true, ['Rune Enchantment'] = true, Ward = true, Effusion = true, ['Blood Pact: Rage'] = true,
+    ['Blood Pact: Ward'] = true }
 local function suggestions(standard, noSpells)
     local list, seen = {}, {}
     local function add(name, why)
@@ -57,7 +64,7 @@ local function suggestions(standard, noSpells)
     for i = 1, 0x600 do
         local r = res:GetAbilityById(i)
         if (r ~= nil) and (r.Name ~= nil) and (type(r.Name[1]) == 'string') and (r.Name[1] ~= '')
-            and not editorState.document.inactive and player:HasAbility(r.Id) then
+            and not MENU_FOLDER[r.Name[1]] and not editorState.document.inactive and player:HasAbility(r.Id) then
             acts[#acts + 1] = { r.Name[1], (i < 0x200) and 'weapon skill' or 'job ability' }
         end
     end
@@ -132,7 +139,6 @@ local function make_set(name, copyFrom, stay, parent, key)
             { Ring2 = { kind = 'item', name = "Roller's Ring", text = setFile.FormatItem("Roller's Ring") } }
     end
     if not stay then editorPreferences.Select(editorState, name, nil) end
-    editorState.ui.sugg = nil
     local mode = pending_weapon_mode(set)
     feedback(mode and (name .. ' created; /wm ' .. mode .. ' will be added on Save.')
         or (name .. ' created (unsaved).'))

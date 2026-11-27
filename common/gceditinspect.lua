@@ -644,45 +644,6 @@ local function draw_layer_view(set, V)
         end
         imgui.TextColored(palette.dim, 'Green: still worn. Orange, faded: a later one replaced it. Hover a piece.')
     end
-    if (#V.missing + #V.variants > 0) and editorPanels.Section(imgui, palette, 'Set suggestions ('
-        .. (#V.missing + #V.variants) .. ')##gcedit_suggestions') then
-        imgui.Spacing()
-        imgui.TextColored(palette.dim, 'Optional set definitions for this action:')
-        help(
-            'Each says why it was looked for and what goes on without it. You only need one if it should change gear.\n'
-                .. 'Make adds an empty set to the list; nothing is saved until Save + reload.'
-        )
-        local made = nil
-        -- suggestions looked for for the same reason share it: their Make buttons, then the reason once
-        local function rows(list, base)
-            local i = 1
-            while i <= #list do
-                local why = list[i].why
-                local j = i
-                while (list[j + 1] ~= nil) and (list[j + 1].why == why) do j = j + 1 end
-                for k = i, j do
-                    if k > i then imgui.SameLine(0, 10) end
-                    if imgui.SmallButton('Make##gcmiss' .. (base + k)) then made = list[k].name end
-                    imgui.SameLine()
-                    imgui.TextUnformatted(list[k].name)
-                end
-                imgui.Indent(52)
-                imgui.PushTextWrapPos(0)
-                imgui.TextColored(palette.dim, why)
-                imgui.PopTextWrapPos()
-                imgui.Unindent(52)
-                i = j + 1
-            end
-        end
-        rows(V.missing, 0)
-        if #V.variants > 0 then
-            imgui.TextColored(palette.dim, 'Optional variants (only if they need different gear):')
-            rows(V.variants, 100)
-        end
-        if made ~= nil then
-            make_set(made, nil, true)
-        end -- after the loop: it rebuilds V.missing
-    end
 end
 
 ---------------------------------------------------------------------------------------------------------------------

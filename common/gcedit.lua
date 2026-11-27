@@ -888,27 +888,6 @@ ctx.weapon_picks = function()
     end
     return out
 end
--- What a new set named Weapon_... will be: a /wm mode of its own, or one mode's own set; nil for other names.
--- Returns the sentence and whether it is a warning.
-ctx.weapon_name_note = function(name)
-    local rest = string.match(name or '', '^[Ww]eapon_(.+)$')
-    if rest == nil then return nil end
-    if string.find(rest, '%s') then
-        return "A space makes /wm read two words: use one word (Weapon_MpuGandring, /wm mpu).", true
-    end
-    local msets = setFile.MeleeModes(editorState.document.model.text, editorState.document.newModes)
-    for _, m in ipairs((ctx.actions ~= nil) and ctx.actions.WeaponModes() or {}) do
-        if (string.lower(m) ~= string.lower(rest)) and setFile.WeaponVariantOf('Weapon_' .. rest, m, msets) then
-            return 'Weapon_' .. m .. "'s own set: worn in its place (_1h: when you can't dual wield; an /mset "
-                .. 'mode: with it).', false
-        end
-    end
-    if string.find(rest, '_', 1, true) then
-        return 'Use one word after Weapon_: a name with _ reads as another mode\'s own set.', true
-    end
-    return 'A new /wm mode: /wm ' .. string.lower(rest) .. ' (added to gcinclude.WeaponModes on Save).', false
-end
-
 local function undo_slot(set, slot)
     local edits = editorState.document.edits[set.name]
     if not edits or not edits[slot] then return end
@@ -1010,6 +989,7 @@ local describe, cmp_of, inspection_target, inspect_item, set_stats, ignored_sugg
     m_gceditinspect.ignored_suggestion_names, m_gceditinspect.draw_layers, m_gceditinspect.set_action_entries,
     m_gceditinspect.draw_set, m_gceditinspect.wi_from_game, m_gceditinspect.melee_modes, m_gceditinspect.conds_on
 ctx.melee_modes = melee_modes -- the list's MELEE heading names them
+ctx.ignored_names = ignored_suggestion_names -- the add list leaves these out
 local m_gceditrelated = gFunc.LoadFile('common\\gceditrelated.lua')(
     LAC_WORDS, NONE, SCREEN, allItems, canDraw, cardText, choose_item, clip_begin, clip_drawn, clip_end, clip_skip,
     conds_on, ctx, current, describe, draw_icon, draw_png, edit, editorPanels, editorPreferences,
@@ -2690,8 +2670,8 @@ function gcedit.Reload()
         return
     end
     editorState.document.model, editorState.document.edits, editorState.document.newSets, editorState.ui.notice,
-        editorState.ui.sugg, editorState.ui.confirm, editorState.document.newModes, editorState.document.deleted =
-        model, {}, {}, nil, nil, nil, {}, {}
+        editorState.ui.confirm, editorState.document.newModes, editorState.document.deleted =
+        model, {}, {}, nil, nil, {}, {}
     editorState.document.renames, editorState.document.renameRefs, editorState.document.wmOrder = {}, {}, nil
     editorState.document.jobSettings, editorState.document.convert = nil, nil
     editorState.history.entries, editorState.history.revision, editorState.cache.cover, editorState.cache.view =

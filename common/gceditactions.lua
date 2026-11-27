@@ -8,9 +8,8 @@ function actionModel.New(context)
     local gcdisplay = context.display
     local SCREEN, SLOT_BIT, NUM_SLOT = context.slots, context.slotBits, context.slotNames
     local current, has_set, filled, is_ws = context.current, context.hasSet, context.filled, context.isWeaponskill
-    local item_id, read_file, gearEngine = context.itemId, context.readFile, context.engine
+    local item_id, gearEngine = context.itemId, context.engine
     local setFile = context.setFile
-    local jobLines, jobLinesModel
     local parsed = context.analysis
     local scan_job, eval_cond, resolve = parsed.Scan, parsed.Evaluate, parsed.Resolve
     local cycle_of, cycle_text, in_list, STATUS_TEXT =
@@ -292,9 +291,8 @@ function actionModel.New(context)
         return n
     end
 
-    -- The picked record, worked out for drawing: the cover per slot, the table rows, the order list, the missing sets.
+    -- The picked record, worked out for drawing: the cover per slot, the table rows, the order list.
     local function layer_view(set, pick)
-        if jobLinesModel ~= document.model then jobLines, jobLinesModel = nil, document.model end
         local V = { rec = pick, set = set.name, ver = document.revision }
         local layers, final = layers_of(pick)
         local mineLost = {} -- this set's piece in a slot, when a later set replaced it
@@ -428,50 +426,6 @@ function actionModel.New(context)
                 lost = (#lost > 0) and ('replaced later: ' .. table.concat(lost, ', ')) or nil,
                 cells = cells,
             }
-        end
-        -- sets looked for and not there: why each was looked for, and what goes on without it
-        V.missing, V.variants = {}, {}
-        local VARIANT = {
-            Self = 'the spell is on you',
-            Others = 'the spell is on someone else',
-            Burst = 'a magic burst',
-            HighBuff = '/wsset high',
-        }
-        for _, n in ipairs(pick.misses or {}) do
-            if (string.find(string.lower(n), '_default_', 1, true) == nil) and not has_set(n) then
-                local base, key = string.match(n, '^(.+)_(%a+)$')
-                local line = (pick.missLine ~= nil) and pick.missLine[string.lower(n)] or nil
-                if (base ~= nil) and (VARIANT[key] ~= nil) and has_set(base) then
-                    V.variants[#V.variants + 1] = {
-                        name = n,
-                        why = 'over '
-                            .. base
-                            .. ' when '
-                            .. VARIANT[key]
-                            .. '. Without it: '
-                            .. base
-                            .. ' alone.',
-                    }
-                else
-                    local m = { name = n, why = 'looked for during this action. Without it: the sets above stay.' }
-                    if line ~= nil then
-                        jobLines = jobLines or {}
-                        if jobLines[0] == nil then
-                            local t = read_file(document.path) or ''
-                            jobLines[0] = true
-                            local i = 0
-                            for l in string.gmatch(t .. '\n', '(.-)\r?\n') do
-                                i = i + 1
-                                jobLines[i] = l
-                            end
-                        end
-                        local code = string.match(jobLines[line] or '', '^%s*(.-)%s*$') or ''
-                        m.why = 'your job file looks for it, line '
-                            .. line .. ':\n  ' .. code .. '\nWithout it: the sets above stay.'
-                    end
-                    V.missing[#V.missing + 1] = m
-                end
-            end
         end
         return V
     end
@@ -1805,6 +1759,36 @@ function actionModel.New(context)
         return true
     end
 
+    -- The sets your actions looked for since load (this job) that the file doesn't have: one per name, newest action
+    -- first, each saying which action (or the job file's line) looked for it. The set list's add list shows them; the
+    -- same table until a new record or edit.
+    local lookedKey, lookedOut = nil, nil
+    local function looked_for()
+        local records = context.getRecords()
+        local order = (records ~= nil) and records.order or {}
+        local key = #order .. ':' .. tostring(order[#order]) .. ':' .. document.revision
+        if key == lookedKey then return lookedOut end
+        local out, seen, list = {}, {}, {}
+        for _, k in ipairs(order) do
+            local r = records.byKey[k]
+            if (r ~= nil) and (r.job == context.job) then list[#list + 1] = r end
+        end
+        table.sort(list, function(x, y) return x.time > y.time end)
+        for _, r in ipairs(list) do
+            for _, n in ipairs(r.misses or {}) do
+                local l = string.lower(n)
+                if (not seen[l]) and (string.find(l, '_default_', 1, true) == nil) and not has_set(n) then
+                    seen[l] = true
+                    local line = (r.missLine ~= nil) and r.missLine[l] or nil
+                    out[#out + 1] = { name = n, why = (line ~= nil) and ('your job file looks for it (line ' .. line .. ')')
+                        or ('looked for when you used ' .. action_label(r)) }
+                end
+            end
+        end
+        lookedKey, lookedOut = key, out
+        return out
+    end
+
     return {
         Layers = layers_of,
         IsSetLabel = is_set_label,
@@ -1833,6 +1817,7 @@ function actionModel.New(context)
         Expected = expected_for,
         Equipment = equipment_for,
         Related = what_if,
+        LookedFor = looked_for,
     }
 end
 

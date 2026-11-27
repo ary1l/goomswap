@@ -14,83 +14,6 @@ local function go_to(name, slot, tab)
     editorState.ui.fromFill = nil -- To fill sets it again after this: a pick there goes back to the list
 end
 
-local function draw_new_popup()
-    if not imgui.BeginPopup('##gcedit_new') then return end
-    editorState.ui.sugg = editorState.ui.sugg or suggestions()
-    imgui.TextUnformatted('New set')
-    imgui.PushItemWidth(340)
-    imgui.InputTextWithHint('##gcedit_newname', 'Name: mdt, Barrage, Cure...', editorState.ui.newName, 64)
-    imgui.PopItemWidth()
-    local name = string.match(editorState.ui.newName[1] or '', '^%s*(.-)%s*$')
-    local lname = string.lower(name)
-    local note, bad = ctx.weapon_name_note(name) -- Weapon_...: a new /wm mode, or one mode's own set
-    if note ~= nil then
-        imgui.PushTextWrapPos(340)
-        imgui.TextColored(bad and palette.warn or palette.blue, note)
-        imgui.PopTextWrapPos()
-    end
-    local clash = (editorState.document.model.byLower[lname] ~= nil)
-    if (note == nil) and (name ~= '') and not clash and (ctx.actions ~= nil) and (ctx.actions.When ~= nil) then
-        -- what wears a set by this name, before it is made: the Used for sentence's first part
-        local nw = editorState.ui.newWhen
-        if (nw == nil) or (nw.name ~= name) or (nw.rev ~= editorState.document.revision) then
-            local proper = name -- as the game spells it (a suggestion picked or typed in any case)
-            for _, sg in ipairs(editorState.ui.sugg) do
-                if sg.lname == lname then proper = sg.name break end
-            end
-            local ok, text = pcall(ctx.actions.When, { name = proper, lname = lname })
-            nw = { name = name, rev = editorState.document.revision }
-            if ok and (type(text) == 'string') and (string.find(text, '^No built%-in trigger') == nil) then
-                text = string.match(text, '^(.-%.)%s+%u') or text -- its first sentence
-                nw.text = 'Worn: ' .. string.lower(string.sub(text, 1, 1)) .. string.sub(text, 2)
-            end
-            editorState.ui.newWhen = nw
-        end
-        imgui.PushTextWrapPos(340)
-        if nw.text ~= nil then
-            imgui.TextColored(palette.blue, nw.text)
-        else
-            imgui.TextColored(palette.warn, 'Nothing wears a set by this name: only code in your job file could.')
-        end
-        imgui.PopTextWrapPos()
-    end
-    local from = (editorState.selection.setName ~= nil)
-            and editorState.document.model.byName[editorState.selection.setName] or nil
-    if (from ~= nil) and (from.code == nil) and not from.extra then
-        imgui.Checkbox('Copy slots from ' .. from.name .. '##gcedit_copy', editorState.ui.newCopy)
-    else
-        from = nil
-    end
-    imgui.TextColored(palette.dim, 'Not in your file yet:')
-    imgui.BeginChild('##gcedit_sugg', { 340, 280 }, CHILD_BORDERS)
-    local shown = 0
-    for i, sg in ipairs(editorState.ui.sugg) do
-        if (lname == '') or (string.find(sg.lname, lname, 1, true) ~= nil) then
-            shown = shown + 1
-            if imgui.Selectable(sg.name .. '##gcsg' .. i, sg.lname == lname) then
-                editorState.ui.newName[1] = sg.name
-            end
-            imgui.SameLine()
-            imgui.TextColored(palette.dim, sg.why)
-        end
-    end
-    if shown == 0 then imgui.TextColored(palette.dim, 'No match: Create uses the name as typed.') end
-    imgui.EndChild()
-    if clash then imgui.TextColored(palette.bad, 'A set with that name exists (names ignore case).') end
-    if imgui.Button('Create##gcedit_new') and (name ~= '') and not clash and not string.find(name, '[\r\n]') then
-        make_set(name, editorState.ui.newCopy[1] and from or nil)
-        editorState.ui.newName[1], editorState.ui.sugg = '', nil
-        -- a new /wm mode: offer its weapon sets and layers (reopened from its header's Weapon sets...)
-        local made = editorState.document.model.byName[name]
-        local wmode = (ctx.weapon_set_mode ~= nil) and ctx.weapon_set_mode(made) or nil
-        if wmode ~= nil then editorState.ui.requestWeaponSets, editorState.ui.newWeaponMode = wmode, wmode end
-        imgui.CloseCurrentPopup()
-    end
-    imgui.SameLine()
-    if imgui.Button('Cancel##gcedit_new') then imgui.CloseCurrentPopup() end
-    imgui.EndPopup()
-end
-
 local NONE = {} -- an empty list, never written (a folded group's rows)
 local LAC_WORDS = { remove = true, displaced = true, ignore = true } -- LAC slot words, not items
 local function is_slot_word(v)
@@ -636,11 +559,15 @@ local function RARE_SET(name)
 end
 local function addable()
     local c = editorState.cache
-    if (c.addRev == editorState.document.revision) and (c.addable ~= nil) then return c.addable end
+    local looked = (ctx.actions ~= nil) and ctx.actions.LookedFor() or NONE -- names an action looked for, made after
+    if (c.addRev == editorState.document.revision) and (c.addLooked == looked) and (c.addable ~= nil) then
+        return c.addable
+    end
     -- rank: 1 the sets most job files have (the engine's usual ones, the example's, an /mset or /wm mode's, the
     -- ability groups), 2 the abilities and weapon skills you know, 3 under More: the one-fight / one-state ones (RARE)
     -- and the abilities an ability group's set covers (Curing Waltz III: Waltz)
     local out, list, seen = {}, {}, {}
+    for _, x in ipairs(looked) do list[#list + 1] = { name = x.name, why = x.why } end
     local kinds = NONE -- the ability groups the job file wears by name (['Step'] on every step)
     if ctx.ability_kinds ~= nil then kinds = select(2, ctx.ability_kinds()) or NONE end
     for _, m in ipairs((ctx.melee_modes ~= nil) and ctx.melee_modes() or {}) do -- an /mset mode with no Tp_ set
@@ -670,14 +597,17 @@ local function addable()
             end
         end
     end
+    local ignored = (ctx.ignored_names ~= nil) and ctx.ignored_names() or NONE -- settings.EditorIgnoreSuggestions
     for _, x in ipairs(list) do
         local g = x.group or ((ctx.group_of ~= nil) and ctx.group_of(x.name)) or nil
-        if (g ~= nil) and not seen[string.lower(x.name)] then
+        if (g ~= nil) and not seen[string.lower(x.name)] and not ignored[string.lower(x.name)] then
             seen[string.lower(x.name)] = true
             x.rank = ((x.why == 'job ability') or (x.why == 'weapon skill')) and 2 or (RARE_SET(x.name) and 3 or 1)
             for _, k in ipairs((x.why == 'job ability') and kinds or NONE) do
                 if (x.name ~= k) and string.find(x.name, k, 1, true) then
-                    x.rank, x.why = 3, 'gets your ' .. k .. ' set already (a set by its own name goes on top)'
+                    local made = editorState.document.model.byLower[string.lower(k)] ~= nil
+                    x.rank, x.why = 3, made and ('gets your ' .. k .. ' set (a set by its own name goes on top)')
+                        or ('gets your ' .. k .. ' set once you make it')
                     break
                 end
             end
@@ -692,7 +622,7 @@ local function addable()
         for _, x in ipairs(l) do if x.rank < 3 then main = main + 1 end end
         l.main = main
     end
-    c.addRev, c.addable = editorState.document.revision, out
+    c.addRev, c.addLooked, c.addable = editorState.document.revision, looked, out
     return out
 end
 -- Make from the add list: the set (a Buffs['X'] one inside Buffs), opened on its first slot to fill (Main for a
@@ -709,69 +639,122 @@ local function make_listed(s, from)
     editorState.ui.addTo = nil
     imgui.CloseCurrentPopup()
 end
--- "+ N to add" clicked: what each one is for, Make (empty) or from... (a copy of a set you pick), made and opened on
--- its first slot; unsaved until Save.
+-- When a listed set goes on, for its hover (the Used for sentence); false: nothing by its name wears it.
+local function when_of(s)
+    if (s.when == nil) and (ctx.actions ~= nil) and (ctx.actions.When ~= nil) then
+        local ok, text = pcall(ctx.actions.When, { name = s.name, lname = string.lower(s.name) })
+        s.when = (ok and (type(text) == 'string') and (string.find(text, '^No built%-in trigger') == nil)) and text
+            or false
+    end
+    return s.when or nil
+end
+-- + New set (every heading) or a heading's + N to add (that heading): the sets you could make, what each is for
+-- (hover: when it goes on), Make (empty) or from... (a copy of a set you pick), made and opened on its first slot;
+-- typing filters the list or names your own (Weapon_<name>: a new /wm mode). Unsaved until Save.
 local function draw_addable()
     local a = editorState.ui.addTo
-    if (a == nil) or not imgui.BeginPopup('##gcedit_addable') then return end
-    imgui.TextColored(palette.section, 'Add to ' .. tostring(a.head))
-    local long = #a.list > 14 -- a scroll box, not a popup taller than the screen
-    if long then imgui.BeginChild('##gcadd_scroll', { 0, 14 * ((imgui.GetTextLineHeightWithSpacing ~= nil)
-        and imgui.GetTextLineHeightWithSpacing() or 18) }, 0) end
-    local more = false
-    for i, s in ipairs(a.list) do
-        if ((s.rank or 1) >= 3) and not more then
-            more = true
-            -- still made from here (a set of its own for one flourish): each row says why it sits lower
-            imgui.TextColored(palette.dim, (i > 1) and 'More:' or 'Less often needed:')
-        end
-        if imgui.SmallButton('Make##gcadd_mk' .. i) then make_listed(s) end
-        imgui.SameLine(0, 2)
-        if imgui.SmallButton('from...##gcadd_from' .. i) then make_listed(s, true) end
-        if imgui.IsItemHovered() then set_tip('Make it as a copy of a set you pick (then change what differs).') end
-        imgui.SameLine()
-        imgui.TextUnformatted(s.name)
-        local words = (ctx.words ~= nil) and ctx.words.Label(s.name) or nil
-        if (words ~= nil) or (s.why ~= nil) then
-            imgui.SameLine()
-            imgui.TextColored(palette.dim, words or s.why)
-        end
+    if a == nil then return end
+    if a.open then
+        a.open = nil
+        imgui.OpenPopup('##gcedit_addable')
     end
-    if long then imgui.EndChild() end
-    -- a name of your own: any set (a spell, Cure IV), made empty; it goes under the heading its name puts it in
-    if #a.list > 0 then imgui.Separator() end
-    imgui.TextColored(palette.dim, 'Your own name:')
-    imgui.PushItemWidth(220)
-    imgui.InputTextWithHint('##gcadd_custom', 'Cure IV, Trance, Idle_Pdt...', editorState.ui.addCustom, 64)
+    if not imgui.BeginPopup('##gcedit_addable') then return end
+    local model = editorState.document.model
+    imgui.TextColored(palette.section, (a.g ~= nil) and ('Add to ' .. tostring(a.head)) or 'New set')
+    imgui.PushItemWidth(320)
+    imgui.InputTextWithHint('##gcadd_custom', 'Filter, or a name of your own: Cure IV, Idle_Pdt',
+        editorState.ui.addCustom, 64)
     imgui.PopItemWidth()
     local name = string.gsub(editorState.ui.addCustom[1] or '', '^%s*(.-)%s*$', '%1')
-    local clash = (name ~= '') and (editorState.document.model.byLower[string.lower(name)] ~= nil)
-    imgui.SameLine()
-    local okName = (name ~= '') and not clash and not string.find(name, '[\r\n]')
-    if imgui.SmallButton('Make##gcadd_custom_go') and okName then
-        editorState.ui.addCustom[1] = ''
-        make_listed({ name = name })
+    local lname = string.lower(name)
+    local all, rows, listed = addable(), {}, false
+    for _, g in ipairs((a.g ~= nil) and { a.g } or ctx.headings.order()) do
+        local more, head = false, (a.g ~= nil)
+        for _, s in ipairs(all[g] or NONE) do
+            local ls = string.lower(s.name)
+            if ls == lname then listed = true end
+            if (lname == '') or (string.find(ls, lname, 1, true) ~= nil) then
+                if not head then
+                    head = true
+                    rows[#rows + 1] = { g = g }
+                end
+                if ((s.rank or 1) >= 3) and not more and (lname == '') then
+                    more = true -- still made from here (a set of its own for one flourish): each says why it sits lower
+                    rows[#rows + 1] = { more = true }
+                end
+                rows[#rows + 1] = s
+            end
+        end
     end
-    imgui.SameLine(0, 2)
-    if imgui.SmallButton('from...##gcadd_custom_from') and okName then
-        editorState.ui.addCustom[1] = ''
-        make_listed({ name = name }, true)
+    local line = (imgui.GetTextLineHeightWithSpacing ~= nil) and imgui.GetTextLineHeightWithSpacing() or 18
+    if #rows > 0 then imgui.BeginChild('##gcadd_scroll', { 480, math.min(#rows, 16) * line + 6 }, 0) end
+    for i, s in ipairs(rows) do
+        if s.g ~= nil then
+            imgui.TextColored(palette.section, string.upper((string.gsub(s.g, ' %(by name%)', ''))))
+        elseif s.more then
+            imgui.TextColored(palette.dim, 'More:')
+        else
+            if imgui.SmallButton('Make##gcadd_mk' .. i) then make_listed(s) end
+            imgui.SameLine(0, 2)
+            if imgui.SmallButton('from...##gcadd_from' .. i) then make_listed(s, true) end
+            if imgui.IsItemHovered() then set_tip('Make it as a copy of a set you pick (then change what differs).') end
+            imgui.SameLine()
+            imgui.TextUnformatted(s.name)
+            local words = (ctx.words ~= nil) and ctx.words.Label(s.name) or s.why
+            if words ~= nil then
+                imgui.SameLine()
+                imgui.TextColored(palette.dim, words)
+            end
+            if imgui.IsItemHovered() and (when_of(s) ~= nil) then set_tip(s.when) end
+        end
     end
-    if clash then imgui.TextColored(palette.bad, name .. ' exists (names ignore case).') end
+    if #rows > 0 then imgui.EndChild() end
+    if (#rows == 0) and (name == '') then imgui.TextColored(palette.dim, 'Nothing listed: type a name of your own.') end
+    -- the name as typed, when the list doesn't have it: any set (a spell: Cure IV), under the heading its name puts it
+    if (name ~= '') and not listed then
+        local clash = model.byLower[lname] ~= nil
+        local winfo = string.match(name, '^[Ww]eapon_') and (ctx.weapon_set_info ~= nil)
+            and ctx.weapon_set_info({ name = name, slots = {}, new = true }) or nil
+        if #rows > 0 then imgui.Separator() end
+        if clash then
+            imgui.TextColored(palette.bad, name .. ' exists (names ignore case).')
+        elseif string.find(name, '[\r\n]') then
+            imgui.TextColored(palette.bad, 'One line only.')
+        elseif (winfo ~= nil) and (winfo.kind ~= 'variant') then -- a /wm mode of its own: its name and weapons there
+            if imgui.SmallButton('New /wm mode...##gcadd_wm') then
+                editorState.ui.requestNewWm, editorState.ui.addTo = string.match(name, '^[Ww]eapon_(.+)$'), nil
+                imgui.CloseCurrentPopup()
+            end
+            imgui.SameLine()
+            imgui.TextColored(palette.dim, 'Weapon_ sets are /wm modes.')
+        else
+            if imgui.SmallButton('Make##gcadd_custom_go') then make_listed({ name = name }) end
+            imgui.SameLine(0, 2)
+            if imgui.SmallButton('from...##gcadd_custom_from') then make_listed({ name = name }, true) end
+            imgui.SameLine()
+            imgui.TextUnformatted(name)
+            local nw = editorState.ui.addWhen
+            if (nw == nil) or (nw.name ~= name) or (nw.rev ~= editorState.document.revision) then
+                nw = { name = name, rev = editorState.document.revision }
+                when_of(nw)
+                editorState.ui.addWhen = nw
+            end
+            imgui.PushTextWrapPos(480)
+            if nw.when then
+                imgui.TextColored(palette.blue, (string.match(nw.when, '^(.-%.)%s+%u') or nw.when))
+            else
+                imgui.TextColored(palette.warn, 'Nothing wears a set by this name: only code in your job file could.')
+            end
+            imgui.PopTextWrapPos()
+        end
+    end
     imgui.EndPopup()
 end
 local function draw_sets()
     if ctx.rules ~= nil then ctx.rules.ListButton() end -- RULES: the job file's gcinclude.Rules
     if imgui.Button('+ New set##gcedit') then
-        editorState.ui.sugg = nil
-        imgui.OpenPopup('##gcedit_new')
+        editorState.ui.addTo, editorState.ui.addCustom[1] = { open = true }, ''
     end
-    if editorState.ui.openNewSet ~= nil then -- the WEAPONS heading's + A /wm mode: New set, Weapon_ typed
-        editorState.ui.newName[1], editorState.ui.sugg = editorState.ui.openNewSet, nil
-        editorState.ui.openNewSet = nil
-        imgui.OpenPopup('##gcedit_new')
-    end
-    draw_new_popup()
     imgui.SameLine()
     imgui.PushItemWidth(-1)
     imgui.InputTextWithHint('##gcedit_find', 'Idle, Nyame...', editorState.ui.find, 48)
@@ -1114,8 +1097,7 @@ local function draw_sets()
         if (add ~= nil) and not clip_skip(clip, grp.addRow) then
             local main = add.main or 0 -- the button counts the ones worth a look; More's are inside
             if imgui.SmallButton(((main > 0) and ('+ ' .. main .. ' to add') or '+ add') .. '##gcadd_' .. grp.g) then
-                editorState.ui.addTo, editorState.ui.addCustom[1] = { g = grp.g, head = grp.head, list = add }, ''
-                imgui.OpenPopup('##gcedit_addable')
+                editorState.ui.addTo, editorState.ui.addCustom[1] = { g = grp.g, head = grp.head, open = true }, ''
             end
             if imgui.IsItemHovered() then
                 local names = {}
@@ -1128,8 +1110,8 @@ local function draw_sets()
     end
     clip_end(clip)
     draw_heading_menu()
-    draw_addable()
     imgui.EndChild()
+    draw_addable()
 end
 
 -- Normalize the English resource text once; tooltip layout handles visual wrapping.

@@ -23,23 +23,25 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
 
 ## Add a set or mode
 
-1. Under a heading in the set list, **+ N to add** lists the sets that heading usually has and your file doesn't.
-   Pick one and **Make** it. Or use **+ New set** and type any name.
+1. **+ New set** (top of the set list) lists every set you could add, by heading. **+ N to add** under a heading
+   lists that heading's. Pick one and **Make** it.
 2. Click a slot and pick gear on the **Gear** tab, or press **Use worn**.
 3. **Save + reload**, check the review, confirm.
 
-**+ N to add** (at the end of each heading):
+**The add list:**
 
-- Lists the most useful first: the engine's sets, the job example's, your `/mset` and `/wm` modes' sets, your
-  ability groups (DNC: `Step`, `Samba`, `Jig`, `Flourish`), then the job abilities and weapon skills you know.
-  Spells are left out (too many).
+- Most useful first: names your actions looked for and didn't find, the engine's sets, the job example's, your
+  `/mset` and `/wm` modes' sets, your ability groups (DNC: `Step`, `Samba`, `Jig`, `Flourish`), then the job
+  abilities and weapon skills you know. Spells are left out (too many).
 - Under BUFFS: `Buffs['Saber Dance']` for each of your JAs that has a buff of the same name. It is worn while the
   buff is up.
-- **More** holds the rarely used ones (Aminon, Sleeping, Doomed...) and abilities a group set already covers
-  (Curing Waltz III gets your `Waltz`). You can still make them, for a set of their own.
-- Each says what it is for. **Make** creates it empty; **from...** starts it as a copy of a set you pick. The new set
-  opens on its first slot, ready to fill.
-- **Your own name** makes any other set, like `Cure IV`.
+- **More** holds the rarely used ones (Aminon, Sleeping, Doomed...) and abilities a group set covers (Curing Waltz
+  III gets your `Waltz`). You can still make them, for a set of their own.
+- Each says what it is for; hover it for when it goes on. **Make** creates it empty; **from...** starts it as a copy
+  of a set you pick. The new set opens on its first slot, ready to fill.
+- Typing filters the list. A name it doesn't have gets its own **Make** (any set, like `Cure IV`), with when it would
+  go on. `Weapon_<Name>` opens **New /wm mode** instead.
+- Names in `EditorIgnoreSuggestions` (Settings) are left out.
 - JOB ABILITIES and NAMED WEAPON SKILLS show even before your first set there.
 
 **How sets are named:**

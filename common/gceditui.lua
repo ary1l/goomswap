@@ -212,8 +212,6 @@ function state.New(profile)
             addCustom = { '' }, -- the set list's + add: a name of your own (a spell: Cure IV)
             overShow = 'all',
             overShowIgnored = { false },
-            newName = { '' },
-            newCopy = { false },
             allRecs = { false },
             wi = { ms = {}, high = { false }, dt = { false }, hoxne = { false }, proc = { false }, buffs = {
                 '',
