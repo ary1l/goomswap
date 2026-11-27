@@ -34,7 +34,9 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
 - Most useful first: names your actions looked for and didn't find, the engine's sets, the job example's, your
   `/mset` and `/wm` modes' sets, your ability groups (DNC: `Step`, `Samba`, `Jig`, `Flourish`), then the job
   abilities and weapon skills you know. Spells are left out (too many).
-- Under BUFFS: one row for each of your JAs that has a buff of the same name (Saber Dance). Its buttons make the
+- Under BUFFS: one row for each of your JAs that has a buff of the same name (Saber Dance), and for each buff a
+  holder of your file already has a set for (`Buffs_Ws['Aftermath: Lv.3']`); any other buff: type its name as the
+  buff list shows it (`Aftermath: Lv.3`). Its buttons make the
   set worn while the buff is up: **Idle+TP** `Buffs['Saber Dance']` (idle and engaged), **TP** `Buffs_Tp[...]`
   (engaged only), **Idle** `Buffs_Idle[...]` (not engaged), **WS** `Buffs_Ws[...]`, **Spells** `Buffs_Midcast[...]`.
   A holder your file lacks (`Buffs_Tp = {...}`) is made with it. A green button is made already and opens it.
