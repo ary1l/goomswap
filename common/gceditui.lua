@@ -1041,7 +1041,11 @@ end
 
 function review.Build(document, slots, weaponModes, canRegister)
     local model = { groups = {}, weaponModes = weaponModes or {}, modes = document.newModes,
-        created = 0, edited = 0, deleted = 0, renamed = 0, slots = 0, canRegister = canRegister ~= false }
+        created = 0, edited = 0, deleted = 0, renamed = 0, slots = 0, canRegister = canRegister ~= false, empty = {} }
+    local holds = {} -- sets that hold sets (a new Buffs with sets in it is not empty)
+    for _, set in ipairs(document.model.list) do
+        if set.parentName ~= nil then holds[set.parentName] = true end
+    end
     for _, set in ipairs(document.model.list) do
         local new = (document.renames or {})[set.name]
         if new and not document.deleted[set.name] then
@@ -1078,14 +1082,30 @@ function review.Build(document, slots, weaponModes, canRegister)
                 end
             end
             model.groups[#model.groups + 1] = group
+            if set.new and not deleted and (#group.rows == 0) and not holds[set.name] then
+                group.empty = true
+                model.empty[#model.empty + 1] = set.name -- changes nothing: Drop empty offers to leave them out
+            end
         end
     end
     return model
 end
 
+-- Returns 'drop empty' when Drop empty was pressed (the caller discards those new sets).
 function review.Draw(imgui, colors, model)
     imgui.TextUnformatted(string.format('Sets: %d new, %d edited, %d deleted, %d renamed | Slot changes: %d',
         model.created, model.edited, model.deleted, model.renamed, model.slots))
+    local asked = nil
+    if #model.empty > 0 then
+        local n = #model.empty
+        imgui.TextColored(colors.warn, n .. ' new set' .. ((n == 1) and ' is' or 's are') .. ' empty: '
+            .. ((n == 1) and 'it changes' or 'they change') .. ' nothing until given gear.')
+        imgui.SameLine()
+        if imgui.SmallButton('Drop empty (' .. n .. ')##review_drop') then asked = 'drop empty' end
+        if imgui.IsItemHovered() then
+            imgui.SetTooltip('Leave out: ' .. table.concat(model.empty, ', ') .. '. Keep them to fill later.')
+        end
+    end
     imgui.Separator()
     for index, group in ipairs(model.groups) do
         local color = group.kind == 'Delete set' and colors.bad or colors.blue
@@ -1096,7 +1116,7 @@ function review.Draw(imgui, colors, model)
             imgui.TextColored(colors.dim,
                 group.refs .. ' reference' .. (group.refs == 1 and '' or 's') .. ' in code renamed too.')
         elseif #group.rows == 0 then
-            imgui.TextColored(colors.dim, 'Empty set: no slot overrides.')
+            imgui.TextColored(group.empty and colors.warn or colors.dim, 'Empty set: no slot overrides.')
         elseif imgui.BeginTable('##review_set_' .. index, 3,
             (ImGuiTableFlags_Borders or 0) + (ImGuiTableFlags_SizingStretchProp or 0)) then
             imgui.TableSetupColumn('Slot', 0, 0.55)
@@ -1130,6 +1150,7 @@ function review.Draw(imgui, colors, model)
             or 'No gcinclude.Initialize() line was found. Save will refuse this registration.')
     end
     for _, mode in ipairs(model.modes) do imgui.TextUnformatted('New melee mode: ' .. mode) end
+    return asked
 end
 
 ui.Review = review

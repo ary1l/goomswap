@@ -990,6 +990,19 @@ local describe, cmp_of, inspection_target, inspect_item, set_stats, ignored_sugg
     m_gceditinspect.draw_set, m_gceditinspect.wi_from_game, m_gceditinspect.melee_modes, m_gceditinspect.conds_on
 ctx.melee_modes = melee_modes -- the list's MELEE heading names them
 ctx.ignored_names = ignored_suggestion_names -- the add list leaves these out
+-- The add list's x: the name joins EditorIgnoreSuggestions in char.lua (every job on this character).
+ctx.ignore_suggestion = function(name)
+    local cur, list = settingsFiles.Get('EditorIgnoreSuggestions'), {}
+    for k, v in pairs((type(cur) == 'table') and cur or {}) do
+        local n = (type(k) == 'number') and v or ((v == true) and k or nil)
+        if type(n) == 'string' then list[#list + 1] = n end
+    end
+    list[#list + 1] = name
+    local ok, err = settingsFiles.Write('own', { EditorIgnoreSuggestions = list })
+    if not ok then feedback('Not hidden: ' .. tostring(err) .. '.'); return end
+    editorState.cache.addable = nil
+    feedback(name .. ' hidden from the add list (GoomSwap settings, Hidden set suggestions, takes it back).')
+end
 local m_gceditrelated = gFunc.LoadFile('common\\gceditrelated.lua')(
     LAC_WORDS, NONE, SCREEN, allItems, canDraw, cardText, choose_item, clip_begin, clip_drawn, clip_end, clip_skip,
     conds_on, ctx, current, describe, draw_icon, draw_png, edit, editorPanels, editorPreferences,
@@ -1163,7 +1176,14 @@ local function draw_save_review()
     local width, height = display and (display.x or display[1]) or 1024, display and (display.y or display[2]) or 768
     imgui.BeginChild('##save_changes', { math.max(260, math.min(760, width - 80)),
         math.max(120, math.min(360, height - 240)) }, CHILD_BORDERS)
-    saveReview.Draw(imgui, palette, cached.model)
+    if saveReview.Draw(imgui, palette, cached.model) == 'drop empty' then -- the new sets with no gear: left out
+        for _, name in ipairs(cached.model.empty) do
+            local set = editorState.document.model.byName[name]
+            if (set ~= nil) and set.new then drop_new(set) end
+        end
+        local n = #cached.model.empty
+        feedback('Left out ' .. n .. ' empty new set' .. ((n == 1) and '' or 's') .. '.')
+    end
     local gone = wm.removal()
     if (#gone.remove > 0) or (#gone.flags > 0) then
         imgui.TextColored(palette.blue, 'Weapon cycle removals on Save')

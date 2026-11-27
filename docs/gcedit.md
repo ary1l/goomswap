@@ -26,16 +26,17 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
 1. **+ New set** (top of the set list) lists every set you could add, by heading. **+ N to add** under a heading
    lists that heading's. Pick one and **Make** it.
 2. Click a slot and pick gear on the **Gear** tab, or press **Use worn**.
-3. **Save + reload**, check the review, confirm.
+3. **Save + reload**, check the review, confirm. A new set still empty is flagged there: **Drop empty** leaves those
+   out (an empty set changes nothing).
 
 **The add list:**
 
 - Most useful first: names your actions looked for and didn't find, the engine's sets, the job example's, your
   `/mset` and `/wm` modes' sets, your ability groups (DNC: `Step`, `Samba`, `Jig`, `Flourish`), then the job
   abilities and weapon skills you know. Spells are left out (too many).
-- Under BUFFS: `Buffs['Saber Dance']` for each of your JAs that has a buff of the same name, worn while the buff is
-  up; `Buffs_Ws['Saber Dance']` and `Buffs_Midcast['Saber Dance']` for its weapon skills and spells, when your file
-  has `Buffs_Ws` / `Buffs_Midcast`.
+- Under BUFFS: one row for each of your JAs that has a buff of the same name (Saber Dance). Its buttons make the
+  set worn while the buff is up: **Idle/TP** `Buffs['Saber Dance']`, **WS** `Buffs_Ws['Saber Dance']`, **Spells**
+  `Buffs_Midcast['Saber Dance']` (the ones your file has a holder for). A dim button is made already and opens it.
 - An ability group (`Step`) is a set your job file's HandleAbility puts on for every ability with that word in its
   name, under the ability's own set.
 - **More** holds the rarely used ones (Aminon, Sleeping, Doomed...) and abilities a group set covers (Curing Waltz
@@ -46,7 +47,8 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
   of a set you pick. The new set opens on its first slot, ready to fill.
 - Typing filters the list. A name it doesn't have gets its own **Make** (any set, like `Cure IV`), with when it would
   go on. `Weapon_<Name>` opens **New /wm mode** instead.
-- Names in `EditorIgnoreSuggestions` (Settings) are left out.
+- **x** at a row's end hides it for good (it joins **Hidden set suggestions**, `EditorIgnoreSuggestions`, in
+  Settings, which takes it back).
 - JOB ABILITIES and NAMED WEAPON SKILLS show even before your first set there.
 
 **How sets are named:**

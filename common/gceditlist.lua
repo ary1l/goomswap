@@ -557,6 +557,9 @@ local function RARE_SET(name)
     local l = string.lower(name)
     return RARE[l] or (string.match(l, '^hoxne_') ~= nil)
 end
+-- The buff holders a JA's buff row makes a set in: { holder, button, worn }.
+local BUFF_HOLDERS = { { 'Buffs', 'Idle/TP', 'idle and engaged' }, { 'Buffs_Ws', 'WS', 'on weapon skills' },
+    { 'Buffs_Midcast', 'Spells', 'on spells (midcast)' } }
 local function addable()
     local c = editorState.cache
     local looked = (ctx.actions ~= nil) and ctx.actions.LookedFor() or NONE -- names an action looked for, made after
@@ -586,19 +589,26 @@ local function addable()
     local ok, sugg = pcall(suggestions, false, true)
     if not ok then ok, sugg = pcall(suggestions, true) end -- the abilities couldn't be read: the standard sets still
     for _, x in ipairs(ok and sugg or {}) do list[#list + 1] = x end
-    -- a set for while your own JA's buff is up (Buffs['Saber Dance']), when the game has a buff by its name and the
-    -- file has Buffs to put it in: the engine wears it idle and engaged
-    -- and Buffs_Ws / Buffs_Midcast ones (its weapon skills / spells while it is up), for each of those the file has
+    -- your own JA's buff (one row each, when the game has a buff by its name): its set in each buff holder the file
+    -- has, worn while it is up: Buffs['Saber Dance'] idle and engaged, Buffs_Ws[...] on weapon skills,
+    -- Buffs_Midcast[...] on spells (the row's buttons; one already made opens it)
     local model = editorState.document.model
     for _, x in ipairs(((ctx.rules ~= nil) and (ctx.rules.IsBuff ~= nil) and ok) and sugg or NONE) do
         if (x.why == 'job ability') and ctx.rules.IsBuff(x.name) and not string.find(x.name, "'", 1, true) then
-            for _, b in ipairs({ { 'Buffs', 'idle and engaged' }, { 'Buffs_Ws', 'weapon skills' },
-                { 'Buffs_Midcast', 'spells' } }) do
+            local opts, missing = {}, false
+            for _, b in ipairs(BUFF_HOLDERS) do
                 local parent, child = model.byName[b[1]], b[1] .. "['" .. x.name .. "']"
-                if (parent ~= nil) and (parent.parentName == nil) and (model.byLower[string.lower(child)] == nil) then
-                    list[#list + 1] = { name = child, parent = b[1], key = x.name, group = 'Buffs',
-                        why = 'while ' .. x.name .. ' is up (' .. b[2] .. ')' }
+                if (parent ~= nil) and (parent.parentName == nil) then
+                    local made = model.byLower[string.lower(child)] ~= nil
+                    missing = missing or not made
+                    opts[#opts + 1] = { name = child, parent = b[1], key = x.name, label = b[2], when = b[3], made = made }
                 end
+            end
+            if missing then
+                list[#list + 1] = { name = x.name, id = 'buff:' .. string.lower(x.name), buff = opts, group = 'Buffs',
+                    ignore = "Buffs['" .. x.name .. "']", why = 'while it is up',
+                    tip = 'Gear worn while ' .. x.name .. ' is up: Idle/TP (Buffs), on weapon skills (Buffs_Ws), on '
+                        .. 'spells (Buffs_Midcast), each its own set. Dim: made already (opens it).' }
             end
         end
     end
@@ -609,8 +619,9 @@ local function addable()
     end
     for _, x in ipairs(list) do
         local g = x.group or ((ctx.group_of ~= nil) and ctx.group_of(x.name)) or nil
-        if (g ~= nil) and not seen[string.lower(x.name)] and not ignored[string.lower(x.name)] then
-            seen[string.lower(x.name)] = true
+        local id = x.id or string.lower(x.name) -- a buff's row and its JA's share the name
+        if (g ~= nil) and not seen[id] and not ignored[string.lower(x.ignore or x.name)] then
+            seen[id] = true
             x.rank = ((x.why == 'job ability') or (x.why == 'weapon skill')) and 2 or (RARE_SET(x.name) and 3 or 1)
             -- an action: what it wears until this set is made (now: a set's name, false: no gear change)
             local by = editorState.document.model.byLower
@@ -705,12 +716,18 @@ local function draw_addable()
         end
     end
     local line = (imgui.GetTextLineHeightWithSpacing ~= nil) and imgui.GetTextLineHeightWithSpacing() or 18
+    local hide = nil -- a row's x: hidden after the list is drawn
     -- as wide as its widest row (Make, from..., the name, what it is for), up to 720; past that the words wrap
     local btn, wide = text_w('Makefrom...') + 30, 320
     for _, s in ipairs(rows) do
         if (s.name ~= nil) and (s.rowW == nil) then
             s.words = ((ctx.words ~= nil) and ctx.words.Label(s.name)) or s.why or ''
-            s.rowW = btn + text_w(s.name) + 8 + text_w(s.words)
+            local lead = btn
+            if s.buff ~= nil then
+                lead = 0
+                for _, o in ipairs(s.buff) do lead = lead + text_w(o.label) + 10 end
+            end
+            s.rowW = math.max(lead, btn) + text_w(s.name) + 8 + text_w(s.words) + 10 + text_w('x') + 8
                 + ((s.now ~= nil) and (12 + text_w('now: ' .. (s.now or 'no change, rules aside'))) or 0)
         end
         wide = math.max(wide, s.rowW or 0)
@@ -726,11 +743,41 @@ local function draw_addable()
         elseif s.more then
             imgui.TextColored(palette.dim, 'More:')
         else
-            if imgui.SmallButton('Make##gcadd_mk' .. i) then make_listed(s) end
-            imgui.SameLine(0, 2)
-            if imgui.SmallButton('from...##gcadd_from' .. i) then make_listed(s, true) end
-            if imgui.IsItemHovered() then set_tip('Make it as a copy of a set you pick (then change what differs).') end
+            local x0 = (imgui.GetCursorPosX ~= nil) and imgui.GetCursorPosX() or nil
+            if s.buff ~= nil then -- a buff's sets: one button per holder; dim: made (opens it)
+                for j, o in ipairs(s.buff) do
+                    if j > 1 then imgui.SameLine(0, 2) end
+                    if o.made then imgui.PushStyleColor(ImGuiCol_Text, palette.dim) end
+                    if imgui.SmallButton(o.label .. '##gcadd_b' .. i .. '_' .. j) then
+                        if o.made then
+                            go_to(o.name, 'Head', 'gear')
+                            editorState.ui.addTo = nil
+                            imgui.CloseCurrentPopup()
+                        else
+                            make_listed(o)
+                        end
+                    end
+                    if o.made then imgui.PopStyleColor() end
+                    if imgui.IsItemHovered() then
+                        set_tip(o.made and (o.name .. ' is made: open it.')
+                            or ('Make ' .. o.name .. ': worn ' .. o.when .. ' while ' .. s.name .. ' is up.'))
+                    end
+                end
+            else
+                if imgui.SmallButton('Make##gcadd_mk' .. i) then make_listed(s) end
+                imgui.SameLine(0, 2)
+                if imgui.SmallButton('from...##gcadd_from' .. i) then make_listed(s, true) end
+                if imgui.IsItemHovered() then set_tip('Make it as a copy of a set you pick (then change what differs).') end
+            end
             imgui.SameLine()
+            -- names line up: a buff row's buttons are padded to where Make / from... end (last frame's)
+            local ui = editorState.ui
+            if (x0 ~= nil) and (imgui.SetCursorPosX ~= nil) then
+                if s.buff == nil then ui.addNameX = imgui.GetCursorPosX() - x0
+                elseif (ui.addNameX ~= nil) and (imgui.GetCursorPosX() < x0 + ui.addNameX) then
+                    imgui.SetCursorPosX(x0 + ui.addNameX)
+                end
+            end
             imgui.TextUnformatted(s.name)
             if s.words ~= '' then
                 imgui.SameLine(0, 8)
@@ -750,12 +797,21 @@ local function draw_addable()
                             .. (s.ruled and ', except what a rule of yours puts on for it (Rules).' or '.')))
                 end
             end
+            imgui.SameLine(0, 10) -- hide it: settings.EditorIgnoreSuggestions
+            imgui.PushStyleColor(ImGuiCol_Text, palette.dim)
+            if imgui.SmallButton('x##gcadd_hide' .. i) then hide = s.ignore or s.name end
+            imgui.PopStyleColor()
+            if imgui.IsItemHovered() then
+                set_tip("Don't suggest " .. (s.ignore or s.name) .. ' again. GoomSwap settings, Hidden set suggestions, '
+                    .. 'takes it back.')
+            end
         end
     end
     if #rows > 0 then
         imgui.PopTextWrapPos()
         imgui.EndChild()
     end
+    if (hide ~= nil) and (ctx.ignore_suggestion ~= nil) then ctx.ignore_suggestion(hide) end
     if (#rows == 0) and (name == '') then imgui.TextColored(palette.dim, 'Nothing listed: type a name of your own.') end
     -- the name as typed, when the list doesn't have it: any set (a spell: Cure IV), under the heading its name puts it
     if (name ~= '') and not listed then
