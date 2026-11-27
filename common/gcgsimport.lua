@@ -135,7 +135,7 @@ end
 -- == Names ==
 G.MODE_WORDS = {}
 for w in string.gmatch('Normal Acc MidAcc HighAcc FullAcc SomeAcc LowAcc Mod Att Crit Hybrid PDT DT MDT Low Mid High '
-    .. 'Proc Fodder Resistant Dark Light SubtleBlow STP Tank', '%S+') do G.MODE_WORDS[string.lower(w)] = true end
+    .. 'Proc Fodder Resistant Dark Light SubtleBlow STP Tank UncappedAtt PDL AM AM3 Match', '%S+') do G.MODE_WORDS[string.lower(w)] = true end
 local function join(list, from)
     local out = {}
     for i = from, #list do out[#out + 1] = tostring(list[i]) end
@@ -189,6 +189,8 @@ function G.Name(path)
         return 'Dt_' .. join(path, 2)
     end
     if la == 'kiting' then return 'Movement' end
+    -- Selindrile's sets.weapons.Naegling (state.Weapons): a /wm mode's weapons
+    if (la == 'weapons') and (#path == 2) then return 'Weapon_' .. tostring(b) end
     if (la == 'treasurehunter') or (la == 'th') then return 'TH' end
     if la == 'buff' and #path >= 2 then
         if lb == 'doom' then return 'Doomed' end
@@ -285,6 +287,39 @@ function G.Import(text)
     table.sort(tops, function(a, b) if at[a] ~= at[b] then return at[a] < at[b] end return a < b end)
     for _, name in ipairs(tops) do
         if type(env.sets[name]) == 'table' then visit(env.sets[name], { name }) end
+    end
+    -- Mote's / Selindrile's mode lists, as text (comments dropped): state.Weapons:options('Naegling', ...),
+    -- OffenseMode, HybridMode, WeaponskillMode. For the /wm and /mset lists (G.ModeLists) and the notes below.
+    local plain = string.gsub(string.gsub(text, '%-%-%[(=*)%[.-%]%1%]', ''), '%-%-[^\n]*', '')
+    out.modes = {}
+    for _, st in ipairs({ 'Weapons', 'OffenseMode', 'HybridMode', 'WeaponskillMode' }) do
+        local args = string.match(plain, 'state%.' .. st .. '%s*:%s*options%s*(%b())')
+        if args ~= nil then
+            local list = {}
+            for _, x in string.gmatch(args, "(['\"])(.-)%1") do list[#list + 1] = x end
+            out.modes[st] = list
+        end
+    end
+    -- sets GoomSwap has no moment for, by name: say what to do with them
+    local am, wsm = {}, {}
+    for _, n in ipairs(out.order) do
+        if string.match(n, '^Tp_.*_AM3?$') or string.match(n, '^Tp_AM3?$') then am[#am + 1] = n end
+        local m = string.match(n, '_(UncappedAtt)$') or string.match(n, '_(PDL)$') or string.match(n, '_(Match)$')
+        if (m ~= nil) and not string.match(n, '^Tp_') then wsm[#wsm + 1] = n end
+    end
+    if #am > 0 then
+        out.notes[#out.notes + 1] = 'Aftermath engaged sets (' .. table.concat(am, ', ', 1, math.min(#am, 6))
+            .. ((#am > 6) and ', ...' or '') .. '): GoomSwap wears these by buff, Buffs_Tp[\'Aftermath: Lv.3\'] '
+            .. '(or the level yours used): rename the one you want in /gcedit'
+    end
+    if #wsm > 0 then
+        out.notes[#out.notes + 1] = #wsm .. ' WS sets for a WeaponskillMode (UncappedAtt, PDL...): GoomSwap\'s WS '
+            .. 'variants follow /mset (_Acc) and /wsset high (_HighBuff); rename the ones you use'
+    end
+    if #out.buffOrder > 0 then
+        out.notes[#out.notes + 1] = 'sets.buff.X became Buffs[\'X\']: worn idle and engaged while X is up. One the '
+            .. 'file puts on with an action (sets.buff.Souleater in its WS code) belongs in Buffs_Ws / Buffs_Midcast '
+            .. '(/gcedit: its buff row\'s WS / Midcast)'
     end
     -- gear.X a set names but this file never sets (Selindrile's and Mote's keep them in another file): those slots
     -- are left out
@@ -407,6 +442,79 @@ function G.SetText(set, quote, key)
     return '{ ' .. table.concat(parts, ', ') .. ' }'
 end
 
+-- The /wm and /mset modes the imported sets need, added to the example's lists in text: Weapon_<mode>
+-- (sets.weapons.X) a /wm mode (gcinclude.WeaponModes), Tp_<mode> and Tp_<weapon>_<mode> an /mset mode
+-- (gcinclude.MeleeModes, a line after WeaponModes when the example has none). Without them Tp_Agwu, Tp_FullAcc...
+-- are never worn. text: the example after its sets (OnLoad holds the lists); whole: all of it.
+function G.ModeLists(text, imported, whole)
+    local opts = imported.modes or {}
+    local wm, wseen, made = {}, { ['1h'] = true, ['2h'] = true }, {}
+    for _, n in ipairs(imported.order) do
+        local m = string.match(n, '^Weapon_(%w+)$')
+        if m then made[string.lower(m)] = m end
+    end
+    local function addw(m)
+        if (m ~= nil) and not wseen[string.lower(m)] then wseen[string.lower(m)], wm[#wm + 1] = true, m end
+    end
+    for _, m in ipairs(opts.Weapons or {}) do addw(made[string.lower(m)]) end -- the file's order first
+    for _, n in ipairs(imported.order) do addw(string.match(n, '^Weapon_(%w+)$')) end
+    local ms, mseen = {}, { default = true, normal = true, am = true, am3 = true }
+    -- the file's OffenseMode / HybridMode options when it has them (Normal is Default), else every Tp_ mode
+    for _, st in ipairs({ 'OffenseMode', 'HybridMode' }) do
+        for _, m in ipairs(opts[st] or {}) do
+            if string.match(m, '^%w+$') and not mseen[string.lower(m)] then mseen[string.lower(m)], ms[#ms + 1] = true, m end
+        end
+    end
+    for _, n in ipairs((opts.OffenseMode == nil) and imported.order or {}) do
+        local rest = string.match(n, '^Tp_(.+)$')
+        local a, b = string.match(rest or '', '^([^_]+)_([^_]+)$')
+        local m = nil
+        if (a ~= nil) and wseen[string.lower(a)] then m = b
+        elseif (rest ~= nil) and not string.find(rest, '_') and not wseen[string.lower(rest)] then m = rest end
+        if (m ~= nil) and not mseen[string.lower(m)] then mseen[string.lower(m)], ms[#ms + 1] = true, m end
+    end
+    local function merge(list, add, base)
+        local names, seen = {}, {}
+        for _, x in string.gmatch(list or '', "(['\"])(.-)%1") do
+            if not seen[string.lower(x)] then seen[string.lower(x)], names[#names + 1] = true, x end
+        end
+        if #names == 0 then
+            for _, x in ipairs(base) do seen[string.lower(x)], names[#names + 1] = true, x end
+        end
+        local n0 = #names
+        for _, x in ipairs(add) do
+            if not seen[string.lower(x)] then seen[string.lower(x)], names[#names + 1] = true, x end
+        end
+        if #names == n0 then return nil end
+        local q = {}
+        for i, x in ipairs(names) do q[i] = "'" .. x .. "'" end
+        return '{' .. table.concat(q, ', ') .. '}'
+    end
+    local hadMelee = string.find(whole or text, 'gcinclude%.MeleeModes%s*=') ~= nil
+    local first = nil -- the GearSwap file's default weapons: its first state.Weapons option with a set
+    for _, m in ipairs(opts.Weapons or {}) do
+        if (first == nil) and made[string.lower(m)] then first = made[string.lower(m)] end
+    end
+    if first ~= nil then
+        text = string.gsub(text, "(gcinclude%.DefaultWeapons%s*=%s*)(['\"])None%2", "%1'" .. first .. "'", 1)
+    end
+    text = string.gsub(text, '(gcinclude%.MeleeModes%s*=%s*T?)(%b{})', function(pre, list)
+        local new = merge(list, ms, { 'Default' })
+        return pre .. (new or list)
+    end, 1)
+    text = string.gsub(text, '([ \t]*)(gcinclude%.WeaponModes%s*=%s*T?)(%b{})([^\n]*)', function(ind, pre, list, after)
+        local new = merge(list, wm, { 'None' })
+        local line = ind .. pre .. (new or list) .. after
+        local melee = (not hadMelee) and merge('', ms, { 'Default', 'SubtleBlow', 'Acc' }) or nil
+        if melee ~= nil then
+            line = line .. '\n' .. ind .. 'gcinclude.MeleeModes = ' .. melee
+                .. '; -- /mset modes, from the GearSwap file\'s engaged sets'
+        end
+        return line
+    end, 1)
+    return text
+end
+
 -- template: the job's example (its handlers and options are kept; its sets are replaced). The draft's text, and
 -- counts { sets, empty, buffs }.
 function G.Draft(template, imported, info, setFile)
@@ -459,12 +567,13 @@ function G.Draft(template, imported, info, setFile)
         lines[#lines + 1] = '    },'
     end
     lines[#lines + 1] = '}'
+    local text = string.sub(template, 1, model.open - 1)
     local head = { '-- Imported from ' .. tostring(info.file) .. ' (GearSwap) by /gcimport on ' .. tostring(info.date) .. ': '
         .. counts.sets .. ' sets, ' .. counts.buffs .. ' buff sets. Its logic (states, functions, binds) is not',
         '-- imported: add what you need as rules in /gcedit (RULES). Sets this example has and the file did not are empty.' }
     for _, n in ipairs(imported.notes) do head[#head + 1] = '-- ' .. n end
-    local text = table.concat(head, '\n') .. '\n' .. string.sub(template, 1, model.open - 1)
-        .. table.concat(lines, '\n') .. string.sub(template, model.close + 1)
+    text = table.concat(head, '\n') .. '\n' .. text .. table.concat(lines, '\n')
+        .. G.ModeLists(string.sub(template, model.close + 1), imported, template)
     return text, counts
 end
 
