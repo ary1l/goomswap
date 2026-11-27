@@ -231,6 +231,9 @@ function actionModel.New(context)
                 if (key == 'Acc') and (gcdisplay ~= nil) and (gcdisplay.GetCycle('WsSet') == 'Acc') then
                     return 'WS acc mode (/wsset acc)'
                 end
+                if (key == 'SubtleBlow') and (gcdisplay ~= nil) and (gcdisplay.GetCycle('WsSet') == 'SubtleBlow') then
+                    return 'WS subtle blow mode (/wsset sb)'
+                end
                 if key == 'Dt' then return 'DT mode (/dt)' end
                 if key == 'Self' then return 'the spell is on yourself' end
                 if key == 'Others' then return 'the spell is on someone else' end
@@ -322,6 +325,7 @@ function actionModel.New(context)
             if st.wsset == 'High' then on[#on + 1] = 'WS high-buff' end
             if st.wsset == 'PDL' then on[#on + 1] = 'WS PDL' end
             if st.wsset == 'Acc' then on[#on + 1] = 'WS acc' end
+            if st.wsset == 'SubtleBlow' then on[#on + 1] = 'WS subtle blow' end
             if st.dt then on[#on + 1] = 'DT' end
             if st.kite then on[#on + 1] = 'kite' end
             if st.proc then on[#on + 1] = 'proc' end
@@ -337,6 +341,7 @@ function actionModel.New(context)
             if st.wsset == 'High' then on[#on + 1] = 'WS high-buff' end
             if st.wsset == 'PDL' then on[#on + 1] = 'WS PDL' end
             if st.wsset == 'Acc' then on[#on + 1] = 'WS acc' end
+            if st.wsset == 'SubtleBlow' then on[#on + 1] = 'WS subtle blow' end
             if st.dt then on[#on + 1] = 'DT' end
             if st.mdt then on[#on + 1] = 'MDT' end
             if st.aminon then on[#on + 1] = 'Aminon' end
@@ -547,9 +552,13 @@ function actionModel.New(context)
         end
     end
 
+    -- /wsset modes that are /mset modes too: a WS set's _Acc / _SubtleBlow, when the job's /mset list lacks it
+    local WS_MSET = { Acc = 'WS acc mode (/wsset acc)', SubtleBlow = 'WS subtle blow mode (/wsset sb)' }
     local function action_for(set, st)
         local n, res = set.name, context.resources
-        local function mset_of(suffix, weaponToo) -- weaponToo: Tp_/Ws_ (EquipMode) also take a weapon mode
+        -- weaponToo: Tp_/Ws_ (EquipMode) also take a weapon mode; ws: a WS set (/wsset acc / sb wear its _Acc /
+        -- _SubtleBlow)
+        local function mset_of(suffix, weaponToo, ws)
             if suffix == 'HighBuff' then
                 st.wsset = 'High'
                 return 'as if WS high-buff mode (/wsset high)'
@@ -581,12 +590,12 @@ function actionModel.New(context)
             local h2 = (weaponToo and (wpart ~= nil) and HANDS[string.lower(wpart)]) and string.lower(wpart) or nil
             if h2 ~= nil then
                 st.hands = h2
-                return 'as if ' .. HANDS[h2] .. ' with no set of its own is on, ' .. mset_of(mpart)
+                return 'as if ' .. HANDS[h2] .. ' with no set of its own is on, ' .. mset_of(mpart, false, ws)
             end
             local w2 = (weaponToo and (wpart ~= nil)) and weapon_of(wpart) or nil
             if w2 ~= nil then
                 st.wmode = w2
-                return 'as if weapon mode ' .. w2 .. ' (/wm), ' .. mset_of(mpart)
+                return 'as if weapon mode ' .. w2 .. ' (/wm), ' .. mset_of(mpart, false, ws)
             end
             local modes = {}
             for _, m in ipairs(((gcdisplay ~= nil) and gcdisplay.GetCycleValues('MeleeSet'))
@@ -601,6 +610,10 @@ function actionModel.New(context)
                     st.mset = m
                     return 'as if melee mode ' .. m .. ' (/mset)'
                 end
+            end
+            if ws and (WS_MSET[suffix] ~= nil) then
+                st.wsset = suffix
+                return 'as if ' .. WS_MSET[suffix]
             end
             -- not a mode (MNK's _Impetus, _Footwork): the job file wears it by its own logic, which this view leaves
             -- out
@@ -651,11 +664,12 @@ function actionModel.New(context)
         end
         local wm = string.match(n, '^Ws_(.+)$')
         if wm ~= nil then
-            return { event = 'Weaponskill', label = 'a weapon skill with no set of its own', as = mset_of(wm, true) }
+            return { event = 'Weaponskill', label = 'a weapon skill with no set of its own',
+                as = mset_of(wm, true, true) }
         end
         if is_ws(n) then return { event = 'Weaponskill', action = n } end
         local wb, wsuf = split_action(n, is_ws) -- Savage Blade_Acc, Savage Blade_Naegling, Savage Blade_Naegling_Acc
-        if wb ~= nil then return { event = 'Weaponskill', action = wb, as = mset_of(wsuf, true) } end
+        if wb ~= nil then return { event = 'Weaponskill', action = wb, as = mset_of(wsuf, true, true) } end
         if n == 'Precast' then
             return { event = 'Precast', label = 'a spell with no sets of its own, start of cast' }
         end
@@ -1090,6 +1104,9 @@ function actionModel.New(context)
             if (st.wsset == 'PDL') and not st.proc then children('PDL', 'WS PDL mode (/wsset pdl)') end
             if (st.wsset == 'Acc') and (st.mset ~= 'Acc') and not st.proc then
                 children('Acc', 'WS acc mode (/wsset acc)')
+            end
+            if (st.wsset == 'SubtleBlow') and (st.mset ~= 'SubtleBlow') and not st.proc then
+                children('SubtleBlow', 'WS subtle blow mode (/wsset sb)')
             end
             if st.dt and not st.proc then children('Dt', 'DT mode (/dt)') end
         elseif a.event == 'Ability' then

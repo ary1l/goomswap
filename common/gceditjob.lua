@@ -131,6 +131,7 @@ function analysis.New(options)
             if string.lower(v) == 'high' then return 'WS high-buff mode' end
             if string.lower(v) == 'pdl' then return 'WS PDL mode' end
             if string.lower(v) == 'acc' then return 'WS acc mode' end
+            if string.lower(v) == 'subtleblow' then return 'WS subtle blow mode' end
             return 'WS mode ' .. v
         end
         if name == 'IdleSet' then return 'idle mode ' .. v end
