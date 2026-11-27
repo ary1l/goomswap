@@ -1315,6 +1315,9 @@ local function melee_modes()
     return list
 end
 
+-- A job file's /wsset condition words (gceditjob cycle_text) -> the mode
+local WS_COND = { ['WS high-buff mode'] = 'High', ['WS PDL mode'] = 'PDL', ['WS acc mode'] = 'Acc',
+    ['WS subtle blow mode'] = 'SubtleBlow' }
 -- A group's circumstances, against the game now: true when every one is on (the action's own state counts as on).
 local function conds_on(conds, now)
     for _, c in ipairs(conds) do
@@ -1327,14 +1330,8 @@ local function conds_on(conds, now)
             ok = (now.mset == m)
         elseif im ~= nil then
             ok = (now.idleset == im)
-        elseif c == 'WS high-buff mode' then
-            ok = (now.wsset == 'High')
-        elseif c == 'WS PDL mode' then
-            ok = (now.wsset == 'PDL')
-        elseif c == 'WS acc mode' then
-            ok = (now.wsset == 'Acc')
-        elseif c == 'WS subtle blow mode' then
-            ok = (now.wsset == 'SubtleBlow')
+        elseif WS_COND[c] ~= nil then
+            ok = (now.wsset == WS_COND[c])
         elseif c == 'DT mode' then
             ok = now.dt
         elseif c == 'proc mode' then

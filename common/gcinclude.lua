@@ -51,11 +51,13 @@ gcinclude.Towns = T{'Tavnazian Safehold','Aht Urhgan Whitegate','Nashmau','South
     'Eastern Adoulin'}
 gcinclude.LockingRings = T{'Echad Ring', 'Trizek Ring', 'Endorsement Ring', 'Capacity Ring', 'Warp Ring',
     'Facility Ring','Dim. Ring (Dem)','Dim. Ring (Mea)','Dim. Ring (Holla)'}
+-- Archery / Marksmanship weapon skills: they take ammo (CheckBlockedAmmoWS); the WS distance check skips them
 gcinclude.DistanceWS = T{'Flaming Arrow','Piercing Arrow','Dulling Arrow','Sidewinder','Blast Arrow','Arching Arrow',
     'Empyreal Arrow','Refulgent Arrow','Apex Arrow','Namas Arrow','Jishnu\'s Radiance','Hot Shot','Split Shot',
     'Sniper Shot','Slug Shot','Blast Shot','Heavy Shot','Detonator','Numbing Shot','Last Stand','Coronach','Wildfire',
-    'Trueflight','Leaden Salute','Myrkr','Dagan','Moonlight','Starlight','Mistral Axe','Bora Axe','Sarv','Terminus'}
-gcinclude.NoAmmoWS = T{'Myrkr','Dagan','Moonlight','Starlight','Mistral Axe','Bora Axe'}
+    'Trueflight','Leaden Salute','Sarv','Terminus'}
+-- On yourself (LandSandBoat data/weapon_skills.yaml target: [self]): no distance check
+gcinclude.SelfWS = T{'Myrkr','Dagan','Moonlight','Starlight'}
 gcinclude.BluMagDebuff = T{'Filamented Hold','Cimicine Discharge','Demoralizing Roar','Venom Shell','Light of Penance',
     'Sandspray','Auroral Drape','Frightful Roar','Enervation','Infrasonics','Lowing','Cold Wave','Awful Eye',
     'Voracious Trunk','Sheep Song','Soporific','Yawn','Dream Flower','Chaotic Eye','Sound Blast','Blank Gaze',
@@ -1078,12 +1080,9 @@ function gcinclude.WrapHoldHandlers()
                 end
                 local worn = gcinclude.WornSets
                 gcinclude.WornSets = nil
-                local wsset = gcdisplay.GetCycle('WsSet')
-                if (wsset == 'High') then gcinclude.WearChildren(worn, {'HighBuff'})
-                elseif (wsset == 'PDL') then gcinclude.WearChildren(worn, {'PDL'})
-                elseif ((wsset == 'Acc') or (wsset == 'SubtleBlow')) and (gcdisplay.GetCycle('MeleeSet') ~= wsset) then
-                    gcinclude.WearChildren(worn, {wsset}) -- /mset acc / sb already wore them
-                end
+                -- /wsset: each WS set's child; an /mset mode of that name already wore them (/mset acc: Ws_Acc)
+                local key = gcinclude.WsSetKeys[gcdisplay.GetCycle('WsSet')]
+                if (key ~= nil) and (gcdisplay.GetCycle('MeleeSet') ~= key) then gcinclude.WearChildren(worn, {key}) end
                 -- /dt: Ws_Dt, ['Victory Smite_Dt']
                 if (gcdisplay.GetToggle('DTset') == true) then gcinclude.WearChildren(worn, {'Dt'}) end
                 gcinclude.CheckHoxneWs()
@@ -1255,6 +1254,7 @@ end
 -- SubtleBlow on weapon skills (/wsset high / pdl / acc / sb); Self or Others (a spell on you / on anyone but a
 -- monster) and Burst (BurstWanted) on spells.
 gcinclude.WornSets = nil -- the names, while a handler runs
+gcinclude.WsSetKeys = { High = 'HighBuff', PDL = 'PDL', Acc = 'Acc', SubtleBlow = 'SubtleBlow' } -- /wsset mode: key
 -- A set's name for the /gcedit layer record: its key in the job file's sets (or a set inside one, as
 -- Buffs['Aftermath: Lv.3']), gcinclude.sets.<key> for the engine's own, else nil (a table built in code).
 local labelOf = setmetatable({}, { __mode = 'k' })
@@ -2391,7 +2391,7 @@ end
 
 function gcinclude.CheckBlockedAmmoWS(wsName)
     if (type(wsName) ~= 'string') then return false end
-    if not gcinclude.DistanceWS:contains(wsName) or gcinclude.NoAmmoWS:contains(wsName) then return false end
+    if not gcinclude.DistanceWS:contains(wsName) then return false end
     return gcinclude.CheckBlockedAmmo()
 end
 
@@ -2670,58 +2670,61 @@ function gcinclude.CheckWsBailout()
     for _, name in ipairs(gcinclude.HardCC) do
         if (gcinclude.BuffCount(name) > 0) then return false end
     end
+    if not gcinclude.settings.WScheck then return true end
+    if gcinclude.DistanceWS:contains(ws.Name) or gcinclude.SelfWS:contains(ws.Name) then return true end -- ranged, self
     local target = gData.GetActionTarget()
     local distance = (target ~= nil) and tonumber(target.Distance) or nil
-    if gcinclude.settings.WScheck and (distance ~= nil) and (not gcinclude.DistanceWS:contains(ws.Name)) then
-        local reach, swung, range, me, mob, floor = gcinclude.WsReach(target, ws.Name)
-        if (distance > reach) then
-            gcinclude.Say(string.format('%s: too far (%.1f yalms, reach %.1f: WS %g + you %.1f + mob %.1f, swing %s, '
-                .. 'min %g). Move closer, or /wsdistance off', ws.Name, distance, reach, range, me, mob,
-                (swung > 0) and string.format('%.1f', swung) or 'none', floor))
-            return false
-        end
-    end
-    return true
+    if (distance == nil) then return true end
+    local reach, swung, range, me, mob, floor = gcinclude.WsReach(target, ws.Name)
+    if (distance <= reach) then return true end
+    gcinclude.Say(string.format('%s: too far (%.1f yalms, %s). Move closer, or /wsdistance off', ws.Name, distance,
+        gcinclude.ReachWords(reach, swung, range, me, mob, floor)))
+    return false
 end
 
 -- How far a melee weapon skill reaches, center to center: its range past both bodies, as the LandSandBoat server
--- checks it (char_entity.cpp OnWeaponSkillFinished: distance <= range + attacker hitbox + target hitbox; melee weapon
--- skills have range 3 in its data/weapon_skills.yaml). A big mob is hit from further away than a small one, so a
--- fixed distance cancels weapon skills your swings still reach. WSdistance (/wsdistance N) stays the least reach, and
--- so does the farthest your auto-attacks on a mob of this name and hitbox went out at (gcauto.SwingReach): a weapon
--- skill reaches 1' further than a swing. WsRanges: the non-ranged weapon skills whose range isn't 3 (LandSandBoat
--- data/weapon_skills.yaml): Gust Slash and Cyclone are client range 10 like Mistral Axe (Windower Resources
--- weapon_skills.lua); ffxiclopedia: Cyclone "can be used from a distance (Up to 15')".
+-- checks it (char_entity.cpp OnWeaponSkillFinished: distance <= getRange() + attacker modelHitboxSize + target
+-- modelHitboxSize; data/weapon_skills.yaml: range 3, Gust Slash, Cyclone, Mistral Axe and Bora Axe 14). Melee swings
+-- reach 2 past both bodies (GetMeleeRange), so a weapon skill reaches 1' further than a swing (ffxiclopedia Distance).
+-- WSdistance (/wsdistance N) stays the least reach, and so does the farthest your auto-attacks on a mob of this name
+-- and hitbox went out at (gcauto.SwingReach): a big mob is hit from further away than a small one.
 -- Returns the reach, then its parts: swing distance (0: none yet), WS range, your hitbox, its hitbox, WSdistance.
 gcinclude.WsRange = 3
-gcinclude.WsRanges = { ['Gust Slash'] = 14, ['Cyclone'] = 14 }
+gcinclude.WsRanges = { ['Gust Slash'] = 14, ['Cyclone'] = 14, ['Mistral Axe'] = 14, ['Bora Axe'] = 14 }
 function gcinclude.WsReach(target, wsName)
     local floor = tonumber(gcinclude.settings.WSdistance) or 0
-    local okSwing, swung = pcall(function() return gcauto.SwingReach(target.Index) end)
-    swung = (okSwing and (type(swung) == 'number')) and swung or 0
     local range = gcinclude.WsRanges[wsName or ''] or gcinclude.WsRange
-    local ok, me, mob = pcall(function()
-        local mm = AshitaCore:GetMemoryManager()
-        local ent = mm:GetEntity()
-        return (tonumber(ent:GetModelHitboxSize(mm:GetParty():GetMemberTargetIndex(0))) or 0),
-            (tonumber(ent:GetModelHitboxSize(target.Index)) or 0)
-    end)
-    if not ok or (target == nil) or (target.Index == nil) then me, mob = 0, 0 end
+    local swung, me, mob = 0, 0, 0
+    local index = (target ~= nil) and target.Index or nil
+    if (index ~= nil) then
+        pcall(function()
+            local mm = AshitaCore:GetMemoryManager()
+            local ent = mm:GetEntity()
+            swung = tonumber(gcauto.SwingReach(index)) or 0
+            me = tonumber(ent:GetModelHitboxSize(mm:GetParty():GetMemberTargetIndex(0))) or 0
+            mob = tonumber(ent:GetModelHitboxSize(index)) or 0
+        end)
+    end
     return math.max(floor, swung, range + me + mob), swung, range, me, mob, floor
+end
+
+-- WsReach's parts in words, for chat: 'reach 5.2: WS 3 + you 0.4 + mob 1.8, swing 4.1, min 5'.
+function gcinclude.ReachWords(reach, swung, range, me, mob, floor)
+    return string.format('reach %.1f: WS %g + you %.1f + mob %.1f, swing %s, min %g', reach, range, me, mob,
+        (swung > 0) and string.format('%.1f', swung) or 'none', floor)
 end
 
 -- /wsdistance with no word: the check's state, and for your target its distance and reach (nothing changes).
 function gcinclude.WsDistanceStatus()
     local cfg = gcinclude.settings
-    local line = string.format('WS distance check %s, min %g yalms', cfg.WScheck and 'on' or 'off',
-        tonumber(cfg.WSdistance) or 0)
+    local line = 'WS distance check ' .. (cfg.WScheck and 'on' or 'off')
     local target = gData.GetTarget()
     local distance = (target ~= nil) and tonumber(target.Distance) or nil
-    if (distance ~= nil) then
-        local reach, swung, range, me, mob = gcinclude.WsReach(target, nil)
-        line = line .. string.format('; %s %.1f yalms, reach %.1f (WS %g + you %.1f + mob %.1f, swing %s)',
-            tostring(target.Name or 'target'), distance, reach, range, me, mob,
-            (swung > 0) and string.format('%.1f', swung) or 'none')
+    if (distance ~= nil) then -- ReachWords names the min
+        line = line .. string.format('; %s %.1f yalms, %s', tostring(target.Name or 'target'), distance,
+            gcinclude.ReachWords(gcinclude.WsReach(target, nil)))
+    else
+        line = line .. string.format(', min %g yalms', tonumber(cfg.WSdistance) or 0)
     end
     gcinclude.Say(line .. '. /wsdistance on|off|N')
 end
