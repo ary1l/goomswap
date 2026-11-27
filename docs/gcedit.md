@@ -40,6 +40,7 @@ Edits your loaded job file. Nothing is written until you save. `/gcedit Savage B
   set worn while the buff is up: **Idle+TP** `Buffs['Saber Dance']` (idle and engaged), **TP** `Buffs_Tp[...]`
   (engaged only), **Idle** `Buffs_Idle[...]` (not engaged), **WS** `Buffs_Ws[...]`, **Spells** `Buffs_Midcast[...]`.
   A holder your file lacks (`Buffs_Tp = {...}`) is made with it. A green button is made already and opens it.
+  A line above the first buff row says what each button means.
 - An ability group (`Step`) is a set your job file's HandleAbility puts on for every ability with that word in its
   name, under the ability's own set.
 - **More** holds the rarely used ones (Aminon, Sleeping, Doomed...) and abilities a group set covers (Curing Waltz

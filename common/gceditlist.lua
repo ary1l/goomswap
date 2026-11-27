@@ -574,7 +574,7 @@ local function buff_row(name)
     end
     if not missing then return nil end
     return { name = name, id = 'buff:' .. string.lower(name), buff = opts, group = 'Buffs',
-        ignore = "Buffs['" .. name .. "']", why = 'while it is up',
+        ignore = "Buffs['" .. name .. "']", why = 'gear worn while it is up',
         tip = 'Gear worn while ' .. name .. ' is up: Idle+TP (Buffs: idle and engaged), TP (Buffs_Tp: engaged only), '
             .. 'Idle (Buffs_Idle: not engaged), WS (Buffs_Ws: weapon skills), Spells (Buffs_Midcast), each its own '
             .. 'set. Green: made already (opens it).' }
@@ -752,6 +752,13 @@ local function draw_addable()
             end
         end
     end
+    -- above the first buff row: what its buttons mean (each its own set, worn while the buff is up)
+    for i, s in ipairs(rows) do
+        if s.buff ~= nil then
+            table.insert(rows, i, { legend = true })
+            break
+        end
+    end
     local line = (imgui.GetTextLineHeightWithSpacing ~= nil) and imgui.GetTextLineHeightWithSpacing() or 18
     local hide = nil -- a row's x: hidden after the list is drawn
     -- as wide as its widest row (Make, from..., the name, what it is for), up to 720; past that the words wrap
@@ -779,6 +786,10 @@ local function draw_addable()
             imgui.TextColored(palette.section, string.upper((string.gsub(s.g, ' %(by name%)', ''))))
         elseif s.more then
             imgui.TextColored(palette.dim, 'More:')
+        elseif s.legend then
+            imgui.TextColored(palette.dim, 'Click when the gear goes on while the buff is up (each its own set): '
+                .. 'Idle+TP = idle or engaged, TP = engaged only, Idle = not engaged, WS = weapon skills, '
+                .. 'Spells = midcast. Green: made, opens it.')
         else
             local x0 = (imgui.GetCursorPosX ~= nil) and imgui.GetCursorPosX() or nil
             if s.buff ~= nil then -- a buff's sets: one button per holder; green: made (opens it)
