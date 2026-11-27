@@ -85,6 +85,9 @@ top of the file names it, and the editor's `To fill` tab lists it.
 **It never picks a different item** (only another `+N` of the same one), leaves `OnLoad` and the handlers as the
 example has them, and doesn't check job or level (the examples are level 99 sets).
 
-**`/checksets`** runs the same bag check on your loaded job file and changes nothing: besides misspelled items,
-empty sets and wrong ear/ring, it counts set slots naming items you don't own, one copy worn twice, augments no copy
-has, and items only in bags you can't equip from, naming the worst sets, plus weapon modes with no weapon you own.
+**`/checksets`** runs the same bag check on your loaded job file and changes nothing. It reports:
+
+- misspelled items, empty sets, and an earring or ring in the wrong slot;
+- slots naming items you don't own, one copy worn twice, augments no copy has, and items only in bags you can't
+  equip from (with the worst sets named);
+- weapon modes with no weapon you own.

@@ -2,45 +2,37 @@
 
 [Back to README](../README.md)
 
-A rule wears a set (or single items) when its conditions hold: Fealty while Cover is up, a body piece under 40% MP
-on nukes, Self_Cure when a cure lands on you. Rules are data in the job file (`gcinclude.Rules`), made and changed in
-`/gcedit`: **Rules** in the top bar (or the blue **RULES** button over the set list) opens them; it also says how many
-of your job file's `if`s Convert can turn into rules (**Rules  +5 to convert**). No code, no text editor.
+A rule puts on a set (or single items) when its conditions hold: Fealty while Cover is up, a body piece under 40% MP
+on nukes, Self_Cure when a cure lands on you. Rules live in the job file (`gcinclude.Rules`) and are made in
+`/gcedit`: **Rules** in the top bar opens them. No code, no text editor.
 
-**Most swaps need no rule.** A weapon skill, ability or spell puts on the set with its exact name (`Savage Blade`,
-`Sentinel`, `Cure`, or the spell's family) by itself, then that set's `/wm` and `/mset` versions (`Savage Blade_Naegling`,
-`Savage Blade_Acc`): your job file's standard lines (`ByName(ws.Name)`...) do it. So does each moment's base set
-(`Ws_Default`, `Precast`, `Midcast`, `Idle`, `Tp_Default`). Rules are the extras: *if this, then that*. The Rules page
-says so at the top, with your file's lines on hover.
+**Most swaps need no rule.** A set with an action's exact name goes on by itself (`Savage Blade`, `Sentinel`, `Cure`,
+or the spell's family), then its `/wm` and `/mset` versions (`Savage Blade_Naegling`, `Savage Blade_Acc`). Each
+moment's base set does too (`Ws_Default`, `Precast`, `Midcast`, `Idle`, `Tp_Default`). Rules are the extras: *if
+this, then that*.
 
 ## In the editor
 
-- **Left**: what to show: **All rules** or one moment's (Casting, Not acting...), and **Your code**: **Can become
-  rules** (Convert) and **Stays code** (each `if` that stays, with why). **Your code** shows only while there is
-  something in it: a fully converted file shows its rules alone.
-- **Each rule is a card**: what it does as a sentence (`When you cast Absorb-TP: put on Absorb_TP`), its tags
-  (moment, **over everything**, where it goes on in your code: **before skill set**), and **Edit**, **Up** / **Down**, **Off** (kept, not used), **Delete**.
-  Order only matters between rules that go on at the same moment and place (same moment, same code spot or layer):
-  where two put gear in the same slot, the later one wins. **Up** / **Down** show only there, and move a rule past the
-  next one that goes on at that place.
-- **+ New rule** opens the builder over the cards (a set's **More...**, **Wear this when...**, opens it with that set as
-  the Wear and a moment by its heading), in three steps:
-  1. **When**: not acting (idle, fighting, resting), your pet's move, starting a spell, casting, a job ability, a
+- **Left:** **All rules** or one moment's (Casting, Not acting...). While your job file has `if`s, **Your code** lists
+  the ones that **Can become rules** and the ones that **Stay code**, with why.
+- **Each rule is a card:** what it does as a sentence (`When you cast Absorb-TP: put on Absorb_TP`), its tags, and
+  **Edit**, **Up** / **Down**, **Off** (kept, not used), **Delete**.
+- **Order** only matters when two rules put gear in the same slot at the same moment: the later one wins. **Up** /
+  **Down** show only where that can happen.
+- **+ New rule** opens the builder. (A set's **More...**, **Wear this when...**, opens it with that set.)
+  1. **When:** not acting (idle, fighting, resting), your pet's move, starting a spell, casting, a job ability, a
      weapon skill, starting a shot, a ranged shot, using an item.
-  2. **If**: conditions from a menu (below), **all of these** or **any of these**. Skills, elements, targets and
-     modes offer their values; several values, separated by commas, mean any of them.
-  3. **Wear**: a set by name, ticked **with its weapon and /mset versions** (as a set worn by name:
-     `Savage Blade`, then `Savage Blade_Naegling`, `Savage Blade_Acc`) or not (that set only); **+ one item** puts
-     one piece in one slot.
-  - The green box reads the rule back as a sentence. **More** holds the rest:
-    - **Layer**: **Job layer** (the default: where a job file's own code goes, GoomSwap's layers on top) or **Over
-      everything** (over weapons, TH, Hoxne, buff sets, obi, SIR; still under `/lock`, the TP and Aftermath holds,
-      Incapacitated, Sleeping and Doomed, SmartSwap's weapon keep and Dispelga's Daybreak).
-    - **Cancel it instead**: starting a spell, a job ability, a weapon skill, an item, starting a shot only
-      (LuAshitacast's `CancelAction`).
-    - **Note**: for yourself.
-  - **Now**: whether a not-acting rule's conditions hold right now.
-- **Save** (or **Save + reload**) writes them, one rule a line; the review lists each in words.
+  2. **If:** conditions from a menu (below), **all of these** or **any of these**. Several values, separated by
+     commas, mean any of them.
+  3. **Wear:** a set by name, with or without its `/wm` and `/mset` versions, or **+ one item** for a single slot.
+- The green box reads the rule back as a sentence. **More** holds:
+  - **Layer:** **Job layer** (default: where a job file's own code goes, GoomSwap's layers on top) or **Over
+    everything** (over weapons, TH, Hoxne, buff sets, obi, SIR; still under `/lock`, the TP and Aftermath holds,
+    the Incapacitated, Sleeping and Doomed sets, SmartSwap's weapon keep and Dispelga's Daybreak).
+  - **Cancel it instead:** stop the action. Only when it starts: a spell (precast), a job ability, a weapon skill,
+    an item, a shot (preshot).
+  - **Note:** for yourself.
+- **Now** shows whether a not-acting rule holds right now. **Save** writes the rules, one a line.
 
 ## Conditions
 
@@ -52,7 +44,7 @@ says so at the top, with your file's lines on hover.
 | Sub job, Your level (synced) | WAR... / a number | `SubJob` `MainJobSync` |
 | Action name | is, is not, has, has all of, starts with, ends with | `GetAction().Name` (Pet phase: the pet's action) |
 | Spell family | Cure for Cure IV | GoomSwap's `Family` |
-| Spell skill, Spell element, Action type | the game's names; element also `weather` / `day` (it matches today's) | `Skill` `Element` `Type` |
+| Spell skill, Spell element, Action type | the game's names; element also `weather` / `day` | `Skill` `Element` `Type` |
 | Target | me, other, PC, NPC, Party, Alliance, Monster | `GetActionTarget()` |
 | Target's HP %, Target distance | a number | `HPP` `Distance` |
 | Day element, Weather element, Zone, Vana'diel time | names / a number (12.30 = 12:30) | `GetEnvironment()` |
@@ -61,15 +53,14 @@ says so at the top, with your file's lines on hover.
 | Mode | `/wm` `/mset` `/nukeset` `/idleset` `/wsset` `/tankset` `/weapon` `/pupmode` `/hoxne` `/mw` `/sw` `/rw` `/ammoset` and its value | `gcdisplay.GetCycle` |
 | Toggle | `/dt` `/mdt` `/kite` `/th` `/sir` `/proc` `/burst` `/aminon` `/death` `/songlock` `/forcestring`, on / off | `gcdisplay.GetToggle` |
 | Magic burst, Can dual wield | yes / no | GoomSwap's `BurstWanted`, `CanDualWield` |
-| A /wm weapon is picked | yes / no | GoomSwap's `IsWeaponValue(gcdisplay.GetCycle('Weapons'))`: the pick isn't None or Unknown |
-| In GoomSwap's spell list | `BluMagPhysical`, `BluMagDebuff`, `BluMagStun`, `BluMagBuff`, `BluMagSkill`, `BluMagCure`, `BluMagEnmity`, `BluMagTH` (is / is not) | `gcinclude.<list>:contains(name)`, the engine's own lists |
-| Has a set named after it, Has a set for its family | yes / no: a set in your job file named after the spell / ability / weapon skill (`Flash`), or its family (`Cure` for Cure IV), checked as it happens | GoomSwap's `FindSet` (what `ByName` looks for) |
+| A /wm weapon is picked | yes / no (not None or Unknown) | GoomSwap's `IsWeaponValue` on `/wm` |
+| In GoomSwap's spell list | `BluMagPhysical`, `BluMagDebuff`, `BluMagStun`, `BluMagBuff`, `BluMagSkill`, `BluMagCure`, `BluMagEnmity`, `BluMagTH` | `gcinclude.<list>:contains(name)` |
+| Has a set named after it, Has a set for its family | yes / no (`Flash`; `Cure` for Cure IV) | GoomSwap's `FindSet` (what `ByName` looks for) |
 
-Text matches as the game writes it: **has**, **has all of**, **starts with** and **ends with** count upper and lower case;
-**has** is any of its texts, **has all of** every one (`helix, Nocto`: a name with both);
-**matches (Lua pattern)** reads the text as `string.find` does (`Evryone. Grudge`: the `.` is any character)
-(`helix` finds Pyrohelix II, not Helix). A value that isn't there (no target, no pet) fails a condition and passes
-its **not**.
+- Text matches as the game writes it, upper and lower case.
+- **has** is any of its texts; **has all of** needs every one (`helix, Nocto`).
+- **matches (Lua pattern)** reads the text as `string.find` does (`Evryone. Grudge`: `.` is any character).
+- A value that isn't there (no target, no pet) fails a condition and passes its **not**.
 
 ## In the file
 
@@ -86,69 +77,65 @@ gcinclude.Rules = {
 };
 ```
 
-`on`: the phase (`Default`, `Pet`, `Precast`, `Midcast`, `Ability`, `Weaponskill`, `Preshot`, `Midshot`, `Item`).
-`when`: every key must hold; `any = { {...}, {...} }` holds when one does. `first`: only the first choice whose
-conditions hold. `exact = true`: that set only. A set inside a set is named as /gcedit lists it:
-`wear = "Buffs['Boost']"` (MNK: the Boost sash on from the start, before the buff is up). `item = { Head = 'Pixie Hairpin +1' }`. `layer = 'top'`: over
-everything. `off = true`: kept, not used. A rule the engine can't use is left out on load, with one line in chat.
-`/gcperf` times them.
+| Key | Means |
+|---|---|
+| `on` | The moment: `Default`, `Pet`, `Precast`, `Midcast`, `Ability`, `Weaponskill`, `Preshot`, `Midshot`, `Item` |
+| `when` | Every key must hold. `any = { {...}, {...} }` holds when one does. |
+| `first` | Only the first choice whose conditions hold |
+| `wear`, `exact` | The set; `exact = true`: that set only, not its versions. A set inside a set: `wear = "Buffs['Boost']"` |
+| `item` | One piece: `item = { Head = 'Pixie Hairpin +1' }` |
+| `layer = 'top'` | Over everything |
+| `stop = true` | Cancel the action |
+| `off = true` | Kept, not used |
+
+A rule the engine can't use is left out on load, with one line in chat. `/gcperf` times them.
 
 ## Convert: your code into rules
 
-**Your code** on the Rules page lists every `if` in your job file's handlers: **Can become rules** shows each with
-the rules it becomes, **Stays code** each that stays and why. **Convert N into rules** stages them for Save (a
-backup first; **Undo convert** takes it back).
+**Your code** on the Rules page lists every `if` in your job file's handlers. **Convert N into rules** stages the ones
+that can become rules, for Save (a backup comes first; **Undo convert** takes it back).
 
-**Checked on your file.** Before Convert is offered, the editor runs your job file's handlers and the converted ones
-side by side, over 400 random game states each (spells, buffs, modes, HP/MP, targets, weather...), and compares
-what they wear, slot by slot (it takes a moment, a little each frame; the page says *Checking...*). A part of your
-code whose result differs stays code, with what differed. Your sets are your file's own; GoomSwap's own steps
-(`CheckDefault`, `CheckTH`...) are stand-ins, the same on both sides. If your file can't be run there, the page says
-so and Convert works without the check. A part of your code that stops with an error there in most rounds (it calls
-something the check can't stand in for) isn't counted as the same: it stays code, with that error.
+**It is checked first.** The editor runs your handlers and the converted ones side by side over 400 random game states
+(spells, buffs, modes, HP/MP, targets, weather...) and compares what they wear, slot by slot. Any part whose result
+differs stays code, with what differed. If your file can't be run there, the page says so and Convert works without
+the check.
 
-What converts:
+**What converts:**
 
-- Conditions on the values above, joined by `and` / `or` / `not`; locals read from `gData` or `gcinclude.BuffCount`
-  (sums of buff counts too), or holding a condition (`local roll = string.find(ability.Name, 'Roll', 1, true) ~=
-  nil`); `T{...}:contains(...)`; plain-text searches (`string.contains`, `string.find(..., 1, true)`, `:contains`).
-- The zone read from Ashita (`AshitaCore:GetResourceManager():GetString('zones.names', ...GetMemberZone(0))`, the
-  same read LuAshitacast's `Area` is) when the check searches part of its name; GoomSwap's spell lists
-  (`gcinclude.BluMagPhysical:contains(spell.Name)`); a set picked by a check (`gFunc.EquipSet(c and sets.A or sets.B)`
-  becomes two rules); a Lua pattern (`string.match(spell.Name, 'Evryone. Grudge')`), kept as a pattern.
-- Your file's own function in a check, when it takes no arguments and only sets locals before `return <check>`
-  (`local function Night() local t = gData.GetEnvironment().Time; return (t >= 17) or (t < 7); end`: *Vana'diel time
-  17:00 or later, or before 7:00*). LuAshitacast's `Time` is the hour plus minutes / 100, so 17.30 is 17:30.
+- Conditions on the values above, with `and` / `or` / `not`.
+- Locals read from `gData` or `gcinclude.BuffCount`, or holding a condition
+  (`local roll = string.find(ability.Name, 'Roll', 1, true) ~= nil`).
+- Text searches (`string.contains`, `string.find(..., 1, true)`, `:contains`), `T{...}:contains(...)` and Lua patterns.
+- The zone read from Ashita, when the check looks for part of its name.
+- GoomSwap's spell lists (`gcinclude.BluMagPhysical:contains(spell.Name)`).
+- A set picked by a check: `gFunc.EquipSet(c and sets.A or sets.B)` becomes two rules.
+- Your file's own no-argument function that only sets locals and returns a check:
+  `local function Night() local t = gData.GetEnvironment().Time; return (t >= 17) or (t < 7); end` becomes
+  *Vana'diel time 17:00 or later, or before 7:00*.
 - `gcinclude.IsWeaponValue(gcdisplay.GetCycle('Weapons'))`: *A /wm weapon is picked*.
-- A set inside a set, `gFunc.EquipSet(sets.Buffs.Boost)`: the rule wears `Buffs['Boost']`, the same set (it stays
-  where it is, so the engine still wears it while Boost is up).
-- A check that looks a set up, `if not (ByName(spell.Name) or ByName(Family(spell.Name))) then
-  gFunc.EquipSet(sets.Enmity) end`: the lookup stays code (`if not ByName(spell.Name) then ByName(Family(spell.Name))
-  end`, it still puts that set on) and the rest becomes a rule, *When you cast a spell, while it has no set of its own
-  (by name or family): put on Enmity*. A set you add later counts, as in the code.
-- Branches that only wear sets (`gFunc.EquipSet(sets.X)`, `ByName('X')`), items (`gFunc.Equip`) or cancel.
-  `elseif` chains become **first of** groups, or plain rules when their branches can't overlap (a chain on the spell's
-  skill); nested `if`s join their parent's conditions.
-- Order is kept. A run of `if`s goes where rules go by themselves (`HandleDefault`: at `gcinclude.CheckDefault()`,
-  else after the handler) when nothing after it can put on the same slots and the check finds the same gear (it
-  reads which slots each set has). Otherwise it leaves one line where it was, `gcinclude.RulesAt('Midcast 1')`, and
-  its rules go on right there: their tag says what comes next in your code, **before skill set** (`ByName(spell.Skill)`),
-  **before named set** (the set named after the spell), **after line 12** (a line that can stop the handler
-  first). Your later code still wins those slots, as before. If that line is later taken out of the file by hand,
-  its rules can't go on: GoomSwap says so in chat on load, and the Rules page tags them **not running** (Edit, More,
-  **Use a layer instead**).
-- **Stays code** says, for each, what the line does and why a rule can't do it (*Not gear: it prints the roll's
-  lucky and unlucky numbers to chat. A rule only puts on gear or cancels the action.*); it keeps working as code.
-  Stays code: names built in code (`'Tank_' .. tank`), engine calls (`CheckBlockedAmmo`), pet action branches, math
-  on counts. Two `has` that must both hold (`helix`, then inside it `Nocto`) become **has all of**. `gData.GetBuffCount`
-  becomes GoomSwap's buff check, which also counts a buff that just landed.
-- A buff count compared with exactly 1 (`if (sa == 1) and (ta == 1)`) stays code: a rule knows *up* (count above 0),
-  and 1 is the same only for a buff that never shows twice. If yours don't, press **Count 1 as up** on that line: it
-  moves to **Can become rules** (with **Undo** there). Your call, not Convert's: it can't know which buffs stack.
+- A set inside a set, `gFunc.EquipSet(sets.Buffs.Boost)`: the rule wears `Buffs['Boost']`, the same set.
+- A name checked inside another (`helix`, then `Nocto`): **has all of**.
+- `if not (ByName(spell.Name) or ByName(Family(spell.Name))) then gFunc.EquipSet(sets.Enmity) end`: the lookup stays
+  code, and the rest becomes *When you cast a spell, while it has no set of its own: put on Enmity*.
+- Branches that only wear sets, items, or cancel. `elseif` chains become **first of** groups; nested `if`s join their
+  parent's conditions.
+
+**Order is kept.** Converted rules go where rules go by themselves (`HandleDefault`: at `gcinclude.CheckDefault()`)
+when nothing later in the handler touches the same slots. Otherwise Convert leaves one line in your code,
+`gcinclude.RulesAt('Midcast 1')`, and the rules go on right there. Their tag says where: **before skill set**,
+**before named set**, **after line 12**. If that line is later removed by hand, GoomSwap says so in chat, and the
+Rules page tags those rules **not running** (with **Use a layer instead**).
+
+**What stays code,** each with why: set names built while running (`'Tank_' .. tank`), engine calls that do more
+than wear gear (`CheckTH`, roll messages), pet action branches, math on counts. It keeps working as before.
+
+**A buff count compared with exactly 1** (`if (sa == 1) and (ta == 1)`) stays code: a rule only knows *up* (count
+above 0). If those buffs never show twice, press **Count 1 as up** on that line and it converts (**Undo** puts it
+back). That's your call: Convert can't know which buffs stack.
 
 ## Adopt: a plain LuAshitacast file
 
 Open it from the file name menu: the Rules page offers **Adopt**. GoomSwap then loads at the top of the file, starts
 in `OnLoad`, stops in `OnUnload`, takes its commands in `HandleCommand` and adds its layers at the end of
-`HandleDefault`; your code and set names stay (GoomSwap's own sets, `Dt`, `TH`, `Idle_Regen`..., work once you make
-them). Its `if`s convert in the same Save.
+`HandleDefault`. Your code and set names stay; GoomSwap's own sets (`Dt`, `TH`, `Idle_Regen`...) work once you make
+them. Its `if`s convert in the same Save.

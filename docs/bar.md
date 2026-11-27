@@ -34,11 +34,13 @@ HUD). Click a line to drive that box.
   has its own (its Theme button; same as the bar until you pick one).
 - **Click** a pill: cycles it on that box (ctrl+click the weapon: `/mset`). **Right-click** a line's weapon pill:
   that box's weapon modes and Main/Sub/Range/Ammo picks, side by side; any other mode pill: its values. Click one and
-  that box takes it. The drop stays open while a menu is. On your own line the weapon menu ends with **+ new
-  mode...** (opens `/gcedit`'s New weapon mode, which asks for the `/wm` name) and, under each pick list, **+ add...** (opens `/gcedit`
-  Settings on `MainModes` / `SubModes` / `RangeModes` / `AmmoModes`; every item in a `Weapon_` set is a pick
-  already); **ctrl+click** a mode opens its `Weapon_` set there;
-  the melee menu ends with **+ new mode...** (the new `/mset` mode popup). **Hover** a pill: its full value and what each click does.
+  that box takes it. The drop stays open while a menu is. **Hover** a pill: its full value and what each click does.
+- **Your own line's menus** also add things in `/gcedit`:
+  - weapon menu, **+ new mode...**: New weapon mode (asks for the `/wm` name);
+  - under each pick list, **+ add...**: GoomSwap settings on that list (`MainModes`...; every item in a `Weapon_` set
+    is a pick already);
+  - **ctrl+click** a mode: opens its `Weapon_` set;
+  - melee menu, **+ new mode...**: a new `/mset` mode.
 - **Fixed width:** each column as wide as its widest value, `Atk`/`Def` as 4 digits; cycling never moves anything.
 - **Your columns first:** the bar is only as wide as your line; columns only the other boxes have (a mage's `nuke`, a
   BRD's `harp`) sit after a divider and show with the drop. Opening it never moves your pills.

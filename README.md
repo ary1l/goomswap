@@ -11,27 +11,16 @@ More pictures of the editor (in game, and mockups of some panels) are in [its do
 
 ## Features
 
-- Weapon modes, TP and Aftermath protection, defense modes, idle Regen/Refresh, and status-specific gear.
-- Precast/midcast layers, TH, spell-element gear, magic burst, Moonshade and action safety checks.
-- Rules: "when this, wear that" without code (a buff up, low MP, a spell on you, a mode...), made in `/gcedit`;
-  **Convert** turns your job file's own `if`s into rules with the same result ([Rules](docs/rules.md)).
-- No text editor needed: sets, rules, modes, settings (lists and keybinds as controls) and new job files are all
-  done in `/gcedit`.
-- `/gcimport` reads a Windower GearSwap job file's sets into a GoomSwap draft; **Adopt** makes a plain LuAshitacast
-  file a GoomSwap one, its code kept.
-- Packer: `/lac gear` (the Packer plugin) fetches every set's gear, your Packer lists and the items GoomSwap wears.
-- `/gcbar` status bar and `/gchud` multibox controls; colours follow goomui's preset.
-- `/gcgear` worn-gear grid (equipmon-style icons, ammo, encumbrance) marking `/lock`, TP holds, Aminon/Hoxne, gear
-  that needs RP and swaps that didn't go on; hover a slot for the set that put it on, a box's name in the `/gchud`
-  drop for its gear.
-- `/gcbuild` to draft a job file from carried gear; `/gcedit` to browse the character's job files, inspect gear,
-  fill and compare inherited gear/stat totals (with gear caps: haste, Fast Cast, PDT/MDT), keep item details
-  visible, add the sets a heading usually has (**+ N to add**: the engine's, the example's, your JAs and weapon skills,
-  a buff set for your own JA), arrange, hide and sort its headings, copy sets to other jobs, find an item in every
-  job file, put a piece in many sets or replace it everywhere, see which sets are on you now, restore a backup,
-  list gear no job file uses, and edit settings for one character or all of them. `/gcedit last` opens the set
-  your last action used.
-- TP/WS/DT/idle sets per weapon mode or weapon type (`Tp_Chango`, `Tp_2h`).
+- **Gear engine:** weapon modes, TP and Aftermath holds, defense modes, idle Regen/Refresh, status gear, precast and
+  midcast layers, TH, elemental gear, magic burst, Moonshade, and safety checks before actions.
+- **Set editor** (`/gcedit`): sets, rules, modes, settings and new job files, all without a text editor. It shows
+  what each action wore and why, stat totals with caps, what is left to fill, and the sets you could add.
+- **Rules:** "when this, wear that" (a buff up, low MP, a spell on you, a mode...). **Convert** turns your job file's
+  own `if`s into rules with the same result ([Rules](docs/rules.md)).
+- **Bring your files:** `/gcimport` reads a GearSwap job file's sets; **Adopt** takes over a plain LuAshitacast file.
+- **Packer:** `/lac gear` (the Packer plugin) fetches every set's gear and the items GoomSwap uses.
+- **Bar and HUD:** `/gcbar` status bar, `/gchud` multibox controls, `/gcgear` worn-gear grid.
+- **Drafts:** `/gcbuild` writes a job file from the gear you carry.
 
 ![The status bar and, hovered, the other boxes' modes](docs/gcbar.png)
 
@@ -71,49 +60,26 @@ with **Hide** (until you restart the game).
 
 ## Weapon modes
 
-A weapon mode is a `Weapon_<Name>` set (Main, Sub, any of Range/Ammo) listed in `gcinclude.WeaponModes`; `/wm <name>`
-picks it (F7 cycles). While it is on, its own sets go over their base: `Tp_<Name>` over `Tp_Default`, `Ws_<Name>`,
-`Savage Blade_<Name>`, `Idle_<Name>`, `Dt_<Name>`... `Weapon_<Name>_1h` is worn instead when you can't dual wield,
-`Weapon_<Name>Acc` (or `Weapon_<Name>_Acc`) with `/mset acc`. All of it is done in `/gcedit`.
+A weapon mode is a `Weapon_<Name>` set (Main, Sub, Range, Ammo). `/wm <name>` picks it (F7 cycles). While it is on,
+its own sets go over their base: `Tp_<Name>` over `Tp_Default`, `Ws_<Name>`, `Savage Blade_<Name>`... The engine
+wears `Weapon_<Name>_1h` when you can't dual wield, and `Weapon_<Name>Acc` with `/mset acc`.
 
-**Add one** (example: an RDM adding Mpu Gandring as `/wm mpu`):
+**Add one** (example: Mpu Gandring as `/wm mpu`):
 
-1. `/gcedit` on that character. For another job's file, click the file name in the top bar.
-2. Hold the weapons. **+ /wm mode** on the WEAPONS heading (or the bar's weapon menu, **+ new mode...**): type `Mpu`
-   (one word: the editor says `Set: Weapon_Mpu   In game: /wm mpu`, and refuses a name `/wm` would read as another
-   mode's `/mset` set), keep **Start from the weapons you hold** ticked, **Create**. `Weapon_Mpu` holds Main, Sub,
-   Range and Ammo only; its card shows just those.
-3. **Weapon sets for /wm Mpu** opens. Tick the sets whose gear should differ with Mpu (`Tp_Mpu`, `Ws_Mpu`, a weapon
-   skill's set...) and **Make**. They start empty: fill only what differs, and later changes to the base still apply.
-   Your job's first mode also becomes **Weapons on load** (**Keep None** there undoes it).
-4. Check `Weapon_Mpu`: Main Mpu Gandring, Sub your offhand.
-5. **Weapon sets...** (over the slots) again: tick `Weapon_Mpu_1h`, `Weapon_Mpu_Acc`... (spelled like your file's,
-   `Weapon_MpuAcc` if it joins them) and **Make**. They start as copies of `Weapon_Mpu`; change their Sub.
-6. Optional: right-click `Weapon_Mpu`, **/wm order**, to place it in the cycle; **GoomSwap settings**, this job's
-   **Weapons on load** (`DefaultWeapons`), to start in another mode.
-7. **Save + reload** (another job's file: **Save file**, in effect when you change to that job). The review lists
-   the new `/wm` mode.
+1. Hold the weapons, open `/gcedit`, and press **+ /wm mode** on the WEAPONS heading (or the bar's weapon menu,
+   **+ new mode...**).
+2. Type `Mpu`. Keep **Start from the weapons you hold** ticked. **Create**.
+3. **Weapon sets for /wm Mpu** opens. Tick the sets that should differ with Mpu (`Tp_Mpu`, `Ws_Mpu`...) and **Make**.
+   They start empty: fill only what differs.
+4. **Save + reload**. The mode is in `/wm`, F7 and the bar. Your job's first mode also becomes the one you load in.
 
-After the reload it is in `/wm` (`/wm mpu`, F7) and on the bar: the weapon pill and its right-click menu, and that
-box's line in the other boxes' HUD (they read it within a second). The pill takes the colour of the mode's Main
-(else Range, else Sub): Mpu Gandring is prime, purple; `WeaponClass` adds your own. To type a different name,
-`HUDAbbr = { ['Mpu'] = 'gand' }` in char.lua's settings (`/wm gand`).
+**Remove one:** right-click its `Weapon_` set, **Delete set...**. The box offers to delete the sets worn only with
+that mode, and flags settings that still name it. Confirm, then **Save + reload**.
 
-**Remove one** (example: a PLD dropping its Malignance Sword mode):
+**Swap the weapon:** **Rename set...** (`Weapon_Malignance` to `Weapon_<New>`) renames the mode everywhere the file
+names it.
 
-1. Right-click `Weapon_Malignance`, **Delete set...**. The box shows:
-   - `/wm Malignance` coming out of `gcinclude.WeaponModes`;
-   - **Also delete the N sets worn only with /wm Malignance**, ticked (`Weapon_Malignance_1h`, `Tp_Malignance`...);
-     untick to keep them. Sets your job file's code names are kept and listed;
-   - in orange, `DefaultWeapons` / `WeaponRoles` still naming it: change those in **GoomSwap settings**.
-2. **Confirm deletion**, then **Save + reload**.
-
-After the reload it is gone from `/wm`, F7, the bar's menu and the HUD. A reload always starts in `DefaultWeapons`'s
-mode; if that still names the removed one (the orange note), in the list's first, None: no weapon mode.
-
-To swap one weapon for another instead, **Rename set...** (`Weapon_Malignance` to `Weapon_<New>`) renames the mode
-everywhere the file names it (the mode lists, `DefaultWeapons`, code) and, ticked, its `Weapon_Malignance_...` sets;
-rename its other sets (`Tp_Malignance`, `Weapon_MalignanceAcc`) yourself.
+More: [Set editor](docs/gcedit.md#weapon-modes-wm).
 
 ## Common commands
 
