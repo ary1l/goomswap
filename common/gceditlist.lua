@@ -687,7 +687,20 @@ local function draw_addable()
         end
     end
     local line = (imgui.GetTextLineHeightWithSpacing ~= nil) and imgui.GetTextLineHeightWithSpacing() or 18
-    if #rows > 0 then imgui.BeginChild('##gcadd_scroll', { 480, math.min(#rows, 16) * line + 6 }, 0) end
+    -- as wide as its widest row (Make, from..., the name, what it is for), up to 720; past that the words wrap
+    local btn, wide = text_w('Makefrom...') + 30, 320
+    for _, s in ipairs(rows) do
+        if (s.name ~= nil) and (s.rowW == nil) then
+            s.words = ((ctx.words ~= nil) and ctx.words.Label(s.name)) or s.why or ''
+            s.rowW = btn + text_w(s.name) + 8 + text_w(s.words)
+        end
+        wide = math.max(wide, s.rowW or 0)
+    end
+    wide = math.min(wide + ((#rows > 16) and 20 or 4), 720)
+    if #rows > 0 then
+        imgui.BeginChild('##gcadd_scroll', { wide, math.min(#rows, 16) * line + 6 }, 0)
+        imgui.PushTextWrapPos(0)
+    end
     for i, s in ipairs(rows) do
         if s.g ~= nil then
             imgui.TextColored(palette.section, string.upper((string.gsub(s.g, ' %(by name%)', ''))))
@@ -700,15 +713,17 @@ local function draw_addable()
             if imgui.IsItemHovered() then set_tip('Make it as a copy of a set you pick (then change what differs).') end
             imgui.SameLine()
             imgui.TextUnformatted(s.name)
-            local words = (ctx.words ~= nil) and ctx.words.Label(s.name) or s.why
-            if words ~= nil then
-                imgui.SameLine()
-                imgui.TextColored(palette.dim, words)
+            if s.words ~= '' then
+                imgui.SameLine(0, 8)
+                imgui.TextColored(palette.dim, s.words)
             end
             if imgui.IsItemHovered() and (when_of(s) ~= nil) then set_tip(s.when) end
         end
     end
-    if #rows > 0 then imgui.EndChild() end
+    if #rows > 0 then
+        imgui.PopTextWrapPos()
+        imgui.EndChild()
+    end
     if (#rows == 0) and (name == '') then imgui.TextColored(palette.dim, 'Nothing listed: type a name of your own.') end
     -- the name as typed, when the list doesn't have it: any set (a spell: Cure IV), under the heading its name puts it
     if (name ~= '') and not listed then
@@ -739,7 +754,7 @@ local function draw_addable()
                 when_of(nw)
                 editorState.ui.addWhen = nw
             end
-            imgui.PushTextWrapPos(480)
+            imgui.PushTextWrapPos(wide)
             if nw.when then
                 imgui.TextColored(palette.blue, (string.match(nw.when, '^(.-%.)%s+%u') or nw.when))
             else
