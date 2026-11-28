@@ -13,7 +13,23 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     local NAMES, CATEGORIES = DOCS.names or {}, DOCS.categories or {}
     local LABEL_W = 250 -- the value column
     local function nice(key) return NAMES[key] or key end -- the plain name a setting shows by
-    local BOX_W = 340
+    local BOX_W = 340 -- at most: a box takes what is left of the row
+    -- A narrow window keeps every part: names wrap inside their column, boxes shrink, and a pill or button that
+    -- doesn't fit goes under the value column instead of off the window's edge.
+    local function avail_x() return (W.Vec(imgui.GetContentRegionAvail())) or 400 end
+    local function fit_line(w, toStart)
+        imgui.SameLine()
+        if avail_x() < w then
+            imgui.NewLine()
+            if not toStart then imgui.SetCursorPosX(LABEL_W) end
+        end
+    end
+    local function pill_w(text) return (W.Width(text) or 60) + 16 end
+    local function name_cell(text)
+        if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(LABEL_W - 14) end
+        imgui.TextUnformatted(text)
+        if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
+    end
     local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip)
     -- Settings drawn as controls, not Lua text: names as chips, name -> value rows, keybinds. Anything else (or a
     -- value of another shape) keeps its Lua box.
@@ -268,7 +284,9 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     -- The value box (or checkbox) of a row; true when its text differs from the value. ed: the row's state.
     local function value_box(id, ed, check, v, example, onCheck)
         if not ed.editable then
+            if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
             imgui.TextColored(palette.dim, ed.why or '(edit this one in the file)')
+            if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
             return false
         end
         if check then
@@ -277,10 +295,11 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             return false
         end
         local lines = select(2, string.gsub(ed.text[1], '\n', '\n')) + 1
+        local w = math.max(140, math.min(BOX_W, avail_x() - 8))
         if (type(v) == 'table') or (lines > 1) then
-            imgui.InputTextMultiline('##' .. id, ed.text, 2048, { BOX_W, math.min(8, lines + 1) * 15 + 6 })
+            imgui.InputTextMultiline('##' .. id, ed.text, 2048, { w, math.min(8, lines + 1) * 15 + 6 })
         else
-            imgui.PushItemWidth(BOX_W)
+            imgui.PushItemWidth(w)
             imgui.InputTextWithHint('##' .. id, example or '', ed.text, 512) -- empty: the example, greyed
             imgui.PopItemWidth()
         end
@@ -317,7 +336,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             end
             if imgui.IsItemHovered() then set_tip('Its items go into Packer in the same file, then it is taken out.') end
         end
-        imgui.SameLine()
+        fit_line(64)
         if imgui.SmallButton('Clear##retired_clear_' .. key) then save(which, key, files.REMOVE) end
     end
 
@@ -344,7 +363,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                 or (plain and 'text') or 'lua'
             ed.tip = tip_of(key, kind, default)
         end
-        imgui.TextUnformatted(nice(key))
+        name_cell(nice(key))
         if imgui.IsItemHovered() then set_tip(ed.tip) end
         imgui.SameLine(LABEL_W)
         -- a T{} default: this job's line is written T{...} (its methods: HoldExempt:contains)
@@ -352,12 +371,12 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local kind = ed.editable and widget_kind(key, v) or nil
         if kind == 'choice' then -- a picker on the name's line, then where it comes from and Clear
             local nv = draw_widget(kind, 'w_' .. target .. '_' .. key, v, key)
-            imgui.SameLine()
+            fit_line(pill_w(where_label(from)))
             W.Pill(where_label(from), tag_colors(from))
             local has
             if target == 'job' then has = (files.Job('settings.' .. key) ~= nil) else has = (files.Layer(target)[key] ~= nil) end
             if has then
-                imgui.SameLine()
+                fit_line(64)
                 if imgui.SmallButton('Clear##set_clear_' .. key) then save(target, key, files.REMOVE) end
             end
             if nv ~= nil then save(target, key, nv, tMeta) end
@@ -368,7 +387,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             local has
             if target == 'job' then has = (files.Job('settings.' .. key) ~= nil) else has = (files.Layer(target)[key] ~= nil) end
             if has then
-                imgui.SameLine()
+                fit_line(64)
                 if imgui.SmallButton('Clear##set_clear_' .. key) then save(target, key, files.REMOVE) end
             end
             imgui.Indent(24)
@@ -380,15 +399,15 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local changed = value_box('set_' .. key, ed, check, v, DOC[key] and DOC[key][2],
             function(b) save(target, key, b, tMeta) end)
         if imgui.IsItemHovered() then set_tip(ed.tip) end
-        imgui.SameLine()
+        fit_line(pill_w(where_label(from)))
         W.Pill(where_label(from), tag_colors(from))
         if changed then
-            imgui.SameLine()
+            fit_line(64)
             if imgui.SmallButton('Save##set_save_' .. key) then
                 local value, want = parse(key, ed.text[1], default)
                 if value == nil then feedback(key .. ' must be ' .. want .. '.') else save(target, key, value, tMeta) end
             end
-            imgui.SameLine()
+            fit_line(64)
             if imgui.SmallButton('Undo##set_undo_' .. key) then ed.text[1] = ed.base end
         end
         local has
@@ -399,7 +418,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             has = (files.Layer(target)[key] ~= nil)
         end
         if has and ed.editable then
-            imgui.SameLine()
+            fit_line(64)
             if imgui.SmallButton('Clear##set_clear_' .. key) then save(target, key, files.REMOVE) end
             if imgui.IsItemHovered() then
                 set_tip('Takes it out of ' .. target_name(target) .. (((target == 'own') or (target == 'job'))
@@ -502,13 +521,13 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local kind = (not readonly) and (how ~= 'code') and not string.match(how or '', '^set in')
             and widget_kind(name, shown) or nil
         if kind ~= nil then
-            imgui.TextUnformatted(nice(name))
+            name_cell(nice(name))
             if imgui.IsItemHovered() then set_tip(name .. '\n\n' .. desc .. '\n\nNot set: ' .. tostring(unset or 'nothing')) end
             imgui.SameLine(LABEL_W)
             W.Pill((how == 'staged') and 'unsaved' or ((v ~= nil) and where_label('job') or 'not set'),
                 tag_colors((how == 'staged') and 'staged' or ((v ~= nil) and 'job' or 'default')))
             if v ~= nil then
-                imgui.SameLine()
+                fit_line(64)
                 if imgui.SmallButton('Clear##job_clear_' .. name) then files.StageJob(name, files.REMOVE) end
             end
             imgui.Indent(24)
@@ -537,7 +556,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                 .. '\n\nNot set: ' .. tostring(unset or 'nothing') .. '\n' .. job_name() .. ': ' .. job_says(name)
             ui.settingsEdit[id] = ed
         end
-        imgui.TextUnformatted(nice(name))
+        name_cell(nice(name))
         if imgui.IsItemHovered() then set_tip(name .. '\n\n' .. ed.tip) end
         imgui.SameLine(LABEL_W)
         local check = ((example == nil) or (example == 'true') or (example == 'false')) and not readonly
@@ -545,11 +564,11 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         if check and (cur == nil) then cur = (unset == 'true') end
         local changed = value_box(id, ed, check, cur, example, function(b) files.StageJob(name, b) end)
         if imgui.IsItemHovered() then set_tip(ed.tip) end
-        imgui.SameLine()
+        fit_line(pill_w((v ~= nil) and where_label('job') or 'not set'))
         W.Pill((how == 'staged') and 'unsaved' or ((v ~= nil) and where_label('job') or 'not set'),
                 tag_colors((how == 'staged') and 'staged' or ((v ~= nil) and 'job' or 'default')))
         if changed then
-            imgui.SameLine()
+            fit_line(64)
             if imgui.SmallButton('Save##job_save_' .. name) then
                 local value, ok = data(ed.text[1])
                 if (not ok) or (value == nil) then
@@ -560,11 +579,11 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                     ui.settingsEdit[id] = nil
                 end
             end
-            imgui.SameLine()
+            fit_line(64)
             if imgui.SmallButton('Undo##job_undo_' .. name) then ed.text[1] = ed.base end
         end
         if (v ~= nil) and ed.editable then
-            imgui.SameLine()
+            fit_line(64)
             if imgui.SmallButton('Clear##job_clear_' .. name) then
                 files.StageJob(name, files.REMOVE)
                 ui.settingsEdit[id] = nil
@@ -650,22 +669,8 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         return hit
     end
     local CAT_W = { 180, 0 }
-    -- every name whole: the value column starts past the longest one (measured once the font is up)
-    local labelsSized = false
-    local function size_labels()
-        if labelsSized or (imgui.CalcTextSize == nil) then return end
-        labelsSized = true
-        local w = 0
-        local function fit(text)
-            local ok, x = pcall(W.Width, text)
-            if ok and (type(x) == 'number') and (x > w) then w = x end
-        end
-        for _, k in ipairs(keys()) do fit(nice(k)) end
-        for _, e in ipairs(JOB) do fit(nice(e[1])) end
-        LABEL_W = math.max(250, math.min(math.floor(w) + 24, 420))
-    end
-    -- the window no narrower than a row: categories, a name, its value box and where it comes from
-    function M.MinWidth() return CAT_W[1] + LABEL_W + BOX_W + 210 end
+    -- the window no narrower than the categories, a name's column and a short box: the rest wraps
+    function M.MinWidth() return CAT_W[1] + LABEL_W + 230 end
     -- Every mode list in one place: the job file's own (written by Save), the fixed ones, and what the bar hides
     local FIXED = { { '/idleset', 'Default, Refresh, Regen, Regain, Reraise' },
         { '/wsset', 'Default, Low, High, PDL, Acc, SubtleBlow' } }
@@ -705,7 +710,6 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     end
 
     function M.Body()
-        size_labels()
         local ui = editorState.ui
         ui.settingsEdit, ui.settingsFind = ui.settingsEdit or {}, ui.settingsFind or { '' }
         ui.settingsAll = ui.settingsAll or { false }
@@ -728,18 +732,18 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                 .. 'at once in goomswap-shared.lua): ' .. tostring(files.Path('shared')) },
         }
         for i, t in ipairs(targets) do
-            imgui.SameLine(0, (i == 1) and 10 or 2)
+            if i == 1 then imgui.SameLine(0, 10) else fit_line(pill_w(t[2]) + 4, true) end
             if segment(t[2], ui.settingsTarget == t[1], 'set_target_' .. t[1]) then ui.settingsTarget = t[1] end
             if imgui.IsItemHovered() then set_tip(t[3]) end
         end
-        imgui.SameLine(0, 16)
+        fit_line(236, true)
         imgui.PushItemWidth(220)
         imgui.InputTextWithHint('##set_find', 'find a setting', ui.settingsFind, 48)
         imgui.PopItemWidth()
         -- the colours of where a value comes from, once here instead of words on every row
         imgui.TextColored(palette.dim, 'From')
         for _, f in ipairs({ 'default', 'shared', 'own', 'job', 'staged' }) do
-            imgui.SameLine()
+            fit_line(pill_w((f == 'staged') and 'unsaved' or where_label(f)), true)
             W.Pill((f == 'staged') and 'unsaved' or where_label(f), tag_colors(f))
         end
         imgui.SameLine()

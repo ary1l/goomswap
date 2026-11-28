@@ -176,7 +176,7 @@ local categories = {
     { 'Common', { 'DTGearHPP', 'RefreshGearMPP', 'RegenGearHPP', 'WeaponTPGuard', 'MoonshadeTP', 'Messages', 'LockstyleSet',
         'DisplayBar', 'AutoGear' } },
     { 'Idle & defense', { 'AutoGear', 'RegenGearHPP', 'RefreshGearMPP', 'DTGearHPP', 'PetDTGearHPP', 'IdleWeapons',
-        'CombatWindow', 'XIRollSet', 'SleepCancelStoneskin', 'HoxneItem', 'HoxneLockSlots', 'HoxneAutoUse' } },
+        'CombatWindow', 'XIRollSet', 'SleepCancelStoneskin', 'HoxneAutoUse' } }, -- HoxneItem (always Hoxne Ampulla), HoxneLockSlots: advanced
     { 'Weapons', { 'WeaponTPGuard', 'AftermathHold', 'HoldExempt', 'SmartSwap', 'SmartSwapTP', 'KeepWeaponsFor' } },
     { 'Casting', { 'SIRSkip', 'THSkip', 'ElementGear', 'ElementSkills', 'OrpheusPoints', 'MBWindow', 'MBSkills',
         'ElementReport', 'ReceivedSets', 'ReceivedWindow', 'MyBoxes' } },
