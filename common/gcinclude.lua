@@ -1963,11 +1963,51 @@ function gcinclude.WrapBuffer()
     gEquip.GcRawImmediate = gEquip.ProcessImmediateBuffer
     local shadow = {}
     gcinclude.ShadowItem = function(slot) return shadow[slot] end
+    -- A set slot's fallback ({ Name = 'Vim Torque +1', When = { hpp = { ge = 50 } }, Else = 'Loricate Torque +1' }):
+    -- LAC's MakeItemTable keeps only Name, Augment, Bag, Priority and the Aug keys, so EquipSet / Equip note each
+    -- slot's as it goes in (the slot's last write wins, as the gear does); ProcessBuffer then puts Else on when
+    -- When doesn't hold.
+    local fallback, pending = {}, nil
+    local specsOf = setmetatable({}, { __mode = 'k' }) -- set table -> { [slot index] = its entry with Else }
+    local function specs(set)
+        local s = specsOf[set]
+        if s == nil then
+            s = {}
+            for k, v in pairs(set) do
+                if (type(v) == 'table') and (v.Else ~= nil) and (type(v.When) == 'table') and (type(k) == 'string') then
+                    local idx = gData.GetEquipSlot(k)
+                    if (idx ~= nil) and (idx ~= 0) then s[idx] = v end
+                end
+            end
+            specsOf[set] = s
+        end
+        return s
+    end
+    local rawSet, rawEquip = gFunc.EquipSet, gFunc.Equip
+    gFunc.EquipSet = function(set, ...)
+        local t = (type(set) == 'string') and gcinclude.FindSet(set) or set
+        local before = pending
+        pending = (type(t) == 'table') and specs(t) or nil
+        local ok, r = pcall(rawSet, set, ...)
+        pending = before
+        if not ok then error(r, 0) end
+        return r
+    end
+    gFunc.Equip = function(slot, item, ...)
+        local before = pending
+        local idx = (type(slot) == 'string') and gData.GetEquipSlot(slot) or nil
+        pending = ((idx ~= nil) and (type(item) == 'table') and (item.Else ~= nil) and (type(item.When) == 'table'))
+            and { [idx] = item } or nil
+        local ok, r = pcall(rawEquip, slot, item, ...)
+        pending = before
+        if not ok then error(r, 0) end
+        return r
+    end
     -- gcaction.Rec*: the /gcedit layer record (each write, who made it, the final gear).
     local function rec(name,
         ...) if (gcaction ~= nil) and (gcaction[name] ~= nil) then pcall(gcaction[name], ...) end end
     gEquip.ClearBuffer = function(...)
-        shadow = {}
+        shadow, fallback = {}, {}
         rec('RecClear')
         return gEquip.GcRawClear(...)
     end
@@ -1977,12 +2017,28 @@ function gcinclude.WrapBuffer()
             local cur = shadow[slot]
             -- LAC drops it (equip.lua EquipItemToBuffer)
             blocked = (cur ~= nil) and (cur.Locked == true) and (itemTable.Locked ~= true)
-            if not blocked then shadow[slot] = (itemTable.Name ~= 'ignore') and itemTable or nil; end
+            if not blocked then
+                shadow[slot] = (itemTable.Name ~= 'ignore') and itemTable or nil
+                fallback[slot] = (pending ~= nil) and pending[slot] or nil
+            end
         end
         rec('RecWrite', slot, itemTable, immediate, blocked)
         return gEquip.GcRawToBuffer(slot, itemTable, immediate)
     end
     gEquip.ProcessBuffer = function(...)
+        -- fallbacks first: what goes on in their slot is still the set's piece
+        for slot, spec in pairs(fallback) do
+            local cur = shadow[slot]
+            if (cur ~= nil) and (type(spec.Name) == 'string') and (cur.Name == string.lower(spec.Name))
+                and (gcrules.Test(spec.When, 'Default', gcinclude.RulesApi) == false) then
+                local alt = gEquip.MakeItemTable(spec.Else)
+                if (alt ~= nil) and (type(alt.Name) == 'string') then
+                    gEquip.GcRawToBuffer(slot, alt)
+                    shadow[slot] = alt
+                    rec('RecWrite', slot, alt, false, false, 'Fallback: ' .. spec.Name .. ' -> ' .. tostring(spec.Else))
+                end
+            end
+        end
         local sub = shadow[2]
         if (sub ~= nil) and (gcinclude ~= nil) and (gcinclude.SubRefusedNow ~= nil)
             and gcinclude.SubRefusedNow(sub) then

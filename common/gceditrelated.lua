@@ -2152,6 +2152,56 @@ local function menu_button(label, enabled, color)
     return ctx.menu_item(label, enabled and true or false, false, color)
 end
 
+-- A slot's fallback, in its right-click menu: when HP % / MP % / TP is below a number, another piece goes on instead
+-- (the item's When / Else, checked as the gear goes on). Kept when the piece changes.
+local FB_STATS = { { 'hpp', 'HP %' }, { 'mpp', 'MP %' }, { 'tp', 'TP' } }
+local fbForm = {}
+local function fallback_form(set, slot, cur)
+    local key = set.name .. '|' .. slot
+    local base = tostring(cur.when) .. '|' .. tostring(cur.els)
+    local f = fbForm[key]
+    if (f == nil) or (f.base ~= base) then
+        f = { base = base, stat = 'mpp', below = { '' }, item = { cur.els or '' } }
+        local st, n = string.match(cur.when or '', '(%a+)%s*=%s*{%s*ge%s*=%s*([%d%.]+)')
+        if st ~= nil then f.stat, f.below[1] = st, n end
+        fbForm[key] = f
+    end
+    local label = 'MP %'
+    for _, s in ipairs(FB_STATS) do if s[1] == f.stat then label = s[2] end end
+    imgui.TextColored(palette.dim, 'Fallback: instead, when')
+    if imgui.IsItemHovered() then
+        set_tip('Checked as the gear goes on, every time (idle and engaged too): below the number, the piece you '
+            .. 'name goes on instead. A set without one keeps the piece: your Sleeping set can keep Vim Torque.')
+    end
+    imgui.SameLine()
+    local pick = ctx.W.Pick('fb_stat_' .. key, label, FB_STATS, 70)
+    if pick ~= nil then f.stat = pick end
+    imgui.SameLine()
+    imgui.TextUnformatted('below')
+    imgui.SameLine()
+    imgui.PushItemWidth(54)
+    imgui.InputTextWithHint('##fb_n_' .. key, '10', f.below, 8)
+    imgui.PopItemWidth()
+    imgui.PushItemWidth(220)
+    imgui.InputTextWithHint('##fb_item_' .. key, 'wear: e.g. Telos Earring', f.item, 64)
+    imgui.PopItemWidth()
+    local n, item = tonumber(f.below[1]), string.match(f.item[1] or '', '^%s*(.-)%s*$')
+    imgui.SameLine()
+    if imgui.SmallButton('Set##fb_set_' .. key) and (n ~= nil) and (item ~= '') then
+        ctx.set_fallback(set, slot, { when = '{ ' .. f.stat .. ' = { ge = ' .. tostring(n) .. ' } }', els = item })
+        feedback(set.name .. ' / ' .. slot .. ': ' .. item .. ' below ' .. tostring(n) .. ' ' .. label .. ' (unsaved).')
+        imgui.CloseCurrentPopup()
+    end
+    if cur.when ~= nil then
+        imgui.SameLine()
+        if imgui.SmallButton('Remove##fb_rm_' .. key) then
+            ctx.set_fallback(set, slot, nil)
+            feedback(set.name .. ' / ' .. slot .. ': fallback taken out (unsaved).')
+            imgui.CloseCurrentPopup()
+        end
+    end
+end
+
 local function draw_context_menu()
     if editorState.ui.openContext then
         imgui.OpenPopup('##gcedit_context')
@@ -2275,6 +2325,11 @@ local function draw_context_menu()
                 editorState.ui.requestPutIn = { set = set.name, slot = slot,
                     at = (mx ~= nil) and (my ~= nil) and { mx, my } or nil }
                 imgui.CloseCurrentPopup()
+            end
+            if (context.kind == 'slot') and editable and (here ~= nil) and (here.kind == 'item') and (here.name ~= nil)
+                and (ctx.set_fallback ~= nil) then
+                imgui.Separator()
+                fallback_form(set, slot, here)
             end
             imgui.Separator()
             local defined = current(set, slot)

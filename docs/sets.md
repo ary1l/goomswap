@@ -125,6 +125,20 @@ Any `/mset` mode works the same way: add it to `gcinclude.MeleeModes` (or `/gced
 
 Groups keep a plain name (`Phantom Roll` for every roll, `Quick Draw`, `Nitro`, `Enmity`, BRD song groups).
 
+## Fallback pieces
+
+A slot can name a piece to wear instead when a condition fails, in that set only:
+
+```lua
+Neck = { Name = 'Vim Torque +1', When = { hpp = { ge = 50 } }, Else = 'Loricate Torque +1' },
+Ear1 = { Name = 'Schere Earring', When = { mpp = { ge = 10 } }, Else = 'Telos Earring' },
+```
+
+`When` takes a rule's conditions (`hpp`, `mpp`, `tp`, `buff`...: [Rules](rules.md)); it is checked as the gear goes
+on, every time, idle and engaged too. A set without one keeps the piece (your `Sleeping` set can keep Vim Torque to
+wake you). In `/gcedit`: right-click a slot, **Fallback** (HP %, MP % or TP below a number, and the piece); it stays
+when you change the slot's piece.
+
 ## Tips
 
 - Slot words: `'remove'` empty, `'displaced'` empty without a packet, `'ignore'` leave alone.
