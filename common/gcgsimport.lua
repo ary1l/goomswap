@@ -191,7 +191,8 @@ function G.Name(path)
     end
     if la == 'defense' then
         if lb == 'pdt' or lb == 'dt' then return with('Dt', 3) end
-        if lb == 'mdt' then return with('mdt', 3) end
+        -- MDT (MagicalDefenseMode) and Selindrile's MEVA (ResistDefenseMode, DefenseMode Resist): GoomSwap's /mdt
+        if (lb == 'mdt') or (lb == 'meva') then return with('mdt', 3) end
         return 'Dt_' .. join(path, 2)
     end
     if la == 'kiting' then return 'Movement' end
