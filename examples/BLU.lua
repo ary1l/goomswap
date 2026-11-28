@@ -456,7 +456,7 @@ profile.OnLoad = function()
     gcinclude.AlwaysDualWield = true;
     gcinclude.WeaponModes = {'None', 'Tizona', 'Caliburnus'};
     gcinclude.DefaultWeapons = 'Tizona';
-    gcinclude.SubModes = {'None', 'Bunzi\'s Rod'}; -- /sw bunzi: nuke offhand (Tizona stays), /sw none: back to the mode's Thibron. A Sub swap resets TP
+    gcinclude.SubModes = {'None', 'Bunzi\'s Rod'}; -- /subw bunzi: nuke offhand (Tizona stays), /subw none: back to the mode's Thibron. A Sub swap resets TP
     -- Rules (/gcedit, RULES): when this, wear that, as data. A rule with at = goes on where gcinclude.RulesAt(...) is in the handlers below.
     gcinclude.Rules = {
         { on = 'Default', at = 'Default 1', when = { toggle = { dt = true } }, wear = 'Dt' },

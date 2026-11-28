@@ -3,7 +3,8 @@
 -- for every character, or for this job. Below them, the job file's own options (WeaponModes, Packer...).
 return function(imgui, palette, set_tip, files, groups, setFile, editorState, feedback)
     -- Not in the defaults table (nil there) but read when set.
-    local OPTIONAL = { 'EditorGroups', 'EditorHidden', 'EditorSort', 'EditorOrder', 'DisplayBarX', 'LockstyleSet' }
+    local OPTIONAL = { 'EditorGroups', 'EditorHidden', 'EditorSort', 'EditorOrder', 'DisplayBarX', 'LockstyleSet',
+        'EditorComparePins' }
     local LUA_TEXT = { Theme = true } -- false, or a preset's name: typed as Lua
     local FROM = { own = 'this character', shared = 'every character', default = 'default', job = 'this job' }
     local DOCS = gFunc.LoadFile('common\\gceditsettingsdoc.lua')
@@ -18,7 +19,9 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     -- value of another shape) keeps its Lua box.
     local LIST = { SIRSkip = true, THSkip = true, MBSkills = true, ElementSkills = true, HoldExempt = true,
         MoonshadeSkip = true, CapacityCapes = true, HUDOwners = true, MyBoxes = true, EditorIgnoreSuggestions = true,
-        HoxneLockSlots = true, MainModes = true, SubModes = true, RangeModes = true, NukeModes = true }
+        HoxneLockSlots = true, MainModes = true, SubModes = true, RangeModes = true, NukeModes = true,
+        BluMagPhysical = true, BluMagDebuff = true, BluMagStun = true, BluMagBuff = true, BluMagSkill = true,
+        BluMagCure = true, BluMagEnmity = true, BluMagTH = true }
     local MAP = { HUDAbbr = true, WeaponClass = true, ElementalWS = true, ReceivedSets = true, WeaponRoles = true,
         RangeAmmo = true }
     local NUMBER_MAP = { EnchantDelays = true }
@@ -418,8 +421,16 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local name, desc, example, unset, readonly = entry[1], entry[2], entry[3], entry[4], entry[5]
         if name == 'profile.Packer' then return packer_job_row(entry) end
         local v, how = files.Job(name)
+        local shown = v -- the value the control starts from: the job file's, else the engine's own list (BluMag...)
+        if (shown == nil) and string.match(name, '^BluMag') then
+            local e = (files.Engine ~= nil) and files.Engine() or nil
+            if (e ~= nil) and (type(rawget(e, name)) == 'table') then
+                shown = {}
+                for i, n in ipairs(rawget(e, name)) do shown[i] = n end
+            end
+        end
         local kind = (not readonly) and (how ~= 'code') and not string.match(how or '', '^set in')
-            and widget_kind(name, v) or nil
+            and widget_kind(name, shown) or nil
         if kind ~= nil then
             imgui.TextUnformatted(nice(name))
             if imgui.IsItemHovered() then set_tip(name .. '\n\n' .. desc .. '\n\nNot set: ' .. tostring(unset or 'nothing')) end
@@ -431,9 +442,10 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                 if imgui.SmallButton('Clear##job_clear_' .. name) then files.StageJob(name, files.REMOVE) end
             end
             imgui.Indent(24)
-            local nv = draw_widget(kind, 'w_jobopt_' .. name, v)
+            local nv = draw_widget(kind, 'w_jobopt_' .. name, shown)
             imgui.Unindent(24)
-            if nv ~= nil then files.StageJob(name, nv) end
+            -- BluMag lists written T{...}: job files call gcinclude.BluMagTH:contains(...)
+            if nv ~= nil then files.StageJob(name, nv, string.match(name, '^BluMag') ~= nil) end
             return
         end
         local now = text_of(v)

@@ -827,7 +827,7 @@ end
 -- What DefaultWeapons / WeaponRoles name that nothing offers: the engine skips those at load without a word
 -- (gcruntime SetCycleFrom finds a value by its name, start or part). Each a sentence; worked out once per edit.
 local PICK_LIST = { Main = 'MainModes', Sub = 'SubModes', Range = 'RangeModes', Ammo = 'AmmoModes' }
-local PICK_CMD = { Main = '/mw', Sub = '/sw', Range = '/rw', Ammo = '/ammoset' }
+local PICK_CMD = { Main = '/mw', Sub = '/subw', Range = '/rw', Ammo = '/ammoset' }
 ctx.weapon_problems = function()
     local doc = editorState.document
     local memo = editorState.cache.weaponProblems
@@ -841,7 +841,7 @@ ctx.weapon_problems = function()
         return false
     end
     local labels = (type(S.Job('WeaponItemMap')) == 'table') and S.Job('WeaponItemMap') or {}
-    local picks = {} -- what each slot's /mw /sw /rw /ammoset can pick: its list, any Weapon_ set's item there
+    local picks = {} -- what each slot's /mw /subw /rw /ammoset can pick: its list, any Weapon_ set's item there
     for slot, list in pairs(PICK_LIST) do
         picks[slot] = {}
         for _, v in ipairs((type(S.Job(list)) == 'table') and S.Job(list) or {}) do
@@ -887,7 +887,7 @@ ctx.weapon_problems = function()
     return out
 end
 settingsFiles.WeaponProblems = ctx.weapon_problems -- the Settings window shows them too
--- The /mw /sw /rw /ammoset picks the job file lists (not None): { 'Main picks (/mw): Burtgang, Naegling', ... }.
+-- The /mw /subw /rw /ammoset picks the job file lists (not None): { 'Main picks (/mw): Burtgang, Naegling', ... }.
 ctx.weapon_picks = function()
     local out = {}
     for _, slot in ipairs({ 'Main', 'Sub', 'Range', 'Ammo' }) do
@@ -1913,7 +1913,7 @@ end
 local function start_steps()
     local doc = editorState.document
     local nf = fill_list().n
-    local weapons = #ctx.weapon_picks() > 0 -- /mw /sw picks are weapons set up too
+    local weapons = #ctx.weapon_picks() > 0 -- /mw /subw picks are weapons set up too
     for _, s in ipairs(doc.model.list) do
         if weapons then break end
         weapons = (string.match(s.name, '^[Ww]eapon_') ~= nil) and not doc.deleted[s.name]
@@ -1925,7 +1925,7 @@ local function start_steps()
             or 'Your own gear, not the example as is' },
         { done = nf == 0, act = 'fill', text = (nf == 0) and 'Nothing left to fill'
             or (nf .. ' left to fill: empty slots, gear you lack or must move') },
-        { done = weapons, act = 'wm', text = 'Your weapons: a /wm mode (or /mw /sw picks)' },
+        { done = weapons, act = 'wm', text = 'Your weapons: a /wm mode (or /mw /subw picks)' },
         { done = editorState.preferences.start == 'saved', act = 'save',
             text = 'Saved once: Save + reload writes your file (the old one kept as a backup)' },
         { done = (type(settings) == 'table') and (settings.DisplayBar == true), act = 'bar',
@@ -2331,6 +2331,21 @@ local function body()
                 end
                 editorState.cache.statPair = pair
             end
+            if (pair ~= nil) and (editorState.ui.comparePins == nil) then -- Compare's pinned stats, every job
+                local saved = settingsFiles.Get('EditorComparePins')
+                editorState.ui.comparePins = (type(saved) == 'table') and saved or statModel.DefaultPins
+                editorState.ui.toggleComparePin = function(name)
+                    local list, found = {}, false
+                    for _, n in ipairs(editorState.ui.comparePins) do
+                        if string.lower(n) == string.lower(name) then found = true else list[#list + 1] = n end
+                    end
+                    if not found then list[#list + 1] = name end
+                    editorState.ui.comparePins = list
+                    local ok, err = settingsFiles.Write('own', { EditorComparePins = list })
+                    if not ok then feedback('Pins not saved: ' .. tostring(err) .. '.') end
+                end
+            end
+            if pair ~= nil then pair.pinned = statModel.Pinned(pair, editorState.ui.comparePins) end
             editorInspect.DrawComparison(
                 imgui, palette, editorState, set, other, SCREEN, current, copy_from, leftStats, rightStats, pair
             )

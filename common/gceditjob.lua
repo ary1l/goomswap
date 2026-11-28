@@ -265,7 +265,11 @@ function analysis.New(options)
         if (lname ~= nil) and ACTION_VAR[lvar] then
             local v = (ctx.action ~= nil) and (gearEngine ~= nil) and in_list(gearEngine[lname], ctx.action) or nil
             if v ~= nil then return v, {} end
-            return nil, { 'a spell in ' .. lname }
+            local l = (gearEngine ~= nil) and rawget(gearEngine, lname) or nil
+            local some = {}
+            for i = 1, math.min(3, (type(l) == 'table') and #l or 0) do some[#some + 1] = tostring(l[i]) end
+            return nil, { 'a spell in ' .. lname .. ((#some > 0) and (' (' .. table.concat(some, ', ') .. ((#l > 3)
+                and (', ... ' .. #l .. ' in all') or '') .. ')') or '') }
         end
         local fvar, fpat = string.match(a, "^string%.%a+%(([%a_]+)%.Name,%s*'(.-)'")
         if (fvar ~= nil) and ACTION_VAR[fvar] then

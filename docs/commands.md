@@ -10,8 +10,8 @@
 
 | Command | Does |
 |---|---|
-| `/wm [name\|N\|none\|default] [sub]` | Weapon mode, plus a Sub pick if named (`/wm cali bunzi`); a new mode clears `/mw` `/sw` `/rw` `/ammoset` picks for the slots its set names; `force` re-applies |
-| `/mw` `/sw` `/rw` `/ammoset [name\|none]` | One slot's pick over the mode; any TP. Picks: the job's `MainModes`/`SubModes`/`RangeModes`, then any item its `Weapon_` sets name |
+| `/wm [name\|N\|none\|default] [sub]` | Weapon mode, plus a Sub pick if named (`/wm cali bunzi`); a new mode clears `/mw` `/subw` `/rw` `/ammoset` picks for the slots its set names; `force` re-applies |
+| `/mw` `/subw` `/rw` `/ammoset [name\|none]` | One slot's pick over the mode; any TP. Picks: the job's `MainModes`/`SubModes`/`RangeModes`, then any item its `Weapon_` sets name |
 | `/dw [on\|off\|auto]` | Dual Wield: why; `off` = `_1h` always |
 | `/smartswap` | Light spells (Dia, Blink…) keep weapons at `SmartSwapTP`+ |
 | `/mset [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets; `acc` also wears `Midshot_Acc` (COR RNG PLD; `Midshot_<Mode>_Acc` per weapon mode) |

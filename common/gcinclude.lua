@@ -33,7 +33,7 @@ else
 end
 
 gcinclude.AliasList = T{'gcmessages','wsdistance','dt','mdt','th','kite','mset','wsset','nukeset','burst','weapon',
-    'death','sir','tankset','proc','pupmode','wm','mw','sw','rw','ammoset','aminon','gchud','lock','unlock',
+    'death','sir','tankset','proc','pupmode','wm','mw','subw','rw','ammoset','aminon','gchud','lock','unlock',
     'hoxne','gchelp','gckey','def','gce','checksets','gcperf','smartswap','autogear','gcbar','forcestring','songlock',
     'siphon','warpring','mea','holla','dem','capacity','jubilee','abyproc','dw','dynamisrp','gcbuild','gcimport','gcedit',
     'gcconfig','idleset','gcgear'}
@@ -109,7 +109,7 @@ end
 
 gcinclude.WeaponSlots = T{1, 2, 3, 4}
 gcinclude.WeaponSlotNames = T{'Main', 'Sub', 'Range', 'Ammo'}
-gcinclude.WeaponCommands = T{wm = 'Weapons', mw = 'Main', sw = 'Sub', rw = 'Range', ammoset = 'Ammo'}
+gcinclude.WeaponCommands = T{wm = 'Weapons', mw = 'Main', subw = 'Sub', rw = 'Range', ammoset = 'Ammo'}
 gcinclude.WeaponRoleNames = T{'melee', 'ranged', 'caster', 'tank'}
 gcinclude.WeaponKeywords = T{'remove', 'displaced', 'ignore'}
 gcinclude.BlockedAmmo = T{'hauksbok'}
@@ -908,9 +908,11 @@ local rulesApi = {
     family = function(n) return gcinclude.Family(n) end,
     hasSet = function(n) return gcinclude.FindSet(n) ~= nil end, -- 'has a set named after it / its family'
     weaponPick = function() return gcinclude.IsWeaponValue(gcdisplay.GetCycle('Weapons')) == true end,
-    inList = function(list, name) -- "in GoomSwap's spell list": gcinclude.BluMagPhysical...
+    inList = function(list, name) -- "in GoomSwap's spell list": gcinclude.BluMagPhysical... (a job file's own too)
         local l = (type(list) == 'string') and rawget(gcinclude, list) or nil
-        return (type(l) == 'table') and (type(l.contains) == 'function') and (l:contains(name) == true)
+        if (type(l) ~= 'table') then return false end
+        for _, n in ipairs(l) do if (n == name) then return true end end
+        return false
     end,
     wear = function(name, exact, entry) ruleWear(name, exact, entry) end,
     equip = function(slot, item, entry) ruleEquip(slot, item, entry) end,
@@ -2220,7 +2222,7 @@ function gcinclude.Help()
     local skip, thskip = gcinclude.SkipList('SIRSkip'), gcinclude.SkipList('THSkip')
     local lines = T{
         'gcconfig : character settings path; /gcconfig init creates a missing char.lua',
-        'weapons: /wm [name|N|none|default|role] [force], /mw /sw /rw /ammoset [name|N|none] [force]',
+        'weapons: /wm [name|N|none|default|role] [force], /mw /subw /rw /ammoset [name|N|none] [force]',
         'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots|all] /unlock [slots|all]',
         'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip,
             ', ')) or '') .. '; off while Aminon is on)',

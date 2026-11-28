@@ -984,7 +984,8 @@ function inspect.DrawComparison(imgui, colors, editor, set, other, slots, curren
         imgui.EndPopup()
     end
     if leftStats and rightStats and editor.ui.compareView == 'stats' then
-        ui.Stats.DrawComparison(imgui, colors, set.name, other.name, statPair, editor.ui.compareDiffOnly[1])
+        ui.Stats.DrawComparison(imgui, colors, set.name, other.name, statPair, editor.ui.compareDiffOnly[1],
+            editor.ui.toggleComparePin)
         return
     end
     if #rows == 0 or (total == 0 and editor.ui.compareDiffOnly[1]) then
@@ -1436,7 +1437,8 @@ function views.DrawSummary(imgui, colors, name, model)
     notes(imgui, colors, model, 'summary_notes')
     imgui.EndChild()
 end
-function views.DrawComparison(imgui, colors, leftName, rightName, pair, differencesOnly)
+-- onPin(name): a click on a stat's name pins it at the top (pair.pinned, always shown) or takes it off.
+function views.DrawComparison(imgui, colors, leftName, rightName, pair, differencesOnly, onPin)
     text(imgui, colors.dim, leftName .. ': ' .. pair.left.coverage)
     ui.Panels.Tip(imgui, colors, coverageHelp)
     text(imgui, colors.dim, rightName .. ': ' .. pair.right.coverage)
@@ -1469,21 +1471,40 @@ function views.DrawComparison(imgui, colors, leftName, rightName, pair, differen
         imgui.TableSetupColumn('Change', 0, 1)
         imgui.TableHeadersRow()
         local group
+        local pinned = {}
+        for _, row in ipairs(pair.pinned or {}) do pinned[string.lower(row.name)] = true end
+        local function draw_row(row, isPinned)
+            imgui.TableNextRow(); imgui.TableNextColumn(); stat_name(imgui, colors, row.name)
+            if onPin ~= nil then
+                if imgui.IsItemHovered() then
+                    imgui.SetTooltip(isPinned and 'Click: unpin' or 'Click: pin to the top (always shown)')
+                end
+                if imgui.IsItemClicked() then onPin(row.name) end
+            end
+            imgui.TableNextColumn(); ui.Panels.Text(imgui, colors.dim, row.before)
+            imgui.TableNextColumn(); ui.Panels.Text(imgui, colors.text, row.after)
+            imgui.TableNextColumn()
+            local benefit = row.delta * row.direction
+            ui.Panels.Text(imgui,
+                benefit > 0 and colors.ok or (benefit < 0 and colors.bad or colors.dim), row.deltaText)
+        end
+        if #(pair.pinned or {}) > 0 then -- pinned stats first, equal or not
+            imgui.TableNextRow(); imgui.TableNextColumn(); imgui.TextColored(colors.blue, 'Pinned')
+            for _ = 1, 3 do imgui.TableNextColumn() end
+            for _, row in ipairs(pair.pinned) do
+                count = count + 1
+                draw_row(row, true)
+            end
+        end
         for _, row in ipairs(pair.rows) do
-            if not differencesOnly or row.delta ~= 0 then
+            if (not differencesOnly or row.delta ~= 0) and not pinned[string.lower(row.name)] then
                 count = count + 1
                 if row.group ~= group then
                     group = row.group
                     imgui.TableNextRow(); imgui.TableNextColumn(); imgui.TextColored(colors.blue, group)
                     for _ = 1, 3 do imgui.TableNextColumn() end
                 end
-                imgui.TableNextRow(); imgui.TableNextColumn(); stat_name(imgui, colors, row.name)
-                imgui.TableNextColumn(); ui.Panels.Text(imgui, colors.dim, row.before)
-                imgui.TableNextColumn(); ui.Panels.Text(imgui, colors.text, row.after)
-                imgui.TableNextColumn()
-                local benefit = row.delta * row.direction
-                ui.Panels.Text(imgui,
-                    benefit > 0 and colors.ok or (benefit < 0 and colors.bad or colors.dim), row.deltaText)
+                draw_row(row, false)
             end
         end
         imgui.EndTable()

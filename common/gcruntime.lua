@@ -677,8 +677,8 @@ do
             return string.lower(tostring(v)) .. '|'
         end
 
-        -- /mw /sw /rw picks: the job's own list (gcinclude.MainModes ...) in its order, then every other item its
-        -- Weapon_ sets put in that slot, so no list is needed to pick one (/mw cali, /sw bunzi). A table item is
+        -- /mw /subw /rw picks: the job's own list (gcinclude.MainModes ...) in its order, then every other item its
+        -- Weapon_ sets put in that slot, so no list is needed to pick one (/mw cali, /subw bunzi). A table item is
         -- labelled as the bar shows it: 'Rostam (B)'.
         local function pickList(cname)
             local declared = gcinclude[PICK_LISTS[cname]]
@@ -899,7 +899,7 @@ do
             if (want == 'default') or (want == 'def') or (want == 'mode') or (want == 'off') then
                 return gcinclude.SetWeaponCycle(cname, 'None', true)
             end
-            -- naming the mode's own item for the slot (/sw thibron while the mode wears Thibron) = None
+            -- naming the mode's own item for the slot (/subw thibron while the mode wears Thibron) = None
             local own = modeSlotItem(cname)
             if (own ~= nil) and (string.sub(own, 1, #want) == want) and gcinclude.SetWeaponCycle(cname,
                 'None', true) then
@@ -909,7 +909,7 @@ do
             return gcinclude.SetWeaponCycle(cname, arg) -- reports no match / ambiguous, with the choices
         end
 
-        -- /wm [mode|N|none|default|role] [sub] [force]; /mw /sw /rw /ammoset [item|N|none] [force].
+        -- /wm [mode|N|none|default|role] [sub] [force]; /mw /subw /rw /ammoset [item|N|none] [force].
         function gcinclude.WeaponCommand(cname, args)
             local force = false
             local words = T{}

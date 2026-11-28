@@ -85,7 +85,7 @@ profile.OnLoad = function()
     gcinclude.WeaponModes = {'None', 'Savage', 'Leaden'};
     gcinclude.DefaultWeapons = 'Savage';          -- or { Main = 'Burtgang', Sub = 'Aegis' }
     gcinclude.WeaponRoles = { melee = 'Savage', ranged = 'Leaden' };
-    gcinclude.SubModes = {'None', 'Duban'};      -- optional: /sw picks; items in Weapon_ sets are picks already
+    gcinclude.SubModes = {'None', 'Duban'};      -- optional: /subw picks; items in Weapon_ sets are picks already
     gcinclude.AlwaysDualWield = true;
     gcinclude.Rules = { { on = 'Default', when = { buff = 'Cover' }, wear = 'Fealty' } }; -- /gcedit RULES
     gcinclude.MeleeModes = {'Default', 'Acc'};    -- own /mset list (NukeModes: /nukeset)

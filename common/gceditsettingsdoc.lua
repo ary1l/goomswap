@@ -77,7 +77,7 @@ local job = {
     { 'DefaultWeapons', "What /wm starts on at load and /wm default goes back to: a mode's name, or slots.", "{ Weapons = 'Naegling', Range = 'Anarchy +2' }", 'None' },
     { 'WeaponRoles', '/wm melee, ranged, caster or tank: the mode each one picks.', "{ melee = 'Savage', ranged = 'Leaden' }" },
     { 'MainModes', '/mw picks: these first, in order; every item your Weapon_ sets put in Main follows anyway.', "{ 'None', 'Naegling' }" },
-    { 'SubModes', '/sw picks: these first, in order; every item your Weapon_ sets put in Sub follows anyway.', "{ 'None', 'Duban' }" },
+    { 'SubModes', '/subw picks: these first, in order; every item your Weapon_ sets put in Sub follows anyway.', "{ 'None', 'Duban' }" },
     { 'RangeModes', '/rw picks: these first, in order; every item your Weapon_ sets put in Range follows anyway.', "{ 'None', 'Anarchy +2' }" },
     { 'WeaponItemMap', "A pick's name for one exact item, like an augment path (/mw rostama).", "{ RostamA = { Name = 'Rostam', AugPath = 'A' } }" },
     { 'AlwaysDualWield', 'Counts as able to dual wield whatever the support job (BLU: from its spells), so Weapon_<Mode>_1h is not used.', nil, 'false' },
@@ -91,6 +91,18 @@ local job = {
     { 'RangeAmmo', 'With that range weapon on, ammo of another kind (Arrow, Bullet, Bolt) becomes this one.', "{ ['Sparrowhawk +2'] = 'Chrono Arrow' }" },
     { 'CORmsg', 'COR: lucky and unlucky roll number messages.', nil, 'true' },
     { 'LockstyleSet', '/lockstyleset N 4s after load and job change, on this job.', '3', 'the LockstyleSet setting' },
+    { 'BluMagPhysical', "BLU: physical Blue Magic (the rules' BluPhysical).", "{ 'Sinker Drill', 'Heavy Strike' }",
+        "GoomSwap's list" },
+    { 'BluMagDebuff', "BLU: debuffs, magic accuracy first (the rules' BluMagicAccuracy).", "{ 'Dream Flower' }",
+        "GoomSwap's list" },
+    { 'BluMagStun', "BLU: stuns (the rules' BluStun).", "{ 'Head Butt' }", "GoomSwap's list" },
+    { 'BluMagBuff', "BLU: buffs on you (the rules' CMP).", "{ 'Cocoon' }", "GoomSwap's list" },
+    { 'BluMagSkill', "BLU: spells Blue Magic skill makes stronger (the rules' BluSkill).", "{ 'Metallic Body' }",
+        "GoomSwap's list" },
+    { 'BluMagCure', "BLU: cures (the rules' Cure).", "{ 'Magic Fruit' }", "GoomSwap's list" },
+    { 'BluMagEnmity', "BLU: spells for enmity (the rules' Enmity).", "{ 'Jettatura' }", "GoomSwap's list" },
+    { 'BluMagTH', 'BLU: AoE spells that tag every mob hit for Treasure Hunter.', "{ 'Dream Flower' }",
+        "GoomSwap's list" },
 }
 
 -- Settings most never change (item names, game data, timing windows, what the editor's own menus write): shown
@@ -118,6 +130,9 @@ local limits = {
 -- Job-file options the engine reads only on some jobs: shown on others only when the file sets them.
 local jobOnly = {
     CORmsg = { COR = true },
+    BluMagPhysical = { BLU = true }, BluMagDebuff = { BLU = true }, BluMagStun = { BLU = true },
+    BluMagBuff = { BLU = true }, BluMagSkill = { BLU = true }, BluMagCure = { BLU = true },
+    BluMagEnmity = { BLU = true }, BluMagTH = { BLU = true },
     NukeModes = { RDM = true, BLM = true, SCH = true, GEO = true, WHM = true, DRK = true },
 }
 
@@ -145,7 +160,7 @@ local names = {
     CapacityCapes = 'Capacity capes', JubileeSlot = 'Jubilee Ring slot', SleepCancelStoneskin = 'Cancel Stoneskin when asleep',
     -- the job file's own
     WeaponModes = '/wm modes', DefaultWeapons = 'Weapons on load', WeaponRoles = '/wm melee, ranged, caster, tank',
-    MainModes = '/mw picks', SubModes = '/sw picks', RangeModes = '/rw picks', WeaponItemMap = 'Pick names for exact items',
+    MainModes = '/mw picks', SubModes = '/subw picks', RangeModes = '/rw picks', WeaponItemMap = 'Pick names for exact items',
     AlwaysDualWield = 'Always dual wield', MeleeModes = '/mset modes', NukeModes = '/nukeset modes',
     ['profile.Packer'] = 'Packer', CureObi = 'Obi on cures', SafeAmmo = 'Ammo when a shot is stopped',
     RangeAmmo = 'Ammo per range weapon', CORmsg = 'Lucky / unlucky roll messages',

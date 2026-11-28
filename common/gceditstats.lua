@@ -310,4 +310,23 @@ function stats.Compare(left, right)
     end
     return { rows = rows, left = left, right = right, warnings = warnings }
 end
+-- Compare's pinned stats (names, in order): each one's row from pair.rows, else a 0 / 0 row of that stat.
+stats.DefaultPins = { 'HP', 'MP', 'STR', 'DEX', 'VIT', 'AGI', 'INT', 'MND', 'CHR', 'Enmity' }
+function stats.Pinned(pair, names)
+    local out, byName = {}, {}
+    for _, row in ipairs(pair.rows or {}) do byName[string.lower(row.name)] = row end
+    for _, n in ipairs(names or {}) do
+        local row = byName[string.lower(n)]
+        if row == nil then
+            local e = aliases[normalize(n)]
+            if e ~= nil then
+                local zero = stats.Format(0, e.unit)
+                row = { key = e.name, name = e.name, group = e.group, unit = e.unit, direction = e.direction,
+                    value = 0, before = zero, after = zero, delta = 0, deltaText = zero }
+            end
+        end
+        if row ~= nil then out[#out + 1] = row end
+    end
+    return out
+end
 return stats

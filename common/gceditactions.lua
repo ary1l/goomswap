@@ -189,7 +189,7 @@ function actionModel.New(context)
                     .. ((st.status ~= 'Engaged') and '; not fighting, so weapons your idle sets name win' or '')
             end, WearWeaponLayer = function() -- gcruntime: the weapon mode and slot picks, over the sets before
                 return 'weapon mode ' .. tostring(st.weapons or '?') .. ' (/wm): its weapons go on over the sets '
-                    .. 'before (/mw /sw /rw picks too)'
+                    .. 'before (/mw /subw /rw picks too)'
                     .. (((st.status ~= 'Engaged') and (cfg.IdleWeapons ~= false))
                         and '; not fighting, so weapons your idle sets name win' or '')
             end, BuildWeaponLayer = function()

@@ -1096,7 +1096,7 @@ local function draw_sets()
                             .. "(Tp_, Ws_, a weapon skill's) over its base. Name it, tick the sets to make, Add; "
                             .. 'Save writes it.')
                         or ('A /wm mode: New set Weapon_<Name> with Main and Sub. /wm <name> puts them on, and its '
-                            .. 'items become /mw /sw picks too. Save adds it to gcinclude.WeaponModes.'))
+                            .. 'items become /mw /subw picks too. Save adds it to gcinclude.WeaponModes.'))
                 end
             end
             if (grp.hint ~= nil) and not folded then -- MELEE: its modes; WEAPONS: what is wrong, the picks with no set
@@ -1107,7 +1107,7 @@ local function draw_sets()
                     for _, p in ipairs(grp.hint.picks) do
                         imgui.TextColored(palette.dim, p)
                         if imgui.IsItemHovered() then
-                            set_tip('The weapons /mw /sw /rw switch between (MainModes, SubModes, RangeModes '
+                            set_tip('The weapons /mw /subw /rw switch between (MainModes, SubModes, RangeModes '
                                 .. "in Settings), not what you wear now. A Weapon_ set's Main, Sub and Range are "
                                 .. 'picks too.')
                         end

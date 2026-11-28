@@ -50,7 +50,7 @@ this, then that*.
 | Day element, Weather element, Zone, Vana'diel time | names / a number (12.30 = 12:30) | `GetEnvironment()` |
 | Buff up (any of), Buffs up (all of), Buff not up (none of) | buff names or ids | GoomSwap's buff count |
 | You have a pet; pet's HP %, TP, name, status | | `GetPet()` |
-| Mode | `/wm` `/mset` `/nukeset` `/idleset` `/wsset` `/tankset` `/weapon` `/pupmode` `/hoxne` `/mw` `/sw` `/rw` `/ammoset` and its value | `gcdisplay.GetCycle` |
+| Mode | `/wm` `/mset` `/nukeset` `/idleset` `/wsset` `/tankset` `/weapon` `/pupmode` `/hoxne` `/mw` `/subw` `/rw` `/ammoset` and its value | `gcdisplay.GetCycle` |
 | Toggle | `/dt` `/mdt` `/kite` `/th` `/sir` `/proc` `/burst` `/aminon` `/death` `/songlock` `/forcestring`, on / off | `gcdisplay.GetToggle` |
 | Magic burst, Can dual wield | yes / no | GoomSwap's `BurstWanted`, `CanDualWield` |
 | A /wm weapon is picked | yes / no (not None or Unknown) | GoomSwap's `IsWeaponValue` on `/wm` |
