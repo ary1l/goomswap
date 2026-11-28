@@ -177,7 +177,10 @@ function G.Name(path)
         end
         if lb == 'ra' then return with('Preshot', 3) end
         if lb == 'corsairroll' then return (#path >= 3) and rest3 or 'Phantom Roll' end
-        if lb == 'corsairshot' then return with('Quick Draw', 3) end
+        -- a shot by name (sets.precast.CorsairShot['Light Shot']), else a Quick Draw mode (Quick Draw_Resistant)
+        if lb == 'corsairshot' then
+            return string.match(tostring(rest3), '^%a+ Shot$') and rest3 or with('Quick Draw', 3)
+        end
         return with(tostring(b), 3) .. '_Precast'
     end
     if la == 'midcast' then
@@ -673,15 +676,27 @@ function G.Import(text, items)
         latent_refresh_grip = { 'a grip for a staff under 51% MP', true },
         DWMax = { 'its dual-wield swaps' }, DWEarrings = { 'its dual-wield swaps' },
         HPCure = { 'its cure cheat (cures after an HP-down swap)' },
-        MP = { 'nothing in Selindrile\'s code puts it on' } }
+        MP = { 'nothing in Selindrile\'s code puts it on' }, Suppa = { 'nothing in Selindrile\'s code puts it on' },
+        SuppaBrutal = { 'nothing in Selindrile\'s code puts it on' },
+        MeleeCuraga = { 'nothing in Selindrile\'s code puts it on (its WHM has melee versions of Cure only)' },
+        Learning = { 'its BLU learning mode' },
+        Skillchain = { 'its SkillchainMode\'s WS gear: put it in the WS sets you skillchain with' },
+        ResistantMagicBurst = { 'CastingMode Resistant magic bursts: GoomSwap\'s burst set is Elemental Magic_Burst' },
+        passive = { 'its Passive mode\'s sets, over idle and engaged (reraise gear: /idleset reraise, Idle_Reraise)' } }
     local SKIPPED = { { '_Fodder', 'Fodder mode versions (weak mobs)' }, { 'HighTierNuke', 'high-tier nuke versions: '
         .. "GoomSwap's nuke set is Elemental Magic" }, { '^Idle_Sphere', "Selindrile's Sphere idle mode" },
         { '^Blue Magic_Physical%u', 'Blue Magic by stat: BLU has one physical set (BluPhysical)' },
-        { '^Blue Magic_Magical%u', 'Blue Magic by stat: BLU has one magical set (BluMagical)' } }
+        { '^Blue Magic_Magical%u', 'Blue Magic by stat: BLU has one magical set (BluMagical)' },
+        { '^Dt_%u+Reraise$', 'DefenseMode Reraise versions: /dt with /idleset reraise' },
+        { '^Dt_%u+_HP$', 'DefenseMode HP versions: GoomSwap has one Dt (/dt) and one mdt (/mdt)' },
+        { '^Idle_Kite', 'idle modes for kiting: /kite wears Movement' },
+        { '^Bestial Loyalty_', 'jug pets by its JugMode: put the jug you use in Bestial Loyalty / Call Beast' },
+        { '^Call Beast_', 'jug pets by its JugMode: put the jug you use in Bestial Loyalty / Call Beast' } }
     local LIGHT = { "cures in Light day or weather (GoomSwap's CureObi puts the obi on)" }
     local IDLEDT = { '/dt and /mdt put Dt and mdt over idle' }
     local PROC = { 'proc modes (/proc wears Proc engaged, Ws_Proc on a weapon skill)' }
     local SPELLTH = { "spells' TH versions (/th puts the TH set on over a spell's set)" }
+    local DWV = { "dual wield versions of action sets: GoomSwap's dual wield set is engaged only (Tp_DW)" }
     -- named sets GoomSwap wears under its own name (latent_refresh: idle under 51% MP is the auto Idle_Refresh);
     -- left out when the file has that set already
     local RENAME = { Self_Refresh = 'Refresh_Self', Self_Healing = 'Cure_Self', latent_refresh = 'Idle_Refresh',
@@ -703,12 +718,15 @@ function G.Import(text, items)
         if (d == nil) and hasMdt and (from == 'defense.meva') then
             d = { 'magic evasion: /mdt wears the file\'s MDT set' }
         end
-        if (d == nil) and (string.match(n, '^LightDay') or string.match(n, '^LightWeather')) then d = LIGHT end
+        if (d == nil) and (string.match(n, '^LightDay') or string.match(n, '^LightWeather')
+            or string.match(n, '^MeleeLight')) then d = LIGHT end
+        local dw = string.match(n, '_DW$') or string.find(n, '_DW_', 1, true)
+        if (d == nil) and dw and not string.match(n, '^Tp_') then d = DWV end
         if (d == nil) and string.match(n, '_TH$') and (string.sub(from, 1, 8) == 'midcast.') then d = SPELLTH end
         for _, sk in ipairs(SKIPPED) do
             if (d == nil) and string.find(n, sk[1]) then d = { sk[2] } end
         end
-        if (d == nil) and not mirdain and (string.match(n, '^Idle_[PM]?DT$') or string.match(n, '^Idle_[PM]?DT_')) then
+        if (d == nil) and not mirdain and string.match(n, '^Idle_[PM]?DT') then
             d = IDLEDT
         end
         local cast = string.match(from, '^precast') or string.match(from, '^midcast') -- WS, spells, abilities
@@ -1350,6 +1368,12 @@ local SET_RULES = {
     { 'RecoverMP', "{ on = 'Midcast', when = { skill = 'Elemental Magic', mpp = { le = 40 } }, wear = 'RecoverMP' }," },
     { 'Self_Waltz', "{ on = 'Ability', when = { name = { start = 'Curing Waltz' }, target = 'me' }, wear = "
         .. "'Self_Waltz' }," },
+    -- its WHM's cure map: CureSolace under Afflatus Solace; Melee ones while a weapon mode is set (/wm)
+    { 'CureSolace', "{ on = 'Midcast', when = { family = 'Cure', buff = 'Afflatus Solace' }, wear = 'CureSolace' }," },
+    { 'MeleeCure', "{ on = 'Midcast', when = { family = 'Cure', mode = { wm = { isnt = 'None' } } }, wear = "
+        .. "'MeleeCure' }," },
+    { 'MeleeCureSolace', "{ on = 'Midcast', when = { family = 'Cure', buff = 'Afflatus Solace', mode = { wm = { isnt "
+        .. "= 'None' } } }, wear = 'MeleeCureSolace' }," },
 }
 function G.GroupRules(text, imported, template)
     local rules, names = {}, {}
@@ -1366,6 +1390,13 @@ function G.GroupRules(text, imported, template)
     -- Mirdain's (G.MirdainPost); a loose one not when the example names the set at all
     for _, r in ipairs(imported.rules or {}) do
         if not (r[3] and string.find(template, "'" .. r[1] .. "'", 1, true)) then add(r[1], r[2]) end
+    end
+    for _, n in ipairs(imported.order) do -- an ability's DT version (Berserk_DT): Selindrile's DefenseMode, /dt here
+        local ja = string.match(n, '^(.+)_DT$')
+        if (ja ~= nil) and string.match(string.lower(imported.from[n] or ''), '^precast%.ja%.') then
+            add(n, "{ on = 'Ability', when = { name = '" .. ja .. "', toggle = { dt = true } }, wear = '" .. n
+                .. "' },")
+        end
     end
     for _, n in ipairs(imported.order) do -- a weapon skill's TH version (Aeolian Edge_TH): with /th on
         local ws = string.match(n, '^(.+)_TH$')
