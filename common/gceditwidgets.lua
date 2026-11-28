@@ -237,7 +237,7 @@ return function(imgui, palette, set_tip)
         if (#row.Spells == 0) or (#row.Worn == 0) then return text end
         return row
     end
-    function W.KeepList(id, list)
+    function W.KeepList(id, list, opts)
         local out, changed = {}, false
         for i, v in ipairs(list or {}) do out[i] = v end
         local f = flow_start()
@@ -255,14 +255,26 @@ return function(imgui, palette, set_tip)
             end
         end
         if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end
-        local b = box(id)
-        imgui.PushItemWidth(260)
-        local enter = imgui.InputTextWithHint('##add_' .. id, "a spell, or: Cure, Cura while Daybreak", b.a, 128)
+        -- two plain boxes: the spell (or the start of names: Cure covers Cure IV), then what it needs in hand
+        local b, held = box(id), box(id .. '_held')
+        imgui.PushItemWidth(240)
+        imgui.InputTextWithHint('##add_' .. id, 'a spell, or the start of names (Cure)', b.a, 128)
+        imgui.PopItemWidth()
+        suggestions(id, b, opts and opts.suggest)
+        imgui.TextColored(palette.dim, 'only while holding')
+        imgui.SameLine()
+        imgui.PushItemWidth(170)
+        imgui.InputTextWithHint('##held_' .. id, "optional: Daybreak, Bunzi's Rod", held.a, 128)
         imgui.PopItemWidth()
         imgui.SameLine()
-        local text = trim(b.a[1])
-        if (button('+ Add##' .. id, 'accent') or (enter and (imgui.IsItemActive == nil))) and (text ~= '') then
+        local text, hand = trim(b.a[1]), trim(held.a[1])
+        if button('+ Add##' .. id, 'accent') and (text ~= '') then
             local row, dup = W.ParseKeep(text), false
+            if hand ~= '' then -- several names: a comma between
+                row = { Spells = {}, Worn = {} }
+                for x in string.gmatch(text, '[^,]+') do if trim(x) ~= '' then table.insert(row.Spells, trim(x)) end end
+                for x in string.gmatch(hand, '[^,]+') do if trim(x) ~= '' then table.insert(row.Worn, trim(x)) end end
+            end
             for _, v in ipairs(out) do
                 if string.lower(W.KeepText(v)) == string.lower(W.KeepText(row)) then dup = true end
             end
@@ -270,7 +282,7 @@ return function(imgui, palette, set_tip)
                 out[#out + 1] = row
                 changed = true
             end
-            b.a[1] = ''
+            b.a[1], held.a[1] = '', ''
         end
         return changed and out or nil
     end

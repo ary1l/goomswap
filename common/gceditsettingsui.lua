@@ -75,11 +75,46 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         end
         return 'The spell or ability by that name.'
     end
+    -- Every spell and job ability name (the game's resources), for the add boxes' suggestions
+    local spellNames, actionNames = nil, nil
+    local function names_index()
+        if actionNames ~= nil then return end
+        spellNames, actionNames = {}, {}
+        local ok, res = pcall(function() return AshitaCore:GetResourceManager() end)
+        if (not ok) or (res == nil) then return end
+        local seen = {}
+        local function add(list, r)
+            local n = (r ~= nil) and (r.Name ~= nil) and r.Name[1] or nil
+            if (type(n) == 'string') and (n ~= '') and not seen[n] then
+                seen[n] = true
+                list[#list + 1] = n
+                if list ~= actionNames then actionNames[#actionNames + 1] = n end
+            end
+        end
+        for i = 1, 0x400 do add(spellNames, res:GetSpellById(i)) end
+        for i = 0x200, 0x600 do add(actionNames, res:GetAbilityById(i)) end
+        table.sort(spellNames)
+        table.sort(actionNames)
+    end
+    local function starts_with(lists)
+        return function(t)
+            names_index()
+            local lt, out = string.lower(t), {}
+            for _, list in ipairs(lists()) do
+                for _, n in ipairs(list) do
+                    if string.sub(string.lower(n), 1, #lt) == lt then out[#out + 1] = n end
+                    if #out >= 8 then return out end
+                end
+            end
+            return out
+        end
+    end
+    local HOLD_FIRST = {}
     -- ElementGear's parts, each its own field (a nil one, the Zodiac Ring until you name yours, just isn't there)
     local EG_FIELDS = { { 'AnyObi', 'Any-element obi', 'Hachirin-no-Obi' },
         { 'Distance', 'Distance piece', "Orpheus's Sash" },
         { 'DistanceMax', '  only within (yalms)', 'any distance', true },
-        { 'Ring', 'Zodiac Ring', 'none: name yours' }, { 'Back', 'Back on day / weather', 'none: Twilight Cape' } }
+        { 'Back', 'Day/weather back', 'none: Twilight Cape' } }
     local egBuf = {}
     local function element_gear(id, v)
         local cur, out = (type(v) == 'table') and v or {}, nil
@@ -95,8 +130,10 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         if obis ~= nil then set('Obis', obis) end
         for _, f in ipairs(EG_FIELDS) do
             local k = f[1]
+            -- the form's own label column, past its indent
+            local x0 = (imgui.GetCursorPosX ~= nil) and imgui.GetCursorPosX() or 0
             imgui.TextUnformatted(f[2])
-            imgui.SameLine(170)
+            imgui.SameLine(x0 + 165)
             local now = (cur[k] ~= nil) and tostring(cur[k]) or ''
             local b = egBuf[id .. k]
             if (b == nil) or (b.base ~= now) then
@@ -115,17 +152,20 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                     if (x ~= nil) or (typed == '') then set(k, x) end
                 end
             end
-            if k == 'Ring' then -- its slot: nothing until a ring is named
-                imgui.SameLine()
-                imgui.TextColored(palette.dim, 'in')
-                imgui.SameLine()
-                local pick = W.Pick(id .. '_ringslot', cur.RingSlot or 'Ring2', { 'Ring1', 'Ring2' }, 80)
-                if pick ~= nil then set('RingSlot', pick) end
-                if imgui.IsItemHovered() then
-                    set_tip('The slot your Zodiac Ring goes in. Unused until one is named.')
-                end
-            end
         end
+        -- the Zodiac Ring: on by itself when one is in your equip bags (Ring unset); off is Ring = false
+        local ring = { cur.Ring ~= false }
+        if imgui.Checkbox("Zodiac Ring on its element's day##eg_" .. id .. 'ring', ring) then
+            set('Ring', (not ring[1]) and false or nil)
+        end
+        if imgui.IsItemHovered() then
+            set_tip('Worn when one is in your equip bags: nothing to type. Never on Light / Dark days or cures.')
+        end
+        imgui.SameLine()
+        imgui.TextColored(palette.dim, 'in')
+        imgui.SameLine()
+        local pick = W.Pick(id .. '_ringslot', cur.RingSlot or 'Ring2', { 'Ring1', 'Ring2' }, 80)
+        if pick ~= nil then set('RingSlot', pick) end
         for _, f in ipairs({ { 'Cures', 'Obi on Cure, Cura, Curaga in Light day or weather' },
             { 'BackOnCures', 'The back on those cures too' } }) do
             local b = { cur[f[1]] == true }
@@ -196,7 +236,15 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         end
         if kind == 'element' then return element_gear(id, v) end
         if (kind == 'list') and (key == 'HoldExempt') then
-            return W.List(id, v, { label = hold_label, tip = hold_tip })
+            if #HOLD_FIRST == 0 then
+                for n in pairs(HOLD_SKILLS) do HOLD_FIRST[#HOLD_FIRST + 1] = n end
+                for n in pairs(HOLD_TYPES) do HOLD_FIRST[#HOLD_FIRST + 1] = n end
+                table.sort(HOLD_FIRST)
+            end
+            return W.List(id, v, { label = hold_label, tip = hold_tip, width = 300,
+                hint = 'a skill, ability type or name: Dark Magic, Quick Draw', suggest = starts_with(function()
+                    return { HOLD_FIRST, actionNames or {} }
+                end) })
         end
         if (kind == 'list') and (key == 'BarHide') then
             return W.List(id, v, { hint = 'harp, lock...', suggest = function(t)
@@ -208,7 +256,9 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             end })
         end
         if kind == 'list' then return W.List(id, v) end
-        if kind == 'keep' then return W.KeepList(id, v) end
+        if kind == 'keep' then -- spells only: SmartSwap acts on casts
+            return W.KeepList(id, v, { suggest = starts_with(function() return { spellNames or {} } end) })
+        end
         if kind == 'map' then return W.Map(id, v) end
         if kind == 'nmap' then return W.Map(id, v, { number = true, valueHint = 'seconds' }) end
         if kind == 'keys' then return W.Keybinds(id, v) end
@@ -340,10 +390,14 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             local v = files.Layer(which)[key]
             return (v == nil) and '(not set)' or clip(text_of(v, plain))
         end
+        local set = {} -- only the files that set it: three "(not set)" lines said nothing
+        if files.Layer('shared')[key] ~= nil then set[#set + 1] = 'everyone: ' .. layer('shared') end
+        if files.Layer('own')[key] ~= nil then set[#set + 1] = 'all jobs (char.lua): ' .. layer('own') end
+        local js = job_says('settings.' .. key, plain)
+        if js ~= '(not set)' then set[#set + 1] = job_abbr() .. ' only (' .. job_name() .. '): ' .. js end
         return key .. '\n\n' .. ((doc ~= nil) and (doc[1] .. '\n\n') or '') .. how_to(kind, doc and doc[2], LIMITS[key])
             .. '\n\nDefault: ' .. ((default == nil) and '(none)' or clip(text_of(default, plain)))
-            .. '\nEvery character: ' .. layer('shared') .. '\n' .. char_name() .. ', every job: ' .. layer('own')
-            .. '\n' .. char_name() .. ', ' .. job_abbr() .. ' only (' .. job_name() .. '): ' .. job_says('settings.' .. key, plain)
+            .. ((#set > 0) and ('\n' .. table.concat(set, '\n')) or '\nNot set in any file: the default is used.')
     end
 
     -- Saved now (char.lua, the shared file), or staged for the job file's Save.

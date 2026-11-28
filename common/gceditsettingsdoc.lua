@@ -4,10 +4,12 @@
 local settings = {
     Messages = { 'A chat line on every mode change and /gc toggle (DT, TH, Kite...); some always show.' },
     AutoGear = { 'Master switch for the auto sets: Idle_Regen, Idle_Refresh, Dt, Pet_Dt (by the HP/MP % below). /autogear changes them in game.' },
-    WScheck = { 'Distance check: a weapon skill goes off only within its reach (range 3; Gust Slash, Cyclone, Mistral '
-        .. "Axe and Bora Axe 14; bows and guns 20, at least 21; Blast Arrow, Blast Shot and Numbing Shot 5; past your "
-        .. "and the target's hitboxes, so further on a big mob; at least WSdistance, and as far as your auto-attacks "
-        .. 'have landed on a mob of that name and size). Myrkr, Dagan, Moonlight, Starlight (on you): no check.' },
+    WScheck = { "Cancels a weapon skill when the target is out of its reach, so the TP isn't wasted.\n"
+        .. "Reach, center to center: the weapon skill's range plus your body and the mob's (a big mob reaches "
+        .. 'further). Ranges: most 3; Gust Slash, Cyclone, Mistral Axe, Bora Axe 14; bows and guns 20 (21 at '
+        .. 'least); Blast Arrow, Blast Shot, Numbing Shot 5.\n'
+        .. 'Never less than WS range (yalms), nor than your auto-attacks already reached on that mob.\n'
+        .. 'Not checked: Myrkr, Dagan, Moonlight, Starlight (on you).' },
     WSdistance = { 'The least reach in yalms (center to center) a weapon skill gets, while WScheck is on; '
         .. 'a big mob gets more.', '5' },
     RegenGearHPP = { 'Idle_Regen below this HP %, out of combat only. 0 = never.', '60' },
@@ -53,7 +55,7 @@ local settings = {
     MyBoxes = { "Your characters that get the Multisend 'received' notice. Only needed when boxes aren't found by the HUD state file.", "{ 'YourMain', 'YourBox' }" },
     ElementReport = { 'A chat line naming the obi/Orpheus/ring/back each nuke or weapon skill got.' },
     OrpheusPoints = { "{ yalms, affinity % } points for Orpheus's Sash, a straight line between; add tested points in order.", '{ { 1.93, 15 }, { 13, 1 } }' },
-    ElementGear = { "Waist (and ring, back) by the spell's element, day and weather: Obis, AnyObi, Distance (Orpheus), DistanceMax, Ring, RingSlot, Back, Cures, BackOnCures, Keep. Replaces the whole table: keep the keys you use.", "{ Obis = { Dark = 'Anrin Obi' }, AnyObi = 'Hachirin-no-Obi', Distance = \"Orpheus's Sash\", RingSlot = 'Ring2', Keep = { 'Oneiros Rope' } }" },
+    ElementGear = { "Waist (and ring, back) by the spell's element, day and weather: Obis, AnyObi, Distance (Orpheus), DistanceMax, Ring (unset: your Zodiac Ring when you have one; false: never), RingSlot, Back, Cures, BackOnCures, Keep. Replaces the whole table: keep the keys you use.", "{ Obis = { Dark = 'Anrin Obi' }, AnyObi = 'Hachirin-no-Obi', Distance = \"Orpheus's Sash\", RingSlot = 'Ring2', Keep = { 'Oneiros Rope' } }" },
     MBWindow = { 'Magic burst window in seconds from the skillchain; another weapon skill on the mob ends it.', '10' },
     MBSkills = { 'Spell skills that wear Burst when they land in a live skillchain.', "{ 'Elemental Magic', 'Dark Magic' }" },
     ElementSkills = { 'Spell skills that get the obi, Orpheus and element ring.', "{ 'Elemental Magic', 'Blue Magic' }" },

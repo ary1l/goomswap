@@ -115,7 +115,8 @@ do
                 AnyObi = 'Hachirin-no-Obi', -- every element; worn only when day/weather nets positive
                 Distance = "Orpheus's Sash", -- used when it beats the obi's day/weather value
                 DistanceMax = nil, -- optional yalm cap for Orpheus; nil = any distance (it is never below +1)
-                -- e.g. 'Zodiac Ring', worn when the day matches the element (never Light/Dark, never on cures)
+                -- nil: your Zodiac Ring, when one is in your equip bags, on its element's day (never Light/Dark, never
+                -- on cures); false: never; a name: that ring
                 Ring = nil,
                 RingSlot = 'Ring2',
                 Back = nil, -- e.g. 'Twilight Cape': +5% to a day bonus, or to a weather bonus that applies (BG-Wiki)
@@ -1200,11 +1201,16 @@ do
         -- Zodiac Ring: the six elements only, never Lightsday/Darksday, never cures (BG-Wiki Zodiac Ring).
         function gcinclude.ElementRing(element)
             local cfg = gcinclude.ElementCfg()
-            if (type(cfg) ~= 'table') or (cfg.Ring == nil) or (element == nil) then return nil end
+            if (type(cfg) ~= 'table') or (cfg.Ring == false) or (element == nil) then return nil end
             if (element == 'Light') or (element == 'Dark') then return nil end
             local env = gData.GetEnvironment()
             if (env == nil) or (env.DayElement ~= element) then return nil end
-            return cfg.Ring, (cfg.RingSlot or 'Ring2')
+            local ring = cfg.Ring
+            if ring == nil then -- not named: the Zodiac Ring, when one is in your equip bags
+                if (gcinclude.CarriedName == nil) or (gcinclude.CarriedName('Zodiac Ring') == nil) then return nil end
+                ring = 'Zodiac Ring'
+            end
+            return ring, (cfg.RingSlot or 'Ring2')
         end
 
         -- Element gear per action (BG-Wiki): nukes and blue magic in ElementSkills, elemental ninjutsu, Quick Draw
