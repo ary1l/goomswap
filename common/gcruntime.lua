@@ -105,6 +105,7 @@ do
             -- your own characters that get the Multisend 'received' notice; boxes running this engine are found by
             -- themselves (HUD state file), so only needed if that fails, e.g. T{'YourMain','YourBox'}
             MyBoxes = T{},
+            BarHide = T{}, -- bar pills left off, by the word on them: T{ 'harp', 'lock' }
             ElementReport = false, -- chat line naming the obi/Orpheus/ring/back each nuke or WS got
             -- {yalms, affinity %}: BG's two documented ends; linear between them is assumed. Add tested points in
             -- order. ElementReport = true prints what the element picker chose

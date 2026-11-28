@@ -19,6 +19,7 @@ return function(imgui, palette, set_tip)
         return (vec(imgui.CalcTextSize(text)))
     end
     local width_of = width
+    W.Width = width
     -- An ImGui vector as two numbers (two numbers or a table, by Ashita version); nil, nil when it is neither. The
     -- editor's one copy (gcedit's xy, the Rules page's vec).
     function W.Vec(a, b)

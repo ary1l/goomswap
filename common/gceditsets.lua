@@ -362,6 +362,14 @@ local function save()
     -- Settings, This job: each staged gcinclude.<name> line, on the text with the edits above
     for name, e in pairs((text ~= nil) and editorState.document.jobSettings or {}) do
         local err
+        if (name == 'MeleeModes') and not e.remove then -- + /mset mode adds made after Settings staged the list
+            local have, list = {}, {}
+            for i, m in ipairs(e.value or {}) do list[i], have[string.lower(m)] = m, true end
+            for _, m in ipairs(editorState.document.newModes or {}) do
+                if not have[string.lower(m)] then list[#list + 1], have[string.lower(m)] = m, true end
+            end
+            e = { value = list, T = e.T, text = e.text }
+        end
         text, err = setFile.SetJobSetting(text, name, (not e.remove) and function(ind)
             return ctx.settingsFiles.JobText(e, ind)
         end or nil)

@@ -72,20 +72,23 @@ local settings = {
     LockstyleSet = { '/lockstyleset N 4s after load and job change; a job file can set its own.', '3' },
     CapacityCapes = { '/capacity wears the carried one worth most (Mecisto. Mantle by its augment).', "{ 'Aptitude Mantle +1', 'Mecisto. Mantle' }" },
     JubileeSlot = { 'The ring slot /jubilee uses.', 'Ring1' },
+    BarHide = { "Bar pills left off, by the word on them: melee ws idle nuke weapon tank pup hoxne def sir th kite proc "
+        .. "burst death harp lock. The command still works.", "{ 'harp', 'lock' }" },
     SleepCancelStoneskin = { 'Asleep with Stoneskin up: /cancel Stoneskin so damage can wake you.' },
 }
 
 -- { name, what it does, example (Lua; nil: a checkbox), the value when the file sets none, read-only }
 local job = {
-    { 'WeaponModes', 'The /wm cycle: one Weapon_<Name> set each. Save adds new Weapon_ sets to it; right-click a Weapon_ set to move it earlier or later.', nil, "{ 'None' }", true },
+    { 'WeaponModes', 'The /wm cycle: one Weapon_<Name> set each. Add one: + /wm mode (WEAPONS heading); take one out: delete its Weapon_ set (Save does the list); right-click a Weapon_ set to move it earlier or later.', nil, "{ 'None' }", true },
     { 'DefaultWeapons', "What /wm starts on at load and /wm default goes back to: a mode's name, or slots.", "{ Weapons = 'Naegling', Range = 'Anarchy +2' }", 'None' },
     { 'WeaponRoles', '/wm melee, ranged, caster or tank: the mode each one picks.', "{ melee = 'Savage', ranged = 'Leaden' }" },
     { 'MainModes', '/mw picks: these first, in order; every item your Weapon_ sets put in Main follows anyway.', "{ 'None', 'Naegling' }" },
     { 'SubModes', '/subw picks: these first, in order; every item your Weapon_ sets put in Sub follows anyway.', "{ 'None', 'Duban' }" },
     { 'RangeModes', '/rw picks: these first, in order; every item your Weapon_ sets put in Range follows anyway.', "{ 'None', 'Anarchy +2' }" },
+    { 'AmmoModes', '/ammoset picks: ammo by name, None first. The cycle shows with two or more.', "{ 'None', 'Chrono Bullet' }", "{ 'None' }" },
     { 'WeaponItemMap', "A pick's name for one exact item, like an augment path (/mw rostama).", "{ RostamA = { Name = 'Rostam', AugPath = 'A' } }" },
     { 'AlwaysDualWield', 'Counts as able to dual wield whatever the support job (BLU: from its spells), so Weapon_<Mode>_1h is not used.', nil, 'false' },
-    { 'MeleeModes', 'The /mset modes. + /mset mode (MELEE heading, Related tab) adds one.', nil, "{ 'Default', 'SubtleBlow', 'Acc' }", true },
+    { 'MeleeModes', 'The /mset modes, Default first. + /mset mode (MELEE heading, Related tab) adds one too; a mode with no Tp_ set of its own wears Tp_Default.', "{ 'Default', 'SubtleBlow', 'Acc', 'Hybrid' }", "{ 'Default', 'SubtleBlow', 'Acc' }" },
     { 'NukeModes', "The /nukeset modes (RDM BLM SCH GEO WHM DRK).", "{ 'Power', 'Macc', 'OccultAcumen' }", "{ 'Power', 'Macc' } (DRK: { 'Power', 'OccultAcumen' })" },
     { 'profile.Packer', "LuAshitacast's own Packer list for this job: what /lac gear (the Packer plugin) fetches with every set's gear, char.lua's Packer and the items GoomSwap wears. A count, a stack (saved as its size) or all.", "{ 'Echo Drops', { Name = 'Trump Card', Quantity = 99 } }" },
     { 'SIRSkip', 'Spells /sir leaves alone on this job, on top of the SIRSkip setting.', "{ 'Phalanx' }" },
@@ -161,10 +164,10 @@ local names = {
     HoxneLockSlots = 'Hoxne locked slots', HoxneAutoUse = 'Use the Ampulla by itself', Keybinds = 'Keys',
     XIRollSet = 'Set at a roll of 11', HUDOwners = 'HUD owners (your mains)', Theme = 'Colour theme',
     HUDAbbr = 'Short names you can type', WeaponClass = 'Weapon colours', LockstyleSet = 'Lockstyle set',
-    CapacityCapes = 'Capacity capes', JubileeSlot = 'Jubilee Ring slot', SleepCancelStoneskin = 'Cancel Stoneskin when asleep',
+    CapacityCapes = 'Capacity capes', JubileeSlot = 'Jubilee Ring slot', BarHide = 'Hidden on the bar', SleepCancelStoneskin = 'Cancel Stoneskin when asleep',
     -- the job file's own
     WeaponModes = '/wm modes', DefaultWeapons = 'Weapons on load', WeaponRoles = '/wm melee, ranged, caster, tank',
-    MainModes = '/mw picks', SubModes = '/subw picks', RangeModes = '/rw picks', WeaponItemMap = 'Pick names for exact items',
+    MainModes = '/mw picks', SubModes = '/subw picks', RangeModes = '/rw picks', AmmoModes = '/ammoset picks', WeaponItemMap = 'Pick names for exact items',
     AlwaysDualWield = 'Always dual wield', MeleeModes = '/mset modes', NukeModes = '/nukeset modes',
     ['profile.Packer'] = 'Packer', CureObi = 'Obi on cures', SafeAmmo = 'Ammo when a shot is stopped',
     RangeAmmo = 'Ammo per range weapon', CORmsg = 'Lucky / unlucky roll messages',
@@ -177,13 +180,14 @@ local categories = {
     { 'Weapons', { 'WeaponTPGuard', 'AftermathHold', 'HoldExempt', 'SmartSwap', 'SmartSwapTP', 'KeepWeaponsFor' } },
     { 'Casting', { 'SIRSkip', 'THSkip', 'ElementGear', 'ElementSkills', 'OrpheusPoints', 'MBWindow', 'MBSkills',
         'ElementReport', 'ReceivedSets', 'ReceivedWindow', 'MyBoxes' } },
-    { 'Weapon skills', { 'WScheck', 'WSdistance', 'MoonshadeTP', 'MoonshadeSlot', 'MoonshadeSkip', 'ElementalWS' } },
+    { 'Weapon skills', { 'WScheck', 'WSdistance', 'MoonshadeTP', 'MoonshadeSlot', 'MoonshadeSkip' } },
     { 'Items & Packer', { 'Packer', 'EnchantDelays', 'EnchantWindow', 'warp_Ring', 'mea_Ring', 'dem_Ring', 'holla_Ring',
         'CapacityCapes', 'JubileeSlot' } },
     { 'Keys', { 'Keybinds' } },
-    { 'Bar & HUD', { 'DisplayBar', 'DisplayBarX', 'DisplayBarY', 'HUDOwners', 'HUDAbbr', 'WeaponClass', 'Theme' } },
-    { 'Editor', { 'EditorSpacing', 'EditorBackupKeep', 'EditorIgnoreSuggestions', 'EditorGroups', 'EditorHidden', 'EditorSort',
-        'EditorOrder' } },
+    { 'Bar & HUD', { 'DisplayBar', 'BarHide', 'DisplayBarX', 'DisplayBarY', 'HUDOwners', 'HUDAbbr', 'WeaponClass',
+        'Theme' } },
+    -- EditorGroups / EditorHidden / EditorSort / EditorOrder: the set list's own (its headings' menus): All (advanced)
+    { 'Editor', { 'EditorSpacing', 'EditorBackupKeep', 'EditorIgnoreSuggestions' } },
 }
 
 return { settings = settings, job = job, advanced = advanced, limits = limits, jobOnly = jobOnly, names = names,

@@ -21,9 +21,27 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         MoonshadeSkip = true, CapacityCapes = true, HUDOwners = true, MyBoxes = true, EditorIgnoreSuggestions = true,
         HoxneLockSlots = true, MainModes = true, SubModes = true, RangeModes = true, NukeModes = true,
         BluMagPhysical = true, BluMagDebuff = true, BluMagStun = true, BluMagBuff = true, BluMagSkill = true,
-        BluMagCure = true, BluMagEnmity = true, BluMagTH = true }
+        BluMagCure = true, BluMagEnmity = true, BluMagTH = true, AmmoModes = true, MeleeModes = true }
+    LIST.BarHide = true
     local MAP = { HUDAbbr = true, WeaponClass = true, ElementalWS = true, ReceivedSets = true, WeaponRoles = true,
-        RangeAmmo = true }
+        RangeAmmo = true, XIRollSet = true }
+    -- Settings with a few fixed values: a picker, not a text box (Theme: goomui's, GoomSwap's or a preset)
+    local CHOICES = { EditorSpacing = { 'Compact', 'Comfortable' }, MoonshadeSlot = { 'Ear1', 'Ear2' },
+        JubileeSlot = { 'Ring1', 'Ring2' } }
+    local function choices(key)
+        if (key == 'Theme') and (CHOICES.Theme == nil) then
+            local list, names = { { false, "goomui's own" }, 'goomswap' }, {}
+            local ok, t = pcall(gFunc.LoadFile, 'common\\gctheme.lua')
+            for n in pairs((ok and (type(t) == 'table') and t.PRESETS) or {}) do names[#names + 1] = n end
+            table.sort(names)
+            for _, n in ipairs(names) do list[#list + 1] = n end
+            CHOICES.Theme = list
+        end
+        return CHOICES[key]
+    end
+    -- the words on the bar's pills, for BarHide's suggestions
+    local BAR_WORDS = { 'melee', 'ws', 'idle', 'nuke', 'weapon', 'tank', 'pup', 'hoxne', 'def', 'sir', 'th', 'kite',
+        'proc', 'burst', 'death', 'harp', 'lock' }
     local NUMBER_MAP = { EnchantDelays = true }
     -- Settings GoomSwap no longer reads: shown (when a file sets one) to clear, or move.
     local RETIRED = {
@@ -54,6 +72,10 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             end
             return 'keys'
         end
+        if choices(key) ~= nil then
+            local fits = (v == nil) or (type(v) == 'string') or ((key == 'Theme') and (v == false))
+            return fits and 'choice' or nil
+        end
         if LIST[key] and is_list(v) then return 'list' end
         if (key == 'KeepWeaponsFor') and (v == nil or type(v) == 'table') then -- names and { Spells, Worn } rows
             for _, x in ipairs(v or {}) do
@@ -66,7 +88,23 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         if NUMBER_MAP[key] and is_map(v, true) then return 'nmap' end
         return nil
     end
-    local function draw_widget(kind, id, v)
+    local function draw_widget(kind, id, v, key)
+        if kind == 'choice' then
+            local label = (v == nil) and 'default' or tostring(v)
+            for _, o in ipairs(choices(key)) do
+                if (type(o) == 'table') and (o[1] == v) then label = o[2] end
+            end
+            return W.Pick(id, label, choices(key), 200)
+        end
+        if (kind == 'list') and (key == 'BarHide') then
+            return W.List(id, v, { hint = 'harp, lock...', suggest = function(t)
+                local out = {}
+                for _, w in ipairs(BAR_WORDS) do
+                    if string.sub(w, 1, #t) == string.lower(t) then out[#out + 1] = w end
+                end
+                return out
+            end })
+        end
         if kind == 'list' then return W.List(id, v) end
         if kind == 'keep' then return W.KeepList(id, v) end
         if kind == 'map' then return W.Map(id, v) end
@@ -312,6 +350,19 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         -- a T{} default: this job's line is written T{...} (its methods: HoldExempt:contains)
         local tMeta = (type(default) == 'table') and (getmetatable(default) ~= nil)
         local kind = ed.editable and widget_kind(key, v) or nil
+        if kind == 'choice' then -- a picker on the name's line, then where it comes from and Clear
+            local nv = draw_widget(kind, 'w_' .. target .. '_' .. key, v, key)
+            imgui.SameLine()
+            W.Pill(where_label(from), tag_colors(from))
+            local has
+            if target == 'job' then has = (files.Job('settings.' .. key) ~= nil) else has = (files.Layer(target)[key] ~= nil) end
+            if has then
+                imgui.SameLine()
+                if imgui.SmallButton('Clear##set_clear_' .. key) then save(target, key, files.REMOVE) end
+            end
+            if nv ~= nil then save(target, key, nv, tMeta) end
+            return
+        end
         if kind ~= nil then -- a control under its name; the line keeps where it comes from and Clear
             W.Pill(where_label(from), tag_colors(from))
             local has
@@ -321,7 +372,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                 if imgui.SmallButton('Clear##set_clear_' .. key) then save(target, key, files.REMOVE) end
             end
             imgui.Indent(24)
-            local nv = draw_widget(kind, 'w_' .. target .. '_' .. key, v)
+            local nv = draw_widget(kind, 'w_' .. target .. '_' .. key, v, key)
             imgui.Unindent(24)
             if nv ~= nil then save(target, key, nv, tMeta) end
             return
@@ -430,6 +481,17 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         if name == 'profile.Packer' then return packer_job_row(entry) end
         local v, how = files.Job(name)
         local shown = v -- the value the control starts from: the job file's, else the engine's own list (BluMag...)
+        local newModes = (name == 'MeleeModes') and (editorState.document or {}).newModes or nil
+        if newModes ~= nil then -- + /mset mode's adds, written by Save, are in it already
+            local have, list = {}, {}
+            for i, m in ipairs(shown or { 'Default', 'SubtleBlow', 'Acc' }) do
+                list[i], have[string.lower(m)] = m, true
+            end
+            for _, m in ipairs(newModes) do
+                if not have[string.lower(m)] then list[#list + 1], have[string.lower(m)] = m, true end
+            end
+            shown = list
+        end
         if (shown == nil) and string.match(name, '^BluMag') then
             local e = (files.Engine ~= nil) and files.Engine() or nil
             if (e ~= nil) and (type(rawget(e, name)) == 'table') then
@@ -450,10 +512,16 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                 if imgui.SmallButton('Clear##job_clear_' .. name) then files.StageJob(name, files.REMOVE) end
             end
             imgui.Indent(24)
-            local nv = draw_widget(kind, 'w_jobopt_' .. name, shown)
+            local nv = draw_widget(kind, 'w_jobopt_' .. name, shown, name)
             imgui.Unindent(24)
             -- BluMag lists written T{...}: job files call gcinclude.BluMagTH:contains(...)
             if nv ~= nil then files.StageJob(name, nv, string.match(name, '^BluMag') ~= nil) end
+            if (nv ~= nil) and (newModes ~= nil) then -- a new mode taken out here: not added at Save either
+                local keep, left = {}, {}
+                for _, m in ipairs(nv) do keep[string.lower(m)] = true end
+                for _, m in ipairs(newModes) do if keep[string.lower(m)] then left[#left + 1] = m end end
+                editorState.document.newModes = left
+            end
             return
         end
         local now = text_of(v)
@@ -582,20 +650,73 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         return hit
     end
     local CAT_W = { 180, 0 }
+    -- every name whole: the value column starts past the longest one (measured once the font is up)
+    local labelsSized = false
+    local function size_labels()
+        if labelsSized or (imgui.CalcTextSize == nil) then return end
+        labelsSized = true
+        local w = 0
+        local function fit(text)
+            local ok, x = pcall(W.Width, text)
+            if ok and (type(x) == 'number') and (x > w) then w = x end
+        end
+        for _, k in ipairs(keys()) do fit(nice(k)) end
+        for _, e in ipairs(JOB) do fit(nice(e[1])) end
+        LABEL_W = math.max(250, math.min(math.floor(w) + 24, 420))
+    end
+    -- the window no narrower than a row: categories, a name, its value box and where it comes from
+    function M.MinWidth() return CAT_W[1] + LABEL_W + BOX_W + 210 end
+    -- Every mode list in one place: the job file's own (written by Save), the fixed ones, and what the bar hides
+    local FIXED = { { '/idleset', 'Default, Refresh, Regen, Regain, Reraise' },
+        { '/wsset', 'Default, Low, High, PDL, Acc, SubtleBlow' } }
+    local FIXED_JOB = { PLD = { { '/tankset', 'None, Main, MEVA' } }, RUN = { { '/tankset', 'None, Main, MEVA' } },
+        PUP = { { '/pupmode', 'Tank, Melee, Ranger, Mage' } }, BLM = { { '/weapon', 'Club, Staff' } },
+        SCH = { { '/weapon', 'Club, Staff' } } }
+    local MODE_LISTS = { 'WeaponModes', 'DefaultWeapons', 'WeaponRoles', 'MainModes', 'SubModes', 'RangeModes',
+        'AmmoModes', 'MeleeModes', 'NukeModes' }
+    local function modes_tab()
+        imgui.TextColored(palette.blue, job_abbr() .. ' modes')
+        imgui.SameLine()
+        imgui.TextColored(palette.dim, '(in ' .. job_name() .. ', written by Save)')
+        if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
+        imgui.TextColored(palette.dim, 'On the bar: right-click your weapon pill for every /wm mode and /mw /subw /rw '
+            .. '/ammoset pick, any other pill for its values.')
+        if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
+        imgui.Separator()
+        for _, name in ipairs(MODE_LISTS) do
+            local e = job_entry(name)
+            if (e ~= nil) and job_wanted(name) then
+                job_row(e)
+                imgui.Spacing()
+            end
+        end
+        imgui.Separator()
+        local fixed = {}
+        for _, f in ipairs(FIXED) do fixed[#fixed + 1] = f end
+        for _, f in ipairs(FIXED_JOB[job_abbr()] or {}) do fixed[#fixed + 1] = f end
+        for _, f in ipairs(fixed) do
+            imgui.TextUnformatted(f[1])
+            if imgui.IsItemHovered() then set_tip('Fixed: GoomSwap\'s own values, the same on every job file.') end
+            imgui.SameLine(LABEL_W)
+            imgui.TextColored(palette.dim, f[2])
+        end
+        imgui.Separator()
+        row('BarHide', editorState.ui.settingsTarget)
+    end
 
     function M.Body()
+        size_labels()
         local ui = editorState.ui
         ui.settingsEdit, ui.settingsFind = ui.settingsEdit or {}, ui.settingsFind or { '' }
         ui.settingsAll = ui.settingsAll or { false }
         ui.settingsTarget = ui.settingsTarget or 'own'
         ui.settingsCat = ui.settingsCat or 'Common'
         -- what this window is: GoomSwap's own behaviour, as an include file's settings are; not the editor's look
-        if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
-        imgui.TextColored(palette.text, 'How GoomSwap behaves in game, for every job file that loads it: what an include '
-            .. 'file\'s settings are in GearSwap or LuAshitacast. (The editor\'s own spacing and theme: Editor, in '
-            .. 'its top bar.)')
-        if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
-        imgui.Spacing()
+        imgui.TextColored(palette.text, 'GoomSwap in game, for every job file that loads it')
+        if imgui.IsItemHovered() then
+            set_tip('What an include file\'s settings are in GearSwap or LuAshitacast. The editor\'s own spacing and '
+                .. 'theme: Editor, in its top bar.')
+        end
         -- Applies to: one switch, the names in it
         imgui.TextColored(palette.dim, 'Applies to')
         local targets = {
@@ -615,10 +736,18 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         imgui.PushItemWidth(220)
         imgui.InputTextWithHint('##set_find', 'find a setting', ui.settingsFind, 48)
         imgui.PopItemWidth()
-        if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
-        imgui.TextColored(palette.dim, char_name() .. "'s " .. job_name() .. ' wins over ' .. char_name() .. "'s char.lua, "
-            .. 'and char.lua over Everyone. Hover a name for what it does and its key.')
-        if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
+        -- the colours of where a value comes from, once here instead of words on every row
+        imgui.TextColored(palette.dim, 'From')
+        for _, f in ipairs({ 'default', 'shared', 'own', 'job', 'staged' }) do
+            imgui.SameLine()
+            W.Pill((f == 'staged') and 'unsaved' or where_label(f), tag_colors(f))
+        end
+        imgui.SameLine()
+        imgui.TextColored(palette.dim, '(?)')
+        if imgui.IsItemHovered() then
+            set_tip(char_name() .. "'s " .. job_name() .. ' wins over ' .. char_name() .. "'s char.lua, and char.lua "
+                .. 'over Everyone. Hover a setting\'s name for what it does and its key.')
+        end
         imgui.Separator()
         local find = string.lower(ui.settingsFind[1] or '')
         local target = ui.settingsTarget
@@ -628,6 +757,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             imgui.BeginChild('##set_cats', CAT_W, 0)
             local cats = {}
             for _, c in ipairs(CATEGORIES) do cats[#cats + 1] = c[1] end
+            cats[#cats + 1] = 'Modes'
             cats[#cats + 1] = jobCat
             cats[#cats + 1] = 'All (advanced)'
             for _, c in ipairs(cats) do
@@ -656,6 +786,8 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                     job_row(entry)
                 end
             end
+        elseif ui.settingsCat == 'Modes' then
+            modes_tab()
         elseif ui.settingsCat == 'job options' then
             imgui.TextColored(palette.blue, job_abbr() .. ' options')
             imgui.SameLine()
