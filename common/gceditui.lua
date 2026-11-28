@@ -270,16 +270,22 @@ function panels.Tip(imgui, colors, text)
     imgui.PopStyleColor()
 end
 
--- The editor's first size: about 65% of the screen wide and 63% tall (at least 900 x 520, at most 1420 x 840), so it
--- leaves room around it: addons such as tHotBar act on clicks under the editor (they don't check whether one was
--- taken). 1920 wide: 1248, three slot cards a row; 2560 and up: 1420, four. Drag its corner to resize; ImGui keeps it.
 -- The smallest it opens at or can be dragged to: two slot cards a row and a right pane still wide enough to read.
 panels.MIN_SIZE = { 900, 500 }
-function panels.WindowSize(width, height)
-    width, height = width or 1700, height or 910
-    local w = math.min(width - 32, math.max(panels.MIN_SIZE[1], math.min(1420, math.floor(width * 0.65))))
-    local h = math.min(height - 32, math.max(panels.MIN_SIZE[2], math.min(840, math.floor(height * 0.63))))
-    return { math.max(1, w), math.max(1, h) }
+
+-- Where each window opens (EditorKeepSize off: every time): measured on 2560 x 1080 (the editor 1600 x 660 at 131, 47;
+-- GoomSwap settings 1172 x 472 at 1075, 349), scaled to the screen, no smaller than its least size, on the screen.
+local RECTS = { editor = { 131, 47, 1600, 660 }, settings = { 1075, 349, 1172, 472 } }
+local LEAST = { editor = panels.MIN_SIZE, settings = { 640, 320 } }
+function panels.DefaultRect(which, width, height)
+    local r, least = RECTS[which] or RECTS.editor, LEAST[which] or LEAST.editor
+    width, height = width or 2560, height or 1080
+    local fx, fy = width / 2560, height / 1080
+    local w = math.min(width - 16, math.max(least[1], math.floor(r[3] * fx)))
+    local h = math.min(height - 16, math.max(least[2], math.floor(r[4] * fy)))
+    local x = math.max(0, math.min(math.floor(r[1] * fx), width - w))
+    local y = math.max(0, math.min(math.floor(r[2] * fy), height - h))
+    return { x, y }, { math.max(1, w), math.max(1, h) }
 end
 
 -- Fixed pane widths, no dragging: the set list about 34 characters wide (by the font), the middle four slot cards wide,

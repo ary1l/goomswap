@@ -82,6 +82,7 @@ do
             EditorBackupKeep = 3,
             -- /gcedit spacing: 'Compact' or 'Comfortable' (its Editor menu sets it here)
             EditorSpacing = 'Compact',
+            EditorKeepSize = false, -- the editor and settings windows: true opens them as you left them
             -- /gcedit heading order and your own headings ({ 'Weapons', 'Idle', { 'Two-handed', 'Tp_Chango' } }); the
             -- editor's right-click menus write it to char.lua (docs/gcedit.md, Headings)
             EditorGroups = nil,

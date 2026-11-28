@@ -910,6 +910,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         end
         imgui.Spacing()
         row('EditorSpacing', 'own')
+        row('EditorKeepSize', 'own')
         imgui.TextColored(palette.dim, "The editor's theme and Diagnostics: its Editor menu (top bar).")
         imgui.Separator()
         imgui.TextColored(palette.blue, 'Where things are')
