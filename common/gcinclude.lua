@@ -1256,7 +1256,7 @@ end
 -- name; then each one's <name>_<key> goes on, in the order they went on, and for <prefix>_Default also
 -- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: LowBuff / HighBuff / PDL / Acc
 -- / SubtleBlow on weapon skills (/wsset low / high / pdl / acc / sb); Self or Others (a spell on you / on anyone but a
--- monster) and Burst (BurstWanted) on spells.
+-- monster), Burst (BurstWanted) and Dt (/dt) on spells.
 gcinclude.WornSets = nil -- the names, while a handler runs
 -- /wsset mode: the child key it wears over each WS set
 gcinclude.WsSetKeys = { Low = 'LowBuff', High = 'HighBuff', PDL = 'PDL', Acc = 'Acc', SubtleBlow = 'SubtleBlow' }
@@ -1406,6 +1406,7 @@ function gcinclude.SpellChildKeys()
         elseif (target.Type ~= 'Monster') then keys[#keys + 1] = 'Others' end
     end
     if gcinclude.BurstWanted() then keys[#keys + 1] = 'Burst' end
+    if (gcdisplay.GetToggle('DTset') == true) then keys[#keys + 1] = 'Dt' end -- /dt: Cure_Dt, ['Dread Spikes_Dt']
     return keys
 end
 

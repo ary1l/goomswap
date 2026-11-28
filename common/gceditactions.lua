@@ -1631,6 +1631,7 @@ function actionModel.New(context)
             if (ctx.skill == nil) or (in_list(mb, ctx.skill) ~= false) then
                 kids('Burst', 'magic burst')
             end -- MBSkills only
+            if o.dt then kids('Dt', 'DT mode') end -- /dt: Cure_Dt
             if ((ctx.action == nil) and ((ctx.skill == nil) or (ctx.skill == 'Dark Magic'))) or ((ctx.action ~= nil)
                 and (string.sub(ctx.action, 1, 7) == 'Absorb-')) then
                 local c = (ctx.action == nil) and { 'an Absorb- spell' } or {}

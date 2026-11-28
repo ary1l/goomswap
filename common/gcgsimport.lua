@@ -232,7 +232,18 @@ function G.Item(v)
 end
 
 -- text: the GearSwap file. { sets = { [name] = set }, order = { names }, buffs = { [buff] = set }, notes = { lines } }.
-function G.Import(text)
+-- items: the character's -Items.lua text (G.ItemsFile), read first for its gear.X; its own sets.X are for every job:
+-- left out unless GoomSwap has a name for them (sets.TreasureHunter: TH).
+function G.Import(text, items)
+    local fromItems, itemSets = {}, {}
+    for line in string.gmatch(items or '', '[^\n]+') do
+        local n = string.match(line, '^%s*sets%.([%a_][%w_]*)%s*=')
+        local mine = (n ~= nil) and string.find(text, 'sets%.' .. n .. '%s*=') -- the job file sets it itself
+        if (n ~= nil) and (G.Name({ n }) == n) and not mine and not fromItems[n] then
+            fromItems[n], itemSets[#itemSets + 1] = true, n
+        end
+    end
+    if items ~= nil then text = items .. '\n' .. text end
     local chunk, err = C.Parse(text)
     if chunk == nil then return nil, 'the file does not parse: ' .. tostring(err) end
     local env, walk, unknown, gearRead = evaluator()
@@ -297,7 +308,10 @@ function G.Import(text)
     end
     table.sort(tops, function(a, b) if at[a] ~= at[b] then return at[a] < at[b] end return a < b end)
     for _, name in ipairs(tops) do
-        if type(env.sets[name]) == 'table' then visit(env.sets[name], { name }) end
+        if (type(env.sets[name]) == 'table') and not fromItems[name] then visit(env.sets[name], { name }) end
+    end
+    if #itemSets > 0 then
+        out.notes[#out.notes + 1] = 'left out, the Items file\'s sets for every job: ' .. table.concat(itemSets, ', ')
     end
     -- Selindrile's helper sets, put on by its own code: GoomSwap does that itself, or a set by name does. Left out
     -- with a note, by reason; gear named only where it should go elsewhere (sets.MaxTP['Savage Blade'] too)
@@ -309,16 +323,33 @@ function G.Import(text)
         DrainWeapon = { "Drain's weapons: put them in ['Drain'], and Drain in Always swap weapons for "
             .. '(HoldExempt)', true },
         DreadWeapon = { "Dread Spikes' weapons: put them in ['Dread Spikes'], and Dread Spikes in Always swap weapons "
-            .. 'for (HoldExempt)', true } }
+            .. 'for (HoldExempt)', true },
+        TPEat = { 'idle gear for TP above 10' }, HPDown = { 'its own HP-down swaps' },
+        latent_refresh_grip = { 'a grip for a staff under 51% MP', true },
+        DWMax = { 'its dual-wield swaps' }, DWEarrings = { 'its dual-wield swaps' } }
+    local LIGHT = { "cures in Light day or weather (GoomSwap's CureObi puts the obi on)" }
+    local IDLEDT = { '/dt and /mdt put Dt and mdt over idle' }
+    local PROC = { '/proc wears Ws_Proc (else Proc) for every weapon skill' }
+    -- named sets GoomSwap wears under its own name (latent_refresh: idle under 51% MP is the auto Idle_Refresh);
+    -- left out when the file has that set already
+    local RENAME = { Self_Refresh = 'Refresh_Self', Self_Healing = 'Cure_Self', latent_refresh = 'Idle_Refresh',
+        MagicBurst = 'Elemental Magic_Burst' }
     local hasMdt = false -- sets.defense.MDT: /mdt wears it, MEVA left out
     for _, n in ipairs(out.order) do
         if string.lower(tostring(out.from[n] or '')) == 'defense.mdt' then hasMdt = true end
     end
-    local left, byWhy, whyOrder = {}, {}, {}
+    local left, byWhy, whyOrder, renamedTo = {}, {}, {}, {}
     for _, n in ipairs(out.order) do
+        local from = string.lower(tostring(out.from[n] or ''))
         local d = DROP[n] or DROP[string.match(n, '^([^_]+)_') or '']
-        if (d == nil) and hasMdt and (string.lower(tostring(out.from[n] or '')) == 'defense.meva') then
+        if (d == nil) and hasMdt and (from == 'defense.meva') then
             d = { 'magic evasion: /mdt wears the file\'s MDT set' }
+        end
+        if (d == nil) and (string.match(n, '^LightDay') or string.match(n, '^LightWeather')) then d = LIGHT end
+        if (d == nil) and (string.match(n, '^Idle_[PM]?DT$') or string.match(n, '^Idle_[PM]?DT_')) then d = IDLEDT end
+        if (d == nil) and string.match(from, '^precast%.ws') and string.match(n, '_Proc$') then d = PROC end
+        if (d == nil) and (RENAME[n] ~= nil) then
+            if out.sets[RENAME[n]] ~= nil then d = { 'the file has ' .. RENAME[n] .. ' already' } end
         end
         if d ~= nil then
             local what = 'sets.' .. out.from[n]
@@ -335,6 +366,11 @@ function G.Import(text)
             if byWhy[d[1]] == nil then byWhy[d[1]], whyOrder[#whyOrder + 1] = {}, d[1] end
             table.insert(byWhy[d[1]], what)
             out.sets[n], out.from[n] = nil, nil
+        elseif RENAME[n] ~= nil then
+            local to = RENAME[n]
+            renamedTo[#renamedTo + 1] = 'sets.' .. out.from[n] .. ' -> ' .. to
+            out.sets[to], out.from[to], out.sets[n], out.from[n] = out.sets[n], out.from[n], nil, nil
+            left[#left + 1] = to
         else
             left[#left + 1] = n
         end
@@ -342,6 +378,10 @@ function G.Import(text)
     out.order = left
     for _, n in ipairs(left) do
         if takenNote[n] ~= nil then out.notes[#out.notes + 1] = takenNote[n] end
+    end
+    if #renamedTo > 0 then
+        out.notes[#out.notes + 1] = 'as GoomSwap names them (Cure_Self: a cure on you; Idle_Refresh: idle, low MP; '
+            .. 'Elemental Magic_Burst: a nuke in a skillchain): ' .. table.concat(renamedTo, ', ')
     end
     for _, w in ipairs(whyOrder) do
         out.notes[#out.notes + 1] = 'left out, put on by the file\'s own code: ' .. table.concat(byWhy[w], ', ')
@@ -444,13 +484,13 @@ function G.FixNames(imported, lookup)
         for slot, v in pairs(set or {}) do
             local name = (type(v) == 'string') and v or ((type(v) == 'table') and v.Name) or nil
             if (type(name) == 'string') and (name ~= 'remove') then
-                local real, plural = lookup(name)
+                local real, near = lookup(name)
                 if real == nil then
                     if not seen[name] then seen[name] = true; unknown[#unknown + 1] = name end
                 elseif real ~= name then
                     if not seen[name] then
                         seen[name] = true
-                        if plural then loose[#loose + 1] = name .. ' -> ' .. real
+                        if near then loose[#loose + 1] = name .. ' -> ' .. real
                         elseif string.lower(real) == string.lower(name) then cased = cased + 1
                         else changed[#changed + 1] = name .. ' -> ' .. real end
                     end
@@ -474,8 +514,9 @@ function G.FixNames(imported, lookup)
     end
     if #loose > 0 then
         imported.notes[#imported.notes + 1] = #loose .. ' name' .. ((#loose == 1) and '' or 's')
-            .. ' off from the game\'s by an s (GearSwap never found ' .. ((#loose == 1) and 'it' or 'them')
-            .. '; the one item it can be, check it): ' .. list(loose)
+            .. ' spelled unlike the game (GearSwap never found ' .. ((#loose == 1) and 'it' or 'them')
+            .. ' either), written as the one item ' .. ((#loose == 1) and 'it' or 'each') .. ' can be; check: '
+            .. list(loose)
     end
     if cased > 0 then
         imported.notes[#imported.notes + 1] = cased .. ' item name' .. ((cased == 1) and '' or 's')
@@ -493,38 +534,107 @@ end
 local function unplural(s) return (string.gsub(string.lower(s), '(%w%w%w)s%f[^%w]', '%1')) end
 G.Unplural = unplural
 
--- The game's item name for a name or log name, any case (G.FixNames' lookup). The by-name lookup first; else every
--- equippable item read once (its Name and LogNameSingular, Ashita SDK IItem), which takes a moment; last, the one
--- item whose name or log name is that name but for a plural s (then true second).
+-- Names files spell differently from the game's (none of them a name GearSwap finds either): the one item whose
+-- name or log name has the same words, the same +N, and each word the same but for an s ("Heathen's flanchard +3"),
+-- a possessive ("Runeist's Coat +3", "Carrier Sash"), a dot ("Theo Duckbills +2"), an abbreviation either way
+-- ("Theo. Pant. +2": theophany pantaloons +2) or, in one word of five letters or more, two letters ("Briault":
+-- bliaut; "Sybil": sibyl; one letter in a four-letter word). each(fn): fn(name, logName) for every equippable item.
+local function words(s)
+    s = string.gsub(string.gsub(string.lower(s), "\226\128\153", "'"), "'s%f[%W]", '')
+    s = string.gsub(string.gsub(s, "'", ''), '^(%a+) of ', function(q) -- "jug of bubbling carrion broth"
+        return ({ jug = true, pair = true, set = true, suit = true })[q] and '' or nil
+    end)
+    local out = {}
+    for w in string.gmatch(s, '%S+') do out[#out + 1] = w end
+    local plus = ((#out > 0) and string.match(out[#out], '^[%+%-]%d+$')) and table.remove(out) or ''
+    return out, plus
+end
+local function edit(a, b) -- Levenshtein distance
+    if math.abs(#a - #b) > 2 then return 3 end
+    local prev = {}
+    for j = 0, #b do prev[j] = j end
+    for i = 1, #a do
+        local cur = { [0] = i }
+        for j = 1, #b do
+            local cost = (string.byte(a, i) == string.byte(b, j)) and 0 or 1
+            cur[j] = math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost)
+        end
+        prev = cur
+    end
+    return prev[#b]
+end
+-- 0: the same word; 1: the same but for an s, a dot or an abbreviation; 2: two letters apart; nil: not it
+local function word_like(a, b)
+    local a0, b0 = string.gsub(a, '%.$', ''), string.gsub(b, '%.$', '')
+    if a0 == b0 then return 0 end
+    if (#a0 >= 2) and string.match(a, '%.$') and (string.sub(b0, 1, #a0) == a0) then return 1 end
+    if (#b0 >= 2) and string.match(b, '%.$') and (string.sub(a0, 1, #b0) == b0) then return 1 end
+    if unplural(a0) == unplural(b0) then return 1 end
+    if string.match(a0, '%d') or string.match(b0, '%d') then return nil end
+    local short = math.min(#a0, #b0)
+    if (short >= 4) and (edit(a0, b0) <= ((short >= 5) and 2 or 1)) then return 2 end
+    return nil
+end
+function G.ItemMatcher(each)
+    local names, logs, byShape = {}, {}, {}
+    each(function(n, log)
+        names[string.lower(n)] = names[string.lower(n)] or n
+        if (type(log) == 'string') and (log ~= '') then logs[string.lower(log)] = logs[string.lower(log)] or n end
+        for _, form in ipairs({ n, log }) do
+            if (type(form) == 'string') and (form ~= '') then
+                local w, plus = words(form)
+                local key = #w .. '|' .. plus
+                byShape[key] = byShape[key] or {}
+                table.insert(byShape[key], { n, w })
+            end
+        end
+    end)
+    return function(name)
+        local l = string.lower(name)
+        if (names[l] or logs[l]) ~= nil then return names[l] or logs[l] end
+        local w, plus = words(name)
+        local best, found = 3, {}
+        for _, c in ipairs(byShape[#w .. '|' .. plus] or {}) do
+            local worst, loose = 0, 0
+            for i = 1, #w do
+                local d = word_like(w[i], c[2][i])
+                if d == nil then worst = 9 break end
+                if d == 2 then loose = loose + 1 end
+                worst = math.max(worst, d)
+            end
+            if (worst < 9) and (loose <= 1) then
+                if worst < best then best, found = worst, {} end
+                if worst == best then found[c[1]] = true end
+            end
+        end
+        local only = nil
+        for n in pairs(found) do
+            if only ~= nil then return nil end -- two items fit: left as is
+            only = n
+        end
+        if only ~= nil then return only, true end
+        return nil
+    end
+end
+
+-- The game's item name for a name or log name, any case (G.FixNames' lookup): every equippable item read once (its
+-- Name and LogNameSingular, Ashita SDK IItem), which takes a moment; then G.ItemMatcher's near names.
 local function item_lookup()
     local res = AshitaCore:GetResourceManager()
-    local names, logs, plain = nil, nil, nil
+    local look = nil
     return function(name)
         local r = res:GetItemByName(name, 0)
         if (r ~= nil) and (r.Name ~= nil) and (type(r.Name[1]) == 'string')
             and (string.lower(r.Name[1]) == string.lower(name)) then return r.Name[1] end
-        if names == nil then
-            names, logs, plain = {}, {}, {}
+        look = look or G.ItemMatcher(function(fn)
             for id = 1, 65534 do
                 local it = res:GetItemById(id)
                 if (it ~= nil) and (it.Slots ~= 0) and (it.Name ~= nil) and (type(it.Name[1]) == 'string') then
-                    local n = it.Name[1]
-                    names[string.lower(n)] = names[string.lower(n)] or n
-                    local log = (it.LogNameSingular ~= nil) and it.LogNameSingular[1] or nil
-                    if (type(log) == 'string') and (log ~= '') then
-                        logs[string.lower(log)] = logs[string.lower(log)] or n
-                    end
-                    for _, k in ipairs({ unplural(n), (type(log) == 'string') and (log ~= '') and unplural(log) or nil }) do
-                        if (plain[k] == nil) or (plain[k] == n) then plain[k] = n else plain[k] = false end -- false: 2+
-                    end
+                    fn(it.Name[1], (it.LogNameSingular ~= nil) and it.LogNameSingular[1] or nil)
                 end
             end
-        end
-        local l = string.lower(name)
-        if (names[l] or logs[l]) ~= nil then return names[l] or logs[l] end
-        local p = plain[unplural(name)]
-        if p then return p, true end
-        return nil
+        end)
+        return look(name)
     end
 end
 
@@ -632,6 +742,32 @@ end
 function G.Draft(template, imported, info, setFile)
     local model, err = setFile.Parse(template)
     if model == nil then return nil, err end
+    -- Selindrile's CastingMode Resistant (magic accuracy): the example's /nukeset Macc set for that skill (a rule
+    -- with mode = { nukeset = 'Macc' }, skill = 'Elemental Magic' wearing NukeACC), else left out
+    local macc, folded, gone = {}, {}, {}
+    for skill, set in string.gmatch(template, "nukeset%s*=%s*'Macc'%s*}%s*,%s*skill%s*=%s*'([^']+)'%s*}%s*,%s*wear%s*="
+        .. "%s*'([^']+)'") do macc[string.lower(skill)] = set end
+    local order = {}
+    for _, n in ipairs(imported.order) do
+        local base = string.match(n, '^(.+)_[Rr]esistant$')
+        local to = (base ~= nil) and macc[string.lower(base)] or nil
+        if (base ~= nil) and (to ~= nil) and (imported.sets[to] == nil) then
+            folded[#folded + 1] = n .. ' -> ' .. to
+            imported.sets[to], imported.from[to], imported.sets[n] = imported.sets[n], imported.from[n], nil
+            order[#order + 1] = to
+        elseif base ~= nil then
+            gone[#gone + 1] = n
+            imported.sets[n] = nil
+        else
+            order[#order + 1] = n
+        end
+    end
+    imported.order = order
+    if (#folded + #gone) > 0 then
+        imported.notes[#imported.notes + 1] = 'CastingMode Resistant: ' .. ((#folded > 0) and ('worn on /nukeset macc: '
+            .. table.concat(folded, ', ') .. (#gone > 0 and '; ' or '')) or '') .. ((#gone > 0) and ('left out: '
+            .. table.concat(gone, ', ')) or '')
+    end
     local quote, key = setFile.QuoteText, setFile.FormatKey
     local lines, done, counts = {}, {}, { sets = 0, empty = 0, buffs = 0 }
     -- the buff tables: Buffs (sets.buff.X), Buffs_Idle (sets.idle.Weak)
@@ -682,14 +818,74 @@ function G.Draft(template, imported, info, setFile)
         if (not done[name]) and (#BUFFS[name][1] > 0) then buff_table(name) end
     end
     lines[#lines + 1] = '}'
+    local after = G.GroupRules(G.ModeLists(string.sub(template, model.close + 1), imported, template), imported,
+        template)
     local text = string.sub(template, 1, model.open - 1)
     local head = { '-- Imported from ' .. tostring(info.file) .. ' (GearSwap) by /gcimport on ' .. tostring(info.date) .. ': '
         .. counts.sets .. ' sets, ' .. counts.buffs .. ' buff sets. Its logic (states, functions, binds) is not',
         '-- imported: add what you need as rules in /gcedit (RULES). Sets this example has and the file did not are empty.' }
     for _, n in ipairs(imported.notes) do head[#head + 1] = '-- ' .. n end
-    text = table.concat(head, '\n') .. '\n' .. text .. table.concat(lines, '\n')
-        .. G.ModeLists(string.sub(template, model.close + 1), imported, template)
+    text = table.concat(head, '\n') .. '\n' .. text .. table.concat(lines, '\n') .. after
     return text, counts
+end
+
+-- Selindrile's spell groups (its spellMap: sets.midcast.StatusRemoval for every -na spell and Erase) that no spell
+-- family covers: the draft gets a Midcast rule wearing each one the file has, unless the example wears it already.
+-- nameset = false: a spell with a set of its own wears that one, as Selindrile's sets.midcast[spell] comes first.
+local SPELL_GROUPS = {
+    { 'StatusRemoval', "{ 'Poisona', 'Paralyna', 'Silena', 'Blindna', 'Cursna', 'Stona', 'Viruna', 'Erase' }" },
+    { 'BarElement', "{ 'Barfire', 'Barblizzard', 'Baraero', 'Barstone', 'Barthunder', 'Barwater', 'Barfira', "
+        .. "'Barblizzara', 'Baraera', 'Barstonra', 'Barthundra', 'Barwatera' }" },
+    { 'BarStatus', "{ 'Barsleep', 'Barpoison', 'Barparalyze', 'Barblind', 'Barsilence', 'Barpetrify', 'Barvirus', "
+        .. "'Baramnesia', 'Barsleepra', 'Barpoisonra', 'Barparalyzra', 'Barblindra', 'Barsilencera', 'Barpetra', "
+        .. "'Barvira', 'Baramnesra' }" },
+    { 'ElementalEnfeeble', "{ 'Burn', 'Frost', 'Choke', 'Rasp', 'Shock', 'Drown' }" },
+    { 'Helix', "{ has = 'helix' }" },
+    { 'Storm', "{ 'Firestorm', 'Hailstorm', 'Windstorm', 'Sandstorm', 'Thunderstorm', 'Rainstorm', 'Aurorastorm', "
+        .. "'Voidstorm', 'Firestorm II', 'Hailstorm II', 'Windstorm II', 'Sandstorm II', 'Thunderstorm II', "
+        .. "'Rainstorm II', 'Aurorastorm II', 'Voidstorm II' }" },
+    { 'ElementalNinjutsu', "{ 'Katon: Ichi', 'Katon: Ni', 'Katon: San', 'Hyoton: Ichi', 'Hyoton: Ni', 'Hyoton: San', "
+        .. "'Huton: Ichi', 'Huton: Ni', 'Huton: San', 'Doton: Ichi', 'Doton: Ni', 'Doton: San', 'Raiton: Ichi', "
+        .. "'Raiton: Ni', 'Raiton: San', 'Suiton: Ichi', 'Suiton: Ni', 'Suiton: San' }" },
+    { 'Enspell', "{ 'Enfire', 'Enblizzard', 'Enaero', 'Enstone', 'Enthunder', 'Enwater', 'Enfire II', 'Enblizzard II', "
+        .. "'Enaero II', 'Enstone II', 'Enthunder II', 'Enwater II' }" },
+    { 'BoostStat', "{ 'Boost-STR', 'Boost-DEX', 'Boost-VIT', 'Boost-AGI', 'Boost-INT', 'Boost-MND', 'Boost-CHR', "
+        .. "'Gain-STR', 'Gain-DEX', 'Gain-VIT', 'Gain-AGI', 'Gain-INT', 'Gain-MND', 'Gain-CHR' }" },
+    { 'Lullaby', "{ 'Foe Lullaby', 'Foe Lullaby II', 'Horde Lullaby', 'Horde Lullaby II' }" },
+}
+function G.GroupRules(text, imported, template)
+    local rules, names = {}, {}
+    for _, g in ipairs(SPELL_GROUPS) do
+        if (imported.sets[g[1]] ~= nil) and not string.find(template, "wear%s*=%s*'" .. g[1] .. "'") then
+            rules[#rules + 1] = "        { on = 'Midcast', when = { name = " .. g[2] .. ", nameset = false }, wear = '"
+                .. g[1] .. "' },"
+            names[#names + 1] = g[1]
+        end
+    end
+    if #rules == 0 then return text end
+    local at = string.find(text, 'gcinclude%.Rules%s*=%s*{')
+    local eol = (at ~= nil) and string.find(text, '\n', at, true) or nil
+    if eol == nil then
+        imported.notes[#imported.notes + 1] = 'spell group sets no rule wears yet (add one in /gcedit RULES): '
+            .. table.concat(names, ', ')
+        return text
+    end
+    imported.notes[#imported.notes + 1] = 'spell group sets, worn by a rule each (RULES, at the top): '
+        .. table.concat(names, ', ')
+    return string.sub(text, 1, eol) .. "        -- /gcimport: Selindrile's spell groups, unless the spell has a set of "
+        .. 'its own\n' .. table.concat(rules, '\n') .. '\n' .. string.sub(text, eol + 1)
+end
+
+-- Selindrile's layout: <Char>_<Job>_Gear.lua takes its augmented gear (gear.X) from <Char>-Items.lua beside it. Its
+-- text and file name, or nil. open: io.open.
+function G.ItemsFile(path, open)
+    local dir, char = string.match(path or '', '^(.*[\\/])([^\\/_]+)_[^\\/]*$')
+    if dir == nil then return nil end
+    local f = open(dir .. char .. '-Items.lua', 'rb')
+    if f == nil then return nil end
+    local t = f:read('*a')
+    f:close()
+    return t, char .. '-Items.lua'
 end
 
 -- == /gcimport <file> [JOB] ==
@@ -730,10 +926,12 @@ function G.Run(args, say, err, setFile)
     if f == nil then err('/gcimport: no ' .. name .. ' in your character\'s folder or luashitacast\\.') return end
     local text = f:read('*a')
     f:close()
+    local items, itemsName = G.ItemsFile(path, io.open) -- its gear.X tables
     job = job or G.JobOf(name) or JOBS[AshitaCore:GetMemoryManager():GetPlayer():GetMainJob()]
     if job == nil then err('/gcimport: which job? /gcimport ' .. name .. ' WAR') return end
-    local imported, why = G.Import(text)
+    local imported, why = G.Import(text, items)
     if imported == nil then err('/gcimport: ' .. tostring(why)) return end
+    if items ~= nil then imported.notes[#imported.notes + 1] = 'gear.X read from ' .. itemsName .. ' beside it' end
     if #imported.order + #imported.buffOrder + #imported.idleBuffOrder == 0 then
         err('/gcimport: no sets found in ' .. name .. '.')
         return

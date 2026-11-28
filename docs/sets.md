@@ -21,7 +21,7 @@ Later wins, slot by slot.
 
 **Precast:** job file → `Buffs_Precast` (`['Spontaneity']`: next spell near-instant, skip fast cast).
 
-**Midcast:** job file → `TH` → `_Self` `_Others` `_Burst` → `Absorb` → `Buffs_Midcast` → `LightBonus` →
+**Midcast:** job file → `TH` → `_Self` `_Others` `_Burst` `_Dt` (`/dt`: `Cure_Dt`) → `Absorb` → `Buffs_Midcast` → `LightBonus` →
 obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` → `Cure_LowMP` → `Cure_Dt` → obi → `SIR`.
 
 **WS:** job file (`Ws_Default` → `Ws_<weapon>` → `Ws_<mset>` → `Ws_<weapon>_<mset>` → the WS's own set →
