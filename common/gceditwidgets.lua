@@ -257,15 +257,24 @@ return function(imgui, palette, set_tip)
         if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end
         -- two plain boxes: the spell (or the start of names: Cure covers Cure IV), then what it needs in hand
         local b, held = box(id), box(id .. '_held')
-        imgui.PushItemWidth(240)
-        imgui.InputTextWithHint('##add_' .. id, 'a spell, or the start of names (Cure)', b.a, 128)
+        imgui.TextColored(palette.dim, 'Add a spell')
+        imgui.SameLine()
+        imgui.PushItemWidth(200)
+        imgui.InputTextWithHint('##add_' .. id, 'e.g. Dia II', b.a, 128)
         imgui.PopItemWidth()
+        if imgui.IsItemHovered() then
+            set_tip('Its exact name. With a weapon in the next box, the start of names works too: Cure covers Cure IV.')
+        end
         suggestions(id, b, opts and opts.suggest)
         imgui.TextColored(palette.dim, 'only while holding')
         imgui.SameLine()
-        imgui.PushItemWidth(170)
-        imgui.InputTextWithHint('##held_' .. id, "optional: Daybreak, Bunzi's Rod", held.a, 128)
+        imgui.PushItemWidth(200)
+        imgui.InputTextWithHint('##held_' .. id, 'optional, e.g. Daybreak', held.a, 128)
         imgui.PopItemWidth()
+        if imgui.IsItemHovered() then
+            set_tip('Leave it blank to keep your weapons for that spell always. A weapon here (or several, with '
+                .. 'commas): only while one of them is in Main or Sub.')
+        end
         imgui.SameLine()
         local text, hand = trim(b.a[1]), trim(held.a[1])
         if button('+ Add##' .. id, 'accent') and (text ~= '') then

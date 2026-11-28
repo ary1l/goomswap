@@ -37,9 +37,10 @@ local settings = {
     SmartSwap = { 'Keeps Main/Sub/Range on for the Never swap weapons for spells instead of losing TP to a swap '
         .. '(/smartswap).' },
     SmartSwapTP = { 'SmartSwap acts only at or above this TP.', '1' },
-    KeepWeaponsFor = { 'With SmartSwap on, at or over SmartSwap from TP: these spells never swap Main/Sub/Range, '
-        .. 'precast or midcast, over Always swap weapons for. A spell name, or "Cure, Cura while Daybreak": spells '
-        .. 'whose name starts with Cure or Cura, only while Daybreak is in Main or Sub.',
+    KeepWeaponsFor = { "Casting these keeps the weapons you hold (Main, Sub, Range), so you don't lose TP. Needs "
+        .. 'SmartSwap on and your TP at least SmartSwap from TP; it wins over Always swap weapons for.\n'
+        .. 'A spell is its exact name. "Cure/Cura... while Daybreak or Bunzi\'s Rod in hand": any spell starting '
+        .. 'with Cure or Cura, only while one of those is in Main or Sub.',
         "{ 'Dia II', { Spells = { 'Cure' }, Worn = { 'Daybreak' } } }" },
     EditorSpacing = { "The set editor's slot cards: Compact (icons; name and stats on hover) or Comfortable (each piece named). Its Editor menu sets it too.", 'Comfortable' },
     EditorIgnoreSuggestions = { 'Exact set names /gcedit no longer suggests (the add list, Related tab), any case.', "{ 'Singing' }" },
@@ -181,7 +182,8 @@ local categories = {
     { 'Idle & defense', { 'AutoGear', 'RegenGearHPP', 'RefreshGearMPP', 'DTGearHPP', 'PetDTGearHPP', 'IdleWeapons',
         'CombatWindow', 'XIRollSet', 'SleepCancelStoneskin', 'HoxneAutoUse' } }, -- HoxneItem (always Hoxne Ampulla), HoxneLockSlots: advanced
     { 'Weapons', { 'WeaponTPGuard', 'AftermathHold', 'HoldExempt', 'SmartSwap', 'SmartSwapTP', 'KeepWeaponsFor' } },
-    { 'Casting', { 'SIRSkip', 'THSkip', 'ElementGear', 'ElementSkills', 'OrpheusPoints', 'MBWindow', 'MBSkills',
+    -- OrpheusPoints: BG-Wiki's measured curve, not a preference: All (advanced)
+    { 'Casting', { 'SIRSkip', 'THSkip', 'ElementGear', 'ElementSkills', 'MBWindow', 'MBSkills',
         'ElementReport', 'ReceivedSets', 'ReceivedWindow', 'MyBoxes' } },
     { 'Weapon skills', { 'WScheck', 'WSdistance', 'MoonshadeTP', 'MoonshadeSlot', 'MoonshadeSkip' } },
     { 'Items & Packer', { 'Packer', 'EnchantDelays', 'EnchantWindow', 'warp_Ring', 'mea_Ring', 'dem_Ring', 'holla_Ring',

@@ -111,10 +111,13 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     end
     local HOLD_FIRST = {}
     -- ElementGear's parts, each its own field (a nil one, the Zodiac Ring until you name yours, just isn't there)
-    local EG_FIELDS = { { 'AnyObi', 'Any-element obi', 'Hachirin-no-Obi' },
-        { 'Distance', 'Distance piece', "Orpheus's Sash" },
-        { 'DistanceMax', '  only within (yalms)', 'any distance', true },
-        { 'Back', 'Day/weather back', 'none: Twilight Cape' } }
+    local EG_FIELDS = { { 'AnyObi', 'Any-element obi', 'e.g. Hachirin-no-Obi',
+            'Worn when the day or weather helps and you have no obi of that element.' },
+        { 'Distance', 'Close-range piece', "e.g. Orpheus's Sash",
+            'Worn instead of the obi when it gives more: the closer the target, the more it gives.' },
+        { 'DistanceMax', 'its max distance', 'blank: any',
+            'Yalms. Blank: no limit (it always gives at least 1%).', true },
+        { 'Back', 'Day/weather back', 'blank: none', 'e.g. Twilight Cape: adds to a day or weather bonus.' } }
     local egBuf = {}
     local function element_gear(id, v)
         local cur, out = (type(v) == 'table') and v or {}, nil
@@ -125,15 +128,16 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             end
             out[k] = x
         end
-        imgui.TextColored(palette.dim, 'Obis you own: element = obi')
-        local obis = W.Map(id .. '_obis', cur.Obis or {}, { keyHint = 'Fire', valueHint = 'Karin Obi' })
+        imgui.TextColored(palette.dim, 'Your element obis (element, then obi)')
+        local obis = W.Map(id .. '_obis', cur.Obis or {}, { keyHint = 'element', valueHint = 'obi name' })
         if obis ~= nil then set('Obis', obis) end
         for _, f in ipairs(EG_FIELDS) do
             local k = f[1]
             -- the form's own label column, past its indent
             local x0 = (imgui.GetCursorPosX ~= nil) and imgui.GetCursorPosX() or 0
             imgui.TextUnformatted(f[2])
-            imgui.SameLine(x0 + 165)
+            if imgui.IsItemHovered() then set_tip(f[4]) end
+            imgui.SameLine(x0 + 150)
             local now = (cur[k] ~= nil) and tostring(cur[k]) or ''
             local b = egBuf[id .. k]
             if (b == nil) or (b.base ~= now) then
@@ -148,7 +152,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                 imgui.SameLine()
                 if W.Button('Set##eg_set_' .. id .. k, 'accent') then
                     local x = (typed ~= '') and typed or nil
-                    if f[4] then x = tonumber(typed) end
+                    if f[5] then x = tonumber(typed) end
                     if (x ~= nil) or (typed == '') then set(k, x) end
                 end
             end
@@ -171,8 +175,12 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             local b = { cur[f[1]] == true }
             if imgui.Checkbox(f[2] .. '##eg_' .. id .. f[1], b) then set(f[1], b[1]) end
         end
-        imgui.TextColored(palette.dim, 'Never taken off for these')
-        local keep = W.List(id .. '_keep', cur.Keep or {}, { hint = 'Oneiros Rope' })
+        imgui.TextColored(palette.dim, 'Never swapped out while worn')
+        if imgui.IsItemHovered() then
+            set_tip('When your set puts one of these on (Oneiros Rope in Waist...), the obi, close-range piece, '
+                .. 'ring and back leave that slot alone.')
+        end
+        local keep = W.List(id .. '_keep', cur.Keep or {}, { hint = 'e.g. Oneiros Rope' })
         if keep ~= nil then set('Keep', keep) end
         return out
     end
@@ -242,7 +250,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                 table.sort(HOLD_FIRST)
             end
             return W.List(id, v, { label = hold_label, tip = hold_tip, width = 300,
-                hint = 'a skill, ability type or name: Dark Magic, Quick Draw', suggest = starts_with(function()
+                hint = 'skill, ability type or name', suggest = starts_with(function()
                     return { HOLD_FIRST, actionNames or {} }
                 end) })
         end
@@ -390,6 +398,30 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             local v = files.Layer(which)[key]
             return (v == nil) and '(not set)' or clip(text_of(v, plain))
         end
+        if kind == 'widget' then -- a chip or form row: edited with its controls, never typed as Lua
+            local function brief(v)
+                if type(v) ~= 'table' then return clip(text_of(v, plain)) end
+                local parts = {}
+                for _, x in ipairs(v) do parts[#parts + 1] = (type(x) == 'table') and W.KeepText(x) or tostring(x) end
+                if #parts == 0 then
+                    for k, x in pairs(v) do
+                        if type(x) ~= 'table' then parts[#parts + 1] = tostring(k) .. ' = ' .. tostring(x) end
+                    end
+                    table.sort(parts)
+                end
+                local s = table.concat(parts, ', ')
+                if #s > 180 then s = string.sub(s, 1, 177) .. '...' end
+                return (s ~= '') and s or '(none)'
+            end
+            local by = {}
+            if files.Layer('shared')[key] ~= nil then by[#by + 1] = 'everyone' end
+            if files.Layer('own')[key] ~= nil then by[#by + 1] = 'all jobs (char.lua)' end
+            if select(2, files.Job('settings.' .. key)) ~= 'none' then by[#by + 1] = job_abbr() .. ' only' end
+            return key .. '\n\n' .. ((doc ~= nil) and (doc[1] .. '\n\n') or '') .. 'Default: '
+                .. ((default == nil) and '(none)' or brief(default))
+                .. ((#by > 0) and ('\nSet in: ' .. table.concat(by, ', '))
+                    or '\nNot set in any file: the default is used.')
+        end
         local set = {} -- only the files that set it: three "(not set)" lines said nothing
         if files.Layer('shared')[key] ~= nil then set[#set + 1] = 'everyone: ' .. layer('shared') end
         if files.Layer('own')[key] ~= nil then set[#set + 1] = 'all jobs (char.lua): ' .. layer('own') end
@@ -501,6 +533,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         if ed.tip == nil then -- made when the row's value changes, not every frame
             local kind = check and 'check' or (((type(default) == 'number') and not LUA_TEXT[key]) and 'number')
                 or (plain and 'text') or 'lua'
+            if ed.editable and (widget_kind(key, v) ~= nil) then kind = 'widget' end
             ed.tip = tip_of(key, kind, default)
         end
         name_cell(nice(key))
