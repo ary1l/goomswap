@@ -188,13 +188,15 @@ return function(imgui, palette, set_tip)
         local out, changed = list_copy(list), false
         local f = flow_start()
         for i, v in ipairs(list or {}) do
-            local label = tostring(v) .. '  x##' .. id .. '_' .. i
-            flow_next(f, width(tostring(v) .. '  x') + 8)
-            if button(label, 'danger') then
+            local text = (opts.label ~= nil) and opts.label(v) or tostring(v)
+            flow_next(f, width(text .. '  x') + 8)
+            if button(text .. '  x##' .. id .. '_' .. i, 'danger') then
                 table.remove(out, i)
                 changed = true
             end
-            if imgui.IsItemHovered() then set_tip('Take ' .. tostring(v) .. ' out.') end
+            if imgui.IsItemHovered() then
+                set_tip(((opts.tip ~= nil) and (opts.tip(v) .. '\n') or '') .. 'Click to remove it.')
+            end
         end
         if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end
         local b = box(id)
@@ -248,8 +250,8 @@ return function(imgui, palette, set_tip)
             end
             if imgui.IsItemHovered() then
                 set_tip(((type(v) == 'table') and ('Spells whose name starts with ' .. table.concat(v.Spells or {}, ' or ')
-                    .. ', only while ' .. table.concat(v.Worn or {}, ' or ') .. ' is in Main or Sub. ') or '')
-                    .. 'Take it out.')
+                    .. ', only while ' .. table.concat(v.Worn or {}, ' or ') .. ' is in Main or Sub.\n') or '')
+                    .. 'Click to remove it.')
             end
         end
         if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end

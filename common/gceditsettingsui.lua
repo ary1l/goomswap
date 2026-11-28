@@ -55,6 +55,87 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         end
         return CHOICES[key]
     end
+    -- HoldExempt's entries: a spell skill (every spell of it), an ability type (every ability of it), else a name
+    local HOLD_SKILLS = { ['Divine Magic'] = true, ['Healing Magic'] = true, ['Enhancing Magic'] = true,
+        ['Enfeebling Magic'] = true, ['Elemental Magic'] = true, ['Dark Magic'] = true, ['Summoning Magic'] = true,
+        Ninjutsu = true, Singing = true, ['Blue Magic'] = true, Geomancy = true }
+    local HOLD_TYPES = { ['Corsair Roll'] = 'every roll', ['Quick Draw'] = 'every shot', Ready = 'every Ready move',
+        ['Blood Pact: Rage'] = 'every Rage pact', ['Blood Pact: Ward'] = 'every Ward pact',
+        ['Rune Enchantment'] = 'every rune' }
+    local function hold_label(v)
+        local t = HOLD_TYPES[tostring(v)]
+        return (t ~= nil) and (tostring(v) .. ' (' .. t .. ')') or tostring(v)
+    end
+    local function hold_tip(v)
+        v = tostring(v)
+        if HOLD_SKILLS[v] then return 'Every ' .. v .. ' spell.' end
+        if HOLD_TYPES[v] then
+            local note = (v == 'Corsair Roll') and ", not Corsair's Roll alone." or '.'
+            return 'An ability type: ' .. HOLD_TYPES[v] .. note
+        end
+        return 'The spell or ability by that name.'
+    end
+    -- ElementGear's parts, each its own field (a nil one, the Zodiac Ring until you name yours, just isn't there)
+    local EG_FIELDS = { { 'AnyObi', 'Any-element obi', 'Hachirin-no-Obi' },
+        { 'Distance', 'Distance piece', "Orpheus's Sash" },
+        { 'DistanceMax', '  only within (yalms)', 'any distance', true },
+        { 'Ring', 'Zodiac Ring', 'none: name yours' }, { 'Back', 'Back on day / weather', 'none: Twilight Cape' } }
+    local egBuf = {}
+    local function element_gear(id, v)
+        local cur, out = (type(v) == 'table') and v or {}, nil
+        local function set(k, x)
+            if out == nil then
+                out = {}
+                for a, b in pairs(cur) do out[a] = b end
+            end
+            out[k] = x
+        end
+        imgui.TextColored(palette.dim, 'Obis you own: element = obi')
+        local obis = W.Map(id .. '_obis', cur.Obis or {}, { keyHint = 'Fire', valueHint = 'Karin Obi' })
+        if obis ~= nil then set('Obis', obis) end
+        for _, f in ipairs(EG_FIELDS) do
+            local k = f[1]
+            imgui.TextUnformatted(f[2])
+            imgui.SameLine(170)
+            local now = (cur[k] ~= nil) and tostring(cur[k]) or ''
+            local b = egBuf[id .. k]
+            if (b == nil) or (b.base ~= now) then
+                b = { base = now, a = { now } }
+                egBuf[id .. k] = b
+            end
+            imgui.PushItemWidth(190)
+            imgui.InputTextWithHint('##eg_' .. id .. k, f[3], b.a, 96)
+            imgui.PopItemWidth()
+            local typed = W.Trim(b.a[1])
+            if typed ~= now then
+                imgui.SameLine()
+                if W.Button('Set##eg_set_' .. id .. k, 'accent') then
+                    local x = (typed ~= '') and typed or nil
+                    if f[4] then x = tonumber(typed) end
+                    if (x ~= nil) or (typed == '') then set(k, x) end
+                end
+            end
+            if k == 'Ring' then -- its slot: nothing until a ring is named
+                imgui.SameLine()
+                imgui.TextColored(palette.dim, 'in')
+                imgui.SameLine()
+                local pick = W.Pick(id .. '_ringslot', cur.RingSlot or 'Ring2', { 'Ring1', 'Ring2' }, 80)
+                if pick ~= nil then set('RingSlot', pick) end
+                if imgui.IsItemHovered() then
+                    set_tip('The slot your Zodiac Ring goes in. Unused until one is named.')
+                end
+            end
+        end
+        for _, f in ipairs({ { 'Cures', 'Obi on Cure, Cura, Curaga in Light day or weather' },
+            { 'BackOnCures', 'The back on those cures too' } }) do
+            local b = { cur[f[1]] == true }
+            if imgui.Checkbox(f[2] .. '##eg_' .. id .. f[1], b) then set(f[1], b[1]) end
+        end
+        imgui.TextColored(palette.dim, 'Never taken off for these')
+        local keep = W.List(id .. '_keep', cur.Keep or {}, { hint = 'Oneiros Rope' })
+        if keep ~= nil then set('Keep', keep) end
+        return out
+    end
     -- the words on the bar's pills, for BarHide's suggestions
     local BAR_WORDS = { 'melee', 'ws', 'idle', 'nuke', 'weapon', 'tank', 'pup', 'hoxne', 'def', 'sir', 'th', 'kite',
         'proc', 'burst', 'death', 'harp', 'lock' }
@@ -88,6 +169,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             end
             return 'keys'
         end
+        if (key == 'ElementGear') and ((v == nil) or (type(v) == 'table')) then return 'element' end
         if choices(key) ~= nil then
             local fits = (v == nil) or (type(v) == 'string') or ((key == 'Theme') and (v == false))
             return fits and 'choice' or nil
@@ -111,6 +193,10 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                 if (type(o) == 'table') and (o[1] == v) then label = o[2] end
             end
             return W.Pick(id, label, choices(key), 200)
+        end
+        if kind == 'element' then return element_gear(id, v) end
+        if (kind == 'list') and (key == 'HoldExempt') then
+            return W.List(id, v, { label = hold_label, tip = hold_tip })
         end
         if (kind == 'list') and (key == 'BarHide') then
             return W.List(id, v, { hint = 'harp, lock...', suggest = function(t)
@@ -743,9 +829,17 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         else
             local opts = { { false, '(none)' } }
             for _, m in ipairs(wm) do if m ~= 'None' then opts[#opts + 1] = m end end
+            imgui.SetCursorPosX(LABEL_W)
+            if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
+            imgui.TextColored(palette.dim, 'Shortcuts: /wm melee, /wm ranged, /wm caster and /wm tank switch to the '
+                .. 'mode picked below. Use them in macros: they keep working when you rename or add modes.')
+            if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
             for i, r in ipairs({ 'melee', 'ranged', 'caster', 'tank' }) do
                 name_cell('/wm ' .. r)
-                if imgui.IsItemHovered() then set_tip('WeaponRoles\n\nThe /wm mode /wm ' .. r .. ' picks.') end
+                if imgui.IsItemHovered() then
+                    set_tip('WeaponRoles\n\nTyping /wm ' .. r .. ' (or a macro with it) switches /wm to the mode '
+                        .. 'picked here. (none): /wm ' .. r .. ' says it has no mode.')
+                end
                 imgui.SameLine(LABEL_W)
                 local cur = (type(roles) == 'table') and roles[r] or nil
                 local nv = W.Pick('mode_role_' .. r, (cur ~= nil) and tostring(cur) or '(none)', opts, 200)
