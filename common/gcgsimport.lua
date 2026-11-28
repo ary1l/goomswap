@@ -159,10 +159,10 @@ function G.Name(path)
         if lb == 'ja' then return (#path >= 3) and rest3 or 'JA' end
         if lb == 'ws' then
             if #path == 2 then return 'Ws_Default' end
-            -- WeaponskillMode UncappedAtt (attack uncapped: high buffs) is GoomSwap's /wsset high, _HighBuff;
-            -- PDL stays _PDL (/wsset pdl)
+            -- WeaponskillMode UncappedAtt (attack not capped: low buffs, more attack) is GoomSwap's /wsset low,
+            -- _LowBuff; PDL stays _PDL (/wsset pdl)
             local name = G.MODE_WORDS[string.lower(tostring(path[3]))] and ('Ws_' .. rest3) or rest3
-            return (string.gsub(name, '_[Uu]ncapped[Aa]tt%f[%W_]', '_HighBuff'))
+            return (string.gsub(name, '_[Uu]ncapped[Aa]tt%f[%W_]', '_LowBuff'))
         end
         if lb == 'ra' then return with('Preshot', 3) end
         if lb == 'corsairroll' then return (#path >= 3) and rest3 or 'Phantom Roll' end
@@ -290,6 +290,29 @@ function G.Import(text)
     for _, name in ipairs(tops) do
         if type(env.sets[name]) == 'table' then visit(env.sets[name], { name }) end
     end
+    -- SomeAcc / FullAcc (Selindrile's accuracy steps) fold into Acc, GoomSwap's one (/mset acc, /wsset acc): the
+    -- file's own Acc set kept where it has one, else the first of them in the file's order becomes it
+    local dropped, renamed, kept = {}, {}, {}
+    for _, n in ipairs(out.order) do
+        local acc = string.gsub(string.gsub(n, '_[Ss]ome[Aa]cc%f[%W_]', '_Acc'), '_[Ff]ull[Aa]cc%f[%W_]', '_Acc')
+        if acc == n then
+            kept[#kept + 1] = n
+        elseif out.sets[acc] ~= nil then
+            dropped[#dropped + 1] = n
+            out.sets[n], out.from[n] = nil, nil
+        else
+            renamed[#renamed + 1] = n .. ' -> ' .. acc
+            out.sets[acc], out.from[acc], out.sets[n], out.from[n] = out.sets[n], out.from[n], nil, nil
+            kept[#kept + 1] = acc
+        end
+    end
+    out.order = kept
+    if (#dropped + #renamed) > 0 then
+        out.notes[#out.notes + 1] = 'SomeAcc / FullAcc folded into Acc (/mset acc): ' .. #dropped .. ' left out (an Acc '
+            .. 'set there already: ' .. table.concat(dropped, ', ', 1, math.min(#dropped, 6))
+            .. ((#dropped > 6) and '...' or '') .. ')'
+            .. ((#renamed > 0) and ('; renamed: ' .. table.concat(renamed, ', ')) or '')
+    end
     -- Mote's / Selindrile's mode lists, as text (comments dropped): state.Weapons:options('Naegling', ...),
     -- OffenseMode, HybridMode, WeaponskillMode. For the /wm and /mset lists (G.ModeLists) and the notes below.
     local plain = string.gsub(string.gsub(text, '%-%-%[(=*)%[.-%]%1%]', ''), '%-%-[^\n]*', '')
@@ -303,17 +326,17 @@ function G.Import(text)
         end
     end
     -- sets GoomSwap has no moment for, by name: say what to do with them
-    local am, wsm, high, pdl = {}, {}, 0, 0
+    local am, wsm, low, pdl = {}, {}, 0, 0
     for _, n in ipairs(out.order) do
         if string.match(n, '^Tp_.*_AM3?$') or string.match(n, '^Tp_AM3?$') then am[#am + 1] = n end
         if not string.match(n, '^Tp_') then
-            if string.find(n, '_HighBuff', 1, true) then high = high + 1 end
+            if string.find(n, '_LowBuff', 1, true) then low = low + 1 end
             if string.find(n, '_PDL', 1, true) then pdl = pdl + 1 end
             if string.match(n, '_Match$') then wsm[#wsm + 1] = n end
         end
     end
-    if (high + pdl) > 0 then
-        out.notes[#out.notes + 1] = 'WeaponskillMode sets: ' .. high .. ' UncappedAtt -> _HighBuff (/wsset high), '
+    if (low + pdl) > 0 then
+        out.notes[#out.notes + 1] = 'WeaponskillMode sets: ' .. low .. ' UncappedAtt -> _LowBuff (/wsset low), '
             .. pdl .. ' PDL -> _PDL (/wsset pdl)'
     end
     if #am > 0 then
@@ -355,18 +378,19 @@ end
 -- "heathen's sollerets +3" for Heath. Sollerets +3), so files have both. lookup(name): the game's name, or nil. Each
 -- set's items are renamed in place; notes list the log names changed and the names the game doesn't know.
 function G.FixNames(imported, lookup)
-    local changed, unknown, seen, cased = {}, {}, {}, 0
+    local changed, unknown, seen, cased, loose = {}, {}, {}, 0, {}
     local function fix(set)
         for slot, v in pairs(set or {}) do
             local name = (type(v) == 'string') and v or ((type(v) == 'table') and v.Name) or nil
             if (type(name) == 'string') and (name ~= 'remove') then
-                local real = lookup(name)
+                local real, plural = lookup(name)
                 if real == nil then
                     if not seen[name] then seen[name] = true; unknown[#unknown + 1] = name end
                 elseif real ~= name then
                     if not seen[name] then
                         seen[name] = true
-                        if string.lower(real) == string.lower(name) then cased = cased + 1
+                        if plural then loose[#loose + 1] = name .. ' -> ' .. real
+                        elseif string.lower(real) == string.lower(name) then cased = cased + 1
                         else changed[#changed + 1] = name .. ' -> ' .. real end
                     end
                     if type(v) == 'string' then set[slot] = real else v.Name = real end
@@ -386,6 +410,11 @@ function G.FixNames(imported, lookup)
             .. ' changed to the game\'s item names (LuAshitacast '
             .. 'finds only those): ' .. list(changed)
     end
+    if #loose > 0 then
+        imported.notes[#imported.notes + 1] = #loose .. ' name' .. ((#loose == 1) and '' or 's')
+            .. ' off from the game\'s by an s (GearSwap never found ' .. ((#loose == 1) and 'it' or 'them')
+            .. '; the one item it can be, check it): ' .. list(loose)
+    end
     if cased > 0 then
         imported.notes[#imported.notes + 1] = cased .. ' item name' .. ((cased == 1) and '' or 's')
             .. ' written in the game\'s capitals (Nyame helm -> Nyame Helm)'
@@ -397,17 +426,23 @@ function G.FixNames(imported, lookup)
     return #changed, cased, #unknown
 end
 
+-- A name without the s ending its words (flanchards -> flanchard; Heathen's stays): the game's log names
+-- differ from what files write ("heathen's flanchards +3" for Heath. Flanchard +3, "Heathen's flanchard +3" in files).
+local function unplural(s) return (string.gsub(string.lower(s), '(%w%w%w)s%f[^%w]', '%1')) end
+G.Unplural = unplural
+
 -- The game's item name for a name or log name, any case (G.FixNames' lookup). The by-name lookup first; else every
--- equippable item read once (its Name and LogNameSingular, Ashita SDK IItem), which takes a moment.
+-- equippable item read once (its Name and LogNameSingular, Ashita SDK IItem), which takes a moment; last, the one
+-- item whose name or log name is that name but for a plural s (then true second).
 local function item_lookup()
     local res = AshitaCore:GetResourceManager()
-    local names, logs = nil, nil
+    local names, logs, plain = nil, nil, nil
     return function(name)
         local r = res:GetItemByName(name, 0)
         if (r ~= nil) and (r.Name ~= nil) and (type(r.Name[1]) == 'string')
             and (string.lower(r.Name[1]) == string.lower(name)) then return r.Name[1] end
         if names == nil then
-            names, logs = {}, {}
+            names, logs, plain = {}, {}, {}
             for id = 1, 65534 do
                 local it = res:GetItemById(id)
                 if (it ~= nil) and (it.Slots ~= 0) and (it.Name ~= nil) and (type(it.Name[1]) == 'string') then
@@ -417,11 +452,17 @@ local function item_lookup()
                     if (type(log) == 'string') and (log ~= '') then
                         logs[string.lower(log)] = logs[string.lower(log)] or n
                     end
+                    for _, k in ipairs({ unplural(n), (type(log) == 'string') and (log ~= '') and unplural(log) or nil }) do
+                        if (plain[k] == nil) or (plain[k] == n) then plain[k] = n else plain[k] = false end -- false: 2+
+                    end
                 end
             end
         end
         local l = string.lower(name)
-        return names[l] or logs[l]
+        if (names[l] or logs[l]) ~= nil then return names[l] or logs[l] end
+        local p = plain[unplural(name)]
+        if p then return p, true end
+        return nil
     end
 end
 
@@ -467,7 +508,7 @@ function G.ModeLists(text, imported, whole)
     end
     for _, m in ipairs(opts.Weapons or {}) do addw(made[string.lower(m)]) end -- the file's order first
     for _, n in ipairs(imported.order) do addw(string.match(n, '^Weapon_(%w+)$')) end
-    local ms, mseen = {}, { default = true, normal = true, am = true, am3 = true }
+    local ms, mseen = {}, { default = true, normal = true, am = true, am3 = true, someacc = true, fullacc = true } -- Acc
     -- the file's OffenseMode / HybridMode options when it has them (Normal is Default), else every Tp_ mode
     for _, st in ipairs({ 'OffenseMode', 'HybridMode' }) do
         for _, m in ipairs(opts[st] or {}) do

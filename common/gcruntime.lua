@@ -27,8 +27,8 @@ do
             Messages = false,
             AutoGear = true, -- master switch for the four auto sets below, /autogear to change any of them in game
             WScheck = true, --set to false if you dont want to use the WS distance safety check
-            -- the least reach (yalms, center to center) for a non-ranged WS while WScheck is on; a big mob gets more:
-            -- WS range 3 + your and its hitbox (gcinclude.WsReach)
+            -- the least reach (yalms, center to center) for a WS while WScheck is on; a big mob gets more:
+            -- its range (3; bows and guns 20) + your and its hitbox (gcinclude.WsReach)
             WSdistance = 5,
             RegenGearHPP = 60, -- Idle_Regen below this HPP, out of combat only, 0 = never
             RefreshGearMPP = 60, -- Idle_Refresh below this MPP, out of combat only, 0 = never
@@ -250,10 +250,11 @@ do
             local melee = (type(gcinclude.MeleeModes) == 'table')
                     and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or { 'Default', 'SubtleBlow', 'Acc' }
             gcdisplay.CreateCycle('MeleeSet', melee)
-            -- /wsset: for weapon skills only. High wears <WS set>_HighBuff over each WS set, PDL <WS set>_PDL
+            -- /wsset: for weapon skills only. Low wears <WS set>_LowBuff over each WS set (attack not capped: low
+            -- buffs, GearSwap's UncappedAtt), High <WS set>_HighBuff, PDL <WS set>_PDL
             -- (Physical damage limit+ gear), Acc <WS set>_Acc, SubtleBlow <WS set>_SubtleBlow (as /mset acc / sb do,
             -- without changing TP gear). Default was Mid: /wsset mid still picks it (SetCycleFrom).
-            gcdisplay.CreateCycle('WsSet', { 'Default', 'High', 'PDL', 'Acc', 'SubtleBlow' })
+            gcdisplay.CreateCycle('WsSet', { 'Default', 'Low', 'High', 'PDL', 'Acc', 'SubtleBlow' })
             -- /idleset: Idle_<mode> over Idle while idle (gcinclude.EquipIdle).
             gcdisplay.CreateCycle('IdleSet', { 'Default', 'Refresh', 'Regen', 'Regain' })
             gcinclude.BuildWeaponCycles()

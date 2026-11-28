@@ -125,7 +125,7 @@ function analysis.New(options)
         return trim(arg)
     end
 
-    local WS_TEXT = { high = 'WS high-buff mode', pdl = 'WS PDL mode', acc = 'WS acc mode',
+    local WS_TEXT = { low = 'WS low-buff mode', high = 'WS high-buff mode', pdl = 'WS PDL mode', acc = 'WS acc mode',
         subtleblow = 'WS subtle blow mode' } -- gceditinspect WS_COND reads these back
     local function cycle_text(name, v)
         if name == 'MeleeSet' then return 'melee mode ' .. v end

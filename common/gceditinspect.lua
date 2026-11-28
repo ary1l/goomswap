@@ -1298,6 +1298,8 @@ local function wi_from_game()
         wi.ms[m] = { m == cur }
     end
     wi.high[1] = ok and (gcdisplay.GetCycle('WsSet') == 'High') or false
+    wi.low = wi.low or { false }
+    wi.low[1] = ok and (gcdisplay.GetCycle('WsSet') == 'Low') or false
     wi.pdl = wi.pdl or { false }
     wi.pdl[1] = ok and (gcdisplay.GetCycle('WsSet') == 'PDL') or false
     wi.dt[1] = ok and (gcdisplay.GetToggle('DTset') == true) or false
@@ -1316,8 +1318,8 @@ local function melee_modes()
 end
 
 -- A job file's /wsset condition words (gceditjob cycle_text) -> the mode
-local WS_COND = { ['WS high-buff mode'] = 'High', ['WS PDL mode'] = 'PDL', ['WS acc mode'] = 'Acc',
-    ['WS subtle blow mode'] = 'SubtleBlow' }
+local WS_COND = { ['WS low-buff mode'] = 'Low', ['WS high-buff mode'] = 'High', ['WS PDL mode'] = 'PDL',
+    ['WS acc mode'] = 'Acc', ['WS subtle blow mode'] = 'SubtleBlow' }
 -- A group's circumstances, against the game now: true when every one is on (the action's own state counts as on).
 local function conds_on(conds, now)
     for _, c in ipairs(conds) do

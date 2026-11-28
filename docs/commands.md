@@ -15,9 +15,9 @@
 | `/dw [on\|off\|auto]` | Dual Wield: why; `off` = `_1h` always |
 | `/smartswap` | Light spells (Dia, Blink…) keep weapons at `SmartSwapTP`+ |
 | `/mset [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets; `acc` also wears `Midshot_Acc` (COR RNG PLD; `Midshot_<Mode>_Acc` per weapon mode) |
-| `/wsset [default\|high\|pdl\|acc\|sb]` | `high`: WS sets add their `_HighBuff`; `pdl`: their `_PDL` (Physical damage limit+ gear); `acc` / `sb`: their `_Acc` / `_SubtleBlow`, as `/mset acc` / `sb` do, TP gear unchanged. `mid` (the old name) picks `default` |
+| `/wsset [default\|low\|high\|pdl\|acc\|sb]` | `low`: WS sets add their `_LowBuff` (attack not capped: low buffs, GearSwap's UncappedAtt); `high`: their `_HighBuff`; `pdl`: their `_PDL` (Physical damage limit+ gear); `acc` / `sb`: their `_Acc` / `_SubtleBlow`, as `/mset acc` / `sb` do, TP gear unchanged. `mid` (the old name) picks `default` |
 | `/th` | `TH` until tagged (THF main: always) |
-| `/wsdistance [yalms\|on\|off]` | No word: the check's state and your target's distance and reach. WS range check: a melee WS out of reach is cancelled (reach = WS range 3 (Gust Slash, Cyclone, Mistral Axe, Bora Axe 14) + your and the target's hitboxes, so further on a big mob; at least as far as your auto-attacks have landed on a mob of that name and size this zone; `yalms` = the least reach, default 5) |
+| `/wsdistance [yalms\|on\|off]` | No word: the check's state and your target's distance and reach. WS range check: a WS out of reach is cancelled (reach = its range: 3; Gust Slash, Cyclone, Mistral Axe, Bora Axe 14; bows and guns 20, at least 21; Blast Arrow, Blast Shot, Numbing Shot 5; + your and the target's hitboxes, so further on a big mob; at least as far as your auto-attacks have landed on a mob of that name and size this zone; `yalms` = the least reach, default 5). Myrkr, Dagan, Moonlight, Starlight (on you): no check |
 | `/def [dt\|mdt\|aminon\|off]` | DT → MDT → Aminon → off; `/dt` `/mdt` `/aminon` one |
 | `/sir` `/kite` | SIR over midcasts (not `SIRSkip`) / Movement |
 | `/idleset [refresh\|regen\|regain]` | `Idle_<mode>` over `Idle` while idle |
@@ -41,7 +41,7 @@
 | `/gcperf` | Timings in chat every 10s: idle/engaged handler, bar, gear grid, engine tick; `/gcperf off` stops |
 | `/checksets [all]` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2); gear you don't own, wrong bag, other augments |
 | `/gcbuild [JOB]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua`; on your job it opens in `/gcedit` to fill and save as `<JOB>.lua` ([/gcbuild](gcbuild.md)) |
-| `/gcimport <file> [JOB]` | A Windower GearSwap job file's sets (Mote's names mapped: `sets.engaged.Acc` -> `Tp_Acc`) as `<JOB>.proposed.lua`, the job's example around them; it opens in `/gcedit` to save as `<JOB>.lua` (from another job: as that job's file, **Save file**, nothing loaded). Needs a GoomSwap job file loaded on the job you run it from ([Rules](rules.md) for its logic) |
+| `/gcimport <file> [JOB]` | A Windower GearSwap job file's sets (Mote's names mapped: `sets.engaged.Acc` -> `Tp_Acc`; SomeAcc / FullAcc fold into Acc; WS UncappedAtt -> `_LowBuff`) as `<JOB>.proposed.lua`, the job's example around them; it opens in `/gcedit` to save as `<JOB>.lua` (from another job: as that job's file, **Save file**, nothing loaded). Needs a GoomSwap job file loaded on the job you run it from ([Rules](rules.md) for its logic) |
 | `/gcedit [set]` | Set editor window: sets, slots with icons, gear you own; Save writes `<JOB>.lua` and reloads ([/gcedit](gcedit.md)) |
 | `/gcedit last [slot]` | The editor on the set your last action used (the set named after it, else the last set it wore), Result on that use; with a slot (`ear2`), the set that last put that slot on (as `/gcgear`'s right-click). `/gcedit Last Stand` is still the set |
 | `/gcmessages` `/gchelp` | Chat lines / help |

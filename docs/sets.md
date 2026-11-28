@@ -26,10 +26,11 @@ obi/Orpheus/back/ring → `SIR`. WHM cures: `['Healing Magic']` → `Self_Cure` 
 
 **WS:** job file (`Ws_Default` → `Ws_<weapon>` → `Ws_<mset>` → `Ws_<weapon>_<mset>` → the WS's own set →
 `<WS>_<weapon>` → `<WS>_<mset>` → `<WS>_<weapon>_<mset>`; `<weapon>` falls back to `2h` / `1h` as above) →
-`_HighBuff` / `_PDL` / `_Acc` / `_SubtleBlow` (`/wsset`) → `_Dt` (`/dt`) → Hoxne (→ its `_Dt`) → `Buffs_Ws` →
+`_LowBuff` / `_HighBuff` / `_PDL` / `_Acc` / `_SubtleBlow` (`/wsset`) → `_Dt` (`/dt`) → Hoxne (→ its `_Dt`) → `Buffs_Ws` →
 Hoxne + buff (`Hoxne_Ws_Berserk`, → its `_Dt`) → Moonshade → obi/Orpheus/back.
 `/proc`: only `Ws_Proc` (else `Proc`) in place of all of that; the job file's checks still run.
-`/dt` adds `_Dt` to each WS set worn: `Ws_Dt`, `Ws_SubtleBlow_Dt`, `['Victory Smite_Dt']`, `Hoxne_Ws_Dt`.
+`/dt` adds `_Dt` to each WS set worn, `/wsset`'s too: `Ws_Dt`, `Ws_SubtleBlow_Dt`, `['Victory Smite_Dt']`,
+`['Insurgency_HighBuff_Dt']`, `Hoxne_Ws_Dt`.
 
 **Your file lacks one?** No code needed: make the set by name ([editor: Add a set or mode](gcedit.md#add-a-set-or-mode))
 and its toggle wears it. Until then it falls back as the table says (`Aminon` → `mdt`).
@@ -52,7 +53,7 @@ and its toggle wears it. Until then it falls back as the table says (`Aminon` �
 | `Absorb` `Absorb_TP` `LightBonus` | Absorb spells / Healing Magic |
 | `Buffs` `Buffs_Tp` `Buffs_Idle` `Buffs_Ws` `Buffs_Precast` `Buffs_Midcast` | `{ ['Aftermath: Lv.3'] = {...} }` while the buff is up: `Buffs` idle and engaged, `Buffs_Tp` engaged only, `Buffs_Idle` not engaged (both over `Buffs`), `Buffs_Ws` weapon skills, `Buffs_Precast` / `Buffs_Midcast` spells (precast / midcast); each is its own set in `/gcedit` |
 | `Hoxne_Tp` `_Idle` `_Dt` `_Ws` `Hoxne_<WS>` `Hoxne_<set>_<buff>` | `/hoxne` + Enchantment; `Hoxne_<WS>` (`Hoxne_Ruthless Stroke`) over `Hoxne_Ws` on that WS (`/gcedit`: right-click `Hoxne_Ws`, **Add a set for one WS**); each also `_<mset>` (`Hoxne_Dt_Impetus_SubtleBlow`). `Hoxne_<set>_<buff>` (`Hoxne_Tp_Berserk`, `&` for several: `Hoxne_Tp_Berserk&Aggressor`) while those buffs are up too, over the plain buff sets (`Buffs['Berserk']`) |
-| `Ws_Dt` `<ws>_Dt` `<ws>_<mset>_Dt` | WS while `/dt` is on |
+| `Ws_Dt` `<ws>_Dt` `<ws>_<mset>_Dt` `<ws>_HighBuff_Dt` | WS while `/dt` is on (the last with `/wsset high`; any `/wsset` mode alike) |
 | `XIRoll` | idle with a roll at 11 |
 | `*_Received` | a spell coming at you (`ReceivedSets`, 8s max) |
 
@@ -108,8 +109,8 @@ missing. The examples carry only sets with gear; `/gcedit` → **+ New set** lis
 
 | Set | Worn |
 |---|---|
-| `['Savage Blade']` `['Savage Blade_Acc']` `['Savage Blade_SubtleBlow']` `['Savage Blade_HighBuff']` `['Savage Blade_PDL']` | that WS; `/mset acc` or `/wsset acc`; `/mset sb` or `/wsset sb`; `/wsset high`; `/wsset pdl` |
-| `Ws_Default` `Ws_Acc` `Ws_SubtleBlow` `Ws_HighBuff` `Ws_PDL` | any WS, under its own |
+| `['Savage Blade']` `['Savage Blade_Acc']` `['Savage Blade_SubtleBlow']` `['Savage Blade_LowBuff']` `['Savage Blade_HighBuff']` `['Savage Blade_PDL']` | that WS; `/mset acc` or `/wsset acc`; `/mset sb` or `/wsset sb`; `/wsset low`; `/wsset high`; `/wsset pdl` |
+| `Ws_Default` `Ws_Acc` `Ws_SubtleBlow` `Ws_LowBuff` `Ws_HighBuff` `Ws_PDL` | any WS, under its own |
 | `['Berserk']` | that job ability |
 | `['Enhancing Magic']` `['Cure']` `['Phalanx']` | skill, then spell or family (`Cure IV` → `Cure`) |
 | `['Healing Magic_Precast']` `['Stoneskin_Precast']` | over `Precast` |

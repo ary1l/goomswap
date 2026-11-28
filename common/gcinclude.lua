@@ -51,7 +51,7 @@ gcinclude.Towns = T{'Tavnazian Safehold','Aht Urhgan Whitegate','Nashmau','South
     'Eastern Adoulin'}
 gcinclude.LockingRings = T{'Echad Ring', 'Trizek Ring', 'Endorsement Ring', 'Capacity Ring', 'Warp Ring',
     'Facility Ring','Dim. Ring (Dem)','Dim. Ring (Mea)','Dim. Ring (Holla)'}
--- Archery / Marksmanship weapon skills: they take ammo (CheckBlockedAmmoWS); the WS distance check skips them
+-- Archery / Marksmanship weapon skills: they take ammo (CheckBlockedAmmoWS); range 20 (WsRanges)
 gcinclude.DistanceWS = T{'Flaming Arrow','Piercing Arrow','Dulling Arrow','Sidewinder','Blast Arrow','Arching Arrow',
     'Empyreal Arrow','Refulgent Arrow','Apex Arrow','Namas Arrow','Jishnu\'s Radiance','Hot Shot','Split Shot',
     'Sniper Shot','Slug Shot','Blast Shot','Heavy Shot','Detonator','Numbing Shot','Last Stand','Coronach','Wildfire',
@@ -1080,10 +1080,13 @@ function gcinclude.WrapHoldHandlers()
                 end
                 local worn = gcinclude.WornSets
                 gcinclude.WornSets = nil
-                -- /wsset: each WS set's child; an /mset mode of that name already wore them (/mset acc: Ws_Acc)
+                -- /wsset: each WS set's child; an /mset mode of that name already wore them (/mset acc: Ws_Acc). Those
+                -- children are WS sets worn too: /dt takes their _Dt (['Insurgency_HighBuff_Dt'])
                 local key = gcinclude.WsSetKeys[gcdisplay.GetCycle('WsSet')]
-                if (key ~= nil) and (gcdisplay.GetCycle('MeleeSet') ~= key) then gcinclude.WearChildren(worn, {key}) end
-                -- /dt: Ws_Dt, ['Victory Smite_Dt']
+                if (key ~= nil) and (gcdisplay.GetCycle('MeleeSet') ~= key) then
+                    for _, n in ipairs(gcinclude.WearChildren(worn, {key})) do worn[#worn + 1] = n end
+                end
+                -- /dt: Ws_Dt, ['Victory Smite_Dt'], Ws_HighBuff_Dt
                 if (gcdisplay.GetToggle('DTset') == true) then gcinclude.WearChildren(worn, {'Dt'}) end
                 gcinclude.CheckHoxneWs()
                 gcinclude.CheckBuffSets('Buffs_Ws')
@@ -1250,11 +1253,12 @@ end
 
 -- Child sets: while a handler runs, the sets it wears are noted by
 -- name; then each one's <name>_<key> goes on, in the order they went on, and for <prefix>_Default also
--- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: HighBuff / PDL / Acc /
--- SubtleBlow on weapon skills (/wsset high / pdl / acc / sb); Self or Others (a spell on you / on anyone but a
+-- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: LowBuff / HighBuff / PDL / Acc
+-- / SubtleBlow on weapon skills (/wsset low / high / pdl / acc / sb); Self or Others (a spell on you / on anyone but a
 -- monster) and Burst (BurstWanted) on spells.
 gcinclude.WornSets = nil -- the names, while a handler runs
-gcinclude.WsSetKeys = { High = 'HighBuff', PDL = 'PDL', Acc = 'Acc', SubtleBlow = 'SubtleBlow' } -- /wsset mode: key
+-- /wsset mode: the child key it wears over each WS set
+gcinclude.WsSetKeys = { Low = 'LowBuff', High = 'HighBuff', PDL = 'PDL', Acc = 'Acc', SubtleBlow = 'SubtleBlow' }
 -- A set's name for the /gcedit layer record: its key in the job file's sets (or a set inside one, as
 -- Buffs['Aftermath: Lv.3']), gcinclude.sets.<key> for the engine's own, else nil (a table built in code).
 local labelOf = setmetatable({}, { __mode = 'k' })
@@ -1373,7 +1377,8 @@ function gcinclude.GetGear()
 end
 
 function gcinclude.WearChildren(names, keys)
-    if (names == nil) or (#keys == 0) then return end
+    local wore = {} -- the names worn, in order
+    if (names == nil) or (#keys == 0) then return wore end
     local done = {}
     for _, n in ipairs(names) do
         local prefix = string.match(n, '^(.-)_[Dd][Ee][Ff][Aa][Uu][Ll][Tt]$')
@@ -1383,10 +1388,12 @@ function gcinclude.WearChildren(names, keys)
                 if (set ~= nil) and not done[set] then
                     done[set] = true
                     gFunc.EquipSet(set)
+                    wore[#wore + 1] = cand
                 end
             end
         end
     end
+    return wore
 end
 
 -- The midcast child keys for the current spell.
@@ -2194,7 +2201,7 @@ function gcinclude.Help()
         'toggles: /th (TH gear until the target is tagged' .. ((#thskip > 0) and (', not on THSkip: '
             .. table.concat(thskip,
             ', ')) or '')
-            .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [default|high|pdl|acc|sb] (high: <WS set>_HighBuff, pdl: <WS set>_PDL, acc: <WS set>_Acc, sb: <WS set>_SubtleBlow)',
+            .. '; TH-set weapons while on), /kite, /mset [sb|acc|base] (no word: Base > SubtleBlow > Acc), /wsset [default|low|high|pdl|acc|sb] (low: <WS set>_LowBuff, high: <WS set>_HighBuff, pdl: <WS set>_PDL, acc: <WS set>_Acc, sb: <WS set>_SubtleBlow)',
         'hud    : /gchud [on|off|debug] (the other boxes, dropped under the bar)',
         'checks : /checksets [all], /gcperf (timings in chat every 10s)',
         'ws     : /wsdistance [on|off|N] (no word: the check and your target\'s reach; N = the least reach)',
@@ -2671,7 +2678,7 @@ function gcinclude.CheckWsBailout()
         if (gcinclude.BuffCount(name) > 0) then return false end
     end
     if not gcinclude.settings.WScheck then return true end
-    if gcinclude.DistanceWS:contains(ws.Name) or gcinclude.SelfWS:contains(ws.Name) then return true end -- ranged, self
+    if gcinclude.SelfWS:contains(ws.Name) then return true end -- on yourself
     local target = gData.GetActionTarget()
     local distance = (target ~= nil) and tonumber(target.Distance) or nil
     if (distance == nil) then return true end
@@ -2682,18 +2689,24 @@ function gcinclude.CheckWsBailout()
     return false
 end
 
--- How far a melee weapon skill reaches, center to center: its range past both bodies, as the LandSandBoat server
--- checks it (char_entity.cpp OnWeaponSkillFinished: distance <= getRange() + attacker modelHitboxSize + target
--- modelHitboxSize; data/weapon_skills.yaml: range 3, Gust Slash, Cyclone, Mistral Axe and Bora Axe 14). Melee swings
--- reach 2 past both bodies (GetMeleeRange), so a weapon skill reaches 1' further than a swing (ffxiclopedia Distance).
--- WSdistance (/wsdistance N) stays the least reach, and so does the farthest your auto-attacks on a mob of this name
--- and hitbox went out at (gcauto.SwingReach): a big mob is hit from further away than a small one.
--- Returns the reach, then its parts: swing distance (0: none yet), WS range, your hitbox, its hitbox, WSdistance.
+-- How far a weapon skill reaches, center to center: its range past both bodies, as the LandSandBoat server checks
+-- it (char_entity.cpp OnWeaponSkillFinished: distance <= getRange() + attacker modelHitboxSize + target
+-- modelHitboxSize; data/weapon_skills.yaml: range 3; Gust Slash, Cyclone, Mistral Axe and Bora Axe 14; bows and guns
+-- 20, Blast Arrow, Blast Shot and Numbing Shot 5). Melee swings reach 2 past both bodies (GetMeleeRange), so a weapon
+-- skill reaches 1' further than a swing (ffxiclopedia Distance). WSdistance (/wsdistance N) stays the least reach, and
+-- so does the farthest your auto-attacks on a mob of this name and hitbox went out at (gcauto.SwingReach): a big mob
+-- is hit from further away than a small one. A range-20 bow or gun weapon skill reaches at least RangedWsLeast
+-- (retail test, SE forum 2012: Sidewinder and the Archery weapon skills at 21 yalms, not 21.1).
+-- Returns the reach, then its parts: swing distance (0: none yet), WS range, your hitbox, its hitbox, least reach.
 gcinclude.WsRange = 3
-gcinclude.WsRanges = { ['Gust Slash'] = 14, ['Cyclone'] = 14, ['Mistral Axe'] = 14, ['Bora Axe'] = 14 }
+gcinclude.WsRanges = { ['Gust Slash'] = 14, ['Cyclone'] = 14, ['Mistral Axe'] = 14, ['Bora Axe'] = 14,
+    ['Blast Arrow'] = 5, ['Blast Shot'] = 5, ['Numbing Shot'] = 5 }
+for _, n in ipairs(gcinclude.DistanceWS) do gcinclude.WsRanges[n] = gcinclude.WsRanges[n] or 20 end -- bows, guns
+gcinclude.RangedWsLeast = 21
 function gcinclude.WsReach(target, wsName)
-    local floor = tonumber(gcinclude.settings.WSdistance) or 0
     local range = gcinclude.WsRanges[wsName or ''] or gcinclude.WsRange
+    local floor = tonumber(gcinclude.settings.WSdistance) or 0
+    if (range == 20) then floor = math.max(floor, gcinclude.RangedWsLeast) end
     local swung, me, mob = 0, 0, 0
     local index = (target ~= nil) and target.Index or nil
     if (index ~= nil) then
