@@ -631,7 +631,7 @@ local function draw_layer_view(set, V)
             imgui.BeginGroup()
             imgui.PushTextWrapPos(0)
             imgui.TextColored(o.mine and palette.blue or palette.text, (string.gsub(o.title, '^%d+%.%s*', '')))
-            if imgui.IsItemHovered() then set_tip(o.rawSource or o.title) end
+            if imgui.IsItemHovered() then set_tip(o.tip or o.rawSource or o.title) end
             if o.mine then
                 imgui.SameLine()
                 imgui.TextColored(palette.blue, '(this set)')
