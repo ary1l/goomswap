@@ -218,6 +218,308 @@ function G.Name(path)
     return join(path, 1)
 end
 
+-- == Mirdain's layout (Mirdain-Include.lua, github.com/Mirdain/Gearswap) ==
+-- Its include wears, as it reads: engaged sets.OffenseMode, then OffenseMode[mode], the weapon mode's
+-- sets.Weapons[X] (sets.Weapons.Shield over it when it is 1-handed and you can't dual wield, sets.DualWield when
+-- you can), Aftermath's OffenseMode.AM3[weapon mode]; idle sets.Idle, then Idle[mode], Idle.Resting, Idle.Pet,
+-- Idle.Sublimation, sets.Movement; a spell sets.Precast, Precast.FastCast, Precast.Enhancing, then Precast[spell]
+-- or Precast.Cure (Cure, Cura, Curaga) / Healing / Utsusemi / BlueMagic / Songs, and sets.Midcast, Midcast.SIRD,
+-- then the spell's own, its kind's (Cure, Refresh, Enfeebling.Potency...) or its skill's; a weapon skill sets.WS,
+-- WS[ws], then WS[ws][mode] or else WS[mode] (not in mode TP); an ability sets.JA[name], by kind for rolls, Quick
+-- Draw, Waltz, Jig, Samba, Step and Flourish. Its mode TP is the plain one (GoomSwap's Default): its sets are
+-- merged into the base ones; ACC is /mset acc, SB /mset sb.
+local MIRDAIN_MODE = { acc = 'Acc', sb = 'SubtleBlow' }
+function G.MirdainMode(m)
+    return MIRDAIN_MODE[string.lower(tostring(m))] or (string.gsub(tostring(m), '[^%w]', ''))
+end
+local function nospace(s) return (string.gsub(tostring(s), '[^%w]', '')) end
+local MIRDAIN_KIND = { phantomroll = 'Phantom Roll', quickdraw = 'Quick Draw', waltz = 'Waltz', jig = 'Jig',
+    samba = 'Samba', step = 'Step', flourish = 'Flourish' }
+local MIRDAIN_TOP = { treasurehunter = 'TH', movement = 'Movement', dualwield = 'Tp_DW', storms = 'Storm',
+    ready = 'Ready_Delay', thirdeye = 'Third Eye', impetus = 'Tp_Impetus',
+    foot_work = 'Tp_Footwork', cover = 'Cover_Up', mp_recover = 'MP_Recover', sird = 'SIR', luopan = 'Luopan' }
+local MIRDAIN_PRECAST = { enhancing = 'Enhancing Magic_Precast', cure = 'Cure_Precast',
+    healing = 'Healing Magic_Precast', bluemagic = 'Blue Magic_Precast', songs = 'Singing_Precast',
+    utsusemi = 'Utsusemi_Precast', ra = 'Preshot', fastcast = 'Precast_FastCast' }
+local MIRDAIN_MIDCAST = { sird = 'SIR', ra = 'Midshot', enhancing = 'Enhancing Magic', enfeebling = 'Enfeebling Magic',
+    dark = 'Dark Magic', divine = 'Divine Magic', nuke = 'Elemental Magic', burst = 'Elemental Magic_Burst',
+    bp = 'BP_Delay', summon = 'Summoning Magic', summoningmagic = 'Elemental Siphon', dummysongs = 'Dummy',
+    bluemagic = 'Blue Magic' }
+local MIRDAIN_UNDER = { -- Midcast.<kind>.<x>
+    ra = { tripleshot = 'TripleShot', doubleshot = 'DoubleShot', barrage = 'Barrage' },
+    enhancing = { others = 'Enhancing Magic_Others', gain = 'Gain', elemental = 'BarElement', status = 'BarStatus',
+        skill = 'Skill_Enhancing' },
+    enfeebling = { macc = 'Enfeebling_MACC', potency = 'Enfeebling_Potency', duration = 'Enfeebling_Duration' },
+    dark = { macc = 'Dark_MACC', absorb = 'Absorb', enhancing = 'Dark_Enhancing' },
+    bluemagic = { nuke = 'BluMagical', skill = 'BluSkill', acc = 'BluMagicAccuracy', healing = 'BluCure',
+        enmity = 'BluEnmity' } }
+-- the sample SMN's pact classes (its pet_midcast_custom): GoomSwap SMN's BloodPact (physical) and BloodPact_<kind>
+local MIRDAIN_PET = { physical_bp = 'BloodPact', magic_bp = 'BloodPact_Magical', flamingcrush = 'Flaming Crush',
+    summoningmagic = 'BloodPact_Skill' }
+-- song kinds its equip_song_gear picks by name (the first a song's name has, in this order)
+local MIRDAIN_SONGS = { 'Finale', 'Lullaby', 'Threnody', 'Elegy', 'Requiem', 'March', 'Minuet', 'Madrigal', 'Ballad',
+    'Scherzo', 'Mazurka', 'Paeon', 'Carol', 'Minne', 'Mambo', 'Etude', 'Prelude', 'Dirge', 'Sirvente', 'Aria' }
+-- path: { 'OffenseMode', 'ACC' }. modes: the file's OffenseMode options, lower case. A GoomSwap name, { buff = X },
+-- or nil for G.Name's. Aftermath sets: <base>_AM3_<weapon mode>; mode TP: <base>_TP (merged or left out after).
+function G.MirdainName(path, modes)
+    local n, l = #path, {}
+    for i, x in ipairs(path) do l[i] = string.lower(tostring(x)) end
+    local function mode(i) return (path[i] ~= nil) and modes[l[i]] and G.MirdainMode(path[i]) or nil end
+    local function am(base, i) -- AM / AM1-3, then the weapon mode
+        if not string.match(l[i] or '', '^am%d?$') then return nil end
+        return base .. '_' .. string.upper(l[i]) .. ((path[i + 1] ~= nil) and ('_' .. nospace(path[i + 1])) or '')
+    end
+    if (n == 1) and MIRDAIN_TOP[l[1]] then return MIRDAIN_TOP[l[1]] end
+    if (n == 1) and (l[1] == 'boost') then return { buff = 'Boost' } end
+    if l[1] == 'idle' then
+        local I = { resting = 'Resting', pet = 'Idle_Pet', sublimation = 'Sublimation' }
+        if n == 1 then return 'Idle' end
+        if (n == 2) and I[l[2]] then return I[l[2]] end
+        return 'Idle_' .. (mode(2) or join(path, 2))
+    end
+    if l[1] == 'offensemode' then
+        if n == 1 then return 'Tp_Default' end
+        return am('Tp', 2) or ('Tp_' .. (mode(2) or join(path, 2)))
+    end
+    if l[1] == 'weapons' then
+        if n == 1 then return nil end
+        if (n == 2) and (l[2] == 'sleep') then return 'Sleeping' end
+        return 'Weapon_' .. nospace(path[2]) .. ((n > 2) and ('_' .. join(path, 3)) or '')
+    end
+    if l[1] == 'precast' then
+        if n == 1 then return 'Precast' end
+        if (n == 2) and MIRDAIN_PRECAST[l[2]] then return MIRDAIN_PRECAST[l[2]] end
+        if l[2] == 'ra' then
+            local F = { flurry = 'Preshot_FlurryI', flurry_ii = 'Preshot_FlurryII' }
+            return F[l[3]] or ('Preshot_' .. join(path, 3))
+        end
+        return join(path, 2) .. '_Precast'
+    end
+    if l[1] == 'midcast' then
+        if n == 1 then return 'Midcast' end
+        if (n == 2) and MIRDAIN_MIDCAST[l[2]] then return MIRDAIN_MIDCAST[l[2]] end
+        local under = MIRDAIN_UNDER[l[2]]
+        if (n == 3) and (under ~= nil) and under[l[3]] then return under[l[3]] end
+        if l[2] == 'ra' then return am('Midshot', 3) or ('Midshot_' .. (mode(3) or join(path, 3))) end
+        if (l[2] == 'nuke') and (n == 3) then return 'Elemental Magic_' .. tostring(path[3]) end -- Nuke.Earth
+        return join(path, 2)
+    end
+    if l[1] == 'ws' then
+        if n == 1 then return 'Ws_Default' end
+        if l[2] == 'ra' then
+            if n == 2 then return 'Ws_Ranged' end
+            return am('Ws_Ranged', 3) or ('Ws_Ranged_' .. (mode(3) or join(path, 3)))
+        end
+        if am('Ws', 2) then return am('Ws', 2) end
+        if (n == 2) and mode(2) then return 'Ws_' .. mode(2) end
+        if (n == 3) and mode(3) then return tostring(path[2]) .. '_' .. mode(3) end
+        return join(path, 2)
+    end
+    if l[1] == 'ja' then return (n == 1) and 'JA' or join(path, 2) end
+    if MIRDAIN_KIND[l[1]] then return (n == 1) and MIRDAIN_KIND[l[1]] or join(path, 2) end
+    if l[1] == 'geomancy' then
+        local Geo = { geo = 'Geomancy', indi = 'Indi' }
+        if n == 1 then return 'Geomancy_Base' end
+        if (n == 2) and Geo[l[2]] then return Geo[l[2]] end
+        if (l[2] == 'indi') and (l[3] == 'entrust') then return 'Indi_Entrust' end
+        return join(path, 2)
+    end
+    if l[1] == 'helix' then return (n == 1) and 'Helix' or ('Helix_' .. join(path, 2)) end
+    if l[1] == 'pet_midcast' then
+        return ((n == 1) and 'PetAction') or ((n == 2) and MIRDAIN_PET[l[2]]) or join(path, 2)
+    end
+    if l[1] == 'jugs' then return 'Jugs_' .. join(path, 2) end
+    return nil
+end
+
+-- Mirdain's spell lists (Mirdain-Include.lua), for the rules that wear its kinds' sets
+local MIRDAIN_LISTS = {
+    Enfeebling_MACC = "skill = 'Enfeebling Magic', name = { 'Dispel', 'Frazzle', 'Frazzle II', 'Poison', 'Poison II', "
+        .. "'Poisonga' }",
+    Enfeebling_Potency = "name = { 'Paralyze', 'Paralyze II', 'Slow', 'Slow II', 'Addle', 'Addle II', 'Distract', "
+        .. "'Distract II', 'Distract III', 'Frazzle III', 'Blind', 'Blind II', 'Gravity', 'Gravity II' }",
+    Enfeebling_Duration = "name = { 'Sleep', 'Sleep II', 'Sleepga', 'Sleepga II', 'Diaga', 'Dia', 'Dia II', "
+        .. "'Dia III', 'Bio', 'Bio II', 'Bio III', 'Silence', 'Inundation', 'Break', 'Breakaga', 'Bind', 'Bind II' }",
+    Dark_MACC = "name = { 'Death', 'Kaustra', 'Stun' }",
+    Dark_Enhancing = "name = { 'Dread Spikes', 'Endark', 'Endark II', 'Klimaform', 'Tractor' }",
+    Skill_Enhancing = "name = { 'Temper', 'Temper II', 'Enaero', 'Enstone', 'Enthunder', 'Enwater', 'Enfire', "
+        .. "'Enblizzard', 'Boost-STR', 'Boost-DEX', 'Boost-VIT', 'Boost-AGI', 'Boost-INT', 'Boost-MND', 'Boost-CHR' }",
+    Gain = "name = { start = 'Gain-' }",
+    Indi_Entrust = "name = { start = 'Indi-' }, target = 'other'",
+    Helix_Dark = "name = { has = 'helix' }, element = 'Dark'",
+    Helix_Light = "name = { has = 'helix' }, element = 'Light'",
+    BluMagical = "skill = 'Blue Magic', name = { 'Spectral Floe', 'Entomb', 'Magic Hammer', 'Tenebral Crush' }",
+    BluMagicAccuracy = "skill = 'Blue Magic', name = { 'Cruel Joke', 'Dream Flower', 'Reaving Wind' }",
+    BluCure = "skill = 'Blue Magic', name = { 'Magic Fruit', 'Healing Breeze', 'Wild Carrot', 'Plenilune Embrace', "
+        .. "'Restoral' }",
+    BluSkill = "skill = 'Blue Magic', name = { 'Occultation', 'Erratic Flutter', \"Nature's Meditation\", 'Cocoon', "
+        .. "'Barrier Tusk', 'Metallic Body', 'Mighty Guard' }",
+    BluEnmity = "skill = 'Blue Magic', name = { 'Jettatura', 'Geist Wall', 'Blank Gaze', 'Sheep Song', 'Sandspin', "
+        .. "'Healing Breeze' }",
+}
+-- Archery and Marksmanship weapon skills (the game's weapon skill resources, skills 25 and 26): sets.WS.RA's
+local RANGED_WS = "'Flaming Arrow', 'Piercing Arrow', 'Dulling Arrow', 'Sidewinder', 'Blast Arrow', 'Arching Arrow', "
+    .. "'Empyreal Arrow', 'Namas Arrow', 'Refulgent Arrow', \"Jishnu's Radiance\", 'Apex Arrow', 'Sarv', 'Hot Shot', "
+    .. "'Split Shot', 'Sniper Shot', 'Slug Shot', 'Blast Shot', 'Heavy Shot', 'Detonator', 'Coronach', 'Trueflight', "
+    .. "'Leaden Salute', 'Numbing Shot', 'Wildfire', 'Last Stand', 'Terminus'"
+local AM_BUFF = { AM = 'Aftermath', AM1 = 'Aftermath: Lv.1', AM2 = 'Aftermath: Lv.2', AM3 = 'Aftermath: Lv.3' }
+-- A weapon's kind by its item resource: '1h' (skills 2 3 5 9 11, as gcinclude.OneHandSkills), '2h', or nil
+function G.WeaponKind(item)
+    local name = (type(item) == 'table') and item.Name or item
+    local ok, r = pcall(function() return AshitaCore:GetResourceManager():GetItemByName(name, 0) end)
+    if not ok or (r == nil) then return nil end
+    local s = r.Skill
+    if (s == 2) or (s == 3) or (s == 5) or (s == 9) or (s == 11) then return '1h' end
+    if (s == 4) or (s == 6) or (s == 7) or (s == 8) or (s == 10) or (s == 12) then return '2h' end
+    return nil
+end
+
+-- After the sets are named: TP sets merged into the base ones, idle mode sets worn by rule (or left out when they
+-- are Idle), Shield made into Weapon_<X>_1h, Precast.Cure copied to Cura / Curaga, the JA base set put under each
+-- ability's, the rules for its kinds' sets (out.rules), and what GoomSwap has no use for left out with a note.
+function G.MirdainPost(out, modes)
+    local function copy(s) local c = {}; for k, v in pairs(s) do c[k] = v end; return c end
+    local function over(a, b) local c = copy(a); for k, v in pairs(b) do c[k] = v end; return c end
+    local function key(v)
+        if type(v) ~= 'table' then return tostring(v) end
+        return tostring(v.Name) .. '|' .. table.concat(v.Augment or {}, ',')
+    end
+    local function same(a, b)
+        for k, v in pairs(a) do if key(v) ~= key(b[k]) then return false end end
+        for k in pairs(b) do if a[k] == nil then return false end end
+        return true
+    end
+    local gone, merged, rules, why, whyOrder = {}, {}, {}, {}, {}
+    local function drop(n, reason)
+        if why[reason] == nil then why[reason], whyOrder[#whyOrder + 1] = {}, reason end
+        table.insert(why[reason], 'sets.' .. out.from[n])
+        gone[n] = true
+    end
+    -- loose: not when the example names the set at all (DNC wears Waltz by kind in its handler)
+    local function rule(set, line, loose) rules[#rules + 1] = { set, line, loose } end
+    local NEVER = 'never worn: Mirdain\'s TP mode adds nothing to these'
+    for _, n in ipairs(out.order) do
+        local base = string.match(out.from[n] or '', '%.[Tt][Pp]$') and string.match(n, '^(.+)_TP$') -- mode TP's
+        if (n == 'Ws_TP') or (n == 'Midshot_TP') or (n == 'Ws_Ranged_TP') then
+            drop(n, NEVER)
+        elseif (base ~= nil) or (n == 'Precast_FastCast') then
+            base = base or 'Precast'
+            if base == 'Tp' then base = 'Tp_Default' end
+            if out.sets[base] ~= nil then
+                out.sets[base] = over(out.sets[base], out.sets[n])
+            else
+                out.sets[base], out.from[base] = out.sets[n], out.from[n]
+                out.order[#out.order + 1] = base
+            end
+            merged[#merged + 1] = 'sets.' .. out.from[n] .. ' -> ' .. base
+            gone[n] = true
+        end
+    end
+    local shield = out.sets.Weapon_Shield
+    for _, n in ipairs(out.order) do
+        local raw = string.match(out.from[n] or '', '^[Ii]dle%.([^%.]+)$') -- Idle[mode]: the file's mode, as named
+        local idleMode = (raw ~= nil) and modes[string.lower(raw)] and G.MirdainMode(raw) or nil
+        local amBase, amLv, amW = string.match(n, '^(.-)_(AM%d?)_(%w+)$')
+        if gone[n] then
+            -- merged above
+        elseif (idleMode ~= nil) and (out.sets.Idle ~= nil) then
+            if same(out.sets[n], out.sets.Idle) then
+                drop(n, 'the same as Idle')
+            else
+                rule(n, "{ on = 'Default', when = { status = 'Idle', mode = { mset = '" .. idleMode .. "' } }, wear = '"
+                    .. n .. "' },")
+            end
+        elseif string.match(n, '^Weapon_') and (shield ~= nil) and (n ~= 'Weapon_Shield')
+            and not string.match(n, '_1h$') and (out.sets[n].Main ~= nil) and (out.sets[n .. '_1h'] == nil)
+            and (G.WeaponKind(out.sets[n].Main) == '1h') then
+            out.sets[n .. '_1h'], out.from[n .. '_1h'] = over(out.sets[n], shield), out.from[n] .. ' + Weapons.Shield'
+            out.order[#out.order + 1] = n .. '_1h'
+        elseif amLv ~= nil then
+            local on = ((amBase == 'Tp') and 'Default') or ((amBase == 'Midshot') and 'Midshot') or 'Weaponskill'
+            rule(n, "{ on = '" .. on .. "', when = { buff = '" .. AM_BUFF[amLv] .. "', mode = { wm = '" .. amW .. "' }"
+                .. ((on == 'Default') and ", status = 'Engaged'" or '') .. " }, wear = '" .. n .. "' },")
+        elseif string.match(n, '_AM%d?$') then
+            drop(n, 'Aftermath sets with no weapon mode: Mirdain wears only AM3[weapon mode] and the like')
+        elseif n == 'JA' then
+            for _, m in ipairs(out.order) do
+                if string.match(string.lower(out.from[m] or ''), '^ja%.') then
+                    out.sets[m] = over(out.sets.JA, out.sets[m])
+                end
+            end
+            drop(n, 'under each ability\'s set now (Mirdain wears it under sets.JA[name])')
+        elseif n == 'Geomancy_Base' then
+            drop(n, 'never worn: Mirdain wears Geomancy[spell], .Indi or .Geo')
+        elseif string.match(n, '^Jugs_') then
+            drop(n, "jug pets by its JobMode: put the jug in Call Beast / Bestial Loyalty")
+        elseif string.match(n, '^Weapon_Songs') then
+            drop(n, "song weapons: put them in your song sets, and singing in Always swap weapons for (HoldExempt)")
+        elseif MIRDAIN_LISTS[n] then
+            rule(n, "{ on = 'Midcast', when = { " .. MIRDAIN_LISTS[n] .. ", nameset = false }, wear = '" .. n .. "' },")
+        elseif n == 'Ws_Ranged' then
+            rule(n, "{ on = 'Weaponskill', when = { name = { " .. RANGED_WS .. " }, nameset = false }, wear = '"
+                .. n .. "' },")
+        end
+        local el = string.match(n, '^Elemental Magic_(%u%l+)$')
+        if (el ~= nil) and (el ~= 'Burst') and (el ~= 'Precast') then
+            rule(n, "{ on = 'Midcast', when = { skill = 'Elemental Magic', element = '" .. el .. "' }, wear = '" .. n
+                .. "' },")
+        end
+    end
+    if shield ~= nil then
+        drop('Weapon_Shield', 'over each 1-handed weapon set when you can\'t dual wield: Weapon_<X>_1h')
+    end
+    -- Precast.Cure is worn for Cure, Cura and Curaga: GoomSwap's precast goes by family
+    local cure = out.sets.Cure_Precast
+    for _, f in ipairs((cure ~= nil) and { 'Curaga_Precast', 'Cura_Precast' } or {}) do
+        if out.sets[f] == nil then
+            out.sets[f], out.from[f] = cure, out.from.Cure_Precast
+            out.order[#out.order + 1] = f
+            merged[#merged + 1] = 'sets.' .. out.from.Cure_Precast .. ' -> ' .. f .. ' too'
+        end
+    end
+    local keep = {}
+    for _, n in ipairs(out.order) do
+        if gone[n] then out.sets[n], out.from[n] = nil, nil else keep[#keep + 1] = n end
+    end
+    out.order = keep
+    if (out.sets.Luopan ~= nil) and (out.sets.Idle_Pet == nil) then -- the sample GEO's luopan set: idle with a pet
+        out.sets.Idle_Pet, out.from.Idle_Pet, out.sets.Luopan = out.sets.Luopan, out.from.Luopan, nil
+        for i, n in ipairs(out.order) do if n == 'Luopan' then out.order[i] = 'Idle_Pet' end end
+    end
+    for _, k in ipairs(MIRDAIN_SONGS) do
+        rule(k, "{ on = 'Midcast', when = { skill = 'Singing', name = { has = '" .. k .. "' } }, wear = '" .. k
+            .. "' },")
+    end
+    local SAMPLE = { -- the sample job files' own code: kept as they read it
+        { 'Idle_Pet', "{ on = 'Default', when = { pet = true, status = { isnt = 'Engaged' } }, wear = 'Idle_Pet' }," },
+        { 'MEVA', "{ on = 'Midcast', when = { mode = { mset = 'MEVA' }, family = { isnt = 'Cure' } }, wear = "
+            .. "'MEVA' }," },
+        { 'MP_Recover', "{ on = 'Midcast', when = { skill = 'Elemental Magic', name = { isnt = { 'Burn', 'Frost', "
+            .. "'Choke', 'Rasp', 'Shock', 'Drown' } }, mpp = { lt = 30 } }, wear = 'MP_Recover' }," },
+        { 'Cover_Up', "{ on = 'Default', when = { buff = 'Cover' }, wear = 'Cover_Up' }," },
+        { 'Saboteur', "{ on = 'Midcast', when = { buff = 'Saboteur', skill = 'Enfeebling Magic' }, wear = "
+            .. "'Saboteur' }," },
+        { 'TripleShot', "{ on = 'Midshot', when = { buff = 'Triple Shot' }, wear = 'TripleShot' }," },
+        { 'DoubleShot', "{ on = 'Midshot', when = { buff = 'Double Shot' }, wear = 'DoubleShot' }," },
+        { 'Barrage', "{ on = 'Midshot', when = { buff = 'Barrage' }, wear = 'Barrage' }," },
+        { 'Preshot_FlurryI', "{ on = 'Preshot', when = { buff = 265 }, wear = 'Preshot_FlurryI' }," },
+        { 'Preshot_FlurryII', "{ on = 'Preshot', when = { buff = 581 }, wear = 'Preshot_FlurryII' }," },
+    }
+    for _, r in ipairs(SAMPLE) do rule(r[1], r[2]) end
+    for _, k in ipairs({ 'Waltz', 'Jig', 'Samba', 'Step', 'Flourish' }) do
+        rule(k, "{ on = 'Ability', when = { name = { has = '" .. k .. "' }, nameset = false }, wear = '" .. k .. "' },",
+            true)
+    end
+    out.rules = rules
+    if #merged > 0 then
+        out.notes[#out.notes + 1] = 'Mirdain\'s TP mode is GoomSwap\'s Default, merged into the base sets (with '
+            .. 'Precast.FastCast): ' .. table.concat(merged, ', ')
+    end
+    for _, w in ipairs(whyOrder) do
+        out.notes[#out.notes + 1] = 'left out: ' .. table.concat(why[w], ', ') .. ': ' .. w
+    end
+end
+
 -- An item as LAC takes it: 'Name', { Name, Augment, Priority }, 'remove' for empty; nil and why when it isn't one.
 function G.Item(v)
     if v == EMPTY then return 'remove' end
@@ -258,11 +560,37 @@ function G.Import(text, items)
     if chunk == nil then return nil, 'the file does not parse: ' .. tostring(err) end
     local env, walk, unknown, gearRead = evaluator()
     walk(chunk)
+    -- Mirdain's layout (G.MirdainName): its OffenseMode options name its mode sets (TP ACC DT by default; the
+    -- sample files' other modes too)
+    local mirdain = (string.find(text, 'Mirdain%-Include') ~= nil)
+    local modes = { tp = true, acc = true, dt = true, pdt = true, pdl = true, meva = true, sb = true, crit = true }
+    local optText = string.match(text, 'state%.OffenseMode%s*:%s*options%s*(%b())') or ''
+    for _, x in string.gmatch(optText, "(['\"])(.-)%1") do modes[string.lower(x)] = true end
+    local function nameOf(path)
+        local m = mirdain and G.MirdainName(path, modes) or nil
+        if m ~= nil then return m end
+        return G.Name(path)
+    end
     local out = { sets = {}, order = {}, buffs = {}, buffOrder = {}, idleBuffs = {}, idleBuffOrder = {}, notes = {},
         from = {} }
-    local seen, takenNote = {}, {}
+    local seen, takenNote, seenName = {}, {}, {}
+    -- Mirdain: one table under two names (sets.WS['Burning Blade'] = sets.WS.MAB) is worn by both: a copy for a
+    -- weapon skill, ability or spell by name, unless the first is a kind GoomSwap wears for all of them (Waltz)
+    local BYNAME = { ws = true, ja = true, midcast = true, precast = true, pet_midcast = true }
+    local KINDS = { ['Phantom Roll'] = true, ['Quick Draw'] = true, Waltz = true, Jig = true, Samba = true, Step = true,
+        Flourish = true }
+    local function alias(t, path)
+        local first = seenName[t]
+        if not mirdain or (first == nil) or KINDS[first] or (#path ~= 2) then return end
+        if not BYNAME[string.lower(tostring(path[1]))] then return end
+        local name = nameOf(path)
+        if (type(name) ~= 'string') or (out.sets[name] ~= nil) then return end
+        local c = {}
+        for k, v in pairs(out.sets[first]) do c[k] = v end
+        out.sets[name], out.order[#out.order + 1], out.from[name] = c, name, table.concat(path, '.')
+    end
     local function visit(t, path)
-        if seen[t] then return end
+        if seen[t] then return alias(t, path) end
         seen[t] = true
         local set, any = {}, false
         for k, v in pairs(t) do
@@ -277,7 +605,7 @@ function G.Import(text, items)
             end
         end
         if any and (#path > 0) then
-            local name = G.Name(path)
+            local name = nameOf(path)
             if type(name) == 'table' then
                 local into, order = out.buffs, out.buffOrder
                 if name.idle then into, order = out.idleBuffs, out.idleBuffOrder end
@@ -294,6 +622,7 @@ function G.Import(text, items)
                         .. ' was taken by sets.' .. out.from[base] .. ')'
                 end
                 out.sets[name], out.order[#out.order + 1], out.from[name] = set, name, table.concat(path, '.')
+                seenName[t] = name
             end
         end
         local keys = {}
@@ -316,6 +645,12 @@ function G.Import(text, items)
             at[name] = string.find(text, 'sets%.' .. name:gsub('%p', '%%%0')) or string.find(text, name, 1, true) or 1e9
         end
     end
+    -- Mirdain: the sets its include wears first, so one table under two names (sets.JA.Provoke = sets.Enmity,
+    -- sets.Waltz['Curing Waltz'] = sets.Waltz) keeps the name it is worn by
+    local FIRST = { 'Weapons', 'Idle', 'OffenseMode', 'DualWield', 'TreasureHunter', 'Movement', 'Precast', 'Midcast',
+        'WS', 'PhantomRoll', 'QuickDraw', 'Waltz', 'Jig', 'Samba', 'Step', 'Flourish', 'JA', 'Geomancy', 'Helix',
+        'Storms', 'Pet_Midcast', 'Ready' }
+    for i, name in ipairs(mirdain and FIRST or {}) do if at[name] ~= nil then at[name] = i - 100 end end
     table.sort(tops, function(a, b) if at[a] ~= at[b] then return at[a] < at[b] end return a < b end)
     for _, name in ipairs(tops) do
         if (type(env.sets[name]) == 'table') and not fromItems[name] then visit(env.sets[name], { name }) end
@@ -352,6 +687,11 @@ function G.Import(text, items)
     local RENAME = { Self_Refresh = 'Refresh_Self', Self_Healing = 'Cure_Self', latent_refresh = 'Idle_Refresh',
         MagicBurst = 'Elemental Magic_Burst', IntEnfeebles = 'Int_Enfeebling', MndEnfeebles = 'Mind_Enfeebling',
         Preshot_Flurry = 'Preshot_FlurryI', Preshot_Flurry2 = 'Preshot_FlurryII' }
+    out.mirdain = mirdain
+    if mirdain then -- Selindrile's names: none of these
+        G.MirdainPost(out, modes)
+        DROP, SKIPPED, RENAME = {}, {}, {}
+    end
     local hasMdt = false -- sets.defense.MDT: /mdt wears it, MEVA left out
     for _, n in ipairs(out.order) do
         if string.lower(tostring(out.from[n] or '')) == 'defense.mdt' then hasMdt = true end
@@ -368,7 +708,9 @@ function G.Import(text, items)
         for _, sk in ipairs(SKIPPED) do
             if (d == nil) and string.find(n, sk[1]) then d = { sk[2] } end
         end
-        if (d == nil) and (string.match(n, '^Idle_[PM]?DT$') or string.match(n, '^Idle_[PM]?DT_')) then d = IDLEDT end
+        if (d == nil) and not mirdain and (string.match(n, '^Idle_[PM]?DT$') or string.match(n, '^Idle_[PM]?DT_')) then
+            d = IDLEDT
+        end
         local cast = string.match(from, '^precast') or string.match(from, '^midcast') -- WS, spells, abilities
         if (d == nil) and cast and string.match(n, '_Proc$') and (n ~= 'Ws_Proc') then d = PROC end -- Ws_Proc: /proc's
         if (d == nil) and (RENAME[n] ~= nil) then
@@ -488,6 +830,41 @@ function G.Import(text, items)
             out.modes[st] = list
         end
     end
+    if mirdain then -- /mset: TP is Default; /wm: its WeaponMode options, but Unlocked / Locked (weapons left alone)
+        local om, wm = {}, {}
+        for _, m in ipairs(out.modes.OffenseMode or {}) do
+            if string.lower(m) ~= 'tp' then om[#om + 1] = G.MirdainMode(m) end
+        end
+        local args = string.match(plain, 'state%.WeaponMode%s*:%s*options%s*(%b())') or ''
+        for _, x in string.gmatch(args, "(['\"])(.-)%1") do
+            if (string.lower(x) ~= 'unlocked') and (string.lower(x) ~= 'locked') then wm[#wm + 1] = nospace(x) end
+        end
+        -- and the modes its sets have that the options don't (sets.OffenseMode.PDT, sets.Idle.MEVA): /mset ones too
+        local have = {}
+        for _, m in ipairs(om) do have[string.lower(m)] = true end
+        for _, n in ipairs(out.order) do
+            local top, k = string.match(out.from[n] or '', '^(%a+)%.([^%.]+)$')
+            top = string.lower(top or '')
+            if ((top == 'offensemode') or (top == 'idle') or (top == 'ws')) and modes[string.lower(k)]
+                and (string.lower(k) ~= 'tp') and not have[string.lower(G.MirdainMode(k))] then
+                have[string.lower(G.MirdainMode(k))], om[#om + 1] = true, G.MirdainMode(k)
+            end
+        end
+        -- its starting weapon mode first (Unlocked / Locked: GoomSwap's None, weapons left alone)
+        local wstart = string.match(plain, "state%.WeaponMode%s*:%s*set%s*%(%s*['\"]([^'\"]+)")
+        if (wstart ~= nil) and ((string.lower(wstart) == 'unlocked') or (string.lower(wstart) == 'locked')) then
+            out.modes.KeepNone = true
+        elseif wstart ~= nil then
+            table.insert(wm, 1, nospace(wstart))
+        end
+        out.modes.OffenseMode, out.modes.Weapons = om, wm
+        local start = string.match(plain, "state%.OffenseMode%s*:%s*set%s*%(%s*['\"]([^'\"]+)")
+        out.notes[#out.notes + 1] = "Mirdain's OffenseMode is /mset (TP: Default, ACC: acc, SB: sb), its WeaponMode /wm"
+            .. (((start ~= nil) and (string.lower(start) ~= 'tp')) and ("; it starts in " .. start .. ': /mset '
+            .. string.lower(G.MirdainMode(start)) .. ' after loading') or '') .. ". Its WS[mode] went over a weapon "
+            .. "skill's own set; GoomSwap's Ws_<mode> goes under it (<WS>_<mode>, as WS[ws][mode], over it)"
+
+    end
     -- sets GoomSwap has no moment for, by name: say what to do with them
     local am, wsm, low, pdl = {}, {}, 0, 0
     for _, n in ipairs(out.order) do
@@ -498,7 +875,7 @@ function G.Import(text, items)
             if string.match(n, '_Match$') then wsm[#wsm + 1] = n end
         end
     end
-    if (low + pdl) > 0 then
+    if ((low + pdl) > 0) and not mirdain then
         out.notes[#out.notes + 1] = 'WeaponskillMode sets: ' .. low .. ' UncappedAtt -> _LowBuff (/wsset low), '
             .. pdl .. ' PDL -> _PDL (/wsset pdl)'
     end
@@ -784,7 +1161,7 @@ function G.ModeLists(text, imported, whole)
     for _, m in ipairs(opts.Weapons or {}) do
         if (first == nil) and made[string.lower(m)] then first = made[string.lower(m)] end
     end
-    if first ~= nil then
+    if (first ~= nil) and not opts.KeepNone then
         text = string.gsub(text, "(gcinclude%.DefaultWeapons%s*=%s*)(['\"])None%2", "%1'" .. first .. "'", 1)
     end
     text = string.gsub(text, '(gcinclude%.MeleeModes%s*=%s*T?)(%b{})', function(pre, list)
@@ -818,8 +1195,11 @@ function G.Draft(template, imported, info, setFile)
     local PREFER = { { 'Cure_Self', 'Self_Cure' }, { 'Refresh_Self', 'Self_Refresh' }, { 'StatusRemoval', 'erase' },
         { 'Blue Magic_Physical', 'BluPhysical' }, { 'Blue Magic_Magical', 'BluMagical' },
         { 'Blue Magic_MagicAccuracy', 'BluMagicAccuracy' }, { 'Blue Magic_Stun', 'BluStun' },
-        { 'Blue Magic_Buff', 'CMP' }, { 'Blue Magic_SkillBasedBuff', 'BluSkill' }, { 'Blue Magic_Healing', 'Cure' } }
+        { 'Blue Magic_Buff', 'CMP' }, { 'Blue Magic_SkillBasedBuff', 'BluSkill' }, { 'Blue Magic_Healing', 'Cure' },
+        { 'PetAction', 'BloodPact' }, { 'BluCure', 'Cure' }, { 'BluEnmity', 'Enmity' } } -- Mirdain's: SMN, BLU
     local preferred = {}
+    -- Mirdain's BRD: its Midcast.Enfeebling is for enfeebling songs, the example's Wind
+    if imported.mirdain then PREFER[#PREFER + 1] = { 'Enfeebling Magic', 'Wind' } end
     for _, pr in ipairs(PREFER) do
         local from, to = pr[1], pr[2]
         if (imported.sets[from] ~= nil) and (imported.sets[to] == nil) and has[to] then
@@ -832,12 +1212,15 @@ function G.Draft(template, imported, info, setFile)
         imported.notes[#imported.notes + 1] = 'as the example names them: ' .. table.concat(preferred, ', ')
     end
     -- Selindrile's sets.RecoverMP (nukes under an MP %): the example's Mp_Body, worn by its rule (BLM), if it has one
+    -- (Mirdain's sample BLM: sets.MP_Recover)
     local mpBody = string.find(template, "wear%s*=%s*'Mp_Body'")
-    if (imported.sets.RecoverMP ~= nil) and (imported.sets.Mp_Body == nil) and mpBody then
-        imported.sets.Mp_Body, imported.from.Mp_Body, imported.sets.RecoverMP = imported.sets.RecoverMP,
-            imported.from.RecoverMP, nil
-        for i, n in ipairs(imported.order) do if n == 'RecoverMP' then imported.order[i] = 'Mp_Body' end end
-        imported.notes[#imported.notes + 1] = 'sets.RecoverMP -> Mp_Body (the example\'s: nukes at low MP)'
+    for _, mp in ipairs({ 'RecoverMP', 'MP_Recover' }) do
+        if (imported.sets[mp] ~= nil) and (imported.sets.Mp_Body == nil) and mpBody then
+            imported.sets.Mp_Body, imported.from.Mp_Body, imported.sets[mp] = imported.sets[mp], imported.from[mp], nil
+            for i, n in ipairs(imported.order) do if n == mp then imported.order[i] = 'Mp_Body' end end
+            imported.notes[#imported.notes + 1] = 'sets.' .. imported.from.Mp_Body .. ' -> Mp_Body (the example\'s: '
+                .. 'nukes at low MP)'
+        end
     end
     -- Selindrile's sets.midcast.Lullaby: the example's Foe Lullaby set (BRD's rules wear Foe / Horde), if it has one
     if (imported.sets.Lullaby ~= nil) and (imported.sets.Foe == nil) and string.find(template, "wear%s*=%s*'Foe'") then
@@ -980,6 +1363,10 @@ function G.GroupRules(text, imported, template)
         add(g[1], "{ on = 'Midcast', when = { name = " .. g[2] .. ", nameset = false }, wear = '" .. g[1] .. "' },")
     end
     for _, r in ipairs(SET_RULES) do add(r[1], r[2]) end
+    -- Mirdain's (G.MirdainPost); a loose one not when the example names the set at all
+    for _, r in ipairs(imported.rules or {}) do
+        if not (r[3] and string.find(template, "'" .. r[1] .. "'", 1, true)) then add(r[1], r[2]) end
+    end
     for _, n in ipairs(imported.order) do -- a weapon skill's TH version (Aeolian Edge_TH): with /th on
         local ws = string.match(n, '^(.+)_TH$')
         if (ws ~= nil) and string.match(string.lower(imported.from[n] or ''), '^precast%.ws') then
@@ -995,9 +1382,9 @@ function G.GroupRules(text, imported, template)
             .. table.concat(names, ', ')
         return text
     end
-    imported.notes[#imported.notes + 1] = 'sets Selindrile\'s code puts on, worn by a rule each (RULES, at the top): '
+    imported.notes[#imported.notes + 1] = 'sets the file\'s code puts on, worn by a rule each (RULES, at the top): '
         .. table.concat(names, ', ')
-    return string.sub(text, 1, eol) .. "        -- /gcimport: sets Selindrile's code puts on (spell groups: unless "
+    return string.sub(text, 1, eol) .. "        -- /gcimport: sets the file's code puts on (spell groups: unless "
         .. 'the spell has a set of its own)\n' .. table.concat(rules, '\n') .. '\n' .. string.sub(text, eol + 1)
 end
 
