@@ -167,7 +167,7 @@ local MODE_COL = {
     WsSet = { High = PURPLE, PDL = MAGENTA, Acc = CYAN, SubtleBlow = MAGENTA },
     -- mp blue, hp green, tp yellow
     IdleSet = { Refresh = { 0.45, 0.70, 1.00, 1.0 }, Regen = { 0.40, 0.90, 0.50, 1.0 },
-        Regain = { 0.95, 0.85, 0.35, 1.0 } },
+        Regain = { 0.95, 0.85, 0.35, 1.0 }, Reraise = { 1.00, 0.95, 0.78, 1.0 } }, -- pale gold
     NukeSet = { Macc = { 0.24, 0.82, 0.71, 1.0 }, OccultAcumen = { 1.00, 0.59, 0.55, 1.0 } }, -- teal, salmon
     Hoxne = { Locked = { 0.82, 0.63, 0.39, 1.0 } }, -- bronze
     TankSet = { Main = { 0.55, 0.74, 1.00, 1.0 }, MEVA = { 0.71, 0.94, 0.35, 1.0 } }, -- periwinkle, lime
@@ -180,7 +180,7 @@ local EMPTY_ANY = { None = true, Off = true, Default = true, Unknown = true }
 -- always something
 local MODE_PLAIN = { Weapons = true, Main = true, Sub = true, Range = true, Ammo = true, Weapon = true, PupMode = true }
 local MODE_TEXT = { MeleeSet = { SubtleBlow = 'sb' }, WsSet = { SubtleBlow = 'sb' },
-    IdleSet = { Refresh = 'mp', Regen = 'hp', Regain = 'tp' }, NukeSet = { OccultAcumen = 'oa' },
+    IdleSet = { Refresh = 'mp', Regen = 'hp', Regain = 'tp', Reraise = 'rr' }, NukeSet = { OccultAcumen = 'oa' },
     Hoxne = { Locked = 'hoxne' } }
 local TOGGLE_COL = { DTset = { 1.00, 0.54, 0.24, 1.0 }, MDTset = { 0.43, 0.53, 1.00, 1.0 },
     Aminon = { 0.75, 0.47, 0.85, 1.0 },

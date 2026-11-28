@@ -768,12 +768,13 @@ end
 function gcinclude.IsHoldExempt()
     local action = gData.GetAction()
     if (action == nil) then return false end
-    if (action.ActionType == 'Spell') then
-        if gcinclude.settings.HoldExempt:contains(action.Skill) then return true end
+    local exempt = gcinclude.settings.HoldExempt
+    if (action.ActionType == 'Spell') then -- its skill (Singing) or its name (Dread Spikes)
+        if exempt:contains(action.Skill) or exempt:contains(action.Name) then return true end
         -- held only for Aftermath: a cast still gets its weapons
         return gcinclude.AftermathUp() and not gcinclude.TPHoldActive()
-    elseif (action.ActionType == 'Ability') then
-        return gcinclude.settings.HoldExempt:contains(action.Type)
+    elseif (action.ActionType == 'Ability') then -- its type (Corsair Roll) or its name
+        return exempt:contains(action.Type) or exempt:contains(action.Name)
     end
     return false
 end
@@ -2217,7 +2218,7 @@ function gcinclude.Help()
         'keys   : F7 wm, Shift+F7 wm default, F9 mset, Ctrl+F9 tankset, Alt+F9 wsset, F10 def, Alt+F10 kite,',
         '         Win+F10 hoxne, Shift+F11 nukeset, Alt+F11 burst, Shift+F12 idleset, Alt+F12 def off, Ctrl+Win+Alt+F12 reload',
         '         /gckey <key> <command or /chat command>, e.g. /gckey ^F1 /ma "Cure IV" <stpc>',
-        'idle   : /idleset [default|refresh|regen|regain] (Idle_<mode> over Idle while idle); /mset acc also wears Midshot_Acc (COR RNG PLD)',
+        'idle   : /idleset [default|refresh|regen|regain|reraise] (Idle_<mode> over Idle while idle); /mset acc also wears Midshot_Acc (COR RNG PLD)',
         'every box: /mss /<command> (Multisend), one box: /ms sendto <name> /<command>',
     }
     for _, line in ipairs(lines) do
@@ -2643,8 +2644,10 @@ end
 function gcinclude.SetRegenRefreshGear(player)
     local cfg = gcinclude.settings
     if (cfg.AutoGear == false) then return end
-    -- Regen/Refresh only out of combat and never over a manual /dt; auto Dt any time.
-    if (gcdisplay.GetToggle('DTset') ~= true) and (not gcinclude.InCombat(player)) then
+    -- Regen/Refresh only out of combat and never over a manual /dt or /idleset reraise (they'd take the Reraise gear
+    -- off); auto Dt any time.
+    if (gcdisplay.GetToggle('DTset') ~= true) and (gcdisplay.GetCycle('IdleSet') ~= 'Reraise')
+        and (not gcinclude.InCombat(player)) then
         wear('Idle_Regen', player.HPP, cfg.RegenGearHPP)
         wear('Idle_Refresh', player.MPP, cfg.RefreshGearMPP)
     end
@@ -2857,8 +2860,10 @@ local function isMoonshade(v)
     return (type(n) == 'string') and (string.lower(n) == 'moonshade earring')
 end
 
--- Moonshade Earring, every WS: in settings.MoonshadeSlot below MoonshadeTP; at or above it, an ear the
--- WS sets left on Moonshade goes back to the last other earring those sets gave it (or stays as worn).
+-- Moonshade Earring, every WS: below MoonshadeTP in the ear a WS set put it in itself (ear1="Moonshade Earring", as
+-- GearSwap files have it), else settings.MoonshadeSlot (Ear1, the left ear), the other ear when the WS set has a
+-- one-ear item there (a "Left ear:" item in Ear1). At or above MoonshadeTP, an ear the WS sets left on Moonshade goes
+-- back to the last other earring those sets gave it (or stays as worn).
 function gcinclude.CheckMoonshade(trail)
     local cfg = gcinclude.settings
     local limit = cfg.MoonshadeTP or 0
@@ -2867,9 +2872,16 @@ function gcinclude.CheckMoonshade(trail)
     if (player == nil) or (ws == nil) then return end
     local skip = (type(cfg.MoonshadeSkip) == 'table') and cfg.MoonshadeSkip:contains(ws.Name)
     local want = (player.TP < limit) and (not skip)
-    local slot = string.lower(cfg.MoonshadeSlot or 'Ear2')
-    -- the WS set has a one-ear item there (Sortie earring in Ear2): Moonshade takes the other ear
-    if want and (trail[slot] ~= nil) and (#trail[slot] > 0) then
+    local slot = string.lower(cfg.MoonshadeSlot or 'Ear1')
+    local own = nil -- an ear the WS sets put Moonshade in themselves: it stays there
+    for _, ear in ipairs({ 'ear1', 'ear2' }) do
+        local list = trail[ear]
+        if (own == nil) and (list ~= nil) and (#list > 0) and isMoonshade(list[#list]) then own = ear end
+    end
+    if (own ~= nil) then
+        slot = own
+    -- the WS set has a one-ear item there (a "Left ear:" item in Ear1, a Sortie earring in Ear2): the other ear
+    elseif want and (trail[slot] ~= nil) and (#trail[slot] > 0) then
         local last = trail[slot][#trail[slot]]
         if (gcinclude.ItemSide((type(last) == 'table') and last.Name or last) == slot) then
             slot = (slot == 'ear1') and 'ear2' or 'ear1'

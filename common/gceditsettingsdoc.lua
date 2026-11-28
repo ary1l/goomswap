@@ -15,7 +15,9 @@ local settings = {
     DTGearHPP = { 'Dt below this HP %, in any status. 0 = never.', '50' },
     PetDTGearHPP = { 'Pet_Dt below this pet HP %. 0 = never.', '50' },
     MoonshadeTP = { 'Moonshade Earring on every weapon skill below this TP, never at or above it. 0 = left alone.', '1750' },
-    MoonshadeSlot = { 'The ear Moonshade goes in; the other one when the WS set has a right-ear-only Sortie earring there.', 'Ear2' },
+    MoonshadeSlot = { 'The ear Moonshade goes in (default Ear1, the left ear); the other one when the WS set has an '
+        .. 'earring there that works in that ear only. A WS set with Moonshade in an ear keeps it in that ear.',
+        'Ear1' },
     MoonshadeSkip = { 'Weapon skills that never get Moonshade.', "{ 'Myrkr' }" },
     DisplayBar = { "The status bar on load. Once /gcbar or a drag saved this character's bar (gcbar\\<name>.txt), its on/off wins." },
     DisplayBarX = { "The bar's x position on screen. Not set: centred at the top, or flush right with the HUD on. A drag or /gcbar pos saves a spot that wins; /gcbar reset.", '400' },
@@ -27,7 +29,8 @@ local settings = {
     WeaponTPGuard = { 'At or above this TP, Main/Sub/Range stay on against automatic swaps; /wm, /mw... still swap. 0 = action sets always get their weapons.', '1000' },
     IdleWeapons = { 'Not engaged: weapons your idle sets name (Idle, Town, Dt...) beat the weapon mode. Off = the weapon mode always.' },
     AftermathHold = { 'Aftermath up: Main/Sub/Range stay on against idle/engaged swaps; spells still get theirs; /wm still swaps.' },
-    HoldExempt = { 'Spell skills and ability types that always get their weapon swaps.', "{ 'Singing', 'Geomancy', 'Corsair Roll' }" },
+    HoldExempt = { 'Spell skills and ability types that always get their weapon swaps; a spell or ability name works '
+        .. 'too (Dread Spikes).', "{ 'Singing', 'Geomancy', 'Corsair Roll', 'Dread Spikes' }" },
     SmartSwap = { 'Keeps Main/Sub/Range on for the KeepWeaponsFor spells instead of losing TP to a swap (/smartswap).' },
     SmartSwapTP = { 'SmartSwap acts only at or above this TP.', '1' },
     KeepWeaponsFor = { 'Spells that keep Main/Sub/Range: a name, or Spells (names they start with) while a Worn item is in Main or Sub.', "{ 'Dia II', { Spells = { 'Cure' }, Worn = { 'Daybreak' } } }" },

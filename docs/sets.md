@@ -46,7 +46,7 @@ and its toggle wears it. Until then it falls back as the table says (`Aminon` â†
 | `Dt` | `/dt`: every example wears it by `ByName('Dt')`; and on its own below `DTGearHPP` HP |
 | `Movement` | your job file, not GoomSwap: every example wears it while moving, most also on `/kite` (PLD wears `kite`, BLU `Evasion`) |
 | `Dt_<mset>` | `/dt` with an `/mset` mode on (`Dt_SubtleBlow`), over `Dt`: every example wears `Dt` by `ByName` |
-| `Idle_Refresh` `Idle_Regen` `Idle_Regain` | `/idleset`; low MP/HP |
+| `Idle_Refresh` `Idle_Regen` `Idle_Regain` `Idle_Reraise` | `/idleset`; low MP/HP (not over `/idleset reraise`) |
 | `Midshot_Acc` `Midshot_<Mode>` `Midshot_<Mode>_Acc` | COR RNG PLD shots: `/mset acc`; that weapon mode's own (`ByName('Midshot')`, like a WS); `Midshot_Acc` again over `TripleShot` / `DoubleShot` |
 | `Proc` `Ws_Proc` | `/proc`: engaged, `Proc` in place of your sets (weapon mode stays); on WS `Ws_Proc` (else, missing or empty, `Proc`) in place of every WS set |
 | `Incapacitated` `Sleeping` | disabled / asleep (weapons pass the TP hold) |
@@ -57,8 +57,10 @@ and its toggle wears it. Until then it falls back as the table says (`Aminon` â†
 | `XIRoll` | idle with a roll at 11 |
 | `*_Received` | a spell coming at you (`ReceivedSets`, 8s max) |
 
-- **Moonshade:** leave it out of WS sets; added below `MoonshadeTP` (not `MoonshadeSkip`). WS set's Ear2 a Sortie or
-  "Right ear:" item â†’ Moonshade in Ear1, else Ear2.
+- **Moonshade:** added below `MoonshadeTP` (not `MoonshadeSkip`) in `MoonshadeSlot`: Ear1 (left ear) by default; Ear2
+  when the WS set's Ear1 is a "Left ear:" item (Sortie earrings are right ear: put them in Ear2). So in a WS set, Ear1 is
+  the earring Moonshade replaces and Ear2 the one kept. A WS set that has Moonshade in an ear itself keeps it there
+  (imported GearSwap sets: `ear1="Moonshade Earring"`).
 - **Grips:** a Sub that can't go with the Main is dropped.
 - **Element gear** (`ElementSkills`, ninjutsu, Quick Draw, cures, `ElementalWS`):
   ```lua

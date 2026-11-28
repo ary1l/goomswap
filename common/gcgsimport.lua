@@ -141,7 +141,8 @@ local function join(list, from)
     for i = from, #list do out[#out + 1] = tostring(list[i]) end
     return table.concat(out, '_')
 end
--- path: { 'precast', 'WS', 'Savage Blade' }. A GoomSwap set name, or { buff = 'Haste' } for Buffs['Haste'].
+-- path: { 'precast', 'WS', 'Savage Blade' }. A GoomSwap set name, or { buff = 'Haste' } for Buffs['Haste'] ({ buff,
+-- idle = true }: Buffs_Idle).
 function G.Name(path)
     local a, b = path[1], path[2]
     local la, lb = string.lower(tostring(a or '')), string.lower(tostring(b or ''))
@@ -178,6 +179,9 @@ function G.Name(path)
     if la == 'idle' then
         if #path == 1 then return 'Idle' end
         if lb == 'town' then return with('Town', 3) end
+        -- Mote's and Selindrile's get_idle_set: sets.idle.Weak while buffactive.weakness (buff 1, Weakness: after a
+        -- raise), idle only
+        if (lb == 'weak') and (#path == 2) then return { buff = 'Weakness', idle = true } end
         return 'Idle_' .. join(path, 2)
     end
     if la == 'resting' then return with('Resting', 2) end
@@ -187,7 +191,8 @@ function G.Name(path)
     end
     if la == 'defense' then
         if lb == 'pdt' or lb == 'dt' then return with('Dt', 3) end
-        if lb == 'mdt' then return with('mdt', 3) end
+        -- MDT (MagicalDefenseMode) and Selindrile's MEVA (ResistDefenseMode, DefenseMode Resist): GoomSwap's /mdt
+        if (lb == 'mdt') or (lb == 'meva') then return with('mdt', 3) end
         return 'Dt_' .. join(path, 2)
     end
     if la == 'kiting' then return 'Movement' end
@@ -231,7 +236,8 @@ function G.Import(text)
     if chunk == nil then return nil, 'the file does not parse: ' .. tostring(err) end
     local env, walk, unknown, gearRead = evaluator()
     walk(chunk)
-    local out = { sets = {}, order = {}, buffs = {}, buffOrder = {}, notes = {}, from = {} }
+    local out = { sets = {}, order = {}, buffs = {}, buffOrder = {}, idleBuffs = {}, idleBuffOrder = {}, notes = {},
+        from = {} }
     local seen = {}
     local function visit(t, path)
         if seen[t] then return end
@@ -251,8 +257,10 @@ function G.Import(text)
         if any and (#path > 0) then
             local name = G.Name(path)
             if type(name) == 'table' then
-                if out.buffs[name.buff] == nil then out.buffOrder[#out.buffOrder + 1] = name.buff end
-                out.buffs[name.buff] = set
+                local into, order = out.buffs, out.buffOrder
+                if name.idle then into, order = out.idleBuffs, out.idleBuffOrder end
+                if into[name.buff] == nil then order[#order + 1] = name.buff end
+                into[name.buff] = set
             else
                 local base, n = name, 1
                 while out.sets[name] ~= nil do
@@ -348,6 +356,10 @@ function G.Import(text)
         out.notes[#out.notes + 1] = #wsm .. ' WS sets for WeaponskillMode Match: GoomSwap\'s WS variants follow /mset '
             .. '(_Acc) already; rename or delete them'
     end
+    if #out.idleBuffOrder > 0 then
+        out.notes[#out.notes + 1] = 'sets.idle.Weak became Buffs_Idle[\'Weakness\']: worn standing (not engaged) '
+            .. 'while Weakness is up, after a raise'
+    end
     if #out.buffOrder > 0 then
         out.notes[#out.notes + 1] = 'sets.buff.X became Buffs[\'X\']: worn idle and engaged while X is up. One the '
             .. 'file puts on with an action (sets.buff.Souleater in its WS code) belongs in Buffs_Ws / Buffs_Midcast '
@@ -400,6 +412,7 @@ function G.FixNames(imported, lookup)
     end
     for _, n in ipairs(imported.order) do fix(imported.sets[n]) end
     for _, b in ipairs(imported.buffOrder) do fix(imported.buffs[b]) end
+    for _, b in ipairs(imported.idleBuffOrder or {}) do fix(imported.idleBuffs[b]) end
     local function list(t)
         table.sort(t)
         if #t <= 12 then return table.concat(t, ', ') end
@@ -572,17 +585,25 @@ function G.Draft(template, imported, info, setFile)
     if model == nil then return nil, err end
     local quote, key = setFile.QuoteText, setFile.FormatKey
     local lines, done, counts = {}, {}, { sets = 0, empty = 0, buffs = 0 }
+    -- the buff tables: Buffs (sets.buff.X), Buffs_Idle (sets.idle.Weak)
+    local BUFFS = { Buffs = { imported.buffOrder, imported.buffs, ' -- while the buff is up: idle and engaged' },
+        Buffs_Idle = { imported.idleBuffOrder or {}, imported.idleBuffs or {},
+            ' -- while the buff is up, not engaged' } }
+    local function buff_table(name)
+        local b = BUFFS[name]
+        lines[#lines + 1] = '    ' .. name .. ' = {' .. b[3]
+        for _, buff in ipairs(b[1]) do
+            lines[#lines + 1] = '        ' .. key(buff) .. ' = ' .. G.SetText(b[2][buff], quote, key) .. ','
+            counts.buffs = counts.buffs + 1
+        end
+        lines[#lines + 1] = '    },'
+    end
     lines[#lines + 1] = '{'
     for _, set in ipairs(model.list) do
         if (set.parentName == nil) and not done[set.name] then
             done[set.name] = true
-            if (set.name == 'Buffs') then
-                lines[#lines + 1] = '    Buffs = { -- while the buff is up: idle and engaged'
-                for _, b in ipairs(imported.buffOrder) do
-                    lines[#lines + 1] = '        ' .. key(b) .. ' = ' .. G.SetText(imported.buffs[b], quote, key) .. ','
-                    counts.buffs = counts.buffs + 1
-                end
-                lines[#lines + 1] = '    },'
+            if (BUFFS[set.name] ~= nil) and ((set.name == 'Buffs') or (#BUFFS[set.name][1] > 0)) then
+                buff_table(set.name)
             elseif imported.sets[set.name] ~= nil then
                 lines[#lines + 1] = '    ' .. key(set.name) .. ' = ' .. G.SetText(imported.sets[set.name], quote, key)
                     .. ', -- sets.' .. imported.from[set.name]
@@ -608,13 +629,8 @@ function G.Draft(template, imported, info, setFile)
             counts.sets = counts.sets + 1
         end
     end
-    if (not done.Buffs) and (#imported.buffOrder > 0) then
-        lines[#lines + 1] = '    Buffs = {'
-        for _, b in ipairs(imported.buffOrder) do
-            lines[#lines + 1] = '        ' .. key(b) .. ' = ' .. G.SetText(imported.buffs[b], quote, key) .. ','
-            counts.buffs = counts.buffs + 1
-        end
-        lines[#lines + 1] = '    },'
+    for _, name in ipairs({ 'Buffs', 'Buffs_Idle' }) do -- the example has no such table: added last
+        if (not done[name]) and (#BUFFS[name][1] > 0) then buff_table(name) end
     end
     lines[#lines + 1] = '}'
     local text = string.sub(template, 1, model.open - 1)
@@ -669,7 +685,10 @@ function G.Run(args, say, err, setFile)
     if job == nil then err('/gcimport: which job? /gcimport ' .. name .. ' WAR') return end
     local imported, why = G.Import(text)
     if imported == nil then err('/gcimport: ' .. tostring(why)) return end
-    if #imported.order + #imported.buffOrder == 0 then err('/gcimport: no sets found in ' .. name .. '.') return end
+    if #imported.order + #imported.buffOrder + #imported.idleBuffOrder == 0 then
+        err('/gcimport: no sets found in ' .. name .. '.')
+        return
+    end
     local okNames, whyNames = pcall(G.FixNames, imported, item_lookup())
     if not okNames then
         imported.notes[#imported.notes + 1] = 'item names not checked against the game (' .. tostring(whyNames) .. ')'
