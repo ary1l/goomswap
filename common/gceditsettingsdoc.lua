@@ -42,8 +42,8 @@ local settings = {
         .. 'A spell is its exact name. "Cure/Cura... while Daybreak or Bunzi\'s Rod in hand": any spell starting '
         .. 'with Cure or Cura, only while one of those is in Main or Sub.',
         "{ 'Dia II', { Spells = { 'Cure' }, Worn = { 'Daybreak' } } }" },
-    EditorKeepSize = { "Off: the editor and GoomSwap settings open at their own spot and size each time (made for "
-        .. '2560 x 1080, scaled to your screen). On: they open where and as big as you left them.' },
+    EditorKeepSize = { 'Off: the editor and GoomSwap settings open at their usual spot and size each time. On: they '
+        .. 'open where and as big as you left them.' },
     EditorSpacing = { "The set editor's slot cards: Compact (icons; name and stats on hover) or Comfortable (each piece named). Its Editor menu sets it too.", 'Comfortable' },
     EditorIgnoreSuggestions = { 'Exact set names /gcedit no longer suggests (the add list, Related tab), any case.', "{ 'Singing' }" },
     EditorBackupKeep = { 'Newest dated /gcedit backups kept per job file after a save. 0 = keep all.', '3' },

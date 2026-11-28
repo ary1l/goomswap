@@ -905,7 +905,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         imgui.TextColored(palette.dim, '(the file open in the editor)')
         for i, t in ipairs(HOME_TOOLS) do
             if i > 1 then fit_line(pill_w(t[1]) + 8, true) end
-            if W.Button(t[1] .. '##home_' .. t[2], 'ghost') then ui.toolsAsk = t[2] end
+            if W.Button(t[1] .. '##home_' .. t[2], 'ghost') then ui.toolsAsk, ui.focusEditor = t[2], true end
             if imgui.IsItemHovered() then set_tip(t[3]) end
         end
         imgui.Spacing()

@@ -2089,8 +2089,8 @@ local function body()
     local tools = { backups = false, cleanup = false, rescan = false, reload = false }
     if imgui.Button('Editor##gcedit_more') then imgui.OpenPopup('##gcedit_tools') end
     if imgui.IsItemHovered() then
-        set_tip('This editor itself: its spacing and theme; this file\'s Backups, Unused gear, Rescan bags, Reload '
-            .. 'file. (How GoomSwap behaves in game: GoomSwap settings.)')
+        set_tip('This editor itself: its spacing, theme and Diagnostics. (This file\'s tools, Unused gear, Rescan '
+            .. 'bags, Backups, and how GoomSwap behaves in game: GoomSwap settings.)')
     end
     if imgui.BeginPopup('##gcedit_tools') then
         -- either/or choices as switches, each with what the one on does
@@ -2113,17 +2113,11 @@ local function body()
         imgui.Spacing()
         theme_menu()
         imgui.Separator()
-        imgui.TextColored(palette.dim, 'This file')
-        tools.backups = imgui.Selectable('Backups##gct_b', false)
-        if imgui.IsItemHovered() then set_tip('Every Save keeps a dated copy of the file: see what each changed, and put one back.') end
-        tools.cleanup = imgui.Selectable('Unused gear##gct_u', false)
-        if imgui.IsItemHovered() then
-            set_tip('The gear in your Inventory and Wardrobes that none of your job files, char.lua or GoomSwap names. Read only.')
+        -- Unused gear, Rescan bags, Backups, Reload file: GoomSwap settings' Home (one place)
+        if imgui.Selectable('Unused gear, Rescan bags, Backups...##gct_home', false) then
+            editorState.ui.settingsOpen, editorState.ui.settingsCat = { true }, 'Home'
         end
-        tools.rescan = imgui.Selectable('Rescan bags##gct_r', false)
-        if imgui.IsItemHovered() then set_tip('Read your bags again (after moving gear). Keeps your unsaved changes.') end
-        tools.reload = imgui.Selectable('Reload file##gct_l', false)
-        if imgui.IsItemHovered() then set_tip('Read the file and your bags again.') end
+        if imgui.IsItemHovered() then set_tip("This file's tools: GoomSwap settings, Home.") end
         -- /gcbuild's notes (its header, a slot's "example: / move it to a wardrobe"): a snapshot that goes stale
         local doc = editorState.document
         if (doc.model ~= nil) and (doc.notesText ~= doc.model.text) then
@@ -2546,6 +2540,11 @@ local function render()
     iconBudget = ICONS_PER_FRAME
     ctx.iconBudget = iconBudget
     local ok, err = true, nil
+    -- Settings' Home asked for one of this file's tools: the editor comes in front, its popup with it
+    if editorState.ui.focusEditor and (imgui.SetNextWindowFocus ~= nil) then
+        editorState.ui.focusEditor = nil
+        imgui.SetNextWindowFocus()
+    end
     if imgui.Begin('GoomSwap set editor###gcedit_w2', editorState.ui.open, ImGuiWindowFlags_NoCollapse) then
         ok, err = guarded(body) -- an error must not skip End/PopStyleColor, nor leave a panel open
     end
