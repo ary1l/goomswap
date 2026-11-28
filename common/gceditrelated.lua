@@ -2155,12 +2155,31 @@ end
 -- (the item's When / Else, checked as the gear goes on). Kept when the piece changes.
 local FB_STATS = { { 'hpp', 'HP %' }, { 'mpp', 'MP %' }, { 'tp', 'TP' } }
 local fbForm = {}
+-- The pieces a fallback can name: ones you own that fit the slot (job and level as the gear list filters them), one
+-- per name, not the slot's own; a bag you cannot equip from is named. Built once per slot, piece and bag scan.
+local fbPieces = {}
+local function fallback_pieces(slot, own)
+    local key = slot .. '\0' .. string.lower(own or '') .. '\0' .. tostring(editorState.document.revision) .. '\0'
+        .. tostring(editorState.ui.anyJob[1])
+    if fbPieces.key == key then return fbPieces.list end
+    local list, seen, first = {}, { [string.lower(own or '')] = true }, editorState.inventory.firstByName or {}
+    for _, g in ipairs(editorState.inventory.items or {}) do -- sorted by name
+        if (not seen[g.lname]) and fits(g, slot) then
+            seen[g.lname] = true
+            local best = first[g.lname] or g -- the copy in a bag you can equip from, when there is one
+            list[#list + 1] = best.equippable and best.name or { best.name, best.name .. ' (' .. best.bag .. ')' }
+        end
+    end
+    fbPieces.key, fbPieces.list = key, list
+    return list
+end
 local function fallback_form(set, slot, cur)
     local key = set.name .. '|' .. slot
     local base = tostring(cur.when) .. '|' .. tostring(cur.els)
     local f = fbForm[key]
     if (f == nil) or (f.base ~= base) then
-        f = { base = base, stat = 'mpp', below = { '' }, item = { cur.els or '' } }
+        local owned = (editorState.inventory.firstByName or {})[string.lower(cur.els or '')] -- the game's spelling
+        f = { base = base, stat = 'mpp', below = { '' }, item = { (owned ~= nil) and owned.name or (cur.els or '') } }
         local st, n = string.match(cur.when or '', '(%a+)%s*=%s*{%s*ge%s*=%s*([%d%.]+)')
         if st ~= nil then f.stat, f.below[1] = st, n end
         fbForm[key] = f
@@ -2181,9 +2200,16 @@ local function fallback_form(set, slot, cur)
     imgui.PushItemWidth(54)
     imgui.InputTextWithHint('##fb_n_' .. key, '10', f.below, 8)
     imgui.PopItemWidth()
-    imgui.PushItemWidth(220)
-    imgui.InputTextWithHint('##fb_item_' .. key, 'wear: e.g. Telos Earring', f.item, 64)
-    imgui.PopItemWidth()
+    local pieces = fallback_pieces(slot, cur.name)
+    if #pieces == 0 then
+        imgui.TextColored(palette.dim, '(no other piece you own fits ' .. slot .. ')')
+    else
+        local piece = ctx.W.Pick('fb_item_' .. key, (f.item[1] ~= '') and f.item[1] or 'pick the piece', pieces, 220)
+        if piece ~= nil then f.item[1] = piece end
+        if imgui.IsItemHovered() then
+            set_tip('Pieces you own that fit ' .. slot .. ', as the gear list shows them (this job and level).')
+        end
+    end
     local n, item = tonumber(f.below[1]), string.match(f.item[1] or '', '^%s*(.-)%s*$')
     imgui.SameLine()
     if imgui.SmallButton('Set##fb_set_' .. key) and (n ~= nil) and (item ~= '') then
