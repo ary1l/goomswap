@@ -83,6 +83,7 @@ data.ENGINE = {
     'Idle_Regen',
     'Idle_Refresh',
     'Idle_Regain',
+    'Idle_Reraise',
     'Resting',
     'Town',
     'Movement',

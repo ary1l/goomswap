@@ -1537,7 +1537,7 @@ function actionModel.New(context)
                         wear('Idle', conds, nil, extra)
                         with_weapons('Idle', '', conds, 'Idle', extra)
                         if c ~= nil then
-                            for _, m in ipairs({ 'Refresh', 'Regen', 'Regain' }) do
+                            for _, m in ipairs({ 'Refresh', 'Regen', 'Regain', 'Reraise' }) do
                                 local mc = plus(conds, 'idle mode ' .. m, unpack(c))
                                 wear('Idle_' .. m, mc, 'Idle', extra)
                                 with_weapons('Idle', '_' .. m, mc, 'Idle', extra)

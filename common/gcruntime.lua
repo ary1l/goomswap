@@ -255,8 +255,9 @@ do
             -- (Physical damage limit+ gear), Acc <WS set>_Acc, SubtleBlow <WS set>_SubtleBlow (as /mset acc / sb do,
             -- without changing TP gear). Default was Mid: /wsset mid still picks it (SetCycleFrom).
             gcdisplay.CreateCycle('WsSet', { 'Default', 'Low', 'High', 'PDL', 'Acc', 'SubtleBlow' })
-            -- /idleset: Idle_<mode> over Idle while idle (gcinclude.EquipIdle).
-            gcdisplay.CreateCycle('IdleSet', { 'Default', 'Refresh', 'Regen', 'Regain' })
+            -- /idleset: Idle_<mode> over Idle while idle (gcinclude.EquipIdle). Reraise: your Reraise gear (Twilight
+            -- Mail...); the auto Idle_Regen / Idle_Refresh stay off it (SetRegenRefreshGear).
+            gcdisplay.CreateCycle('IdleSet', { 'Default', 'Refresh', 'Regen', 'Regain', 'Reraise' })
             gcinclude.BuildWeaponCycles()
             if type(gcinclude.DefaultWeapons) == 'string' then
                 gcinclude.SetWeaponCycle('Weapons', gcinclude.DefaultWeapons, true)

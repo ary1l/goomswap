@@ -20,7 +20,7 @@
 | `/wsdistance [yalms\|on\|off]` | No word: the check's state and your target's distance and reach. WS range check: a WS out of reach is cancelled (reach = its range: 3; Gust Slash, Cyclone, Mistral Axe, Bora Axe 14; bows and guns 20, at least 21; Blast Arrow, Blast Shot, Numbing Shot 5; + your and the target's hitboxes, so further on a big mob; at least as far as your auto-attacks have landed on a mob of that name and size this zone; `yalms` = the least reach, default 5). Myrkr, Dagan, Moonlight, Starlight (on you): no check |
 | `/def [dt\|mdt\|aminon\|off]` | DT → MDT → Aminon → off; `/dt` `/mdt` `/aminon` one |
 | `/sir` `/kite` | SIR over midcasts (not `SIRSkip`) / Movement |
-| `/idleset [refresh\|regen\|regain]` | `Idle_<mode>` over `Idle` while idle |
+| `/idleset [refresh\|regen\|regain\|reraise]` | `Idle_<mode>` over `Idle` while idle; `reraise`: your Reraise gear (`Idle_Reraise`), the auto `Idle_Regen` / `Idle_Refresh` kept off it |
 | `/autogear [regen\|refresh\|dt\|petdt N]` | Auto idle set thresholds |
 | `/lock [slots\|all]` `/unlock [slot]` | Freeze slots; `/unlock` names other holders |
 | `/nukeset [power\|macc\|oa]` | Nuke sets; `oa` = `OccultAcumen` (RDM GEO BLM SCH DRK) |

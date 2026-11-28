@@ -46,7 +46,7 @@ and its toggle wears it. Until then it falls back as the table says (`Aminon` â†
 | `Dt` | `/dt`: every example wears it by `ByName('Dt')`; and on its own below `DTGearHPP` HP |
 | `Movement` | your job file, not GoomSwap: every example wears it while moving, most also on `/kite` (PLD wears `kite`, BLU `Evasion`) |
 | `Dt_<mset>` | `/dt` with an `/mset` mode on (`Dt_SubtleBlow`), over `Dt`: every example wears `Dt` by `ByName` |
-| `Idle_Refresh` `Idle_Regen` `Idle_Regain` | `/idleset`; low MP/HP |
+| `Idle_Refresh` `Idle_Regen` `Idle_Regain` `Idle_Reraise` | `/idleset`; low MP/HP (not over `/idleset reraise`) |
 | `Midshot_Acc` `Midshot_<Mode>` `Midshot_<Mode>_Acc` | COR RNG PLD shots: `/mset acc`; that weapon mode's own (`ByName('Midshot')`, like a WS); `Midshot_Acc` again over `TripleShot` / `DoubleShot` |
 | `Proc` `Ws_Proc` | `/proc`: engaged, `Proc` in place of your sets (weapon mode stays); on WS `Ws_Proc` (else, missing or empty, `Proc`) in place of every WS set |
 | `Incapacitated` `Sleeping` | disabled / asleep (weapons pass the TP hold) |

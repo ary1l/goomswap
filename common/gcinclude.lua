@@ -2217,7 +2217,7 @@ function gcinclude.Help()
         'keys   : F7 wm, Shift+F7 wm default, F9 mset, Ctrl+F9 tankset, Alt+F9 wsset, F10 def, Alt+F10 kite,',
         '         Win+F10 hoxne, Shift+F11 nukeset, Alt+F11 burst, Shift+F12 idleset, Alt+F12 def off, Ctrl+Win+Alt+F12 reload',
         '         /gckey <key> <command or /chat command>, e.g. /gckey ^F1 /ma "Cure IV" <stpc>',
-        'idle   : /idleset [default|refresh|regen|regain] (Idle_<mode> over Idle while idle); /mset acc also wears Midshot_Acc (COR RNG PLD)',
+        'idle   : /idleset [default|refresh|regen|regain|reraise] (Idle_<mode> over Idle while idle); /mset acc also wears Midshot_Acc (COR RNG PLD)',
         'every box: /mss /<command> (Multisend), one box: /ms sendto <name> /<command>',
     }
     for _, line in ipairs(lines) do
@@ -2643,8 +2643,10 @@ end
 function gcinclude.SetRegenRefreshGear(player)
     local cfg = gcinclude.settings
     if (cfg.AutoGear == false) then return end
-    -- Regen/Refresh only out of combat and never over a manual /dt; auto Dt any time.
-    if (gcdisplay.GetToggle('DTset') ~= true) and (not gcinclude.InCombat(player)) then
+    -- Regen/Refresh only out of combat and never over a manual /dt or /idleset reraise (they'd take the Reraise gear
+    -- off); auto Dt any time.
+    if (gcdisplay.GetToggle('DTset') ~= true) and (gcdisplay.GetCycle('IdleSet') ~= 'Reraise')
+        and (not gcinclude.InCombat(player)) then
         wear('Idle_Regen', player.HPP, cfg.RegenGearHPP)
         wear('Idle_Refresh', player.MPP, cfg.RefreshGearMPP)
     end
