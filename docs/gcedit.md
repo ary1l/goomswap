@@ -193,7 +193,7 @@ On Compact's icon cards the words are left out; hover a card for the rest.
   layers first to last, with why each went on.
 - **Stats:** the set's totals, inherited layers included. Over them, the **caps**: haste, Fast Cast, Snapshot,
   damage taken (physical, magic, breath), each with what is over or left.
-- **Compare:** both sets' stats and the difference, or slot by slot. **Pinned** stats come first and always show, equal or not (HP, MP, STR...CHR, Enmity to start): click a stat's name to pin or unpin it (saved in char.lua, `EditorComparePins`).
+- **Compare:** both sets' stats and the difference, or slot by slot. **Pinned** stats come first and always show, equal or not (DT, PDT, MDT, HP, MP, STR, Weapon skill damage to start): click a stat's name to pin or unpin it (saved in char.lua, `EditorComparePins`).
 - **BLU spell lists:** a rule's "in GoomSwap's spell list" tooltip lists the spells; change them in GoomSwap settings, BLU options (`BluMagDebuff`... written to BLU.lua).
 - **Related:** the sets that go on with this one, in order. The ones you don't have are listed with **make**.
 - **To fill:** slots left out, missing or in a bag you can't equip from. Click one, pick the item, and you are back
