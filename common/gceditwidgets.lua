@@ -219,6 +219,59 @@ return function(imgui, palette, set_tip)
         return changed and out or nil
     end
 
+    -- KeepWeaponsFor: spell names, and { Spells, Worn } rows (spells starting with Spells, while a Worn item is in
+    -- Main or Sub) as 'Cure/Cura... while Daybreak or Bunzi's Rod in hand'. Added as a name, or 'A, B while X, Y'.
+    function W.KeepText(v)
+        if type(v) ~= 'table' then return tostring(v) end
+        return table.concat(v.Spells or {}, '/') .. '... while ' .. table.concat(v.Worn or {}, ' or ') .. ' in hand'
+    end
+    function W.ParseKeep(text)
+        local spells, worn = string.match(text, '^(.-)%s+[Ww][Hh][Ii][Ll][Ee]%s+(.+)$')
+        if spells == nil then return text end
+        local row = { Spells = {}, Worn = {} }
+        for s in string.gmatch(spells, '[^,]+') do if trim(s) ~= '' then table.insert(row.Spells, trim(s)) end end
+        for s in string.gmatch(worn, '[^,]+') do if trim(s) ~= '' then table.insert(row.Worn, trim(s)) end end
+        if (#row.Spells == 0) or (#row.Worn == 0) then return text end
+        return row
+    end
+    function W.KeepList(id, list)
+        local out, changed = {}, false
+        for i, v in ipairs(list or {}) do out[i] = v end
+        local f = flow_start()
+        for i, v in ipairs(list or {}) do
+            local text = W.KeepText(v)
+            flow_next(f, width(text .. '  x') + 8)
+            if button(text .. '  x##' .. id .. '_' .. i, 'danger') then
+                table.remove(out, i)
+                changed = true
+            end
+            if imgui.IsItemHovered() then
+                set_tip(((type(v) == 'table') and ('Spells whose name starts with ' .. table.concat(v.Spells or {}, ' or ')
+                    .. ', only while ' .. table.concat(v.Worn or {}, ' or ') .. ' is in Main or Sub. ') or '')
+                    .. 'Take it out.')
+            end
+        end
+        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end
+        local b = box(id)
+        imgui.PushItemWidth(260)
+        local enter = imgui.InputTextWithHint('##add_' .. id, "a spell, or: Cure, Cura while Daybreak", b.a, 128)
+        imgui.PopItemWidth()
+        imgui.SameLine()
+        local text = trim(b.a[1])
+        if (button('+ Add##' .. id, 'accent') or (enter and (imgui.IsItemActive == nil))) and (text ~= '') then
+            local row, dup = W.ParseKeep(text), false
+            for _, v in ipairs(out) do
+                if string.lower(W.KeepText(v)) == string.lower(W.KeepText(row)) then dup = true end
+            end
+            if not dup then
+                out[#out + 1] = row
+                changed = true
+            end
+            b.a[1] = ''
+        end
+        return changed and out or nil
+    end
+
     -- name -> value rows. opts: keyHint, valueHint, number (values are numbers), suggest(text) -> names.
     function W.Map(id, map, opts)
         opts = opts or {}

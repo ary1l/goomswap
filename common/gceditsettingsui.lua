@@ -55,12 +55,20 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             return 'keys'
         end
         if LIST[key] and is_list(v) then return 'list' end
+        if (key == 'KeepWeaponsFor') and (v == nil or type(v) == 'table') then -- names and { Spells, Worn } rows
+            for _, x in ipairs(v or {}) do
+                if (type(x) ~= 'string') and ((type(x) ~= 'table') or (type(x.Spells) ~= 'table')
+                    or (type(x.Worn) ~= 'table')) then return nil end
+            end
+            return 'keep'
+        end
         if MAP[key] and is_map(v) then return 'map' end
         if NUMBER_MAP[key] and is_map(v, true) then return 'nmap' end
         return nil
     end
     local function draw_widget(kind, id, v)
         if kind == 'list' then return W.List(id, v) end
+        if kind == 'keep' then return W.KeepList(id, v) end
         if kind == 'map' then return W.Map(id, v) end
         if kind == 'nmap' then return W.Map(id, v, { number = true, valueHint = 'seconds' }) end
         if kind == 'keys' then return W.Keybinds(id, v) end
