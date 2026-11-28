@@ -1817,6 +1817,33 @@ function gcinclude.DropAmmoWeapon(set)
     return set
 end
 
+-- A set slot's fallback ({ Name = 'Vim Torque +1', When = { hpp = { ge = 50 } }, Else = 'Loricate Torque +1' }):
+-- LAC's MakeItemTable keeps only Name, Augment, Bag, Priority and the Aug keys, so WrapEquip's EquipSet / Equip
+-- note each slot's entry while their writes go in (fallbackPending: [slot index] = entry), and WrapBuffer's
+-- ProcessBuffer puts Else on when When doesn't hold. In WrapEquip's own frame: a wrapper of its own would sit
+-- between the caller and CallerLabel (the layer record's "who put it on").
+local fallbackPending = nil
+local fallbackSpecs = setmetatable({}, { __mode = 'k' }) -- set table -> { [slot index] = entry }
+function gcinclude.FallbackSpecs(set)
+    if type(set) == 'string' then set = gcinclude.FindSet(set) end
+    if type(set) ~= 'table' then return nil end
+    local s = fallbackSpecs[set]
+    if s == nil then
+        s = false
+        for k, v in pairs(set) do
+            if (type(v) == 'table') and (v.Else ~= nil) and (type(v.When) == 'table') and (type(k) == 'string') then
+                local idx = gData.GetEquipSlot(k)
+                if (idx ~= nil) and (idx ~= 0) then
+                    s = s or {}
+                    s[idx] = v
+                end
+            end
+        end
+        fallbackSpecs[set] = s
+    end
+    return s or nil
+end
+
 -- Filters every gFunc.EquipSet / gFunc.Equip call, job files included. gFunc outlives profile reloads,
 -- so the originals are kept on it and wrapped once.
 function gcinclude.WrapEquip()
@@ -1835,8 +1862,12 @@ function gcinclude.WrapEquip()
         if rec then
             oldL, oldW = gcaction.RecLabel(gcinclude.SetLabel(set) or gcinclude.CallerLabel(2), gcinclude.CallChain(2))
         end
+        local pendingBefore = fallbackPending
+        fallbackPending = (gcinclude ~= nil) and (gcinclude.FallbackSpecs ~= nil) and gcinclude.FallbackSpecs(set)
+            or nil
         if (gcinclude ~= nil) and (gcinclude.DropAmmoWeapon ~= nil) then set = gcinclude.DropAmmoWeapon(set) end
         local r = gFunc.GcRawEquipSet(set)
+        fallbackPending = pendingBefore
         if rec then gcaction.RecLabel(oldL, oldW) end
         return r
     end
@@ -1852,7 +1883,12 @@ function gcinclude.WrapEquip()
             if (oldL ~= nil) then gcaction.RecLabel(oldL, oldW) else gcaction.RecLabel(gcinclude.CallerLabel(2),
                 gcinclude.CallChain(2)) end
         end
+        local pendingBefore = fallbackPending
+        local idx = (type(slot) == 'string') and gData.GetEquipSlot(slot) or nil
+        local hasFallback = (type(item) == 'table') and (item.Else ~= nil) and (type(item.When) == 'table')
+        fallbackPending = ((idx ~= nil) and hasFallback) and { [idx] = item } or nil
         local r = gFunc.GcRawEquip(slot, item)
+        fallbackPending = pendingBefore
         if rec then gcaction.RecLabel(oldL, oldW) end
         return r
     end
@@ -1963,46 +1999,7 @@ function gcinclude.WrapBuffer()
     gEquip.GcRawImmediate = gEquip.ProcessImmediateBuffer
     local shadow = {}
     gcinclude.ShadowItem = function(slot) return shadow[slot] end
-    -- A set slot's fallback ({ Name = 'Vim Torque +1', When = { hpp = { ge = 50 } }, Else = 'Loricate Torque +1' }):
-    -- LAC's MakeItemTable keeps only Name, Augment, Bag, Priority and the Aug keys, so EquipSet / Equip note each
-    -- slot's as it goes in (the slot's last write wins, as the gear does); ProcessBuffer then puts Else on when
-    -- When doesn't hold.
-    local fallback, pending = {}, nil
-    local specsOf = setmetatable({}, { __mode = 'k' }) -- set table -> { [slot index] = its entry with Else }
-    local function specs(set)
-        local s = specsOf[set]
-        if s == nil then
-            s = {}
-            for k, v in pairs(set) do
-                if (type(v) == 'table') and (v.Else ~= nil) and (type(v.When) == 'table') and (type(k) == 'string') then
-                    local idx = gData.GetEquipSlot(k)
-                    if (idx ~= nil) and (idx ~= 0) then s[idx] = v end
-                end
-            end
-            specsOf[set] = s
-        end
-        return s
-    end
-    local rawSet, rawEquip = gFunc.EquipSet, gFunc.Equip
-    gFunc.EquipSet = function(set, ...)
-        local t = (type(set) == 'string') and gcinclude.FindSet(set) or set
-        local before = pending
-        pending = (type(t) == 'table') and specs(t) or nil
-        local ok, r = pcall(rawSet, set, ...)
-        pending = before
-        if not ok then error(r, 0) end
-        return r
-    end
-    gFunc.Equip = function(slot, item, ...)
-        local before = pending
-        local idx = (type(slot) == 'string') and gData.GetEquipSlot(slot) or nil
-        pending = ((idx ~= nil) and (type(item) == 'table') and (item.Else ~= nil) and (type(item.When) == 'table'))
-            and { [idx] = item } or nil
-        local ok, r = pcall(rawEquip, slot, item, ...)
-        pending = before
-        if not ok then error(r, 0) end
-        return r
-    end
+    local fallback = {} -- [slot index] = the set entry with When / Else that put its piece there (fallbackPending)
     -- gcaction.Rec*: the /gcedit layer record (each write, who made it, the final gear).
     local function rec(name,
         ...) if (gcaction ~= nil) and (gcaction[name] ~= nil) then pcall(gcaction[name], ...) end end
@@ -2019,7 +2016,7 @@ function gcinclude.WrapBuffer()
             blocked = (cur ~= nil) and (cur.Locked == true) and (itemTable.Locked ~= true)
             if not blocked then
                 shadow[slot] = (itemTable.Name ~= 'ignore') and itemTable or nil
-                fallback[slot] = (pending ~= nil) and pending[slot] or nil
+                fallback[slot] = (fallbackPending ~= nil) and fallbackPending[slot] or nil
             end
         end
         rec('RecWrite', slot, itemTable, immediate, blocked)
