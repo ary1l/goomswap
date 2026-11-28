@@ -2188,7 +2188,8 @@ local function fallback_form(set, slot, cur)
     imgui.SameLine()
     if imgui.SmallButton('Set##fb_set_' .. key) and (n ~= nil) and (item ~= '') then
         ctx.set_fallback(set, slot, { when = '{ ' .. f.stat .. ' = { ge = ' .. tostring(n) .. ' } }', els = item })
-        feedback(set.name .. ' / ' .. slot .. ': ' .. item .. ' below ' .. tostring(n) .. ' ' .. label .. ' (unsaved).')
+        feedback(set.name .. ' / ' .. slot .. ': ' .. item .. ' goes on when ' .. label .. ' is below ' .. tostring(n)
+            .. ' (unsaved).')
         imgui.CloseCurrentPopup()
     end
     if cur.when ~= nil then
