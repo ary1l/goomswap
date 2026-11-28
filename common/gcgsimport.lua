@@ -329,11 +329,11 @@ function G.Import(text, items)
         DWMax = { 'its dual-wield swaps' }, DWEarrings = { 'its dual-wield swaps' } }
     local LIGHT = { "cures in Light day or weather (GoomSwap's CureObi puts the obi on)" }
     local IDLEDT = { '/dt and /mdt put Dt and mdt over idle' }
-    local PROC = { '/proc wears Ws_Proc (else Proc) for every weapon skill' }
+    local PROC = { 'proc modes (/proc wears Proc engaged, Ws_Proc on a weapon skill)' }
     -- named sets GoomSwap wears under its own name (latent_refresh: idle under 51% MP is the auto Idle_Refresh);
     -- left out when the file has that set already
     local RENAME = { Self_Refresh = 'Refresh_Self', Self_Healing = 'Cure_Self', latent_refresh = 'Idle_Refresh',
-        MagicBurst = 'Elemental Magic_Burst' }
+        MagicBurst = 'Elemental Magic_Burst', IntEnfeebles = 'Int_Enfeebling', MndEnfeebles = 'Mind_Enfeebling' }
     local hasMdt = false -- sets.defense.MDT: /mdt wears it, MEVA left out
     for _, n in ipairs(out.order) do
         if string.lower(tostring(out.from[n] or '')) == 'defense.mdt' then hasMdt = true end
@@ -347,7 +347,8 @@ function G.Import(text, items)
         end
         if (d == nil) and (string.match(n, '^LightDay') or string.match(n, '^LightWeather')) then d = LIGHT end
         if (d == nil) and (string.match(n, '^Idle_[PM]?DT$') or string.match(n, '^Idle_[PM]?DT_')) then d = IDLEDT end
-        if (d == nil) and string.match(from, '^precast%.ws') and string.match(n, '_Proc$') then d = PROC end
+        local cast = string.match(from, '^precast') or string.match(from, '^midcast') -- WS, spells, abilities
+        if (d == nil) and cast and string.match(n, '_Proc$') and (n ~= 'Ws_Proc') then d = PROC end -- Ws_Proc: /proc's
         if (d == nil) and (RENAME[n] ~= nil) then
             if out.sets[RENAME[n]] ~= nil then d = { 'the file has ' .. RENAME[n] .. ' already' } end
         end
@@ -381,7 +382,32 @@ function G.Import(text, items)
     end
     if #renamedTo > 0 then
         out.notes[#out.notes + 1] = 'as GoomSwap names them (Cure_Self: a cure on you; Idle_Refresh: idle, low MP; '
-            .. 'Elemental Magic_Burst: a nuke in a skillchain): ' .. table.concat(renamedTo, ', ')
+            .. 'Elemental Magic_Burst: a nuke in a skillchain; Int_ / Mind_Enfeebling: the RDM example\'s, by rule): '
+            .. table.concat(renamedTo, ', ')
+    end
+    -- CastingMode SIRD: GoomSwap's SIR is one set over every spell (/sir). The file's midcast one (sets.midcast.SIRD)
+    -- becomes it, else the first; the others left out
+    local sird, sirdFrom, sirdLeft = nil, nil, {}
+    for _, n in ipairs(out.order) do
+        if string.find(n, '_SIRD', 1, true) and ((sird == nil) or (n == 'Midcast_SIRD')) then sird = n end
+    end
+    if (sird ~= nil) and (out.sets.SIR == nil) then
+        local keep = {}
+        for _, n in ipairs(out.order) do
+            if n == sird then
+                sirdFrom = 'sets.' .. out.from[n]
+                out.sets.SIR, out.from.SIR, out.sets[n], out.from[n] = out.sets[n], out.from[n], nil, nil
+                keep[#keep + 1] = 'SIR'
+            elseif string.find(n, '_SIRD', 1, true) then
+                sirdLeft[#sirdLeft + 1] = n
+                out.sets[n], out.from[n] = nil, nil
+            else
+                keep[#keep + 1] = n
+            end
+        end
+        out.order = keep
+        out.notes[#out.notes + 1] = 'CastingMode SIRD: ' .. sirdFrom .. ' -> SIR (/sir, over every spell)'
+            .. ((#sirdLeft > 0) and ('; left out: ' .. table.concat(sirdLeft, ', ')) or '')
     end
     for _, w in ipairs(whyOrder) do
         out.notes[#out.notes + 1] = 'left out, put on by the file\'s own code: ' .. table.concat(byWhy[w], ', ')
@@ -680,7 +706,8 @@ function G.ModeLists(text, imported, whole)
     end
     for _, m in ipairs(opts.Weapons or {}) do addw(made[string.lower(m)]) end -- the file's order first
     for _, n in ipairs(imported.order) do addw(string.match(n, '^Weapon_(%w+)$')) end
-    local ms, mseen = {}, { default = true, normal = true, am = true, am3 = true, someacc = true, fullacc = true } -- Acc
+    local ms, mseen = { }, { default = true, normal = true, am = true, am3 = true, someacc = true, fullacc = true,
+        dw = true } -- SomeAcc / FullAcc: Acc; DW: the engine's Tp_DW (dual wielding), no mode
     -- the file's OffenseMode / HybridMode options when it has them (Normal is Default), else every Tp_ mode
     for _, st in ipairs({ 'OffenseMode', 'HybridMode' }) do
         for _, m in ipairs(opts[st] or {}) do
@@ -744,6 +771,13 @@ function G.Draft(template, imported, info, setFile)
     if model == nil then return nil, err end
     -- Selindrile's CastingMode Resistant (magic accuracy): the example's /nukeset Macc set for that skill (a rule
     -- with mode = { nukeset = 'Macc' }, skill = 'Elemental Magic' wearing NukeACC), else left out
+    -- Selindrile's sets.midcast.Lullaby: the example's Foe Lullaby set (BRD's rules wear Foe / Horde), if it has one
+    if (imported.sets.Lullaby ~= nil) and (imported.sets.Foe == nil) and string.find(template, "wear%s*=%s*'Foe'") then
+        imported.sets.Foe, imported.from.Foe, imported.sets.Lullaby = imported.sets.Lullaby, imported.from.Lullaby, nil
+        for i, n in ipairs(imported.order) do if n == 'Lullaby' then imported.order[i] = 'Foe' end end
+        imported.notes[#imported.notes + 1] = 'sets.midcast.Lullaby -> Foe (the example\'s Foe Lullaby set; Horde '
+            .. 'Lullaby wears Horde)'
+    end
     local macc, folded, gone = {}, {}, {}
     for skill, set in string.gmatch(template, "nukeset%s*=%s*'Macc'%s*}%s*,%s*skill%s*=%s*'([^']+)'%s*}%s*,%s*wear%s*="
         .. "%s*'([^']+)'") do macc[string.lower(skill)] = set end

@@ -8,7 +8,8 @@ Later wins, slot by slot.
 
 **Idle/engaged:** (engaged with `/proc`: only `Proc`, then the weapon mode; no other set but 5's sleep/doom ones)
 1. Job file: `Idle` → `Idle_<weapon>` → `Idle_<mode>` → `Idle_<weapon>_<mode>` / `Tp_Default` → `Tp_<weapon>` →
-   `Tp_<mset>` → `Tp_<weapon>_<mset>` → buff sets → `Dt` → `Dt_<weapon>` → `Dt_<mset>` (`/dt`) → `Movement` (`/kite`).
+   `Tp_<mset>` → `Tp_<weapon>_<mset>`, with `Tp_DW` / `Tp_DW_<mset>` while dual wielding (a one-handed weapon in Sub)
+   under `Tp_<weapon>`, over `Tp_1h` → buff sets → `Dt` → `Dt_<weapon>` → `Dt_<mset>` (`/dt`) → `Movement` (`/kite`).
    `<weapon>` is the `/wm` mode (`Tp_Chango` while `/wm Chango`). A weapon with no set of its own takes its type's:
    `Tp_2h` for a two-handed Main (Great Sword, Great Axe, Scythe, Polearm, Great Katana, Staff), `Tp_1h` for a
    one-handed one (Dagger, Sword, Axe, Katana, Club); Hand-to-Hand takes neither. With no `/wm` mode, the Main worn.
@@ -41,6 +42,7 @@ and its toggle wears it. Until then it falls back as the table says (`Aminon` �
 | `Weapon_<Mode>` `_1h` `<Mode>Acc` | weapon mode; no DW; `/mset acc` |
 | `Tp_<Mode>` `Ws_<Mode>` `Tp_<Mode>_<mset>` | TP / WS gear for that weapon mode, over `Tp_Default` / `Ws_Default` (`Tp_Chango`) |
 | `Tp_2h` `Tp_1h` `Ws_2h` `Tp_2h_<mset>` | a weapon with no `Tp_<Mode>` of its own, by its Main's type |
+| `Tp_DW` `Tp_DW_<mset>` | engaged while dual wielding (Dual Wield allowed, a one-handed weapon in Sub) |
 | `<set>_<Mode>` `Dt_Chango` `Idle_Chango` `['Savage Blade_Naegling']` | that weapon mode's version of a set worn by name, `Dt` or `Idle` (else `_2h` / `_1h`) |
 | `mdt` `Aminon` `SIR` `TH` | their toggles (`/def`, `/sir`, `/th`); `TH` until tagged; `Aminon` missing or empty: `mdt` |
 | `Dt` | `/dt`: every example wears it by `ByName('Dt')`; and on its own below `DTGearHPP` HP |

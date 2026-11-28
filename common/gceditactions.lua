@@ -478,6 +478,8 @@ function actionModel.New(context)
             return (v ~= 'Unknown') and v or nil
         end
         st.mset, st.wsset, st.idleset, st.hoxne = cyc('MeleeSet'), cyc('WsSet'), cyc('IdleSet'), cyc('Hoxne')
+        local okDw, dw = pcall(function() return gearEngine.DualWielding() end) -- Tp_DW: dual wielding now
+        st.dw = okDw and (dw == true)
         st.weapons = cyc('Weapons') or cyc('Main')
         st.wmode = cyc('Weapons')
         st.dt, st.kite, st.proc =
@@ -563,6 +565,15 @@ function actionModel.New(context)
             if string.lower(suffix) == 'dt' then
                 st.dt = true
                 return 'as if DT mode (/dt)'
+            end
+            if string.lower(suffix) == 'dw' then -- Tp_DW: engaged with a one-handed weapon in Sub too
+                st.dw = true
+                return 'as if dual wielding'
+            end
+            local dwRest = string.match(suffix, '^[Dd][Ww]_(.+)$') -- Tp_DW_Acc
+            if dwRest ~= nil then
+                st.dw = true
+                return 'as if dual wielding, ' .. mset_of(dwRest, false, ws)
             end
             local rest = string.match(suffix, '^(.+)_[Dd][Tt]$') -- Acc_Dt, HighBuff_DT: /dt over the rest
             if rest ~= nil then
@@ -1032,10 +1043,20 @@ function actionModel.New(context)
                 prefix .. '_Default',
                 (prefix == 'Ws') and 'base: every weapon skill starts with it' or 'base while fighting'
             )
+            -- Tp_DW (dual wielding): under the weapon mode's own set, over the weapon type's (gcinclude EquipMode)
+            local own = (w ~= nil) and has_set(prefix .. '_' .. w)
+            local function dw(suffix, also)
+                if (prefix == 'Tp') and st.dw then look('Tp_DW' .. suffix, 'dual wielding' .. also, true) end
+            end
+            if own then dw('', '') end
             weapon_layer(prefix, '', '')
+            if not own then dw('', '') end
             if (st.mset ~= nil) and (st.mset ~= 'Default') then
                 look(prefix .. '_' .. st.mset, 'melee mode ' .. st.mset .. ' (/mset)')
+                local both = (w ~= nil) and has_set(prefix .. '_' .. w .. '_' .. st.mset)
+                if both then dw('_' .. st.mset, ' with melee mode ' .. st.mset) end
                 weapon_layer(prefix, '_' .. st.mset, ' with melee mode ' .. st.mset, w == nil)
+                if not both then dw('_' .. st.mset, ' with melee mode ' .. st.mset) end
             end
         end
         local function variants(n) -- ByName after its set: weapon, /mset, both

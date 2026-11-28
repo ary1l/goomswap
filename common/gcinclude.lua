@@ -1435,12 +1435,22 @@ end
 -- job file has it. A weapon with no set of its own takes <prefix>_2h / <prefix>_1h (Tp_2h_Acc), by its type. A
 -- missing <prefix>_Acc is named once, not on every HandleDefault (LAC's 'Set not found').
 local modeWarned = {}
+-- Engaged and dual wielding (gcinclude.DualWielding), Tp_DW too, and Tp_DW_<mode> with an /mset mode: over the
+-- weapon type's (Tp_1h), under the weapon mode's own (Tp_Chango), as Selindrile's combat forms rank them.
 function gcinclude.EquipMode(prefix)
     local base = gcinclude.FindSet(prefix .. '_Default')
     if (base ~= nil) then gFunc.EquipSet(base) end
     local weapon = weaponMode()
-    local w = weaponVariant(prefix, weapon)
-    if (w ~= nil) then gFunc.EquipSet(w) end
+    local dual = (prefix == 'Tp') and (gcinclude.FindSet('Tp_DW') ~= nil) and gcinclude.DualWielding()
+    -- set, then its dual wield one: before it when set is the weapon mode's own, else after
+    local function wear(set, suffix)
+        local dw = dual and gcinclude.FindSet('Tp_DW' .. suffix) or nil
+        local own = (set ~= nil) and (weapon ~= nil) and (set == gcinclude.FindSet(prefix .. '_' .. weapon .. suffix))
+        if own and (dw ~= nil) then gFunc.EquipSet(dw) end
+        if (set ~= nil) then gFunc.EquipSet(set) end
+        if not own and (dw ~= nil) then gFunc.EquipSet(dw) end
+    end
+    wear(weaponVariant(prefix, weapon), '')
     local mode = gcdisplay.GetCycle('MeleeSet')
     if (mode == 'Default') then return end
     local n = prefix .. '_' .. mode
@@ -1452,7 +1462,7 @@ function gcinclude.EquipMode(prefix)
         modeWarned[n] = true
         gcinclude.Err('no ' .. n .. ' set: ' .. prefix .. '_Default stays (add ' .. n .. ' or /mset base)')
     end
-    if (both ~= nil) then gFunc.EquipSet(both) end
+    wear(both, '_' .. mode)
 end
 
 -- The idle base: Idle, then Idle_<weapon> (as EquipMode), then Idle_<mode> over it while idle (/idleset Refresh,
@@ -1888,6 +1898,21 @@ function gcinclude.MainHands()
     if gcinclude.TwoHandSkills:contains(r.Skill) then return '2h' end
     if gcinclude.OneHandSkills:contains(r.Skill) then return '1h' end
     return nil
+end
+
+-- Dual wielding: Dual Wield allowed (CanDualWield: job, level, /dw) and a one-handed weapon in Sub, the weapon
+-- mode's or, without one, the one worn.
+function gcinclude.DualWielding()
+    if not gcinclude.CanDualWield() then return false end
+    local layer = (gcinclude.BuildWeaponLayer ~= nil) and gcinclude.BuildWeaponLayer() or nil
+    local sub = (layer ~= nil) and layer.Sub or nil
+    local r = (sub ~= nil) and itemRes(sub) or nil
+    if not r then
+        local e = gEquip.GetCurrentEquip(2)
+        local id = (e ~= nil) and (e.Item ~= nil) and e.Item.Id or nil
+        r = (id ~= nil) and AshitaCore:GetResourceManager():GetItemById(id) or nil
+    end
+    return (r ~= nil) and gcinclude.OneHandSkills:contains(r.Skill) or false
 end
 
 -- main/sub: LAC item tables ({ Name = ... }) or nil. True when they can be worn together, or unknown.
