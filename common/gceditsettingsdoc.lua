@@ -4,10 +4,11 @@
 local settings = {
     Messages = { 'A chat line on every mode change and /gc toggle (DT, TH, Kite...); some always show.' },
     AutoGear = { 'Master switch for the auto sets: Idle_Regen, Idle_Refresh, Dt, Pet_Dt (by the HP/MP % below). /autogear changes them in game.' },
-    WScheck = { 'Distance check: a non-ranged weapon skill goes off only within its reach (WS range 3; Gust Slash, '
-        .. "Cyclone, Mistral Axe and Bora Axe 14; past your and the target's hitboxes, so further on a big mob; "
-        .. 'at least WSdistance, and as far as your auto-attacks have landed on a mob of that name and size).' },
-    WSdistance = { 'The least reach in yalms (center to center) a non-ranged weapon skill gets, while WScheck is on; '
+    WScheck = { 'Distance check: a weapon skill goes off only within its reach (range 3; Gust Slash, Cyclone, Mistral '
+        .. "Axe and Bora Axe 14; bows and guns 20, at least 21; Blast Arrow, Blast Shot and Numbing Shot 5; past your "
+        .. "and the target's hitboxes, so further on a big mob; at least WSdistance, and as far as your auto-attacks "
+        .. 'have landed on a mob of that name and size). Myrkr, Dagan, Moonlight, Starlight (on you): no check.' },
+    WSdistance = { 'The least reach in yalms (center to center) a weapon skill gets, while WScheck is on; '
         .. 'a big mob gets more.', '5' },
     RegenGearHPP = { 'Idle_Regen below this HP %, out of combat only. 0 = never.', '60' },
     RefreshGearMPP = { 'Idle_Refresh below this MP %, out of combat only. 0 = never.', '60' },

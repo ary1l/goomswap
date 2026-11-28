@@ -355,18 +355,19 @@ end
 -- "heathen's sollerets +3" for Heath. Sollerets +3), so files have both. lookup(name): the game's name, or nil. Each
 -- set's items are renamed in place; notes list the log names changed and the names the game doesn't know.
 function G.FixNames(imported, lookup)
-    local changed, unknown, seen, cased = {}, {}, {}, 0
+    local changed, unknown, seen, cased, loose = {}, {}, {}, 0, {}
     local function fix(set)
         for slot, v in pairs(set or {}) do
             local name = (type(v) == 'string') and v or ((type(v) == 'table') and v.Name) or nil
             if (type(name) == 'string') and (name ~= 'remove') then
-                local real = lookup(name)
+                local real, plural = lookup(name)
                 if real == nil then
                     if not seen[name] then seen[name] = true; unknown[#unknown + 1] = name end
                 elseif real ~= name then
                     if not seen[name] then
                         seen[name] = true
-                        if string.lower(real) == string.lower(name) then cased = cased + 1
+                        if plural then loose[#loose + 1] = name .. ' -> ' .. real
+                        elseif string.lower(real) == string.lower(name) then cased = cased + 1
                         else changed[#changed + 1] = name .. ' -> ' .. real end
                     end
                     if type(v) == 'string' then set[slot] = real else v.Name = real end
@@ -386,6 +387,11 @@ function G.FixNames(imported, lookup)
             .. ' changed to the game\'s item names (LuAshitacast '
             .. 'finds only those): ' .. list(changed)
     end
+    if #loose > 0 then
+        imported.notes[#imported.notes + 1] = #loose .. ' name' .. ((#loose == 1) and '' or 's')
+            .. ' off from the game\'s by an s (GearSwap never found ' .. ((#loose == 1) and 'it' or 'them')
+            .. '; the one item it can be, check it): ' .. list(loose)
+    end
     if cased > 0 then
         imported.notes[#imported.notes + 1] = cased .. ' item name' .. ((cased == 1) and '' or 's')
             .. ' written in the game\'s capitals (Nyame helm -> Nyame Helm)'
@@ -397,17 +403,23 @@ function G.FixNames(imported, lookup)
     return #changed, cased, #unknown
 end
 
+-- A name without the s ending its words (flanchards -> flanchard; Heathen's stays): the game's log names
+-- differ from what files write ("heathen's flanchards +3" for Heath. Flanchard +3, "Heathen's flanchard +3" in files).
+local function unplural(s) return (string.gsub(string.lower(s), '(%w%w%w)s%f[^%w]', '%1')) end
+G.Unplural = unplural
+
 -- The game's item name for a name or log name, any case (G.FixNames' lookup). The by-name lookup first; else every
--- equippable item read once (its Name and LogNameSingular, Ashita SDK IItem), which takes a moment.
+-- equippable item read once (its Name and LogNameSingular, Ashita SDK IItem), which takes a moment; last, the one
+-- item whose name or log name is that name but for a plural s (then true second).
 local function item_lookup()
     local res = AshitaCore:GetResourceManager()
-    local names, logs = nil, nil
+    local names, logs, plain = nil, nil, nil
     return function(name)
         local r = res:GetItemByName(name, 0)
         if (r ~= nil) and (r.Name ~= nil) and (type(r.Name[1]) == 'string')
             and (string.lower(r.Name[1]) == string.lower(name)) then return r.Name[1] end
         if names == nil then
-            names, logs = {}, {}
+            names, logs, plain = {}, {}, {}
             for id = 1, 65534 do
                 local it = res:GetItemById(id)
                 if (it ~= nil) and (it.Slots ~= 0) and (it.Name ~= nil) and (type(it.Name[1]) == 'string') then
@@ -417,11 +429,17 @@ local function item_lookup()
                     if (type(log) == 'string') and (log ~= '') then
                         logs[string.lower(log)] = logs[string.lower(log)] or n
                     end
+                    for _, k in ipairs({ unplural(n), (type(log) == 'string') and (log ~= '') and unplural(log) or nil }) do
+                        if (plain[k] == nil) or (plain[k] == n) then plain[k] = n else plain[k] = false end -- false: 2+
+                    end
                 end
             end
         end
         local l = string.lower(name)
-        return names[l] or logs[l]
+        if (names[l] or logs[l]) ~= nil then return names[l] or logs[l] end
+        local p = plain[unplural(name)]
+        if p then return p, true end
+        return nil
     end
 end
 

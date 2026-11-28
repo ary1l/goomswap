@@ -558,9 +558,14 @@ function actionModel.New(context)
                 st.wsset = WSSET_BY_KEY[suffix].mode
                 return 'as if ' .. WSSET_BY_KEY[suffix].why
             end
-            if suffix == 'Dt' then
+            if string.lower(suffix) == 'dt' then
                 st.dt = true
                 return 'as if DT mode (/dt)'
+            end
+            local rest = string.match(suffix, '^(.+)_[Dd][Tt]$') -- Acc_Dt, HighBuff_DT: /dt over the rest
+            if rest ~= nil then
+                st.dt = true
+                return mset_of(rest, weaponToo, ws) .. ', DT mode (/dt)'
             end
             if suffix == 'Proc' then
                 st.proc = true
@@ -1079,7 +1084,7 @@ function actionModel.New(context)
             end
             -- WearChildren: each worn n: n_<key>, and <prefix>_<key> for <prefix>_Default
             local function children(key, reason)
-                local done = {}
+                local done, wore = {}, {}
                 for _, n in ipairs(worn) do
                     local prefix = string.match(n, '^(.-)_[Dd][Ee][Ff][Aa][Uu][Ll][Tt]$')
                     for _, cand in ipairs({ n .. '_' .. key, (prefix ~= nil) and (prefix .. '_' .. key) or nil, }) do
@@ -1087,12 +1092,17 @@ function actionModel.New(context)
                         if not done[l] and has_set(cand) then
                             done[l] = true
                             look(cand, reason)
+                            wore[#wore + 1] = cand
                         end
                     end
                 end
+                return wore
             end
-            local wm = WSSET[st.wsset or ''] -- as gcinclude: skipped when an /mset mode of that name wore them
-            if (wm ~= nil) and (st.mset ~= wm.key) and not st.proc then children(wm.key, wm.why) end
+            -- as gcinclude: skipped when an /mset mode of that name wore them; their _Dt on /dt
+            local wm = WSSET[st.wsset or '']
+            if (wm ~= nil) and (st.mset ~= wm.key) and not st.proc then
+                for _, c in ipairs(children(wm.key, wm.why)) do worn[#worn + 1] = c end
+            end
             if st.dt and not st.proc then children('Dt', 'DT mode (/dt)') end
         elseif a.event == 'Ability' then
             byname(a.action, 'the set named after ' .. a.action)
@@ -1369,14 +1379,18 @@ function actionModel.New(context)
         end
         local OPPOSITE =
             { ['cast on yourself'] = 'cast on someone else', ['cast on someone else'] = 'cast on yourself' }
-        local function children(key, cond, from) -- WearChildren: each worn n: n_<key> (X_Default: X_<key>)
+        -- WearChildren: each worn n: n_<key> (X_Default: X_<key>); returns the rows added, { name, conds }
+        local function children(key, cond, from)
+            local made = {}
             for _, w in ipairs(from) do
                 local clash = false
                 for _, c in ipairs(w[2]) do
                     if OPPOSITE[c] == cond then clash = true end
                 end -- Self_Cure_Others: never
-                if not clash then add(child(w[1], key), plus(w[2], cond), w[1]) end
+                local name, conds = child(w[1], key), plus(w[2], cond)
+                if not clash and add(name, conds, w[1]) then made[#made + 1] = { name, conds } end
             end
+            return made
         end
         -- a Hoxne base (CheckHoxneSets / CheckHoxneWs): itself and its /mset ('bases'), or its buff combos ('combos':
         -- the file's own, the buffs typed, and extra: each buff set the file has), which GoomSwap puts on after the
@@ -1574,11 +1588,13 @@ function actionModel.New(context)
                 wear('Proc', { 'proc mode', 'no gear in Ws_Proc' }, nil, { proc = true })
             end -- FindFilled
             worn = jobWorn
-            if o.high then children('HighBuff', 'WS high-buff mode', jobWorn) end
-            if o.pdl then children('PDL', 'WS PDL mode', jobWorn) end
-            if o.dt then
-                children('Dt', 'DT mode', jobWorn)
-            end -- the proc sets take no _Dt
+            local dtFrom = {} -- /dt: the job's WS sets and the /wsset ones (Insurgency_HighBuff_Dt)
+            for _, w in ipairs(jobWorn) do dtFrom[#dtFrom + 1] = w end
+            for _, r in ipairs(o.high and children('HighBuff', 'WS high-buff mode', jobWorn) or {}) do
+                dtFrom[#dtFrom + 1] = r
+            end
+            for _, r in ipairs(o.pdl and children('PDL', 'WS PDL mode', jobWorn) or {}) do dtFrom[#dtFrom + 1] = r end
+            if o.dt then children('Dt', 'DT mode', dtFrom) end -- the proc sets take no _Dt
             local bases = { { 'Hoxne_Ws', { 'Hoxne' } } }
             if ctx.action ~= nil then bases[2] = { 'Hoxne_' .. ctx.action, { 'Hoxne' } } end
             if o.hoxne then hoxne(bases, true, 'bases') end

@@ -27,8 +27,8 @@ do
             Messages = false,
             AutoGear = true, -- master switch for the four auto sets below, /autogear to change any of them in game
             WScheck = true, --set to false if you dont want to use the WS distance safety check
-            -- the least reach (yalms, center to center) for a non-ranged WS while WScheck is on; a big mob gets more:
-            -- WS range 3 + your and its hitbox (gcinclude.WsReach)
+            -- the least reach (yalms, center to center) for a WS while WScheck is on; a big mob gets more:
+            -- its range (3; bows and guns 20) + your and its hitbox (gcinclude.WsReach)
             WSdistance = 5,
             RegenGearHPP = 60, -- Idle_Regen below this HPP, out of combat only, 0 = never
             RefreshGearMPP = 60, -- Idle_Refresh below this MPP, out of combat only, 0 = never

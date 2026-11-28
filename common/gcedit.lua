@@ -338,12 +338,16 @@ local function builtin_group(n)
     if CASTING[n] or string.match(n, ' Magic') or string.match(n, '_Precast$') then return 'Casting' end
     if ability_kinds()[n] then return 'Job abilities' end -- ['Step']: worn on every step (the job file's own list)
     local res = AshitaCore:GetResourceManager()
-    local base = string.match(n, '^(.-)_[%a]+$') or n -- ['Savage Blade_Acc'] sits with Savage Blade
+    -- the name, else its part before the first _: ['Savage Blade_Acc'], ['Insurgency_HighBuff_Dt'] sit with it
+    local base = string.match(n, '^([^_]+)_') or n
     local ability = res:GetAbilityByName(n, 0) or res:GetAbilityByName(base, 0)
-    if ability ~= nil then -- resource ids under 0x200 are weapon skills
-        return (ability.Id < 0x200) and 'Named weapon skills' or 'Job abilities'
-    end
-    if (res:GetSpellByName(n, 0) ~= nil) or (res:GetSpellByName(base, 0) ~= nil) then return 'Spells (by name)' end
+    if (ability ~= nil) and (ability.Id < 0x200) then return 'Named weapon skills' end -- ids under 0x200: WS
+    local spell = (res:GetSpellByName(n, 0) ~= nil) or (res:GetSpellByName(base, 0) ~= nil)
+    -- a spell and a pet's move by one name (Impact, Fire IV, Sleepga: SMN pacts; Sheep Song: BST Ready, BLU): the
+    -- move on SMN (15) and BST (9), else the spell
+    local job = (editorState ~= nil) and (editorState.profile ~= nil) and editorState.profile.job or nil
+    if (ability ~= nil) and not (spell and (job ~= 15) and (job ~= 9)) then return 'Job abilities' end
+    if spell then return 'Spells (by name)' end
     return 'Other'
 end
 
@@ -2688,6 +2692,7 @@ function gcedit.SwitchFile(target, discard, setName)
         nextState.document.example, nextState.document.jobAbbreviation = ok and job ~= nil, job
     end
     set_state(nextState)
+    regroup() -- headings by this file's job (a name both a spell and a pet's move: builtin_group)
     GcEditFold = editorState.ui.fold
     bind_actions()
     pcall(wi_from_game)
