@@ -1386,10 +1386,8 @@ function views.DrawSummary(imgui, colors, name, model)
     end
     -- one line: whose totals, what they cover; the help (coverage, how the preview works) behind one (?)
     imgui.TextColored(colors.blue, name .. (model.layered and ' - with inherited gear' or ' - this set only'))
-    ui.Panels.SameLineIfFits(imgui, tw(model.coverage .. ' (?)') + fs)
+    ui.Panels.SameLineIfFits(imgui, tw(model.coverage) + fs)
     imgui.TextColored(colors.dim, model.coverage)
-    imgui.SameLine()
-    imgui.TextColored(colors.dim, '(?)')
     ui.Panels.Tip(imgui, colors, (model.layered and 'Layer preview: unresolved slots stay unknown.\n'
         or 'This set only: slots it leaves out are not totaled.\n') .. coverageHelp .. '\n\n' .. previewHelp)
     if model.pending then text(imgui, colors.warn, 'Includes unsaved changes.') end
@@ -1456,7 +1454,7 @@ function views.DrawComparison(imgui, colors, leftName, rightName, pair, differen
         text(imgui, colors.warn, (notice.sides == 3 and 'Both sets' or (notice.sides == 1 and leftName or rightName))
             .. ': ' .. notice.text)
     end
-    text(imgui, colors.dim, 'Change = right minus left. Preview help (?)')
+    text(imgui, colors.dim, 'Change = right minus left.')
     ui.Panels.Tip(imgui, colors, previewHelp)
     if pair.left.pending or pair.right.pending then text(imgui, colors.warn, 'Includes unsaved layer changes.') end
     if pair.left.baseOnly + pair.right.baseOnly > 0 then

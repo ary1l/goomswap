@@ -367,7 +367,7 @@ local COLOR_KEY = {
     { 'warn', 'Unsaved edits.' },
 }
 local function color_key()
-    imgui.TextColored(palette.dim, '(?)')
+    imgui.TextColored(palette.dim, 'Dot colors')
     if not imgui.IsItemHovered() then return end
     imgui.PushStyleColor(ImGuiCol_PopupBg, { 0.055, 0.06, 0.08, 1 })
     imgui.BeginTooltip()
@@ -486,6 +486,10 @@ local function draw_now()
         end
     end
 end
+-- What RP is (BG-Wiki: Reinforcement Points; Odyssey), for the RP line's and the Needs RP filter's hovers
+local RP_WHAT = "RP: Reinforcement Points. Odyssey gear (Nyame, Sakpata, Gleti... and the Gaol weapons) has a rank; "
+    .. 'the Pilgrim Moogle raises it with RP from Sheol: Gaol, up to its rank cap (15 to 30, by Vengeance level). '
+    .. "Below the cap, its augments aren't full yet."
 -- The RP line (over the list): the pieces your sets name that need RP, and in how many sets; a click shows only
 -- those sets (Needs RP). Worked out once per edit.
 local function draw_rp_line()
@@ -509,7 +513,8 @@ local function draw_rp_line()
         -- one line over the list (the pieces on hover): a list of them here pushed the sets down on every set
         R.text = (#R.pieces == 1 and '1 piece needs RP' or (#R.pieces .. ' pieces need RP')) .. ' (' .. R.sets
             .. ((R.sets == 1) and ' set)' or ' sets)')
-        R.tip = table.concat(R.pieces, '\n') .. '\n\nClick: only the sets using them (Needs RP), again: all.'
+        R.tip = table.concat(R.pieces, '\n') .. '\n\nClick: only the sets using them (Needs RP), again: all.\n\n'
+            .. RP_WHAT
         editorState.cache.rpLine = R
     end
     if #R.pieces == 0 then return end
@@ -922,7 +927,7 @@ local function draw_sets()
         { 'Issues', editorState.ui.issuesOnly },
         { 'Missing', editorState.ui.missingOnly },
         { 'Needs RP', editorState.ui.needsRpOnly },
-        { 'Unused', editorState.ui.unusedOnly },
+        { 'Unused sets', editorState.ui.unusedOnly },
     }) do
         if index > 1 then editorPanels.SameLineIfFits(imgui, 80) end
         chip(filter[1] .. '##set_filter', filter[2], (filter[1] == 'Needs RP') and palette.rp or nil)
@@ -930,9 +935,10 @@ local function draw_sets()
             local descriptions = {
                 Issues = 'Sets with empty slots, missing gear, or unfinished RP.',
                 Missing = 'Sets naming gear you do not own.',
-                ['Needs RP'] = 'Sets using gear below its decoded rank cap.',
-                Unused = 'Sets nothing seems to look for: no built-in trigger by name, not named in your job file, '
-                    .. 'not a variant of another set. Check before you delete.',
+                ['Needs RP'] = 'Sets using a piece below its rank cap.\n\n' .. RP_WHAT,
+                ['Unused sets'] = 'Sets nothing seems to look for: no built-in trigger by name, not named in your job '
+                    .. 'file, not a variant of another set. Check before you delete. (Gear nothing names: GoomSwap '
+                    .. 'settings, Home, Unused gear.)',
             }
             set_tip(descriptions[filter[1]])
         end

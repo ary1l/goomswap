@@ -259,6 +259,22 @@ local function inherited_of(set, slot)
     if (d == nil) or (d.kind ~= 'item') or (from == nil) or (from == set.name) or is_slot_word(d) then return nil end
     return { name = d.name, from = from }
 end
+-- LuAshitacast's slot words, as a card's badge says them, and what each does (LAC equip.lua MakeItemTable)
+local SLOT_WORD = {
+    displaced = { 'Displaced', 'Displaced: left empty for a piece that takes this slot too (a two-handed weapon, an '
+        .. 'instrument...).' },
+    remove = { 'Remove', 'Remove: takes off whatever is in this slot.' },
+    ignore = { 'Ignore', "Ignore: this set leaves the slot as it is." },
+}
+-- A slot's fallback in words: 'Telos Earring instead when MP % is below 10'
+local FB_WORD = { hpp = 'HP %', mpp = 'MP %', tp = 'TP' }
+local function fallback_words(v)
+    local st, n = string.match(v.when or '', '^%s*{%s*(%a+)%s*=%s*{%s*ge%s*=%s*([%d%.]+)%s*}%s*}%s*$')
+    local cond = ('this does not hold: ' .. tostring(v.when))
+    if st ~= nil then cond = (FB_WORD[st] or st) .. ' is below ' .. n end
+    return 'Fallback: ' .. tostring(v.els) .. ' goes on instead when ' .. cond .. '.\nChange it: right-click the slot, '
+        .. 'Fallback.'
+end
 local function draw_cell(set, slot)
     local iconOnly = (ctx.CARD_NAMES == false) -- Compact: the slot, its bag and the icon; the rest on hover
     local v = current(set, slot)
@@ -300,9 +316,13 @@ local function draw_cell(set, slot)
     local bag, ok, badge, badgeX -- the bag badge, right-aligned: what sits before it stops short of it
     if (v ~= nil) and (v.kind == 'item') then
         bag, ok = where(v.name)
-        badge = is_slot_word(v) and 'Rule' or cardText.Bag(bag)
+        local word = is_slot_word(v) and SLOT_WORD[string.lower(v.name)] or nil
+        badge = (word ~= nil) and word[1] or cardText.Bag(bag)
         badgeX = ctx.CELL_W - text_w(badge) - 14
     end
+    -- a fallback (When / Else): an 'if' pill before the bag badge
+    local fb = (v ~= nil) and (v.kind == 'item') and (v.when ~= nil) and (v.els ~= nil)
+    if fb and (badgeX ~= nil) then badgeX = badgeX - text_w('if') - 14 end
     local res = (v ~= nil) and (v.kind == 'item') and not is_slot_word(v) and resist_of(v, owned)
     if res and not iconOnly then -- its resistances, as the game's element icons: one value when they all match
         imgui.SameLine(0, 8)
@@ -319,6 +339,11 @@ local function draw_cell(set, slot)
     end
     if badge ~= nil then
         imgui.SameLine(badgeX)
+        if fb then
+            pill('if', palette.blue, palette.invBg)
+            if imgui.IsItemHovered() then set_tip(fallback_words(v)) end
+            imgui.SameLine()
+        end
         pill(
             badge,
             is_slot_word(v) and palette.blue
@@ -326,6 +351,7 @@ local function draw_cell(set, slot)
             is_slot_word(v) and palette.invBg
                 or (bag == nil and palette.badBg or (ok and palette.okBg or palette.warnBg))
         )
+        if is_slot_word(v) and imgui.IsItemHovered() then set_tip(SLOT_WORD[string.lower(v.name)][2]) end
     end
     local gh = (v == nil) and ghost_of(set, slot) or nil -- commented out in the file (/gcbuild)
     -- not in this set: the piece an earlier set puts here, faint, with that set's name below
@@ -999,7 +1025,8 @@ local function draw_set(set)
         imgui.PopStyleColor(2)
         if imgui.IsItemHovered() then
             set_tip(#unfinished .. ' slot' .. ((#unfinished == 1) and '' or 's') .. ' below their rank cap:\n'
-                .. table.concat(unfinished, '\n') .. '\nClick: where else they are used.')
+                .. table.concat(unfinished, '\n') .. '\nClick: where else they are used.\n\nRP: Reinforcement '
+                .. 'Points. The Pilgrim Moogle ranks Odyssey gear up with RP from Sheol: Gaol, up to its cap.')
         end
     end
     local filled = (set.code == nil) and (status.armor ~= nil) and ((status.armor or 0) + (status.weapons or 0)) or nil
@@ -1259,6 +1286,9 @@ local function draw_set(set)
     end
     if draw_set_actions(set) then return end
     if winfo ~= nil then draw_weapon_checks(set, winfo) end
+    -- its own label: help() on whatever came before (More..., a weapon check) would take over that one's hover
+    editorPanels.SameLineIfFits(imgui, text_w('Slot tips') + 12)
+    imgui.TextColored(palette.dim, 'Slot tips')
     help(
         '- Click a slot: pick gear for it on the right.\n'
             .. '- Right-click a slot: inspect its item, choose gear, undo or clear.\n'
@@ -1267,7 +1297,9 @@ local function draw_set(set)
             .. '- orange: move it to a wardrobe first\n'
             .. '- red: you do not own it\n'
             .. 'Aug / Path: the file lists augments (hover the slot).\n'
-            .. 'Blue outline: the slot being edited. Amber: unsaved changes. Violet: unfinished RP.\n'
+            .. 'Blue outline: the slot being edited. Amber: unsaved changes. Violet: unfinished RP (Reinforcement '
+            .. 'Points).\n'
+            .. 'if: the slot has a fallback (hover it). Displaced / Remove / Ignore: a slot word (hover it).\n'
             .. 'An unsaved card keeps its amber fill while selected. Path/rank has its own footer row.\n'
             .. 'Replaced labels (Unsaved > source on an edited slot) use the action selected on the right.'
     )

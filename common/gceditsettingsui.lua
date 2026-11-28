@@ -1139,18 +1139,16 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         imgui.InputTextWithHint('##set_find', 'find a setting', ui.settingsFind, 48)
         imgui.PopItemWidth()
         -- the colours of where a value comes from, once here instead of words on every row
+        local legend = 'Where a value comes from: default (GoomSwap\'s), everyone (the shared file), all jobs ('
+            .. char_name() .. "'s char.lua), " .. job_abbr() .. ' only (' .. job_name() .. '), unsaved (waits for '
+            .. 'Save). ' .. job_name() .. ' wins over char.lua, char.lua over everyone. Hover a setting\'s name for '
+            .. 'what it does and its key.'
         imgui.TextColored(palette.dim, 'From')
+        if imgui.IsItemHovered() then set_tip(legend) end
         for _, f in ipairs({ 'default', 'shared', 'own', 'job', 'staged' }) do
             fit_line(pill_w((f == 'staged') and 'unsaved' or where_label(f)), true)
             W.Pill((f == 'staged') and 'unsaved' or where_label(f), tag_colors(f))
-        end
-        imgui.SameLine()
-        imgui.TextColored(palette.dim, '(?)')
-        if imgui.IsItemHovered() then
-            set_tip('Where a value comes from: default (GoomSwap\'s), everyone (the shared file), all jobs ('
-                .. char_name() .. "'s char.lua), " .. job_abbr() .. ' only (' .. job_name() .. '), unsaved (waits for '
-                .. 'Save). ' .. job_name() .. ' wins over char.lua, char.lua over everyone. Hover a setting\'s '
-                .. 'name for what it does and its key.')
+            if imgui.IsItemHovered() then set_tip(legend) end
         end
         imgui.Separator()
         local find = string.lower(ui.settingsFind[1] or '')

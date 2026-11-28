@@ -888,8 +888,14 @@ local function draw_over(set)
     local wi = editorState.ui.wi
     local values = melee_modes()
     local now = ctx.actions.ModesNow()
-    -- the (?) first: after a wrapped line it would land in the middle of it
-    help_icon(
+    -- the line, its help as its hover
+    imgui.PushTextWrapPos(0)
+    imgui.TextColored(
+        palette.dim,
+        'Sets that go on with ' .. set.name .. ', in order: a later one wins its slots.'
+    )
+    imgui.PopTextWrapPos()
+    help(
         'Every set GoomSwap and your job file look for with this one, in the order they go on: a later one wins its slots.\n'
             .. '- A set you have: click its name to open it; < Back over the slots returns.\n'
             .. '- Not made too lists the sets your file does not have, in their place: make adds one empty (Make all: '
@@ -900,13 +906,6 @@ local function draw_over(set)
             .. "- Ignore irrelevant candidates by exact set name in settings.EditorIgnoreSuggestions, e.g. T{'Singing'}.\n"
             .. '- + /mset mode: a melee mode of your own and its sets (<set>_<mode>); also on the MELEE heading.'
     )
-    imgui.SameLine()
-    imgui.PushTextWrapPos(0)
-    imgui.TextColored(
-        palette.dim,
-        'Sets that go on with ' .. set.name .. ', in order: a later one wins its slots.'
-    )
-    imgui.PopTextWrapPos()
     -- which modes to list: every one (default), what is on in game now, or your own pick. The modes as the game
     -- has them: one /mset at a time, toggles lit when on, and the buffs up (each buff set, and Hoxne + buff). In
     -- All modes or As now, a click on any of them switches to Pick, from what was shown, with that change.
