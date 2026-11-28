@@ -765,7 +765,8 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local ed = ui.settingsEdit[id]
         if (ed == nil) or (ed.base ~= now) then
             ed = { base = now, text = { now }, editable = editable(v) and not readonly }
-            if readonly then ed.why = (v ~= nil) and clip(now) or tostring(unset or 'nothing') end -- its pill says default
+            -- read-only, not set: its value alone (its pill says default)
+            if readonly then ed.why = (v ~= nil) and clip(now) or tostring(unset or 'nothing') end
             if (how == 'code') or string.match(how or '', '^set in') then
                 ed.editable, ed.why = false, '(' .. how .. ' in the file: edit it there)'
             end
