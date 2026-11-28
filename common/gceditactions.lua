@@ -4,8 +4,10 @@
 -- and host resources. Drawing code consumes the returned view data.
 local actionModel = {}
 -- /wsset modes (gcinclude.WsSetKeys): the child key each wears over the WS sets worn, why, its word in the modes line
-local WSSET = { High = { key = 'HighBuff', why = 'WS high-buff mode (/wsset high)', word = 'WS high-buff' },
-    PDL = { key = 'PDL', why = 'WS PDL mode (/wsset pdl)', word = 'WS PDL' },
+-- (wsOnly: no /mset mode wears them)
+local WSSET = { Low = { key = 'LowBuff', why = 'WS low-buff mode (/wsset low)', word = 'WS low-buff', wsOnly = true },
+    High = { key = 'HighBuff', why = 'WS high-buff mode (/wsset high)', word = 'WS high-buff', wsOnly = true },
+    PDL = { key = 'PDL', why = 'WS PDL mode (/wsset pdl)', word = 'WS PDL', wsOnly = true },
     Acc = { key = 'Acc', why = 'WS acc mode (/wsset acc)', word = 'WS acc' },
     SubtleBlow = { key = 'SubtleBlow', why = 'WS subtle blow mode (/wsset sb)', word = 'WS subtle blow' } }
 local WSSET_BY_KEY = {}
@@ -554,7 +556,7 @@ function actionModel.New(context)
         -- weaponToo: Tp_/Ws_ (EquipMode) also take a weapon mode; ws: a WS set (/wsset acc / sb wear its _Acc /
         -- _SubtleBlow)
         local function mset_of(suffix, weaponToo, ws)
-            if (suffix == 'HighBuff') or (suffix == 'PDL') then
+            if (WSSET_BY_KEY[suffix] ~= nil) and WSSET_BY_KEY[suffix].wsOnly then -- LowBuff, HighBuff, PDL
                 st.wsset = WSSET_BY_KEY[suffix].mode
                 return 'as if ' .. WSSET_BY_KEY[suffix].why
             end
@@ -1292,7 +1294,7 @@ function actionModel.New(context)
                 return 1
             end
             if string.match(c, '^melee mode') then return 2 end
-            if c == 'WS high-buff mode' then return 3 end
+            if (c == 'WS low-buff mode') or (c == 'WS high-buff mode') then return 3 end
             if c == 'DT mode' then return 4 end
             if c == 'proc mode' then return 5 end
             if c == 'Hoxne' then return 6 end
@@ -1309,6 +1311,7 @@ function actionModel.New(context)
                 if (m ~= nil) and not msetOn[m] then return false end
                 if ((c == 'DT mode') and not o.dt) or ((c == 'proc mode') and not o.proc)
                     or ((c == 'WS high-buff mode') and not o.high) or ((c == 'WS PDL mode') and not o.pdl)
+                    or ((c == 'WS low-buff mode') and not o.low)
                     or ((c == 'Hoxne') and not o.hoxne) then
                     return false
                 end
@@ -1417,7 +1420,8 @@ function actionModel.New(context)
                 for _, s in ipairs(document.model.list) do -- Hoxne_Tp_Impetus, Hoxne_Ws_Impetus&Footwork: any buff name
                     if (s.parentName == nil) and (string.sub(s.lname, 1, #pre) == pre) then
                         local rest = string.sub(s.name, #pre + 1)
-                        local isMode = msetOn[rest] or (rest == 'Dt') or (rest == 'HighBuff') or (rest == 'PDL')
+                        local ws = WSSET_BY_KEY[rest]
+                        local isMode = msetOn[rest] or (rest == 'Dt') or ((ws ~= nil) and ws.wsOnly)
                         for _, m in ipairs(o.msets) do
                             if string.sub(rest, -(#m + 1)) == ('_' .. m) then isMode = true end
                         end
@@ -1590,6 +1594,9 @@ function actionModel.New(context)
             worn = jobWorn
             local dtFrom = {} -- /dt: the job's WS sets and the /wsset ones (Insurgency_HighBuff_Dt)
             for _, w in ipairs(jobWorn) do dtFrom[#dtFrom + 1] = w end
+            for _, r in ipairs(o.low and children('LowBuff', 'WS low-buff mode', jobWorn) or {}) do
+                dtFrom[#dtFrom + 1] = r
+            end
             for _, r in ipairs(o.high and children('HighBuff', 'WS high-buff mode', jobWorn) or {}) do
                 dtFrom[#dtFrom + 1] = r
             end

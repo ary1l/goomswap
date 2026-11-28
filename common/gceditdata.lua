@@ -101,6 +101,7 @@ data.ENGINE = {
     'Ws_Default',
     'Ws_Acc',
     'Ws_SubtleBlow',
+    'Ws_LowBuff',
     'Ws_HighBuff',
     'Ws_PDL',
     'Ws_Dt',

@@ -159,10 +159,10 @@ function G.Name(path)
         if lb == 'ja' then return (#path >= 3) and rest3 or 'JA' end
         if lb == 'ws' then
             if #path == 2 then return 'Ws_Default' end
-            -- WeaponskillMode UncappedAtt (attack uncapped: high buffs) is GoomSwap's /wsset high, _HighBuff;
-            -- PDL stays _PDL (/wsset pdl)
+            -- WeaponskillMode UncappedAtt (attack not capped: low buffs, more attack) is GoomSwap's /wsset low,
+            -- _LowBuff; PDL stays _PDL (/wsset pdl)
             local name = G.MODE_WORDS[string.lower(tostring(path[3]))] and ('Ws_' .. rest3) or rest3
-            return (string.gsub(name, '_[Uu]ncapped[Aa]tt%f[%W_]', '_HighBuff'))
+            return (string.gsub(name, '_[Uu]ncapped[Aa]tt%f[%W_]', '_LowBuff'))
         end
         if lb == 'ra' then return with('Preshot', 3) end
         if lb == 'corsairroll' then return (#path >= 3) and rest3 or 'Phantom Roll' end
@@ -303,17 +303,17 @@ function G.Import(text)
         end
     end
     -- sets GoomSwap has no moment for, by name: say what to do with them
-    local am, wsm, high, pdl = {}, {}, 0, 0
+    local am, wsm, low, pdl = {}, {}, 0, 0
     for _, n in ipairs(out.order) do
         if string.match(n, '^Tp_.*_AM3?$') or string.match(n, '^Tp_AM3?$') then am[#am + 1] = n end
         if not string.match(n, '^Tp_') then
-            if string.find(n, '_HighBuff', 1, true) then high = high + 1 end
+            if string.find(n, '_LowBuff', 1, true) then low = low + 1 end
             if string.find(n, '_PDL', 1, true) then pdl = pdl + 1 end
             if string.match(n, '_Match$') then wsm[#wsm + 1] = n end
         end
     end
-    if (high + pdl) > 0 then
-        out.notes[#out.notes + 1] = 'WeaponskillMode sets: ' .. high .. ' UncappedAtt -> _HighBuff (/wsset high), '
+    if (low + pdl) > 0 then
+        out.notes[#out.notes + 1] = 'WeaponskillMode sets: ' .. low .. ' UncappedAtt -> _LowBuff (/wsset low), '
             .. pdl .. ' PDL -> _PDL (/wsset pdl)'
     end
     if #am > 0 then

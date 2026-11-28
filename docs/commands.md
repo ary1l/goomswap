@@ -15,7 +15,7 @@
 | `/dw [on\|off\|auto]` | Dual Wield: why; `off` = `_1h` always |
 | `/smartswap` | Light spells (Dia, Blink…) keep weapons at `SmartSwapTP`+ |
 | `/mset [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets; `acc` also wears `Midshot_Acc` (COR RNG PLD; `Midshot_<Mode>_Acc` per weapon mode) |
-| `/wsset [default\|high\|pdl\|acc\|sb]` | `high`: WS sets add their `_HighBuff`; `pdl`: their `_PDL` (Physical damage limit+ gear); `acc` / `sb`: their `_Acc` / `_SubtleBlow`, as `/mset acc` / `sb` do, TP gear unchanged. `mid` (the old name) picks `default` |
+| `/wsset [default\|low\|high\|pdl\|acc\|sb]` | `low`: WS sets add their `_LowBuff` (attack not capped: low buffs, GearSwap's UncappedAtt); `high`: their `_HighBuff`; `pdl`: their `_PDL` (Physical damage limit+ gear); `acc` / `sb`: their `_Acc` / `_SubtleBlow`, as `/mset acc` / `sb` do, TP gear unchanged. `mid` (the old name) picks `default` |
 | `/th` | `TH` until tagged (THF main: always) |
 | `/wsdistance [yalms\|on\|off]` | No word: the check's state and your target's distance and reach. WS range check: a WS out of reach is cancelled (reach = its range: 3; Gust Slash, Cyclone, Mistral Axe, Bora Axe 14; bows and guns 20, at least 21; Blast Arrow, Blast Shot, Numbing Shot 5; + your and the target's hitboxes, so further on a big mob; at least as far as your auto-attacks have landed on a mob of that name and size this zone; `yalms` = the least reach, default 5). Myrkr, Dagan, Moonlight, Starlight (on you): no check |
 | `/def [dt\|mdt\|aminon\|off]` | DT → MDT → Aminon → off; `/dt` `/mdt` `/aminon` one |

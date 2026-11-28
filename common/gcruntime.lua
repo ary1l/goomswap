@@ -250,10 +250,11 @@ do
             local melee = (type(gcinclude.MeleeModes) == 'table')
                     and (#gcinclude.MeleeModes > 0) and gcinclude.MeleeModes or { 'Default', 'SubtleBlow', 'Acc' }
             gcdisplay.CreateCycle('MeleeSet', melee)
-            -- /wsset: for weapon skills only. High wears <WS set>_HighBuff over each WS set, PDL <WS set>_PDL
+            -- /wsset: for weapon skills only. Low wears <WS set>_LowBuff over each WS set (attack not capped: low
+            -- buffs, GearSwap's UncappedAtt), High <WS set>_HighBuff, PDL <WS set>_PDL
             -- (Physical damage limit+ gear), Acc <WS set>_Acc, SubtleBlow <WS set>_SubtleBlow (as /mset acc / sb do,
             -- without changing TP gear). Default was Mid: /wsset mid still picks it (SetCycleFrom).
-            gcdisplay.CreateCycle('WsSet', { 'Default', 'High', 'PDL', 'Acc', 'SubtleBlow' })
+            gcdisplay.CreateCycle('WsSet', { 'Default', 'Low', 'High', 'PDL', 'Acc', 'SubtleBlow' })
             -- /idleset: Idle_<mode> over Idle while idle (gcinclude.EquipIdle).
             gcdisplay.CreateCycle('IdleSet', { 'Default', 'Refresh', 'Regen', 'Regain' })
             gcinclude.BuildWeaponCycles()
