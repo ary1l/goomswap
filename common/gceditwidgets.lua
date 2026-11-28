@@ -124,6 +124,8 @@ return function(imgui, palette, set_tip)
         backing(text, 4, 4, palette.cell or palette.btn, palette.edge or palette.dim)
         imgui.TextUnformatted(text)
     end
+    -- A list open (W.Pick): its scroll to the current pick, for 2 frames (the first only sizes the list)
+    local pickOpen, pickScroll = {}, {}
     function W.Pick(id, label, options, width)
         label = tostring(label)
         local w = width or (width_of(label) + 34)
@@ -154,15 +156,31 @@ return function(imgui, palette, set_tip)
                 dl:AddLine(P1, P2, u32(palette.dim), 1.5)
             end
         end
-        if clicked then imgui.OpenPopup('##pick_' .. id) end
+        if clicked then
+            imgui.OpenPopup('##pick_' .. id)
+            pickOpen[id], pickScroll[id] = true, 2
+        end
         local out = nil
+        -- a long list (the 48 keys) is 12 rows tall and scrolls; as wide as the field at least
+        local long = (#options > 12) and (imgui.SetNextWindowSizeConstraints ~= nil)
+            and (imgui.GetTextLineHeightWithSpacing ~= nil)
+        if long and pickOpen[id] then
+            local rows = imgui.GetTextLineHeightWithSpacing() * 12 + 16 -- with the list's padding
+            pcall(imgui.SetNextWindowSizeConstraints, { w, 0 }, { 100000, rows })
+        end
         if imgui.BeginPopup('##pick_' .. id) then
             for i, o in ipairs(options) do
                 local value, text = o, tostring(o)
                 if type(o) == 'table' then value, text = o[1], o[2] end
                 if imgui.Selectable(text .. '##' .. id .. '_' .. i, text == label) then out = value end
+                if long and (text == label) and ((pickScroll[id] or 0) > 0) and (imgui.SetScrollHereY ~= nil) then
+                    imgui.SetScrollHereY(0.5)
+                end
             end
+            if (pickScroll[id] or 0) > 0 then pickScroll[id] = pickScroll[id] - 1 end
             imgui.EndPopup()
+        else
+            pickOpen[id], pickScroll[id] = nil, nil
         end
         return out
     end
@@ -198,7 +216,7 @@ return function(imgui, palette, set_tip)
                 set_tip(((opts.tip ~= nil) and (opts.tip(v) .. '\n') or '') .. 'Click to remove it.')
             end
         end
-        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end
+        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none yet)') end
         local b = box(id)
         imgui.PushItemWidth(opts.width or 200)
         local enter = imgui.InputTextWithHint('##add_' .. id, opts.hint or 'add...', b.a, 96)
@@ -254,7 +272,7 @@ return function(imgui, palette, set_tip)
                     .. 'Click to remove it.')
             end
         end
-        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end
+        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none yet)') end
         -- two plain boxes: the spell (or the start of names: Cure covers Cure IV), then what it needs in hand
         local b, held = box(id), box(id .. '_held')
         imgui.TextColored(palette.dim, 'Add a spell')
@@ -425,7 +443,7 @@ return function(imgui, palette, set_tip)
             end
             if imgui.IsItemHovered() then set_tip('Take ' .. r.name .. ' out of the list.') end
         end
-        if #rows == 0 then imgui.TextColored(palette.dim, '(none)') end
+        if #rows == 0 then imgui.TextColored(palette.dim, '(none yet)') end
         local b = box(id)
         imgui.PushItemWidth(220)
         imgui.InputTextWithHint('##' .. id .. '_new', 'item name, as the game shows it', b.a, 96)
@@ -499,7 +517,7 @@ return function(imgui, palette, set_tip)
             if button('x##' .. id .. '_x' .. i, 'danger') then out[i], changed = false, true end
             if imgui.IsItemHovered() then set_tip('Unbind ' .. W.KeyText(b[1]) .. '.') end
         end
-        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(no keys bound)') end
+        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none yet)') end
         imgui.Spacing()
         local b = box(id)
         b.mods = b.mods or {}

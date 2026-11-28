@@ -367,7 +367,7 @@ local COLOR_KEY = {
     { 'warn', 'Unsaved edits.' },
 }
 local function color_key()
-    imgui.TextColored(palette.dim, '(?)')
+    imgui.TextColored(palette.dim, 'Dot colors')
     if not imgui.IsItemHovered() then return end
     imgui.PushStyleColor(ImGuiCol_PopupBg, { 0.055, 0.06, 0.08, 1 })
     imgui.BeginTooltip()
@@ -922,7 +922,7 @@ local function draw_sets()
         { 'Issues', editorState.ui.issuesOnly },
         { 'Missing', editorState.ui.missingOnly },
         { 'Needs RP', editorState.ui.needsRpOnly },
-        { 'Unused', editorState.ui.unusedOnly },
+        { 'Unused sets', editorState.ui.unusedOnly },
     }) do
         if index > 1 then editorPanels.SameLineIfFits(imgui, 80) end
         chip(filter[1] .. '##set_filter', filter[2], (filter[1] == 'Needs RP') and palette.rp or nil)
@@ -931,8 +931,9 @@ local function draw_sets()
                 Issues = 'Sets with empty slots, missing gear, or unfinished RP.',
                 Missing = 'Sets naming gear you do not own.',
                 ['Needs RP'] = 'Sets using gear below its decoded rank cap.',
-                Unused = 'Sets nothing seems to look for: no built-in trigger by name, not named in your job file, '
-                    .. 'not a variant of another set. Check before you delete.',
+                ['Unused sets'] = 'Sets nothing seems to look for: no built-in trigger by name, not named in your job '
+                    .. 'file, not a variant of another set. Check before you delete. (Gear nothing names: GoomSwap '
+                    .. 'settings, Home, Unused gear.)',
             }
             set_tip(descriptions[filter[1]])
         end

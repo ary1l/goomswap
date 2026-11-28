@@ -573,13 +573,12 @@ local function wrap(s, n)
     return wrapped[key]
 end
 
-local function help_icon(text) -- a dim (?); hover it for the text
+local function help_icon(text) -- a dim (?); hover it for the text (only where no label says what it explains)
     imgui.TextColored(palette.dim, '(?)')
     if imgui.IsItemHovered() then set_tip(wrap(text, 64)) end
 end
-local function help(text) -- the (?) after a one-line item (before a wrapped one: help_icon, then the text)
-    imgui.SameLine()
-    help_icon(text)
+local function help(text) -- the help of the item just drawn (the label it explains): its hover, no (?) beside it
+    if imgui.IsItemHovered() then set_tip(wrap(text, 64)) end
 end
 
 -- Open another set from the right panel (a have link, To fill): the set you were on goes on a back list, so

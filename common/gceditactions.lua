@@ -117,20 +117,63 @@ function actionModel.New(context)
         return (kind ~= nil) and (main .. ' (' .. kind .. ')') or main
     end
 
+    -- A layer with no set name is named by the function that put it on: GoomSwap's own each have a plain name and
+    -- where to change what they do (checked against the gcinclude / gcruntime code that does it); anything else is
+    -- code in the job file.
+    local STEP = {
+        WearWeaponLayer = { 'Weapon mode', '/wm (bar: right-click your weapon pill); GoomSwap settings, Modes' },
+        BuildWeaponLayer = { 'Weapon mode', '/wm (bar: right-click your weapon pill); GoomSwap settings, Modes' },
+        CheckWeapons = { 'Weapon mode', '/wm (bar: right-click your weapon pill); GoomSwap settings, Modes' },
+        ruleEquip = { 'Rule', 'RULES (top of the set list)' },
+        ApplyElementGear = { 'Element bonus', 'GoomSwap settings, Casting: Obi, Orpheus and element gear' },
+        EquipIdle = { 'Idle gear', 'the IDLE sets; /idleset' },
+        EquipMode = { 'Combat mode', 'the MELEE and WEAPON SKILLS sets; /mset, /wsset' },
+        CheckMoonshade = { 'Moonshade ear', 'GoomSwap settings, Weapon skills: Moonshade below TP, Moonshade ear' },
+        CheckIncapacitated = { 'Incapacitated', 'the Incapacitated set' },
+        CheckTH = { 'TH gear', '/th; the TH set' },
+        CheckXIRoll = { 'Roll of 11', 'the XIRoll set (else GoomSwap settings, Idle & defense: Set at a roll of 11)' },
+        CheckLockingRings = { 'Ring in use', nil },
+        CheckHoxne = { 'Hoxne Ampulla', '/hoxne' },
+        CheckDaybreak = { 'Daybreak for Dispelga', nil },
+        StripWeaponSwaps = { 'SmartSwap', 'GoomSwap settings, Weapons: SmartSwap, Never swap weapons for' },
+        CheckCommonDebuffs = { 'Status effect', 'the Sleeping and Doomed sets' },
+        CheckMDT = { 'MDT / Aminon', '/mdt, /aminon; the mdt and Aminon sets' },
+        CheckSIR = { 'SIR', '/sir; the SIR set' },
+        CheckReceived = { 'Spell coming at you', "GoomSwap settings, Casting: Sets for spells on their way to you" },
+        CheckBuffSets = { 'Buff gear', 'the Buffs tables (Buffs, Buffs_Tp, Buffs_Ws...)' },
+        CheckAbsorb = { 'Absorb', 'the Absorb and Absorb_TP sets' },
+        CheckLightBonus = { 'Light bonus', 'the LightBonus set' },
+        SetTownGear = { 'Town gear', 'the Town set' },
+        WearChildren = { 'Child set', 'the set whose name ends _Dt, _Burst, _Self, _Others...' },
+        EquipSATA = { 'SA / TA', 'the <WS>_SA, _TA, _SATA sets' },
+        wear = { 'Auto gear', 'GoomSwap settings, Idle & defense: Regen / Refresh / DT gear below' },
+        checkDefault = { 'Proc mode', '/proc; the Proc set' },
+        wearHoxneCombos = { 'Hoxne', '/hoxne; the Hoxne sets' },
+        CheckHoxneWs = { 'Hoxne', '/hoxne; the Hoxne sets' },
+        WearHoxne = { 'Hoxne', '/hoxne; the Hoxne sets' },
+        CheckHoxneSets = { 'Hoxne', '/hoxne; the Hoxne sets' },
+    }
     local function source_label(by)
         local engine = string.match(by, '^gcinclude%.sets%.(.+)$')
         if engine ~= nil then return 'engine set ' .. engine end
         local fn = string.match(by, '^(.+)%(%)$')
-        if fn ~= nil then
-            return ({
-                WearWeaponLayer = 'Weapon mode',
-                ruleEquip = 'Rule',
-                ApplyElementGear = 'Element bonus',
-                EquipIdle = 'Idle gear',
-                EquipMode = 'Combat mode',
-            })[fn] or ('Rule: ' .. fn)
-        end
+        if fn ~= nil then return (STEP[fn] ~= nil) and STEP[fn][1] or ('Code: ' .. by) end
         return by
+    end
+    -- Where to change a layer: its step's, else the set by its name
+    local function source_where(by)
+        local engine = string.match(by, '^gcinclude%.sets%.(.+)$')
+        if engine ~= nil then
+            return "GoomSwap's own " .. engine .. ' set: make a set named ' .. engine .. ' to use yours'
+        end
+        if string.match(by, '^Fallback: ') then return "the slot's Fallback (right-click the slot)" end
+        local fn = string.match(by, '^(.+)%(%)$')
+        if fn ~= nil then
+            if STEP[fn] ~= nil then return STEP[fn][2] end
+            return 'your job file: its ' .. by .. ' code'
+        end
+        if string.match(by, '^Sub ') then return nil end
+        return 'the set ' .. by .. ' (click it in the set list)'
     end
 
     -- Why a layer went on, in plain words: from the functions that put it on (rec chain, closest first) and what was
@@ -255,6 +298,11 @@ function actionModel.New(context)
         if string.match(by, '^Sub ') then
             return by
         end -- 'Sub held: no Dual Wield', 'Sub dropped: ...'
+        if string.match(by, '^Fallback: ') then
+            return "the set's piece there has a fallback, and its condition did not hold"
+        end
+        local code = string.match(by, '^(.+)%(%)$')
+        if (code ~= nil) and (STEP[code] == nil) then return 'code in your job file puts it on' end
         -- a set the job file (or a helper) wears by name
         if first == 'EquipIdle' then
             if by == 'Idle' then return 'base: Idle goes on first, every time' end
@@ -428,9 +476,13 @@ function actionModel.New(context)
             if L.by == 'WearWeaponLayer()' then label = label .. ' ' .. tostring((pick.state or {}).weapons or '?') end
             local reason = tostring(why(L, pick) or '')
             if string.sub(reason, -1) ~= '.' then reason = reason .. '.' end
+            local where = source_where(L.by)
             V.order[i] = {
                 title = i .. '. ' .. label,
                 rawSource = L.by,
+                tip = label .. '\n' .. string.upper(string.sub(reason, 1, 1)) .. string.sub(reason, 2)
+                    .. ((where ~= nil) and ('\nChange it: ' .. where) or '')
+                    .. ((L.by ~= label) and ('\n\nKey: ' .. L.by) or ''),
                 mine = is_set_label(L.by, set.name),
                 why = string.upper(string.sub(reason, 1, 1)) .. string.sub(reason, 2),
                 won = (#won > 0) and ('worn: ' .. table.concat(won, ' ')) or nil,

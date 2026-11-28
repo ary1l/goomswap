@@ -259,6 +259,29 @@ local function inherited_of(set, slot)
     if (d == nil) or (d.kind ~= 'item') or (from == nil) or (from == set.name) or is_slot_word(d) then return nil end
     return { name = d.name, from = from }
 end
+-- LuAshitacast's slot words, as a card's badge says them, and what each does (LAC equip.lua MakeItemTable)
+local SLOT_WORD = {
+    displaced = { 'Displaced', 'Displaced: left empty for a piece that takes this slot too (a two-handed weapon, an '
+        .. 'instrument...).' },
+    remove = { 'Remove', 'Remove: takes off whatever is in this slot.' },
+    ignore = { 'Ignore', "Ignore: this set leaves the slot as it is." },
+}
+-- A slot's fallback in words: 'Telos Earring instead when MP % is below 10'
+local FB_WORD = { hpp = 'HP %', mpp = 'MP %', tp = 'TP' }
+local function fallback_words(v)
+    local st, n = string.match(v.when or '', '^%s*{%s*(%a+)%s*=%s*{%s*ge%s*=%s*([%d%.]+)%s*}%s*}%s*$')
+    local cond = ('this does not hold: ' .. tostring(v.when))
+    if st ~= nil then cond = (FB_WORD[st] or st) .. ' is below ' .. n end
+    return 'Fallback: ' .. tostring(v.els) .. ' goes on instead when ' .. cond .. '.\nChange it: right-click the slot, '
+        .. 'Fallback.'
+end
+-- A slot's 'if' pill (its fallback); true while hovered: its own hover is up, not the card's
+local function fb_pill(v)
+    pill('if', palette.blue, palette.invBg)
+    if not imgui.IsItemHovered() then return false end
+    set_tip(fallback_words(v))
+    return true
+end
 local function draw_cell(set, slot)
     local iconOnly = (ctx.CARD_NAMES == false) -- Compact: the slot, its bag and the icon; the rest on hover
     local v = current(set, slot)
@@ -295,18 +318,26 @@ local function draw_cell(set, slot)
     local focusBorder = selected and ImGuiStyleVar_ChildBorderSize ~= nil and imgui.PushStyleVar ~= nil
     if focusBorder then imgui.PushStyleVar(ImGuiStyleVar_ChildBorderSize, 2) end
     imgui.BeginChild('##gcedit_cell_' .. slot, { ctx.CELL_W, ctx.CELL_H }, CHILD_BORDERS, ImGuiWindowFlags_NoScrollbar)
+    local x0 = (imgui.GetCursorPosX ~= nil) and imgui.GetCursorPosX() or 8 -- where the slot's name starts
     imgui.TextColored(selected and palette.blue or (changed and palette.warn
         or ((rp and rp.unfinished) and palette.rp or ((cover ~= nil) and palette.override or palette.dim))), slot)
     local bag, ok, badge, badgeX -- the bag badge, right-aligned: what sits before it stops short of it
     if (v ~= nil) and (v.kind == 'item') then
         bag, ok = where(v.name)
-        badge = is_slot_word(v) and 'Rule' or cardText.Bag(bag)
+        local word = is_slot_word(v) and SLOT_WORD[string.lower(v.name)] or nil
+        badge = (word ~= nil) and word[1] or cardText.Bag(bag)
         badgeX = ctx.CELL_W - text_w(badge) - 14
     end
+    -- a fallback (When / Else): an 'if' pill left of the bag badge when the slot's name leaves room (a pill's fill
+    -- reaches 5 past its text: 2 between them), else in the card's bottom-left corner (Compact cards)
+    local fb = (v ~= nil) and (v.kind == 'item') and (v.when ~= nil) and (v.els ~= nil)
+    local fbX = (fb and (badgeX ~= nil)) and (badgeX - 12 - text_w('if')) or nil
+    if (fbX ~= nil) and (fbX - 5 < x0 + text_w(slot) + 4) then fbX = nil end
+    local fbHover = false
     local res = (v ~= nil) and (v.kind == 'item') and not is_slot_word(v) and resist_of(v, owned)
     if res and not iconOnly then -- its resistances, as the game's element icons: one value when they all match
         imgui.SameLine(0, 8)
-        local room = (badgeX or ctx.CELL_W) - 5 - imgui.GetCursorPosX() - 4 -- the badge's fill starts 5 left
+        local room = (fbX or badgeX or ctx.CELL_W) - 5 - imgui.GetCursorPosX() - 4 -- a pill's fill starts 5 left
         local dotsW = itemTooltip.ElementDotsWidth(imgui, res)
         local value = (res.same ~= nil) and (((res.same > 0) and '+' or '') .. res.same) or nil
         if dotsW <= room then -- no room: left to the item's tooltip
@@ -318,6 +349,10 @@ local function draw_cell(set, slot)
         end
     end
     if badge ~= nil then
+        if fbX ~= nil then
+            imgui.SameLine(fbX)
+            fbHover = fb_pill(v)
+        end
         imgui.SameLine(badgeX)
         pill(
             badge,
@@ -326,6 +361,7 @@ local function draw_cell(set, slot)
             is_slot_word(v) and palette.invBg
                 or (bag == nil and palette.badBg or (ok and palette.okBg or palette.warnBg))
         )
+        if is_slot_word(v) and imgui.IsItemHovered() then set_tip(SLOT_WORD[string.lower(v.name)][2]) end
     end
     local gh = (v == nil) and ghost_of(set, slot) or nil -- commented out in the file (/gcbuild)
     -- not in this set: the piece an earlier set puts here, faint, with that set's name below
@@ -338,6 +374,11 @@ local function draw_cell(set, slot)
             or ((inh ~= nil) and item_id(inh.name)) or nil, ctx.ICON
     )
     if faded then imgui.PopStyleVar() end
+    if iconOnly and fb and (fbX == nil) and (imgui.SetCursorPosY ~= nil) then -- bottom-left, inside the padding
+        imgui.SetCursorPosX(x0)
+        imgui.SetCursorPosY(ctx.CELL_H - x0 - ((imgui.GetTextLineHeight ~= nil) and imgui.GetTextLineHeight() or 16))
+        fbHover = fb_pill(v)
+    end
     local menuHit = false
     if not iconOnly then -- the named card: its piece's name, then the footer rows and the hover's '...'
         imgui.SameLine()
@@ -388,12 +429,22 @@ local function draw_cell(set, slot)
         elseif changed then
             imgui.TextColored(palette.warn, 'Cleared on Save')
         end
-        if changed or cover or ((rp and rp.unfinished) and not rankShown) then
+        local fbFoot = fb and (fbX == nil) -- no room on the top row: the 'if' pill starts the status row
+        local statusShown = changed or cover or ((rp and rp.unfinished) and not rankShown)
+        if statusShown or fbFoot then
             imgui.SetCursorPosY(statusY)
-            local status = cover and ((changed and 'Unsaved > ' or 'Replaced: ') .. cover.short)
-                or (changed and 'Unsaved' or 'Needs RP')
-            imgui.TextColored(changed and palette.warn or (cover and palette.override or palette.rp),
-                cardText.Fit(status, ctx.CELL_W - 16, text_w))
+            local room = ctx.CELL_W - 16
+            if fbFoot then
+                fbHover = fb_pill(v)
+                room = room - text_w('if') - 10
+                if statusShown then imgui.SameLine(0, 10) end
+            end
+            if statusShown then
+                local status = cover and ((changed and 'Unsaved > ' or 'Replaced: ') .. cover.short)
+                    or (changed and 'Unsaved' or 'Needs RP')
+                imgui.TextColored(changed and palette.warn or (cover and palette.override or palette.rp),
+                    cardText.Fit(status, room, text_w))
+            end
         end
         -- the card hovered: '...' opens its menu
         if (editorState.ui.cardShown == slot) and (imgui.SetCursorPosX ~= nil) then
@@ -426,7 +477,8 @@ local function draw_cell(set, slot)
         end
     end
     if imgui.IsItemClicked(1) then request_context('slot', set, slot) end
-    if imgui.IsItemHovered() and (gh ~= nil) then
+    if fbHover then -- the 'if' pill's own hover is up: not the card's over it
+    elseif imgui.IsItemHovered() and (gh ~= nil) then
         set_tip(
             wrap(
                 'Empty. The file has '
@@ -446,19 +498,17 @@ local function draw_cell(set, slot)
                 comparison = other.name .. ': ' .. ((w ~= nil) and (w.name or w.raw) or 'empty')
             end
             local tooltipStarted = profiler.Start()
-            itemTooltip.Draw(
-                imgui,
-                palette,
-                itemTooltip.Model(v, owned, {
-                    bag = bag,
-                    equippable = bag and ok,
-                    rule = is_slot_word(v),
-                    description = not is_slot_word(v) and describe(v.name) or nil,
-                    replacement = cover and cover.full,
-                    comparison = comparison,
-                    usedIn = (ctx.used_in ~= nil) and not is_slot_word(v) and ctx.used_in(v.name) or nil,
-                })
-            )
+            local model = itemTooltip.Model(v, owned, {
+                bag = bag,
+                equippable = bag and ok,
+                rule = is_slot_word(v),
+                description = not is_slot_word(v) and describe(v.name) or nil,
+                replacement = cover and cover.full,
+                comparison = comparison,
+                usedIn = (ctx.used_in ~= nil) and not is_slot_word(v) and ctx.used_in(v.name) or nil,
+            })
+            if fb then model.notes[#model.notes + 1] = string.match(fallback_words(v), '^[^\n]+') end
+            itemTooltip.Draw(imgui, palette, model)
             profiler.Finish('Item tooltip', tooltipStarted)
         else
             set_tip(wrap(v.raw or '', 68))
@@ -469,7 +519,7 @@ local function draw_cell(set, slot)
             and (wrap('Not in this set: ' .. inh.from .. ' puts ' .. inh.name .. ' here, and it stays (the layers '
                 .. 'Stats uses; its Base: picks another). Click: pick gear for this set.', 60))
             or 'This set leaves the slot alone. Gear from an earlier layer stays equipped.')
-    elseif imgui.IsItemHovered() and diff then
+    elseif imgui.IsItemHovered() and (v == nil) and diff then -- an item's card waits for its own tooltip
         local w = current(other, slot)
         set_tip('Empty here.\n' .. other.name .. ' has: ' .. ((w ~= nil) and (w.name or w.raw) or 'nothing'))
     end
@@ -631,7 +681,7 @@ local function draw_layer_view(set, V)
             imgui.BeginGroup()
             imgui.PushTextWrapPos(0)
             imgui.TextColored(o.mine and palette.blue or palette.text, (string.gsub(o.title, '^%d+%.%s*', '')))
-            if imgui.IsItemHovered() then set_tip(o.rawSource or o.title) end
+            if imgui.IsItemHovered() then set_tip(o.tip or o.rawSource or o.title) end
             if o.mine then
                 imgui.SameLine()
                 imgui.TextColored(palette.blue, '(this set)')
@@ -1259,6 +1309,9 @@ local function draw_set(set)
     end
     if draw_set_actions(set) then return end
     if winfo ~= nil then draw_weapon_checks(set, winfo) end
+    -- its own label: help() on whatever came before (More..., a weapon check) would take over that one's hover
+    editorPanels.SameLineIfFits(imgui, text_w('Slot tips') + 12)
+    imgui.TextColored(palette.dim, 'Slot tips')
     help(
         '- Click a slot: pick gear for it on the right.\n'
             .. '- Right-click a slot: inspect its item, choose gear, undo or clear.\n'
@@ -1268,6 +1321,7 @@ local function draw_set(set)
             .. '- red: you do not own it\n'
             .. 'Aug / Path: the file lists augments (hover the slot).\n'
             .. 'Blue outline: the slot being edited. Amber: unsaved changes. Violet: unfinished RP.\n'
+            .. 'if: the slot has a fallback (hover it). Displaced / Remove / Ignore: a slot word (hover it).\n'
             .. 'An unsaved card keeps its amber fill while selected. Path/rank has its own footer row.\n'
             .. 'Replaced labels (Unsaved > source on an edited slot) use the action selected on the right.'
     )

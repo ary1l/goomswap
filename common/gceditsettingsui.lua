@@ -417,19 +417,21 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             if files.Layer('shared')[key] ~= nil then by[#by + 1] = 'everyone' end
             if files.Layer('own')[key] ~= nil then by[#by + 1] = 'all jobs (char.lua)' end
             if select(2, files.Job('settings.' .. key)) ~= 'none' then by[#by + 1] = job_abbr() .. ' only' end
-            return key .. '\n\n' .. ((doc ~= nil) and (doc[1] .. '\n\n') or '') .. 'Default: '
+            return ((doc ~= nil) and (doc[1] .. '\n\n') or '') .. 'Default: '
                 .. ((default == nil) and '(none)' or brief(default))
                 .. ((#by > 0) and ('\nSet in: ' .. table.concat(by, ', '))
                     or '\nNot set in any file: the default is used.')
+                .. '\n\nKey: ' .. key
         end
         local set = {} -- only the files that set it: three "(not set)" lines said nothing
         if files.Layer('shared')[key] ~= nil then set[#set + 1] = 'everyone: ' .. layer('shared') end
         if files.Layer('own')[key] ~= nil then set[#set + 1] = 'all jobs (char.lua): ' .. layer('own') end
         local js = job_says('settings.' .. key, plain)
         if js ~= '(not set)' then set[#set + 1] = job_abbr() .. ' only (' .. job_name() .. '): ' .. js end
-        return key .. '\n\n' .. ((doc ~= nil) and (doc[1] .. '\n\n') or '') .. how_to(kind, doc and doc[2], LIMITS[key])
+        return ((doc ~= nil) and (doc[1] .. '\n\n') or '') .. how_to(kind, doc and doc[2], LIMITS[key])
             .. '\n\nDefault: ' .. ((default == nil) and '(none)' or clip(text_of(default, plain)))
             .. ((#set > 0) and ('\n' .. table.concat(set, '\n')) or '\nNot set in any file: the default is used.')
+            .. '\n\nKey: ' .. key
     end
 
     -- Saved now (char.lua, the shared file), or staged for the job file's Save.
@@ -454,30 +456,69 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     end
 
     -- The value box (or checkbox) of a row; true when its text differs from the value. ed: the row's state.
-    local function value_box(id, ed, check, v, example, onCheck)
+    -- A number's - / + step: 100 for TP, 5 for HP / MP %, else 1; kept inside its limits (LIMITS)
+    local function stepper_of(key, default)
+        if (type(default) ~= 'number') or LUA_TEXT[key] then return nil end
+        local step = string.match(key, 'TP$') and 100 or ((string.match(key, 'HPP$') or string.match(key, 'MPP$')) and 5
+            or 1)
+        return { step = step, lim = LIMITS[key] }
+    end
+    local function value_box(id, ed, check, v, example, onCheck, stepper)
+        -- its hover (ed.tip) on its own control: what follows it (- / +, a note) keeps its own
         if not ed.editable then
             if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
             imgui.TextColored(palette.dim, ed.why or '(edit this one in the file)')
             if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
+            if imgui.IsItemHovered() then set_tip(ed.tip) end
             return false
         end
         if check then
             local b = { v == true }
             if imgui.Checkbox('##' .. id, b) then onCheck(b[1]) end
+            if imgui.IsItemHovered() then set_tip(ed.tip) end
             return false
         end
         local lines = select(2, string.gsub(ed.text[1], '\n', '\n')) + 1
         local w = math.max(140, math.min(BOX_W, avail_x() - 8))
         if (type(v) == 'table') or (lines > 1) then
             imgui.InputTextMultiline('##' .. id, ed.text, 2048, { w, math.min(8, lines + 1) * 15 + 6 })
+            local hovered = imgui.IsItemHovered()
+            imgui.TextColored(palette.dim, 'typed as Lua (advanced)') -- no control for this one's shape
+            if hovered then set_tip(ed.tip) end
         else
-            imgui.PushItemWidth(w)
+            imgui.PushItemWidth(stepper and (w - 52) or w)
             imgui.InputTextWithHint('##' .. id, example or '', ed.text, 512) -- empty: the example, greyed
             imgui.PopItemWidth()
+            if imgui.IsItemHovered() then set_tip(ed.tip) end
+            if stepper ~= nil then -- - / +, as typed: Save keeps it
+                for _, d in ipairs({ { '-', -1 }, { '+', 1 } }) do
+                    imgui.SameLine(0, 2)
+                    if imgui.SmallButton(d[1] .. '##step_' .. id) then
+                        local n = (tonumber(ed.text[1]) or tonumber(v) or 0) + d[2] * stepper.step
+                        local lim = stepper.lim
+                        if lim ~= nil then
+                            if (lim[1] ~= nil) and (n < lim[1]) then n = lim[1] end
+                            if (lim[2] ~= nil) and (n > lim[2]) then n = lim[2] end
+                        end
+                        ed.text[1] = tostring(n)
+                    end
+                    if imgui.IsItemHovered() then
+                        set_tip(((d[2] < 0) and 'Down ' or 'Up ') .. stepper.step .. '; Save keeps it.')
+                    end
+                end
+            end
         end
         return ed.text[1] ~= ed.base
     end
 
+    -- What Reset brings back: the value of the file under this one (job file > char.lua > everyone > default)
+    local function reset_tip(target)
+        if target == 'job' then
+            return 'Takes its line out of ' .. job_name() .. ' on Save: char.lua\'s (or the default) comes back.'
+        end
+        if target == 'own' then return "Takes it out of char.lua: everyone's (or the default) comes back." end
+        return 'Takes it out of the shared file: the default comes back.'
+    end
     local function retired_row(key, target)
         local which = (target == 'job') and nil or target
         local here = (which ~= nil) and files.Layer(which)[key]
@@ -542,7 +583,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         -- a T{} default: this job's line is written T{...} (its methods: HoldExempt:contains)
         local tMeta = (type(default) == 'table') and (getmetatable(default) ~= nil)
         local kind = ed.editable and widget_kind(key, v) or nil
-        if kind == 'choice' then -- a picker on the name's line, then where it comes from and Clear
+        if kind == 'choice' then -- a picker on the name's line, then where it comes from and Reset
             local nv = draw_widget(kind, 'w_' .. target .. '_' .. key, v, key)
             fit_line(pill_w(where_label(from)))
             W.Pill(where_label(from), tag_colors(from))
@@ -550,18 +591,20 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             if target == 'job' then has = (files.Job('settings.' .. key) ~= nil) else has = (files.Layer(target)[key] ~= nil) end
             if has then
                 fit_line(64)
-                if imgui.SmallButton('Clear##set_clear_' .. key) then save(target, key, files.REMOVE) end
+                if imgui.SmallButton('Reset##set_clear_' .. key) then save(target, key, files.REMOVE) end
+                if imgui.IsItemHovered() then set_tip(reset_tip(target)) end
             end
             if nv ~= nil then save(target, key, nv, tMeta) end
             return
         end
-        if kind ~= nil then -- a control under its name; the line keeps where it comes from and Clear
+        if kind ~= nil then -- a control under its name; the line keeps where it comes from and Reset
             W.Pill(where_label(from), tag_colors(from))
             local has
             if target == 'job' then has = (files.Job('settings.' .. key) ~= nil) else has = (files.Layer(target)[key] ~= nil) end
             if has then
                 fit_line(64)
-                if imgui.SmallButton('Clear##set_clear_' .. key) then save(target, key, files.REMOVE) end
+                if imgui.SmallButton('Reset##set_clear_' .. key) then save(target, key, files.REMOVE) end
+                if imgui.IsItemHovered() then set_tip(reset_tip(target)) end
             end
             imgui.Indent(24)
             local nv = draw_widget(kind, 'w_' .. target .. '_' .. key, v, key)
@@ -570,8 +613,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             return
         end
         local changed = value_box('set_' .. key, ed, check, v, DOC[key] and DOC[key][2],
-            function(b) save(target, key, b, tMeta) end)
-        if imgui.IsItemHovered() then set_tip(ed.tip) end
+            function(b) save(target, key, b, tMeta) end, (not check) and stepper_of(key, default) or nil)
         fit_line(pill_w(where_label(from)))
         W.Pill(where_label(from), tag_colors(from))
         if changed then
@@ -592,11 +634,8 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         end
         if has and ed.editable then
             fit_line(64)
-            if imgui.SmallButton('Clear##set_clear_' .. key) then save(target, key, files.REMOVE) end
-            if imgui.IsItemHovered() then
-                set_tip('Takes it out of ' .. target_name(target) .. (((target == 'own') or (target == 'job'))
-                    and ': the value below it comes back.' or ': the default comes back.'))
-            end
+            if imgui.SmallButton('Reset##set_clear_' .. key) then save(target, key, files.REMOVE) end
+            if imgui.IsItemHovered() then set_tip(reset_tip(target)) end
         end
         if (target == 'shared') and (from == 'own') then
             imgui.SameLine()
@@ -612,7 +651,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local name = entry[1]
         local v, how = files.Job(name)
         imgui.TextUnformatted('Packer (' .. job_abbr() .. ')')
-        if imgui.IsItemHovered() then set_tip('profile.Packer\n\n' .. entry[2]) end
+        if imgui.IsItemHovered() then set_tip(entry[2] .. '\n\nKey: profile.Packer') end
         imgui.SameLine(LABEL_W)
         W.Pill((how == 'staged') and 'unsaved' or ((v ~= nil) and where_label('job') or 'default'),
                 tag_colors((how == 'staged') and 'staged' or ((v ~= nil) and 'job' or 'default')))
@@ -695,13 +734,18 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             and widget_kind(name, shown) or nil
         if kind ~= nil then
             name_cell(nice(name))
-            if imgui.IsItemHovered() then set_tip(name .. '\n\n' .. desc .. '\n\nNot set: ' .. tostring(unset or 'nothing')) end
+            if imgui.IsItemHovered() then
+                set_tip(desc .. '\n\nNot set: ' .. tostring(unset or 'nothing') .. '\n\nKey: ' .. name)
+            end
             imgui.SameLine(LABEL_W)
             W.Pill((how == 'staged') and 'unsaved' or ((v ~= nil) and where_label('job') or 'default'),
                 tag_colors((how == 'staged') and 'staged' or ((v ~= nil) and 'job' or 'default')))
             if v ~= nil then
                 fit_line(64)
-                if imgui.SmallButton('Clear##job_clear_' .. name) then files.StageJob(name, files.REMOVE) end
+                if imgui.SmallButton('Reset##job_clear_' .. name) then files.StageJob(name, files.REMOVE) end
+                if imgui.IsItemHovered() then
+                    set_tip('Takes its line out of ' .. job_name() .. ' on Save: the default comes back.')
+                end
             end
             imgui.Indent(24)
             local nv = draw_widget(kind, 'w_jobopt_' .. name, shown, name)
@@ -721,22 +765,24 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local ed = ui.settingsEdit[id]
         if (ed == nil) or (ed.base ~= now) then
             ed = { base = now, text = { now }, editable = editable(v) and not readonly }
-            if readonly then ed.why = (v ~= nil) and clip(now) or ('default ' .. tostring(unset)) end
+            -- read-only, not set: its value alone (its pill says default)
+            if readonly then ed.why = (v ~= nil) and clip(now) or tostring(unset or 'nothing') end
             if (how == 'code') or string.match(how or '', '^set in') then
                 ed.editable, ed.why = false, '(' .. how .. ' in the file: edit it there)'
             end
             ed.tip = desc .. '\n\n' .. (readonly and 'Shown here; changed as it says.' or how_to((example == nil) and 'check' or 'lua', example))
                 .. '\n\nNot set: ' .. tostring(unset or 'nothing') .. '\n' .. job_name() .. ': ' .. job_says(name)
+                .. '\n\nKey: ' .. name
             ui.settingsEdit[id] = ed
         end
         name_cell(nice(name))
-        if imgui.IsItemHovered() then set_tip(name .. '\n\n' .. ed.tip) end
+        if imgui.IsItemHovered() then set_tip(ed.tip) end
         imgui.SameLine(LABEL_W)
         local check = ((example == nil) or (example == 'true') or (example == 'false')) and not readonly
         local cur = v
         if check and (cur == nil) then cur = (unset == 'true') end
-        local changed = value_box(id, ed, check, cur, example, function(b) files.StageJob(name, b) end)
-        if imgui.IsItemHovered() then set_tip(ed.tip) end
+        local changed = value_box(id, ed, check, cur, example, function(b) files.StageJob(name, b) end,
+            (not check) and (tonumber(example or '') ~= nil) and { step = 1 } or nil)
         fit_line(pill_w((v ~= nil) and where_label('job') or 'default'))
         W.Pill((how == 'staged') and 'unsaved' or ((v ~= nil) and where_label('job') or 'default'),
                 tag_colors((how == 'staged') and 'staged' or ((v ~= nil) and 'job' or 'default')))
@@ -757,11 +803,13 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         end
         if (v ~= nil) and ed.editable then
             fit_line(64)
-            if imgui.SmallButton('Clear##job_clear_' .. name) then
+            if imgui.SmallButton('Reset##job_clear_' .. name) then
                 files.StageJob(name, files.REMOVE)
                 ui.settingsEdit[id] = nil
             end
-            if imgui.IsItemHovered() then set_tip('Takes its line out of ' .. job_name() .. ' on Save.') end
+            if imgui.IsItemHovered() then
+                set_tip('Takes its line out of ' .. job_name() .. ' on Save: the default comes back.')
+            end
         end
     end
 
@@ -782,10 +830,10 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     local function top_packer_row(which)
         imgui.TextUnformatted('Packer (every job)')
         if imgui.IsItemHovered() then
-            set_tip('Packer\n\nItems /lac gear (the Packer plugin) fetches on every job of '
+            set_tip('Items /lac gear (the Packer plugin) fetches on every job of '
                 .. ((which == 'own') and char_name() or 'every character') .. ', with each job file\'s own '
                 .. 'Packer and every set\'s gear: a count, a stack or all you have. char.lua\'s list replaces the '
-                .. 'shared one. Saved at once.')
+                .. 'shared one. Saved at once.\n\nKey: Packer')
         end
         if (which == 'shared') and (files.Top('own', 'Packer') ~= nil) then
             imgui.SameLine()
@@ -806,6 +854,28 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         end
         return nil
     end
+    -- /wm shortcuts outside Modes: a pointer there (its rows rename, remove and pick each mode from a list), with
+    -- what it holds. Lua or code in the file: its own row, as Modes shows it then.
+    local function roles_row(entry)
+        local roles, how = files.Job('WeaponRoles')
+        if ((roles ~= nil) and (type(roles) ~= 'table')) or (how == 'code') or string.match(how or '', '^set in') then
+            return job_row(entry)
+        end
+        name_cell(nice('WeaponRoles'))
+        if imgui.IsItemHovered() then set_tip(entry[2] .. '\n\nKey: WeaponRoles') end
+        imgui.SameLine(LABEL_W)
+        if imgui.SmallButton('Edit in Modes##roles_to_modes') then editorState.ui.settingsCat = 'Modes' end
+        if imgui.IsItemHovered() then
+            set_tip('Opens Modes: rename, remove or add shortcuts there, each with its mode picked from a list.')
+        end
+        local parts = {}
+        for k, m in pairs(roles or {}) do parts[#parts + 1] = '/wm ' .. tostring(k) .. ': ' .. tostring(m) end
+        table.sort(parts)
+        imgui.SameLine()
+        if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
+        imgui.TextColored(palette.dim, (#parts > 0) and table.concat(parts, ', ') or '(none yet)')
+        if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
+    end
     local function job_options()
         -- a default weapon or role nothing offers: the engine skips it at load without a word
         for _, p in ipairs((files.WeaponProblems ~= nil) and files.WeaponProblems() or {}) do
@@ -814,7 +884,9 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             imgui.PopTextWrapPos()
         end
         for _, entry in ipairs(JOB) do
-            if job_wanted(entry[1]) then job_row(entry) end
+            if job_wanted(entry[1]) then
+                if entry[1] == 'WeaponRoles' then roles_row(entry) else job_row(entry) end
+            end
             imgui.Spacing()
         end
     end
@@ -867,7 +939,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         imgui.Separator()
     end
     local function chips(list) -- read-only names, wrapping under the value column
-        if #list == 0 then imgui.TextColored(palette.dim, '(none)') end
+        if #list == 0 then imgui.TextColored(palette.dim, '(none yet)') end
         for i, m in ipairs(list) do
             if i > 1 then fit_line(pill_w(m)) end
             W.Pill(tostring(m), palette.text, palette.chipBg)
@@ -945,7 +1017,9 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         section('Weapons', '/wm: one mode per Weapon_ set')
         local wm = files.Job('WeaponModes') or { 'None' }
         name_cell('/wm modes')
-        if imgui.IsItemHovered() then set_tip('WeaponModes\n\n' .. (job_entry('WeaponModes') or {})[2]) end
+        if imgui.IsItemHovered() then
+            set_tip(tostring((job_entry('WeaponModes') or {})[2]) .. '\n\nKey: WeaponModes')
+        end
         imgui.SameLine(LABEL_W)
         chips(wm)
         imgui.SetCursorPosX(LABEL_W)
@@ -958,7 +1032,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             job_row(job_entry('DefaultWeapons')) -- slots ({ Weapons = , Range = }): its Lua box
         else
             name_cell(nice('DefaultWeapons'))
-            if imgui.IsItemHovered() then set_tip('DefaultWeapons\n\n' .. job_entry('DefaultWeapons')[2]) end
+            if imgui.IsItemHovered() then set_tip(job_entry('DefaultWeapons')[2] .. '\n\nKey: DefaultWeapons') end
             imgui.SameLine(LABEL_W)
             local nv = W.Pick('mode_default', (dw == nil) and 'None' or tostring(dw), wm, 200)
             if nv ~= nil then files.StageJob('DefaultWeapons', nv) end
@@ -1003,8 +1077,8 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                 imgui.InputText('##role_name_' .. r, b, 24)
                 imgui.PopItemWidth()
                 if imgui.IsItemHovered() then
-                    set_tip('WeaponRoles\n\nTyping /wm ' .. r .. ' (or a macro with it) switches /wm to the mode '
-                        .. 'picked here. Type another word and Set to rename it.')
+                    set_tip('Typing /wm ' .. r .. ' (or a macro with it) switches /wm to the mode '
+                        .. 'picked here. Type another word and Set to rename it.\n\nKey: WeaponRoles')
                 end
                 local typed = string.lower(W.Trim(b[1]))
                 local renaming = (typed ~= r) and string.match(typed, '^%a%w*$') and (roles[typed] == nil)
@@ -1139,24 +1213,23 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         imgui.InputTextWithHint('##set_find', 'find a setting', ui.settingsFind, 48)
         imgui.PopItemWidth()
         -- the colours of where a value comes from, once here instead of words on every row
+        local legend = 'Where a value comes from: default (GoomSwap\'s), everyone (the shared file), all jobs ('
+            .. char_name() .. "'s char.lua), " .. job_abbr() .. ' only (' .. job_name() .. '), unsaved (waits for '
+            .. 'Save). ' .. job_name() .. ' wins over char.lua, char.lua over everyone. Hover a setting\'s name for '
+            .. 'what it does and its key.'
+        fit_line(W.Width('From') + 8, true)
         imgui.TextColored(palette.dim, 'From')
+        if imgui.IsItemHovered() then set_tip(legend) end
         for _, f in ipairs({ 'default', 'shared', 'own', 'job', 'staged' }) do
             fit_line(pill_w((f == 'staged') and 'unsaved' or where_label(f)), true)
             W.Pill((f == 'staged') and 'unsaved' or where_label(f), tag_colors(f))
-        end
-        imgui.SameLine()
-        imgui.TextColored(palette.dim, '(?)')
-        if imgui.IsItemHovered() then
-            set_tip('Where a value comes from: default (GoomSwap\'s), everyone (the shared file), all jobs ('
-                .. char_name() .. "'s char.lua), " .. job_abbr() .. ' only (' .. job_name() .. '), unsaved (waits for '
-                .. 'Save). ' .. job_name() .. ' wins over char.lua, char.lua over everyone. Hover a setting\'s '
-                .. 'name for what it does and its key.')
+            if imgui.IsItemHovered() then set_tip(legend) end
         end
         imgui.Separator()
         local find = string.lower(ui.settingsFind[1] or '')
         local target = ui.settingsTarget
         -- categories on the left (hidden while searching: a search looks through all of them)
-        local jobCat = job_abbr() .. ' options'
+        local jobCat = 'This job (' .. job_abbr() .. ')'
         if find == '' then
             imgui.BeginChild('##set_cats', CAT_W, 0)
             local cats = { 'Home' }
@@ -1187,7 +1260,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             for _, entry in ipairs(JOB) do
                 if hit(entry[1]) and (entry[1] ~= 'profile.Packer') then
                     if not any then imgui.Separator(); imgui.TextColored(palette.blue, job_name() .. "'s own options"); any = true end
-                    job_row(entry)
+                    if entry[1] == 'WeaponRoles' then roles_row(entry) else job_row(entry) end
                 end
             end
         elseif ui.settingsCat == 'Home' then
@@ -1195,7 +1268,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         elseif ui.settingsCat == 'Modes' then
             modes_tab()
         elseif ui.settingsCat == 'job options' then
-            imgui.TextColored(palette.blue, job_abbr() .. ' options')
+            imgui.TextColored(palette.blue, 'This job (' .. job_abbr() .. ')')
             imgui.SameLine()
             imgui.TextColored(palette.dim, '(in ' .. job_name() .. ', for ' .. char_name() .. ' on ' .. job_abbr()
                 .. ': written by Save)')

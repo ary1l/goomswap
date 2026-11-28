@@ -136,8 +136,8 @@ Ear1 = { Name = 'Schere Earring', When = { mpp = { ge = 10 } }, Else = 'Telos Ea
 
 `When` takes a rule's conditions (`hpp`, `mpp`, `tp`, `buff`...: [Rules](rules.md)); it is checked as the gear goes
 on, every time, idle and engaged too. A set without one keeps the piece (your `Sleeping` set can keep Vim Torque to
-wake you). In `/gcedit`: right-click a slot, **Fallback** (HP %, MP % or TP below a number, and the piece); it stays
-when you change the slot's piece.
+wake you). In `/gcedit`: right-click a slot, **Fallback** (HP %, MP % or TP below a number, and a piece you own); it stays
+when you change the slot's piece. The card shows a blue **if**: hover it for the condition.
 
 ## Tips
 

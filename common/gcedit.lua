@@ -48,10 +48,18 @@ local function set_tip(t)
         end
         if widest > at then at = widest + 16 end
     end
+    -- a last "Key: x" paragraph (the internal name) is drawn grey, under what the text says
+    local main, key = string.match(t, '^(.-)\n\nKey: ([^\n]+)$')
     imgui.PushStyleColor(ImGuiCol_PopupBg, { 0.055, 0.06, 0.08, 1 })
     imgui.BeginTooltip()
     imgui.PushTextWrapPos(at)
-    imgui.TextUnformatted(t)
+    imgui.TextUnformatted(main or t)
+    if key ~= nil then
+        imgui.Spacing()
+        imgui.PushStyleColor(ImGuiCol_Text, { 0.55, 0.58, 0.65, 1 })
+        imgui.TextUnformatted('Key: ' .. key)
+        imgui.PopStyleColor()
+    end
     imgui.PopTextWrapPos()
     imgui.EndTooltip()
     imgui.PopStyleColor()
