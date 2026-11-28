@@ -42,6 +42,8 @@ local settings = {
         .. 'A spell is its exact name. "Cure/Cura... while Daybreak or Bunzi\'s Rod in hand": any spell starting '
         .. 'with Cure or Cura, only while one of those is in Main or Sub.',
         "{ 'Dia II', { Spells = { 'Cure' }, Worn = { 'Daybreak' } } }" },
+    EditorKeepSize = { "Off: the editor and GoomSwap settings open at their own spot and size each time (made for "
+        .. '2560 x 1080, scaled to your screen). On: they open where and as big as you left them.' },
     EditorSpacing = { "The set editor's slot cards: Compact (icons; name and stats on hover) or Comfortable (each piece named). Its Editor menu sets it too.", 'Comfortable' },
     EditorIgnoreSuggestions = { 'Exact set names /gcedit no longer suggests (the add list, Related tab), any case.', "{ 'Singing' }" },
     EditorBackupKeep = { 'Newest dated /gcedit backups kept per job file after a save. 0 = keep all.', '3' },
@@ -85,7 +87,7 @@ local settings = {
 local job = {
     { 'WeaponModes', 'The /wm cycle: one Weapon_<Name> set each. Add one: + /wm mode (WEAPONS heading); take one out: delete its Weapon_ set (Save does the list); right-click a Weapon_ set to move it earlier or later.', nil, "{ 'None' }", true },
     { 'DefaultWeapons', "What /wm starts on at load and /wm default goes back to: a mode's name, or slots.", "{ Weapons = 'Naegling', Range = 'Anarchy +2' }", 'None' },
-    { 'WeaponRoles', '/wm shortcuts: melee, ranged, caster, tank, or a word of your own (lower case): the mode each one picks. A shortcut wins over a mode of the same name.', "{ melee = 'Savage', ranged = 'Leaden', aoe = 'Club' }" },
+    { 'WeaponRoles', '/wm shortcuts: words of your own (lower case: aoe, melee...), each the /wm mode it picks. A shortcut wins over a mode of the same name.', "{ melee = 'Savage', ranged = 'Leaden', aoe = 'Club' }" },
     { 'MainModes', '/mw picks: these first, in order; every item your Weapon_ sets put in Main follows anyway.', "{ 'None', 'Naegling' }" },
     { 'SubModes', '/subw picks: these first, in order; every item your Weapon_ sets put in Sub follows anyway.', "{ 'None', 'Duban' }" },
     { 'RangeModes', '/rw picks: these first, in order; every item your Weapon_ sets put in Range follows anyway.', "{ 'None', 'Anarchy +2' }" },
@@ -158,7 +160,7 @@ local names = {
     IdleWeapons = "Idle sets' weapons win out of combat", AftermathHold = 'Keep weapons during Aftermath',
     HoldExempt = 'Always swap weapons for', SmartSwap = 'SmartSwap', SmartSwapTP = 'SmartSwap from TP',
     KeepWeaponsFor = 'Never swap weapons for', EditorIgnoreSuggestions = 'Hidden set suggestions',
-    EditorBackupKeep = 'Backups kept per job file', EditorSpacing = 'Editor spacing', EditorGroups = 'Set list headings', EditorHidden = 'Hidden headings',
+    EditorBackupKeep = 'Backups kept per job file', EditorSpacing = 'Editor spacing', EditorKeepSize = 'Keep window sizes', EditorGroups = 'Set list headings', EditorHidden = 'Hidden headings',
     EditorSort = 'Heading sort order', EditorOrder = 'Your set order', EnchantWindow = 'Enchanted item wait (s)',
     EnchantDelays = 'Enchanted item waits', ReceivedSets = 'Sets for spells on their way to you',
     ReceivedWindow = 'Received set time (s)', MyBoxes = 'Your boxes (Multisend)', ElementReport = 'Chat line for element gear',
@@ -192,7 +194,7 @@ local categories = {
     { 'Bar & HUD', { 'DisplayBar', 'BarHide', 'DisplayBarX', 'DisplayBarY', 'HUDOwners', 'HUDAbbr', 'WeaponClass',
         'Theme' } },
     -- EditorGroups / EditorHidden / EditorSort / EditorOrder: the set list's own (its headings' menus): All (advanced)
-    { 'Editor', { 'EditorSpacing', 'EditorBackupKeep', 'EditorIgnoreSuggestions' } },
+    { 'Editor', { 'EditorSpacing', 'EditorKeepSize', 'EditorBackupKeep', 'EditorIgnoreSuggestions' } },
 }
 
 return { settings = settings, job = job, advanced = advanced, limits = limits, jobOnly = jobOnly, names = names,

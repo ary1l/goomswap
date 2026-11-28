@@ -82,6 +82,7 @@ do
             EditorBackupKeep = 3,
             -- /gcedit spacing: 'Compact' or 'Comfortable' (its Editor menu sets it here)
             EditorSpacing = 'Compact',
+            EditorKeepSize = false, -- the editor and settings windows: true opens them as you left them
             -- /gcedit heading order and your own headings ({ 'Weapons', 'Idle', { 'Two-handed', 'Tp_Chango' } }); the
             -- editor's right-click menus write it to char.lua (docs/gcedit.md, Headings)
             EditorGroups = nil,
@@ -946,10 +947,8 @@ do
                 elseif want == 'default' then
                     gcinclude.SetWeaponCycle('Weapons', gcinclude.DefaultWeapons or 'None', true)
                 elseif (type(gcinclude.WeaponRoles) == 'table') and (gcinclude.WeaponRoles[want] ~= nil) then
+                    -- a shortcut of the job file's (any word; melee, ranged... are only examples)
                     gcinclude.SetWeaponCycle('Weapons', gcinclude.WeaponRoles[want])
-                elseif gcinclude.WeaponRoleNames:contains(want) then
-                    gcinclude.Err('/wm ' .. want .. ': no gcinclude.WeaponRoles entry for it')
-                    return
                 elseif not gcinclude.SetWeaponCycle('Weapons', arg, #words > 1) then
                     -- /wm <mode> <sub>: the mode, then a Sub pick over it (/wm cali bunzi)
                     if (#words < 2) or not gcinclude.SetWeaponCycle('Weapons', words[1]) then return end

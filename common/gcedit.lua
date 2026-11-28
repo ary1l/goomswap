@@ -4,6 +4,7 @@
 -- Icons use game item bitmaps; texture loading follows Thorny's tHotBar (MIT).
 
 local gcedit = {}
+gcedit.VERSION = 'v1.0' -- the Editor menu's and Settings' Home page's
 local editorUI = gFunc.LoadFile('common\\gceditui.lua')
 local editorPreferences = editorUI.State
 local editorPanels = editorUI.Panels
@@ -2155,8 +2156,14 @@ local function body()
                 imgui.TextUnformatted(profiler.Report(name))
             end
         end
-        imgui.TextColored(palette.dim, 'GoomSwap v3.30')
+        imgui.TextColored(palette.dim, 'GoomSwap ' .. gcedit.VERSION)
         imgui.EndPopup()
+    end
+    -- the settings window's Home page asks for these too (its buttons): done here, where they live
+    local asked = editorState.ui.toolsAsk
+    if asked ~= nil then
+        editorState.ui.toolsAsk = nil
+        if tools[asked] ~= nil then tools[asked] = true end
     end
     if tools.backups then editorState.ui.backups = { open = true } end
     ctx.draw_backups()
@@ -2501,8 +2508,12 @@ local function render()
     ctx.CARD_W, ctx.CARD_NAMES = density.card, density.names -- Compact: icon cards; Comfortable: named ones
     local timing = profiler.Start()
     local display = imgui.GetIO().DisplaySize
-    imgui.SetNextWindowSize(editorPanels.WindowSize(display.x or display[1], display.y or display[2]),
-        ImGuiCond_FirstUseEver)
+    -- its own spot and size each time it opens (EditorKeepSize: as you left it, ImGui's)
+    local keepSize = (settingsFiles.Get('EditorKeepSize') == true)
+    local openCond = keepSize and ImGuiCond_FirstUseEver or (ImGuiCond_Appearing or 8)
+    local ePos, eSize = editorPanels.DefaultRect('editor', display.x or display[1], display.y or display[2])
+    if imgui.SetNextWindowPos ~= nil then imgui.SetNextWindowPos(ePos, openCond) end
+    imgui.SetNextWindowSize(eSize, openCond)
     if imgui.SetNextWindowSizeConstraints ~= nil then -- dragged no smaller than stays readable; a binding that
         pcall(imgui.SetNextWindowSizeConstraints, editorPanels.MIN_SIZE, { 100000, 100000 }) -- refuses: no floor
     end
@@ -2556,8 +2567,15 @@ local function render()
     -- the Settings window: its own, in the editor's colours (still pushed)
     if ok and editorState.open and (editorState.ui.settingsOpen ~= nil) and editorState.ui.settingsOpen[1] then
         settingsPanel = settingsPanel or gFunc.LoadFile('common\\gceditsettingsui.lua')(imgui, palette, set_tip,
-            settingsFiles, editorGroups, setFile, editorState, feedback)
-        if imgui.SetNextWindowSize ~= nil then imgui.SetNextWindowSize({ 980, 600 }, ImGuiCond_FirstUseEver or 4) end
+            settingsFiles, editorGroups, setFile, editorState, feedback, gcedit.VERSION)
+        if imgui.SetNextWindowSize ~= nil then
+            local d = imgui.GetIO().DisplaySize
+            local cond = (settingsFiles.Get('EditorKeepSize') == true) and (ImGuiCond_FirstUseEver or 4)
+                or (ImGuiCond_Appearing or 8)
+            local sPos, sSize = editorPanels.DefaultRect('settings', d.x or d[1], d.y or d[2])
+            if imgui.SetNextWindowPos ~= nil then imgui.SetNextWindowPos(sPos, cond) end
+            imgui.SetNextWindowSize(sSize, cond)
+        end
         if (imgui.SetNextWindowSizeConstraints ~= nil) and (settingsPanel.MinWidth ~= nil) then -- every name whole
             pcall(imgui.SetNextWindowSizeConstraints, { settingsPanel.MinWidth(), 320 }, { 100000, 100000 })
         end
