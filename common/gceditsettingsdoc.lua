@@ -85,7 +85,7 @@ local settings = {
 local job = {
     { 'WeaponModes', 'The /wm cycle: one Weapon_<Name> set each. Add one: + /wm mode (WEAPONS heading); take one out: delete its Weapon_ set (Save does the list); right-click a Weapon_ set to move it earlier or later.', nil, "{ 'None' }", true },
     { 'DefaultWeapons', "What /wm starts on at load and /wm default goes back to: a mode's name, or slots.", "{ Weapons = 'Naegling', Range = 'Anarchy +2' }", 'None' },
-    { 'WeaponRoles', '/wm melee, ranged, caster or tank: the mode each one picks.', "{ melee = 'Savage', ranged = 'Leaden' }" },
+    { 'WeaponRoles', '/wm shortcuts: melee, ranged, caster, tank, or a word of your own (lower case): the mode each one picks. A shortcut wins over a mode of the same name.', "{ melee = 'Savage', ranged = 'Leaden', aoe = 'Club' }" },
     { 'MainModes', '/mw picks: these first, in order; every item your Weapon_ sets put in Main follows anyway.', "{ 'None', 'Naegling' }" },
     { 'SubModes', '/subw picks: these first, in order; every item your Weapon_ sets put in Sub follows anyway.', "{ 'None', 'Duban' }" },
     { 'RangeModes', '/rw picks: these first, in order; every item your Weapon_ sets put in Range follows anyway.', "{ 'None', 'Anarchy +2' }" },
@@ -170,7 +170,7 @@ local names = {
     HUDAbbr = 'Short names you can type', WeaponClass = 'Weapon colours', LockstyleSet = 'Lockstyle set',
     CapacityCapes = 'Capacity capes', JubileeSlot = 'Jubilee Ring slot', BarHide = 'Hidden on the bar', SleepCancelStoneskin = 'Cancel Stoneskin when asleep',
     -- the job file's own
-    WeaponModes = '/wm modes', DefaultWeapons = 'Weapons on load', WeaponRoles = '/wm melee, ranged, caster, tank',
+    WeaponModes = '/wm modes', DefaultWeapons = 'Weapons on load', WeaponRoles = '/wm shortcuts',
     MainModes = '/mw picks', SubModes = '/subw picks', RangeModes = '/rw picks', AmmoModes = '/ammoset picks', WeaponItemMap = 'Pick names for exact items',
     AlwaysDualWield = 'Always dual wield', MeleeModes = '/mset modes', NukeModes = '/nukeset modes',
     ['profile.Packer'] = 'Packer', CureObi = 'Obi on cures', SafeAmmo = 'Ammo when a shot is stopped',
