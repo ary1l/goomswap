@@ -1455,7 +1455,7 @@ function gcinclude.EquipMode(prefix)
     end
     wear(weaponVariant(prefix, weapon), '')
     local mode = gcdisplay.GetCycle('MeleeSet')
-    if (mode == 'Default') then return end
+    if (mode == 'Default') or (mode == 'Unknown') then return end -- Unknown: not made yet (at load)
     local n = prefix .. '_' .. mode
     local set = gcinclude.FindSet(n) -- index, not LAC's scan of every set
     local both = weaponVariant(prefix, weapon, '_' .. mode)
@@ -1478,7 +1478,8 @@ function gcinclude.EquipIdle()
     local w = weaponVariant('Idle', weapon)
     if (w ~= nil) then gFunc.EquipSet(w) end
     local mode = gcdisplay.GetCycle('IdleSet')
-    if (mode == nil) or (mode == 'Default') then return end
+    -- Unknown: the cycle isn't made yet (the first equip at load runs before Initialize): as Default
+    if (mode == nil) or (mode == 'Default') or (mode == 'Unknown') then return end
     local player = gData.GetPlayer()
     if (player == nil) or (player.Status ~= 'Idle') then return end
     local n = 'Idle_' .. mode
