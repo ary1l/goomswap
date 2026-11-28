@@ -290,6 +290,29 @@ function G.Import(text)
     for _, name in ipairs(tops) do
         if type(env.sets[name]) == 'table' then visit(env.sets[name], { name }) end
     end
+    -- SomeAcc / FullAcc (Selindrile's accuracy steps) fold into Acc, GoomSwap's one (/mset acc, /wsset acc): the
+    -- file's own Acc set kept where it has one, else the first of them in the file's order becomes it
+    local dropped, renamed, kept = {}, {}, {}
+    for _, n in ipairs(out.order) do
+        local acc = string.gsub(string.gsub(n, '_[Ss]ome[Aa]cc%f[%W_]', '_Acc'), '_[Ff]ull[Aa]cc%f[%W_]', '_Acc')
+        if acc == n then
+            kept[#kept + 1] = n
+        elseif out.sets[acc] ~= nil then
+            dropped[#dropped + 1] = n
+            out.sets[n], out.from[n] = nil, nil
+        else
+            renamed[#renamed + 1] = n .. ' -> ' .. acc
+            out.sets[acc], out.from[acc], out.sets[n], out.from[n] = out.sets[n], out.from[n], nil, nil
+            kept[#kept + 1] = acc
+        end
+    end
+    out.order = kept
+    if (#dropped + #renamed) > 0 then
+        out.notes[#out.notes + 1] = 'SomeAcc / FullAcc folded into Acc (/mset acc): ' .. #dropped .. ' left out (an Acc '
+            .. 'set there already: ' .. table.concat(dropped, ', ', 1, math.min(#dropped, 6))
+            .. ((#dropped > 6) and '...' or '') .. ')'
+            .. ((#renamed > 0) and ('; renamed: ' .. table.concat(renamed, ', ')) or '')
+    end
     -- Mote's / Selindrile's mode lists, as text (comments dropped): state.Weapons:options('Naegling', ...),
     -- OffenseMode, HybridMode, WeaponskillMode. For the /wm and /mset lists (G.ModeLists) and the notes below.
     local plain = string.gsub(string.gsub(text, '%-%-%[(=*)%[.-%]%1%]', ''), '%-%-[^\n]*', '')
@@ -485,7 +508,7 @@ function G.ModeLists(text, imported, whole)
     end
     for _, m in ipairs(opts.Weapons or {}) do addw(made[string.lower(m)]) end -- the file's order first
     for _, n in ipairs(imported.order) do addw(string.match(n, '^Weapon_(%w+)$')) end
-    local ms, mseen = {}, { default = true, normal = true, am = true, am3 = true }
+    local ms, mseen = {}, { default = true, normal = true, am = true, am3 = true, someacc = true, fullacc = true } -- Acc
     -- the file's OffenseMode / HybridMode options when it has them (Normal is Default), else every Tp_ mode
     for _, st in ipairs({ 'OffenseMode', 'HybridMode' }) do
         for _, m in ipairs(opts[st] or {}) do
