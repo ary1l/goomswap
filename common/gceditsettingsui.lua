@@ -879,6 +879,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         W.Pill(text, tag_colors((how == 'staged') and 'staged' or ((v ~= nil) and 'job' or 'default')))
     end
     local function editable_how(how) return (how ~= 'code') and not string.match(how or '', '^set in') end
+    local shortcutBox = { name = { '' }, mode = nil } -- the Modes tab's new /wm shortcut, as typed
     local function modes_tab()
         imgui.TextColored(palette.blue, job_abbr() .. ' modes')
         imgui.SameLine()
@@ -918,25 +919,78 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             for _, m in ipairs(wm) do if m ~= 'None' then opts[#opts + 1] = m end end
             imgui.SetCursorPosX(LABEL_W)
             if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
-            imgui.TextColored(palette.dim, 'Shortcuts: /wm melee, /wm ranged, /wm caster and /wm tank switch to the '
-                .. 'mode picked below. Use them in macros: they keep working when you rename or add modes.')
+            imgui.TextColored(palette.dim, 'Shortcuts: /wm melee, /wm ranged, /wm caster, /wm tank and any you add '
+                .. 'switch to the mode picked beside them. Use them in macros: they keep working when you rename or '
+                .. 'add modes.')
             if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
-            for i, r in ipairs({ 'melee', 'ranged', 'caster', 'tank' }) do
+            local function stage(r, mode) -- mode false / nil: that shortcut taken out
+                local t = {}
+                for k, x in pairs((type(roles) == 'table') and roles or {}) do t[k] = x end
+                t[r] = mode or nil
+                files.StageJob('WeaponRoles', (next(t) ~= nil) and t or files.REMOVE)
+            end
+            -- the four built-in ones (/wm says when one has no mode), then yours, A-Z
+            local names, builtin = { 'melee', 'ranged', 'caster', 'tank' }, { melee = true, ranged = true,
+                caster = true, tank = true }
+            local own = {}
+            for k in pairs((type(roles) == 'table') and roles or {}) do
+                if not builtin[k] then own[#own + 1] = k end
+            end
+            table.sort(own)
+            for _, k in ipairs(own) do names[#names + 1] = k end
+            for i, r in ipairs(names) do
                 name_cell('/wm ' .. r)
                 if imgui.IsItemHovered() then
                     set_tip('WeaponRoles\n\nTyping /wm ' .. r .. ' (or a macro with it) switches /wm to the mode '
-                        .. 'picked here. (none): /wm ' .. r .. ' says it has no mode.')
+                        .. 'picked here.' .. (builtin[r] and (' (none): /wm ' .. r .. ' says it has no mode.') or ''))
                 end
                 imgui.SameLine(LABEL_W)
                 local cur = (type(roles) == 'table') and roles[r] or nil
                 local nv = W.Pick('mode_role_' .. r, (cur ~= nil) and tostring(cur) or '(none)', opts, 200)
-                if nv ~= nil then
-                    local t = {}
-                    for k, x in pairs((type(roles) == 'table') and roles or {}) do t[k] = x end
-                    t[r] = (nv ~= false) and nv or nil
-                    files.StageJob('WeaponRoles', (next(t) ~= nil) and t or files.REMOVE)
+                if nv ~= nil then stage(r, nv) end
+                if not builtin[r] then
+                    imgui.SameLine()
+                    if W.Button('x##role_x_' .. r, 'danger') then stage(r, nil) end
+                    if imgui.IsItemHovered() then set_tip('Click to remove /wm ' .. r .. '.') end
                 end
                 if i == 1 then job_pill(roles, rhow) end
+            end
+            -- a new one: a plain word, not a mode's name (it would hide the mode) nor default / none / force
+            local nb = shortcutBox
+            imgui.SetCursorPosX(LABEL_W)
+            imgui.TextColored(palette.dim, '/wm')
+            imgui.SameLine()
+            imgui.PushItemWidth(110)
+            imgui.InputTextWithHint('##role_new', 'e.g. aoe', nb.name, 24)
+            imgui.PopItemWidth()
+            imgui.SameLine()
+            local pick = W.Pick('mode_role_new', nb.mode or '(pick a mode)', opts, 160)
+            if pick ~= nil then nb.mode = pick or nil end
+            imgui.SameLine()
+            local word = string.lower(W.Trim(nb.name[1]))
+            local why = nil
+            if word ~= '' then
+                local taken = (word == 'default') or (word == 'none') or (word == 'force')
+                local dup = builtin[word] or ((type(roles) == 'table') and (roles[word] ~= nil))
+                if not string.match(word, '^%a%w*$') then why = 'one word, letters and digits'
+                elseif taken then why = '/wm ' .. word .. ' is taken'
+                elseif dup then why = 'already a shortcut'
+                else
+                    for _, m in ipairs(wm) do
+                        if string.lower(m) == word then why = "a mode's name: it would hide that mode" end
+                    end
+                end
+            end
+            if W.Button('+ Add##role_add', 'accent') and (word ~= '') and (why == nil) and (nb.mode ~= nil) then
+                stage(word, nb.mode)
+                nb.name[1], nb.mode = '', nil
+            end
+            if imgui.IsItemHovered() then
+                set_tip('Add your own shortcut: /wm <word> switches to the mode you pick.')
+            end
+            if why ~= nil then
+                imgui.SetCursorPosX(LABEL_W)
+                imgui.TextColored(palette.warn, why)
             end
         end
         section('Slot picks', '/mw /subw /rw /ammoset: one item each, every item in a Weapon_ set is one already')
