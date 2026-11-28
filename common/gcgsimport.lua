@@ -141,6 +141,16 @@ local function join(list, from)
     for i = from, #list do out[#out + 1] = tostring(list[i]) end
     return table.concat(out, '_')
 end
+-- A spell's name, as the game has it (in game: the resource manager), of that skill when one is named (the
+-- resource's Skill id: Windower res skills 32-44); false outside the game.
+local SKILL_IDS = { ['Divine Magic'] = 32, ['Healing Magic'] = 33, ['Enhancing Magic'] = 34,
+    ['Enfeebling Magic'] = 35, ['Elemental Magic'] = 36, ['Dark Magic'] = 37, ['Summoning Magic'] = 38,
+    Ninjutsu = 39, Singing = 40, ['Blue Magic'] = 43, Geomancy = 44 }
+function G.IsSpell(name, skill)
+    local ok, r = pcall(function() return AshitaCore:GetResourceManager():GetSpellByName(name, 0) end)
+    return ok and (r ~= nil) and ((skill == nil) or (r.Skill == SKILL_IDS[skill]))
+end
+
 -- path: { 'precast', 'WS', 'Savage Blade' }. A GoomSwap set name, or { buff = 'Haste' } for Buffs['Haste'] ({ buff,
 -- idle = true }: Buffs_Idle).
 function G.Name(path)
@@ -326,14 +336,22 @@ function G.Import(text, items)
             .. 'for (HoldExempt)', true },
         TPEat = { 'idle gear for TP above 10' }, HPDown = { 'its own HP-down swaps' },
         latent_refresh_grip = { 'a grip for a staff under 51% MP', true },
-        DWMax = { 'its dual-wield swaps' }, DWEarrings = { 'its dual-wield swaps' } }
+        DWMax = { 'its dual-wield swaps' }, DWEarrings = { 'its dual-wield swaps' },
+        HPCure = { 'its cure cheat (cures after an HP-down swap)' },
+        MP = { 'nothing in Selindrile\'s code puts it on' } }
+    local SKIPPED = { { '_Fodder', 'Fodder mode versions (weak mobs)' }, { 'HighTierNuke', 'high-tier nuke versions: '
+        .. "GoomSwap's nuke set is Elemental Magic" }, { '^Idle_Sphere', "Selindrile's Sphere idle mode" },
+        { '^Blue Magic_Physical%u', 'Blue Magic by stat: BLU has one physical set (BluPhysical)' },
+        { '^Blue Magic_Magical%u', 'Blue Magic by stat: BLU has one magical set (BluMagical)' } }
     local LIGHT = { "cures in Light day or weather (GoomSwap's CureObi puts the obi on)" }
     local IDLEDT = { '/dt and /mdt put Dt and mdt over idle' }
     local PROC = { 'proc modes (/proc wears Proc engaged, Ws_Proc on a weapon skill)' }
+    local SPELLTH = { "spells' TH versions (/th puts the TH set on over a spell's set)" }
     -- named sets GoomSwap wears under its own name (latent_refresh: idle under 51% MP is the auto Idle_Refresh);
     -- left out when the file has that set already
     local RENAME = { Self_Refresh = 'Refresh_Self', Self_Healing = 'Cure_Self', latent_refresh = 'Idle_Refresh',
-        MagicBurst = 'Elemental Magic_Burst', IntEnfeebles = 'Int_Enfeebling', MndEnfeebles = 'Mind_Enfeebling' }
+        MagicBurst = 'Elemental Magic_Burst', IntEnfeebles = 'Int_Enfeebling', MndEnfeebles = 'Mind_Enfeebling',
+        Preshot_Flurry = 'Preshot_FlurryI', Preshot_Flurry2 = 'Preshot_FlurryII' }
     local hasMdt = false -- sets.defense.MDT: /mdt wears it, MEVA left out
     for _, n in ipairs(out.order) do
         if string.lower(tostring(out.from[n] or '')) == 'defense.mdt' then hasMdt = true end
@@ -346,6 +364,10 @@ function G.Import(text, items)
             d = { 'magic evasion: /mdt wears the file\'s MDT set' }
         end
         if (d == nil) and (string.match(n, '^LightDay') or string.match(n, '^LightWeather')) then d = LIGHT end
+        if (d == nil) and string.match(n, '_TH$') and (string.sub(from, 1, 8) == 'midcast.') then d = SPELLTH end
+        for _, sk in ipairs(SKIPPED) do
+            if (d == nil) and string.find(n, sk[1]) then d = { sk[2] } end
+        end
         if (d == nil) and (string.match(n, '^Idle_[PM]?DT$') or string.match(n, '^Idle_[PM]?DT_')) then d = IDLEDT end
         local cast = string.match(from, '^precast') or string.match(from, '^midcast') -- WS, spells, abilities
         if (d == nil) and cast and string.match(n, '_Proc$') and (n ~= 'Ws_Proc') then d = PROC end -- Ws_Proc: /proc's
@@ -377,6 +399,24 @@ function G.Import(text, items)
         end
     end
     out.order = left
+    local bySpell = {}
+    -- the engine's own children stay (Elemental Magic_Burst is the magic burst set, not the spell Burst), and the
+    -- spell must be of that skill (Blue Magic_Stun is Selindrile's blue magic stuns, not the spell Stun)
+    local CHILD = { Burst = true, Self = true, Others = true, Dt = true, Precast = true }
+    for i, n in ipairs(out.order) do
+        local skill, spell = string.match(n, '^([%a ]-Magic)_(.+)$')
+        if (skill == nil) then skill, spell = string.match(n, '^(Ninjutsu)_(.+)$') end
+        if (skill == nil) then skill, spell = string.match(n, '^(Singing)_(.+)$') end
+        if (spell ~= nil) and not CHILD[spell] and (out.sets[spell] == nil) and G.IsSpell(spell, skill) then
+            bySpell[#bySpell + 1] = n .. ' -> ' .. spell
+            out.sets[spell], out.from[spell], out.sets[n], out.from[n] = out.sets[n], out.from[n], nil, nil
+            out.order[i] = spell
+        end
+    end
+    if #bySpell > 0 then
+        out.notes[#out.notes + 1] = 'a skill\'s set for one spell, as that spell\'s set (worn by name): '
+            .. table.concat(bySpell, ', ')
+    end
     for _, n in ipairs(left) do
         if takenNote[n] ~= nil then out.notes[#out.notes + 1] = takenNote[n] end
     end
@@ -707,7 +747,7 @@ function G.ModeLists(text, imported, whole)
     for _, m in ipairs(opts.Weapons or {}) do addw(made[string.lower(m)]) end -- the file's order first
     for _, n in ipairs(imported.order) do addw(string.match(n, '^Weapon_(%w+)$')) end
     local ms, mseen = { }, { default = true, normal = true, am = true, am3 = true, someacc = true, fullacc = true,
-        dw = true } -- SomeAcc / FullAcc: Acc; DW: the engine's Tp_DW (dual wielding), no mode
+        dw = true, fodder = true } -- SomeAcc / FullAcc: Acc; DW: the engine's Tp_DW (dual wielding); Fodder: left out
     -- the file's OffenseMode / HybridMode options when it has them (Normal is Default), else every Tp_ mode
     for _, st in ipairs({ 'OffenseMode', 'HybridMode' }) do
         for _, m in ipairs(opts[st] or {}) do
@@ -771,6 +811,34 @@ function G.Draft(template, imported, info, setFile)
     if model == nil then return nil, err end
     -- Selindrile's CastingMode Resistant (magic accuracy): the example's /nukeset Macc set for that skill (a rule
     -- with mode = { nukeset = 'Macc' }, skill = 'Elemental Magic' wearing NukeACC), else left out
+    -- the example's own name for a set Selindrile names otherwise (WHM: erase, Self_Cure, Self_Refresh; BLU: its
+    -- Blue Magic sets), when the example has that set and the file doesn't
+    local has = {}
+    for _, set in ipairs(model.list) do has[set.name] = true end
+    local PREFER = { { 'Cure_Self', 'Self_Cure' }, { 'Refresh_Self', 'Self_Refresh' }, { 'StatusRemoval', 'erase' },
+        { 'Blue Magic_Physical', 'BluPhysical' }, { 'Blue Magic_Magical', 'BluMagical' },
+        { 'Blue Magic_MagicAccuracy', 'BluMagicAccuracy' }, { 'Blue Magic_Stun', 'BluStun' },
+        { 'Blue Magic_Buff', 'CMP' }, { 'Blue Magic_SkillBasedBuff', 'BluSkill' }, { 'Blue Magic_Healing', 'Cure' } }
+    local preferred = {}
+    for _, pr in ipairs(PREFER) do
+        local from, to = pr[1], pr[2]
+        if (imported.sets[from] ~= nil) and (imported.sets[to] == nil) and has[to] then
+            imported.sets[to], imported.from[to], imported.sets[from] = imported.sets[from], imported.from[from], nil
+            for i, n in ipairs(imported.order) do if n == from then imported.order[i] = to end end
+            preferred[#preferred + 1] = from .. ' -> ' .. to
+        end
+    end
+    if #preferred > 0 then
+        imported.notes[#imported.notes + 1] = 'as the example names them: ' .. table.concat(preferred, ', ')
+    end
+    -- Selindrile's sets.RecoverMP (nukes under an MP %): the example's Mp_Body, worn by its rule (BLM), if it has one
+    local mpBody = string.find(template, "wear%s*=%s*'Mp_Body'")
+    if (imported.sets.RecoverMP ~= nil) and (imported.sets.Mp_Body == nil) and mpBody then
+        imported.sets.Mp_Body, imported.from.Mp_Body, imported.sets.RecoverMP = imported.sets.RecoverMP,
+            imported.from.RecoverMP, nil
+        for i, n in ipairs(imported.order) do if n == 'RecoverMP' then imported.order[i] = 'Mp_Body' end end
+        imported.notes[#imported.notes + 1] = 'sets.RecoverMP -> Mp_Body (the example\'s: nukes at low MP)'
+    end
     -- Selindrile's sets.midcast.Lullaby: the example's Foe Lullaby set (BRD's rules wear Foe / Horde), if it has one
     if (imported.sets.Lullaby ~= nil) and (imported.sets.Foe == nil) and string.find(template, "wear%s*=%s*'Foe'") then
         imported.sets.Foe, imported.from.Foe, imported.sets.Lullaby = imported.sets.Lullaby, imported.from.Lullaby, nil
@@ -887,13 +955,36 @@ local SPELL_GROUPS = {
         .. "'Gain-STR', 'Gain-DEX', 'Gain-VIT', 'Gain-AGI', 'Gain-INT', 'Gain-MND', 'Gain-CHR' }" },
     { 'Lullaby', "{ 'Foe Lullaby', 'Foe Lullaby II', 'Horde Lullaby', 'Horde Lullaby II' }" },
 }
+-- Sets Selindrile's code puts on that no GoomSwap name does: a rule each, as the code reads (Int / Mind_Enfeebling:
+-- the RDM example's own rules; element_Dark: its is_nuke, dark; RecoverMP: GoomSwap's BLM Mp_Body rule).
+local SET_RULES = {
+    { 'Int_Enfeebling', "{ on = 'Midcast', when = { skill = 'Enfeebling Magic', name = { has = 'Poison' }, nameset = "
+        .. "false }, wear = 'Int_Enfeebling' }," },
+    { 'Mind_Enfeebling', "{ on = 'Midcast', when = { skill = 'Enfeebling Magic', name = { has = { 'Paralyze', 'Slow', "
+        .. "'Addle' } }, nameset = false }, wear = 'Mind_Enfeebling' }," },
+    { 'element_Dark', "{ on = 'Midcast', when = { element = 'Dark', name = { isnt = 'Impact' }, any = { { skill = "
+        .. "'Elemental Magic' }, { name = { has = { 'Drain', 'Aspir' } } } } }, wear = 'element_Dark' }," },
+    { 'RecoverMP', "{ on = 'Midcast', when = { skill = 'Elemental Magic', mpp = { le = 40 } }, wear = 'RecoverMP' }," },
+    { 'Self_Waltz', "{ on = 'Ability', when = { name = { start = 'Curing Waltz' }, target = 'me' }, wear = "
+        .. "'Self_Waltz' }," },
+}
 function G.GroupRules(text, imported, template)
     local rules, names = {}, {}
+    local function add(set, line)
+        if (imported.sets[set] ~= nil) and not string.find(template, "wear%s*=%s*'" .. set .. "'") then
+            rules[#rules + 1] = '        ' .. line
+            names[#names + 1] = set
+        end
+    end
     for _, g in ipairs(SPELL_GROUPS) do
-        if (imported.sets[g[1]] ~= nil) and not string.find(template, "wear%s*=%s*'" .. g[1] .. "'") then
-            rules[#rules + 1] = "        { on = 'Midcast', when = { name = " .. g[2] .. ", nameset = false }, wear = '"
-                .. g[1] .. "' },"
-            names[#names + 1] = g[1]
+        add(g[1], "{ on = 'Midcast', when = { name = " .. g[2] .. ", nameset = false }, wear = '" .. g[1] .. "' },")
+    end
+    for _, r in ipairs(SET_RULES) do add(r[1], r[2]) end
+    for _, n in ipairs(imported.order) do -- a weapon skill's TH version (Aeolian Edge_TH): with /th on
+        local ws = string.match(n, '^(.+)_TH$')
+        if (ws ~= nil) and string.match(string.lower(imported.from[n] or ''), '^precast%.ws') then
+            add(n, "{ on = 'Weaponskill', when = { name = '" .. ws .. "', toggle = { th = true } }, wear = '" .. n
+                .. "' },")
         end
     end
     if #rules == 0 then return text end
@@ -904,10 +995,10 @@ function G.GroupRules(text, imported, template)
             .. table.concat(names, ', ')
         return text
     end
-    imported.notes[#imported.notes + 1] = 'spell group sets, worn by a rule each (RULES, at the top): '
+    imported.notes[#imported.notes + 1] = 'sets Selindrile\'s code puts on, worn by a rule each (RULES, at the top): '
         .. table.concat(names, ', ')
-    return string.sub(text, 1, eol) .. "        -- /gcimport: Selindrile's spell groups, unless the spell has a set of "
-        .. 'its own\n' .. table.concat(rules, '\n') .. '\n' .. string.sub(text, eol + 1)
+    return string.sub(text, 1, eol) .. "        -- /gcimport: sets Selindrile's code puts on (spell groups: unless "
+        .. 'the spell has a set of its own)\n' .. table.concat(rules, '\n') .. '\n' .. string.sub(text, eol + 1)
 end
 
 -- Selindrile's layout: <Char>_<Job>_Gear.lua takes its augmented gear (gear.X) from <Char>-Items.lua beside it. Its
