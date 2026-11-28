@@ -482,7 +482,7 @@ function actionModel.New(context)
                 rawSource = L.by,
                 tip = label .. '\n' .. string.upper(string.sub(reason, 1, 1)) .. string.sub(reason, 2)
                     .. ((where ~= nil) and ('\nChange it: ' .. where) or '')
-                    .. ((L.by ~= label) and ('\n\n' .. L.by) or ''),
+                    .. ((L.by ~= label) and ('\n\nKey: ' .. L.by) or ''),
                 mine = is_set_label(L.by, set.name),
                 why = string.upper(string.sub(reason, 1, 1)) .. string.sub(reason, 2),
                 won = (#won > 0) and ('worn: ' .. table.concat(won, ' ')) or nil,

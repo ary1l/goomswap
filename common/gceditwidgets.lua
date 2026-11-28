@@ -198,7 +198,7 @@ return function(imgui, palette, set_tip)
                 set_tip(((opts.tip ~= nil) and (opts.tip(v) .. '\n') or '') .. 'Click to remove it.')
             end
         end
-        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end
+        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none yet)') end
         local b = box(id)
         imgui.PushItemWidth(opts.width or 200)
         local enter = imgui.InputTextWithHint('##add_' .. id, opts.hint or 'add...', b.a, 96)
@@ -254,7 +254,7 @@ return function(imgui, palette, set_tip)
                     .. 'Click to remove it.')
             end
         end
-        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end
+        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none yet)') end
         -- two plain boxes: the spell (or the start of names: Cure covers Cure IV), then what it needs in hand
         local b, held = box(id), box(id .. '_held')
         imgui.TextColored(palette.dim, 'Add a spell')
@@ -425,7 +425,7 @@ return function(imgui, palette, set_tip)
             end
             if imgui.IsItemHovered() then set_tip('Take ' .. r.name .. ' out of the list.') end
         end
-        if #rows == 0 then imgui.TextColored(palette.dim, '(none)') end
+        if #rows == 0 then imgui.TextColored(palette.dim, '(none yet)') end
         local b = box(id)
         imgui.PushItemWidth(220)
         imgui.InputTextWithHint('##' .. id .. '_new', 'item name, as the game shows it', b.a, 96)
@@ -499,7 +499,7 @@ return function(imgui, palette, set_tip)
             if button('x##' .. id .. '_x' .. i, 'danger') then out[i], changed = false, true end
             if imgui.IsItemHovered() then set_tip('Unbind ' .. W.KeyText(b[1]) .. '.') end
         end
-        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(no keys bound)') end
+        if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none yet)') end
         imgui.Spacing()
         local b = box(id)
         b.mods = b.mods or {}
