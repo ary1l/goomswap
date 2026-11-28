@@ -920,6 +920,54 @@ function G.Import(text, items)
         end
         if c >= 2 then combos[#combos + 1] = n end
     end
+    -- one pair of them becomes /mset Hybrid (GoomSwap's mid-DT mode, as MNK's), with its DW and weapon versions
+    -- (Tp_Acc_DT: Tp_Hybrid, Tp_DW_Acc_DT: Tp_DW_Hybrid): the first by the file's HybridMode order; not when the
+    -- file has a Hybrid mode of its own
+    local hasHybrid = false
+    for _, st in ipairs({ 'OffenseMode', 'HybridMode' }) do
+        for _, m in ipairs(out.modes[st] or {}) do if string.lower(m) == 'hybrid' then hasHybrid = true end end
+    end
+    for _, n in ipairs(out.order) do
+        if string.match(n, '^Tp_') and string.find(n .. '_', '_Hybrid_', 1, true) then hasHybrid = true end
+    end
+    local function pairOf(n) -- its two modes, the name with them as Hybrid, and the second mode
+        local toks, at = {}, {}
+        for t in string.gmatch(string.match(n, '^Tp_(.+)$') or '', '[^_]+') do
+            toks[#toks + 1] = t
+            if isMode[string.lower(t)] and not isWeapon[string.lower(t)] then at[#at + 1] = #toks end
+        end
+        if #at ~= 2 then return nil end
+        local new = {}
+        for i, t in ipairs(toks) do
+            if i == at[1] then new[#new + 1] = 'Hybrid' elseif i ~= at[2] then new[#new + 1] = t end
+        end
+        return toks[at[1]] .. '_' .. toks[at[2]], 'Tp_' .. table.concat(new, '_'), toks[at[2]]
+    end
+    local rank, pick, pickRank = {}, nil, nil
+    for i, m in ipairs(out.modes.HybridMode or {}) do rank[string.lower(m)] = i end
+    for _, n in ipairs((mirdain or hasHybrid) and {} or combos) do
+        local pair, _, second = pairOf(n)
+        local r = (pair ~= nil) and (rank[string.lower(second)] or 1000) or nil
+        if (r ~= nil) and ((pick == nil) or (r < pickRank)) then pick, pickRank = pair, r end
+    end
+    local hybrid, rest = {}, {}
+    for _, n in ipairs(combos) do
+        local pair, to = pairOf(n)
+        if (pick ~= nil) and (pair == pick) and (out.sets[to] == nil) then
+            out.sets[to], out.from[to], out.sets[n], out.from[n] = out.sets[n], out.from[n], nil, nil
+            for i, m in ipairs(out.order) do if m == n then out.order[i] = to end end
+            hybrid[#hybrid + 1] = n .. ' -> ' .. to
+        else
+            rest[#rest + 1] = n
+        end
+    end
+    if #hybrid > 0 then
+        out.modes.HybridMode = out.modes.HybridMode or {}
+        table.insert(out.modes.HybridMode, 'Hybrid')
+        out.notes[#out.notes + 1] = '/mset hybrid (' .. string.gsub(pick, '_', ' + ') .. ' at once): '
+            .. table.concat(hybrid, ', ')
+    end
+    combos = rest
     if (#combos > 0) and not mirdain then
         out.notes[#out.notes + 1] = 'not worn, two modes at once (/mset is one): ' .. table.concat(combos, ', ', 1,
             math.min(#combos, 6)) .. ((#combos > 6) and (' and ' .. (#combos - 6) .. ' more') or '') .. '. GoomSwap '
