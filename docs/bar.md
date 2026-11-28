@@ -22,7 +22,7 @@ HUD). Click a line to drive that box.
 | Part | Shows |
 |---|---|
 | Job / name | Yours: job box (main \| sub outline), `Atk` `Def`. Others: name (first half of the letters in the main job's colour, the rest the sub's) and job/levels |
-| Weapon | the weapon mode, coloured by its weapon (below); `+` = a slot pick (`/mw` `/sw` `/rw` `/ammoset`) changed |
+| Weapon | the weapon mode, coloured by its weapon (below); `+` = a slot pick (`/mw` `/subw` `/rw` `/ammoset`) changed |
 | Modes | `melee` `ws` `idle` `nuke` `tank` `pup` `hoxne`...; blank = that job has no such mode |
 | `def`, toggles | `def` (DT / MDT / Aminon), `sir` `th` `kite` `proc`, the job's own (`burst`, `harp`, `lock`...) |
 

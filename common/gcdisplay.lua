@@ -406,13 +406,13 @@ local TOGGLE_LABEL = { SIR = 'sir', TH = 'th', Kite = 'kite', PROC = 'proc', Bur
     String = 'harp', SongLock = 'lock' }
 local DEF_PARTS = { { 'DTset', 'dt' }, { 'MDTset', 'mdt' }, { 'Aminon', 'amin' } }
 -- Click a pill: the command that cycles it, as the HUD's cells send (ctrl+click the weapon: /mset).
-local BAR_CMD = { Weapons = 'wm', Main = 'mw', Sub = 'sw', Range = 'rw', Ammo = 'ammoset', MeleeSet = 'mset',
+local BAR_CMD = { Weapons = 'wm', Main = 'mw', Sub = 'subw', Range = 'rw', Ammo = 'ammoset', MeleeSet = 'mset',
     WsSet = 'wsset', NukeSet = 'nukeset', Weapon = 'weapon', TankSet = 'tankset', Hoxne = 'hoxne',
     PupMode = 'pupmode', IdleSet = 'idleset' }
 local BAR_TCMD = { DTset = 'dt', MDTset = 'mdt', Aminon = 'aminon', SIR = 'sir', TH = 'th', Kite = 'kite',
     Burst = 'burst',
     PROC = 'proc', String = 'forcestring', SongLock = 'songlock', Death = 'death' }
--- The weapon pill: the weapon mode (else the main pick, e.g. PLD), a + when a slot pick (/mw /sw /ammoset) is changed;
+-- The weapon pill: the weapon mode (else the main pick, e.g. PLD), a + when a slot pick (/mw /subw /ammoset) is changed;
 -- a Range pick (/rw) gets its own pill beside it.
 -- A job without either shows melee, ws and hoxne only once changed (most mages never touch them).
 local SLOT_PICKS = { 'Main', 'Sub', 'Range', 'Ammo' }
@@ -879,7 +879,7 @@ local MENU_ADD = {
         .. '+ /wm mode).' },
     Main = { ADD_PICK, 'MainModes', '/mw picks: /gcedit Settings opens on MainModes. Every Main in a Weapon_ set is '
         .. 'one already.' },
-    Sub = { ADD_PICK, 'SubModes', '/sw picks: /gcedit Settings opens on SubModes. Every Sub in a Weapon_ set is one '
+    Sub = { ADD_PICK, 'SubModes', '/subw picks: /gcedit Settings opens on SubModes. Every Sub in a Weapon_ set is one '
         .. 'already.' },
     Range = { ADD_PICK, 'RangeModes', '/rw picks: /gcedit Settings opens on RangeModes. Every Range in a Weapon_ set '
         .. 'is one already.' },

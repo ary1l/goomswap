@@ -10,8 +10,8 @@
 
 | Command | Does |
 |---|---|
-| `/wm [name\|N\|none\|default] [sub]` | Weapon mode, plus a Sub pick if named (`/wm cali bunzi`); a new mode clears `/mw` `/sw` `/rw` `/ammoset` picks for the slots its set names; `force` re-applies |
-| `/mw` `/sw` `/rw` `/ammoset [name\|none]` | One slot's pick over the mode; any TP. Picks: the job's `MainModes`/`SubModes`/`RangeModes`, then any item its `Weapon_` sets name |
+| `/wm [name\|N\|none\|default] [sub]` | Weapon mode, plus a Sub pick if named (`/wm cali bunzi`); a new mode clears `/mw` `/subw` `/rw` `/ammoset` picks for the slots its set names; `force` re-applies |
+| `/mw` `/subw` `/rw` `/ammoset [name\|none]` | One slot's pick over the mode; any TP. Picks: the job's `MainModes`/`SubModes`/`RangeModes`, then any item its `Weapon_` sets name |
 | `/dw [on\|off\|auto]` | Dual Wield: why; `off` = `_1h` always |
 | `/smartswap` | Light spells (Dia, Blink…) keep weapons at `SmartSwapTP`+ |
 | `/mset [sb\|acc\|base]` | Melee mode: `_Default` → `_SubtleBlow` → `_Acc` TP/WS sets; `acc` also wears `Midshot_Acc` (COR RNG PLD; `Midshot_<Mode>_Acc` per weapon mode) |
@@ -41,7 +41,7 @@
 | `/gcperf` | Timings in chat every 10s: idle/engaged handler, bar, gear grid, engine tick; `/gcperf off` stops |
 | `/checksets [all]` | Empty sets, bad names, wrong ear/ring (Sortie/"Right ear:" → Ear2); gear you don't own, wrong bag, other augments |
 | `/gcbuild [JOB]` | A draft job file: the job's example with only the gear you own → `<JOB>.proposed.lua`; on your job it opens in `/gcedit` to fill and save as `<JOB>.lua` ([/gcbuild](gcbuild.md)) |
-| `/gcimport <file> [JOB]` | A Windower GearSwap job file's sets (Mote's names mapped: `sets.engaged.Acc` -> `Tp_Acc`; SomeAcc / FullAcc fold into Acc; WS UncappedAtt -> `_LowBuff`) as `<JOB>.proposed.lua`, the job's example around them; it opens in `/gcedit` to save as `<JOB>.lua` (from another job: as that job's file, **Save file**, nothing loaded). Needs a GoomSwap job file loaded on the job you run it from ([Rules](rules.md) for its logic) |
+| `/gcimport <file> [JOB]` | A Windower GearSwap job file's sets (Mote's names mapped: `sets.engaged.Acc` -> `Tp_Acc`; SomeAcc / FullAcc fold into Acc; WS UncappedAtt -> `_LowBuff`; Selindrile's `<Char>-Items.lua` beside it read for its `gear.X`; its spell groups (`StatusRemoval`...) worn by a rule each; Mirdain's layout too (`Mirdain-Include`: `sets.OffenseMode.ACC` -> `Tp_Acc`, its TP mode merged into the base sets, `sets.Weapons.X` -> /wm with `Weapons.Shield` as `Weapon_X_1h`, `sets.WS` / `sets.JA` by name, its spell kinds worn by rules); item names the file misspells matched to the one item they can be, with a note) as `<JOB>.proposed.lua`, the job's example around them; it opens in `/gcedit` to save as `<JOB>.lua` (from another job: as that job's file, **Save file**, nothing loaded). Needs a GoomSwap job file loaded on the job you run it from ([Rules](rules.md) for its logic) |
 | `/gcedit [set]` | Set editor window: sets, slots with icons, gear you own; Save writes `<JOB>.lua` and reloads ([/gcedit](gcedit.md)) |
 | `/gcedit last [slot]` | The editor on the set your last action used (the set named after it, else the last set it wore), Result on that use; with a slot (`ear2`), the set that last put that slot on (as `/gcgear`'s right-click). `/gcedit Last Stand` is still the set |
 | `/gcmessages` `/gchelp` | Chat lines / help |

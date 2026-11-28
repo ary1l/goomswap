@@ -41,7 +41,7 @@ return function(o)
         pattern = 'matches (Lua pattern)',
         lt = '<', le = '<=', gt = '>', ge = '>=', eq = '=', ne = 'not' }
     local CYCLE_NAMES = { 'wm', 'mset', 'nukeset', 'idleset', 'wsset', 'tankset', 'weapon', 'pupmode', 'hoxne', 'mw',
-        'sw', 'rw', 'ammoset' }
+        'subw', 'rw', 'ammoset' }
     local TOGGLE_NAMES = { 'dt', 'mdt', 'kite', 'th', 'sir', 'proc', 'burst', 'aminon', 'death', 'songlock',
         'forcestring' }
     local TOP_NOTE = 'Goes on last, over everything GoomSwap adds by itself (weapon mode, TH, Hoxne, buff sets, obi, '
@@ -124,9 +124,31 @@ return function(o)
         local list = M.List()
         if (list == nil) or (type(name) ~= 'string') then return nil end
         local lines = {}
+        -- the spells in a GoomSwap list the rule names (inlist = 'BluMagDebuff'), as the engine has them now
+        local function spells(when)
+            local v = (type(when) == 'table') and when.inlist or nil
+            if v == nil then return '' end
+            local names = {}
+            for _, x in ipairs((type(v) == 'string') and { v } or ((type(v) == 'table') and (v[1] ~= nil) and v)
+                or { v.is, v.isnt }) do
+                for _, l in ipairs((type(x) == 'table') and x or { x }) do names[#names + 1] = l end
+            end
+            local e = (files.Engine ~= nil) and files.Engine() or nil
+            local out = ''
+            for _, l in ipairs(names) do
+                local list = (e ~= nil) and rawget(e, l) or nil
+                if type(list) == 'table' then
+                    local t = {}
+                    for _, n in ipairs(list) do t[#t + 1] = tostring(n) end
+                    out = out .. '\n  ' .. l .. ' (' .. #t .. '): ' .. table.concat(t, ', ')
+                end
+            end
+            return (out ~= '') and (out .. '\n  Change a list: GoomSwap settings, ' .. ((string.match(names[1] or '',
+                '^BluMag') and 'BLU') or 'job') .. ' options') or ''
+        end
         local function add(rule, on, extra)
             if (type(rule.wear) == 'string') and (string.lower(rule.wear) == string.lower(name)) and not rule.off then
-                lines[#lines + 1] = moment_words(on, rule.when) .. (extra or '')
+                lines[#lines + 1] = moment_words(on, rule.when) .. (extra or '') .. spells(rule.when)
             end
         end
         for _, rule in ipairs(list) do
@@ -141,7 +163,8 @@ return function(o)
             end
         end
         if #lines == 0 then return nil end
-        return { short = 'a rule: ' .. lines[1] .. ((#lines > 1) and (' (+' .. (#lines - 1) .. ')') or ''),
+        local first = string.match(lines[1], '^[^\n]*') -- the moment, not its list's spells
+        return { short = 'a rule: ' .. first .. ((#lines > 1) and (' (+' .. (#lines - 1) .. ')') or ''),
             text = 'Rules that wear it (RULES, top of the set list):\n' .. table.concat(lines, '\n') }
     end
 

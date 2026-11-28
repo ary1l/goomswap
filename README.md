@@ -88,7 +88,7 @@ More: [Set editor](docs/gcedit.md#weapon-modes-wm).
 | Command | Purpose |
 |---|---|
 | `/wm [mode] [sub]` | Weapon mode, optionally with a Sub pick; right-click the bar's weapon for a menu |
-| `/mw` `/sw` `/rw [item]` | Main/Sub/Range pick over the mode (any item in a `Weapon_` set) |
+| `/mw` `/subw` `/rw [item]` | Main/Sub/Range pick over the mode (any item in a `Weapon_` set) |
 | `/mset [mode]` | Melee mode, such as Acc or SubtleBlow |
 | `/def` | Cycle DT, MDT, Aminon and off |
 | `/th` `/sir` `/kite` | Treasure Hunter, spell interruption resistance, movement gear |

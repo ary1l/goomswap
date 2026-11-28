@@ -95,10 +95,10 @@ To add a buff set by hand: open `Buffs`, type the buff's name as the game shows 
 `Dt_<mode>`, `Savage Blade_<mode>`...), **Add**. They start empty: fill only what differs. Save adds the mode to
 `gcinclude.MeleeModes`.
 
-### Weapon picks (`/mw` `/sw` `/rw`)
+### Weapon picks (`/mw` `/subw` `/rw`)
 
 Every item in a `Weapon_` set is a pick already. Add others in **GoomSwap settings**, this job's options (`/mw`,
-`/sw`, `/rw` picks). A COR or RNG gun goes in `/rw` picks.
+`/subw`, `/rw` picks). A COR or RNG gun goes in `/rw` picks.
 
 ## Rules
 
@@ -193,7 +193,8 @@ On Compact's icon cards the words are left out; hover a card for the rest.
   layers first to last, with why each went on.
 - **Stats:** the set's totals, inherited layers included. Over them, the **caps**: haste, Fast Cast, Snapshot,
   damage taken (physical, magic, breath), each with what is over or left.
-- **Compare:** both sets' stats and the difference, or slot by slot.
+- **Compare:** both sets' stats and the difference, or slot by slot. **Pinned** stats come first and always show, equal or not (DT, PDT, MDT, HP, MP, STR, Weapon skill damage to start): click a stat's name to pin or unpin it (saved in char.lua, `EditorComparePins`).
+- **BLU spell lists:** a rule's "in GoomSwap's spell list" tooltip lists the spells; change them in GoomSwap settings, BLU options (`BluMagDebuff`... written to BLU.lua).
 - **Related:** the sets that go on with this one, in order. The ones you don't have are listed with **make**.
 - **To fill:** slots left out, missing or in a bag you can't equip from. Click one, pick the item, and you are back
   in the list for the next. **Fill all** puts one pick in every listed use.

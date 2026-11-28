@@ -11,7 +11,7 @@
 - `Weapon_<Mode>_1h` without DW (NIN 10+, DNC 20+, THF 83+, main or sub). `gcinclude.AlwaysDualWield = true` forces it.
   A Sub refused for lack of DW stays off 15s.
 - THF `/th`: `TH` weapons stay on; other jobs drop them at the tag.
-- Slot picks (`/mw` `/sw` `/rw`): any item a `Weapon_` set names, plus `MainModes`/`SubModes`/`RangeModes`. An
+- Slot picks (`/mw` `/subw` `/rw`): any item a `Weapon_` set names, plus `MainModes`/`SubModes`/`RangeModes`. An
   augmented item is picked as the bar shows it (`Rostam (B)`), or by your own label in
   `gcinclude.WeaponItemMap = { RostamA = { Name = 'Rostam', AugPath = 'A' } };`.
 - COR/RNG examples: `/wm` is the melee pair (`Weapon_Naegling`), `/rw` the gun or bow (`RangeModes`), shown as its

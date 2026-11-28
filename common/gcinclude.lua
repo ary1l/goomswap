@@ -33,7 +33,7 @@ else
 end
 
 gcinclude.AliasList = T{'gcmessages','wsdistance','dt','mdt','th','kite','mset','wsset','nukeset','burst','weapon',
-    'death','sir','tankset','proc','pupmode','wm','mw','sw','rw','ammoset','aminon','gchud','lock','unlock',
+    'death','sir','tankset','proc','pupmode','wm','mw','subw','rw','ammoset','aminon','gchud','lock','unlock',
     'hoxne','gchelp','gckey','def','gce','checksets','gcperf','smartswap','autogear','gcbar','forcestring','songlock',
     'siphon','warpring','mea','holla','dem','capacity','jubilee','abyproc','dw','dynamisrp','gcbuild','gcimport','gcedit',
     'gcconfig','idleset','gcgear'}
@@ -109,7 +109,7 @@ end
 
 gcinclude.WeaponSlots = T{1, 2, 3, 4}
 gcinclude.WeaponSlotNames = T{'Main', 'Sub', 'Range', 'Ammo'}
-gcinclude.WeaponCommands = T{wm = 'Weapons', mw = 'Main', sw = 'Sub', rw = 'Range', ammoset = 'Ammo'}
+gcinclude.WeaponCommands = T{wm = 'Weapons', mw = 'Main', subw = 'Sub', rw = 'Range', ammoset = 'Ammo'}
 gcinclude.WeaponRoleNames = T{'melee', 'ranged', 'caster', 'tank'}
 gcinclude.WeaponKeywords = T{'remove', 'displaced', 'ignore'}
 gcinclude.BlockedAmmo = T{'hauksbok'}
@@ -908,9 +908,11 @@ local rulesApi = {
     family = function(n) return gcinclude.Family(n) end,
     hasSet = function(n) return gcinclude.FindSet(n) ~= nil end, -- 'has a set named after it / its family'
     weaponPick = function() return gcinclude.IsWeaponValue(gcdisplay.GetCycle('Weapons')) == true end,
-    inList = function(list, name) -- "in GoomSwap's spell list": gcinclude.BluMagPhysical...
+    inList = function(list, name) -- "in GoomSwap's spell list": gcinclude.BluMagPhysical... (a job file's own too)
         local l = (type(list) == 'string') and rawget(gcinclude, list) or nil
-        return (type(l) == 'table') and (type(l.contains) == 'function') and (l:contains(name) == true)
+        if (type(l) ~= 'table') then return false end
+        for _, n in ipairs(l) do if (n == name) then return true end end
+        return false
     end,
     wear = function(name, exact, entry) ruleWear(name, exact, entry) end,
     equip = function(slot, item, entry) ruleEquip(slot, item, entry) end,
@@ -1256,7 +1258,7 @@ end
 -- name; then each one's <name>_<key> goes on, in the order they went on, and for <prefix>_Default also
 -- <prefix>_<key> (Ws_Default -> Ws_HighBuff, Savage_Default -> Savage_HighBuff). Keys: LowBuff / HighBuff / PDL / Acc
 -- / SubtleBlow on weapon skills (/wsset low / high / pdl / acc / sb); Self or Others (a spell on you / on anyone but a
--- monster) and Burst (BurstWanted) on spells.
+-- monster), Burst (BurstWanted) and Dt (/dt) on spells.
 gcinclude.WornSets = nil -- the names, while a handler runs
 -- /wsset mode: the child key it wears over each WS set
 gcinclude.WsSetKeys = { Low = 'LowBuff', High = 'HighBuff', PDL = 'PDL', Acc = 'Acc', SubtleBlow = 'SubtleBlow' }
@@ -1406,6 +1408,7 @@ function gcinclude.SpellChildKeys()
         elseif (target.Type ~= 'Monster') then keys[#keys + 1] = 'Others' end
     end
     if gcinclude.BurstWanted() then keys[#keys + 1] = 'Burst' end
+    if (gcdisplay.GetToggle('DTset') == true) then keys[#keys + 1] = 'Dt' end -- /dt: Cure_Dt, ['Dread Spikes_Dt']
     return keys
 end
 
@@ -1434,12 +1437,22 @@ end
 -- job file has it. A weapon with no set of its own takes <prefix>_2h / <prefix>_1h (Tp_2h_Acc), by its type. A
 -- missing <prefix>_Acc is named once, not on every HandleDefault (LAC's 'Set not found').
 local modeWarned = {}
+-- Engaged and dual wielding (gcinclude.DualWielding), Tp_DW too, and Tp_DW_<mode> with an /mset mode: over the
+-- weapon type's (Tp_1h), under the weapon mode's own (Tp_Chango), as Selindrile's combat forms rank them.
 function gcinclude.EquipMode(prefix)
     local base = gcinclude.FindSet(prefix .. '_Default')
     if (base ~= nil) then gFunc.EquipSet(base) end
     local weapon = weaponMode()
-    local w = weaponVariant(prefix, weapon)
-    if (w ~= nil) then gFunc.EquipSet(w) end
+    local dual = (prefix == 'Tp') and (gcinclude.FindSet('Tp_DW') ~= nil) and gcinclude.DualWielding()
+    -- set, then its dual wield one: before it when set is the weapon mode's own, else after
+    local function wear(set, suffix)
+        local dw = dual and gcinclude.FindSet('Tp_DW' .. suffix) or nil
+        local own = (set ~= nil) and (weapon ~= nil) and (set == gcinclude.FindSet(prefix .. '_' .. weapon .. suffix))
+        if own and (dw ~= nil) then gFunc.EquipSet(dw) end
+        if (set ~= nil) then gFunc.EquipSet(set) end
+        if not own and (dw ~= nil) then gFunc.EquipSet(dw) end
+    end
+    wear(weaponVariant(prefix, weapon), '')
     local mode = gcdisplay.GetCycle('MeleeSet')
     if (mode == 'Default') then return end
     local n = prefix .. '_' .. mode
@@ -1451,7 +1464,7 @@ function gcinclude.EquipMode(prefix)
         modeWarned[n] = true
         gcinclude.Err('no ' .. n .. ' set: ' .. prefix .. '_Default stays (add ' .. n .. ' or /mset base)')
     end
-    if (both ~= nil) then gFunc.EquipSet(both) end
+    wear(both, '_' .. mode)
 end
 
 -- The idle base: Idle, then Idle_<weapon> (as EquipMode), then Idle_<mode> over it while idle (/idleset Refresh,
@@ -1889,6 +1902,21 @@ function gcinclude.MainHands()
     return nil
 end
 
+-- Dual wielding: Dual Wield allowed (CanDualWield: job, level, /dw) and a one-handed weapon in Sub, the weapon
+-- mode's or, without one, the one worn.
+function gcinclude.DualWielding()
+    if not gcinclude.CanDualWield() then return false end
+    local layer = (gcinclude.BuildWeaponLayer ~= nil) and gcinclude.BuildWeaponLayer() or nil
+    local sub = (layer ~= nil) and layer.Sub or nil
+    local r = (sub ~= nil) and itemRes(sub) or nil
+    if not r then
+        local e = gEquip.GetCurrentEquip(2)
+        local id = (e ~= nil) and (e.Item ~= nil) and e.Item.Id or nil
+        r = (id ~= nil) and AshitaCore:GetResourceManager():GetItemById(id) or nil
+    end
+    return (r ~= nil) and gcinclude.OneHandSkills:contains(r.Skill) or false
+end
+
 -- main/sub: LAC item tables ({ Name = ... }) or nil. True when they can be worn together, or unknown.
 function gcinclude.SubFits(main, sub)
     local subName = (type(sub) == 'table') and sub.Name or sub
@@ -2194,7 +2222,7 @@ function gcinclude.Help()
     local skip, thskip = gcinclude.SkipList('SIRSkip'), gcinclude.SkipList('THSkip')
     local lines = T{
         'gcconfig : character settings path; /gcconfig init creates a missing char.lua',
-        'weapons: /wm [name|N|none|default|role] [force], /mw /sw /rw /ammoset [name|N|none] [force]',
+        'weapons: /wm [name|N|none|default|role] [force], /mw /subw /rw /ammoset [name|N|none] [force]',
         'defense: /def (cycle DT > MDT > Aminon > none), /dt /mdt /aminon (also locks main/sub, range/ammo if in the set; turns /sir off), /lock [slots|all] /unlock [slots|all]',
         'casting: /sir (SIR set over every midcast' .. ((#skip > 0) and (' except SIRSkip: ' .. table.concat(skip,
             ', ')) or '') .. '; off while Aminon is on)',

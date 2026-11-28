@@ -310,4 +310,24 @@ function stats.Compare(left, right)
     end
     return { rows = rows, left = left, right = right, warnings = warnings }
 end
+-- Compare's pinned stats (names, in order): each one's row from pair.rows, else a 0 / 0 row of that stat.
+stats.DefaultPins = { 'Damage taken', 'Physical damage taken', 'Magic damage taken', 'HP', 'MP', 'STR',
+    'Weapon skill damage' }
+function stats.Pinned(pair, names)
+    local out, byName = {}, {}
+    for _, row in ipairs(pair.rows or {}) do byName[string.lower(row.name)] = row end
+    for _, n in ipairs(names or {}) do
+        local e = aliases[normalize(n)] -- DT, PDT: the stat's own name
+        local row = byName[string.lower((e ~= nil) and e.name or n)]
+        if row == nil then
+            if e ~= nil then
+                local zero = stats.Format(0, e.unit)
+                row = { key = e.name, name = e.name, group = e.group, unit = e.unit, direction = e.direction,
+                    value = 0, before = zero, after = zero, delta = 0, deltaText = zero }
+            end
+        end
+        if row ~= nil then out[#out + 1] = row end
+    end
+    return out
+end
 return stats

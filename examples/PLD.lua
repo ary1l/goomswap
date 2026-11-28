@@ -766,7 +766,7 @@ local ByName, Family = gcinclude.ByName, gcinclude.Family;
 profile.OnLoad = function()
     gSettings.AllowAddSet = true;
     gcinclude.MainModes = {'None', 'Burtgang', 'Caliburnus'};
-    gcinclude.SubModes = {'None', 'Aegis', 'Duban'}; -- shields: /sw cycles them, /sw duban picks one (add force at 1000+ TP)
+    gcinclude.SubModes = {'None', 'Aegis', 'Duban'}; -- shields: /subw cycles them, /subw duban picks one (add force at 1000+ TP)
     gcinclude.DefaultWeapons = { Main = 'Burtgang', Sub = 'Aegis' };
     -- Rules (/gcedit, RULES): when this, wear that, as data.
     gcinclude.Rules = {

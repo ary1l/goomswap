@@ -47,7 +47,7 @@ local ELEMENTS = { 'Fire', 'Ice', 'Wind', 'Earth', 'Thunder', 'Water', 'Light', 
 local JOBS = { 'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN',
     'BLU', 'COR', 'PUP', 'DNC', 'SCH', 'GEO', 'RUN' }
 -- /wm, /mset...: the gcdisplay cycle each short name reads; any other name is read as it is.
-R.CYCLES = { wm = 'Weapons', mw = 'Main', sw = 'Sub', rw = 'Range', ammoset = 'Ammo', mset = 'MeleeSet',
+R.CYCLES = { wm = 'Weapons', mw = 'Main', subw = 'Sub', sw = 'Sub', rw = 'Range', ammoset = 'Ammo', mset = 'MeleeSet',
     nukeset = 'NukeSet', idleset = 'IdleSet', wsset = 'WsSet', tankset = 'TankSet', weapon = 'Weapon',
     pupmode = 'PupMode', hoxne = 'Hoxne' }
 R.TOGGLES = { dt = 'DTset', mdt = 'MDTset', kite = 'Kite', th = 'TH', sir = 'SIR', proc = 'PROC', burst = 'Burst',
