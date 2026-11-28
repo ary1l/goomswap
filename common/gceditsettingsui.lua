@@ -854,6 +854,28 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         end
         return nil
     end
+    -- /wm shortcuts outside Modes: a pointer there (its rows rename, remove and pick each mode from a list), with
+    -- what it holds. Lua or code in the file: its own row, as Modes shows it then.
+    local function roles_row(entry)
+        local roles, how = files.Job('WeaponRoles')
+        if ((roles ~= nil) and (type(roles) ~= 'table')) or (how == 'code') or string.match(how or '', '^set in') then
+            return job_row(entry)
+        end
+        name_cell(nice('WeaponRoles'))
+        if imgui.IsItemHovered() then set_tip(entry[2] .. '\n\nKey: WeaponRoles') end
+        imgui.SameLine(LABEL_W)
+        if imgui.SmallButton('Edit in Modes##roles_to_modes') then editorState.ui.settingsCat = 'Modes' end
+        if imgui.IsItemHovered() then
+            set_tip('Opens Modes: rename, remove or add shortcuts there, each with its mode picked from a list.')
+        end
+        local parts = {}
+        for k, m in pairs(roles or {}) do parts[#parts + 1] = '/wm ' .. tostring(k) .. ': ' .. tostring(m) end
+        table.sort(parts)
+        imgui.SameLine()
+        if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
+        imgui.TextColored(palette.dim, (#parts > 0) and table.concat(parts, ', ') or '(none yet)')
+        if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
+    end
     local function job_options()
         -- a default weapon or role nothing offers: the engine skips it at load without a word
         for _, p in ipairs((files.WeaponProblems ~= nil) and files.WeaponProblems() or {}) do
@@ -862,7 +884,9 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             imgui.PopTextWrapPos()
         end
         for _, entry in ipairs(JOB) do
-            if job_wanted(entry[1]) then job_row(entry) end
+            if job_wanted(entry[1]) then
+                if entry[1] == 'WeaponRoles' then roles_row(entry) else job_row(entry) end
+            end
             imgui.Spacing()
         end
     end
@@ -1236,7 +1260,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             for _, entry in ipairs(JOB) do
                 if hit(entry[1]) and (entry[1] ~= 'profile.Packer') then
                     if not any then imgui.Separator(); imgui.TextColored(palette.blue, job_name() .. "'s own options"); any = true end
-                    job_row(entry)
+                    if entry[1] == 'WeaponRoles' then roles_row(entry) else job_row(entry) end
                 end
             end
         elseif ui.settingsCat == 'Home' then
