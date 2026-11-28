@@ -185,6 +185,10 @@ local function read_slot(s, e)
                 out.path = read_string(s, f.vstart)
             elseif k == 'augrank' then
                 out.rank = tonumber(string.sub(s, f.vstart, f.vend - 1))
+            elseif k == 'when' then -- a fallback: When (as written) and Else (an item name)
+                out.when = string.sub(s, f.vstart, f.vend - 1)
+            elseif (k == 'else') and ((fc == "'") or (fc == '"')) then
+                out.els = read_string(s, f.vstart)
             elseif k == 'augment' then
                 local a = string.sub(s, f.vstart, f.vend - 1)
                 a = string.gsub(string.gsub(a, '%[%d+%]%s*=%s*', ''), '[{}\'"]', '')
@@ -343,6 +347,31 @@ local function item_text(name, augs, path)
         return '{ Name = ' .. q(name) .. ', Augment = { ' .. table.concat(parts, ', ') .. ' } }'
     end
     return q(name)
+end
+
+-- A slot value with its fallback ({ Name = 'Vim Torque +1', When = { hpp = { ge = 50 } },
+-- Else = 'Loricate Torque +1' }): the value's own fields kept but an old When / Else. when / els nil: the fallback taken out ('Name' again when
+-- nothing else is left).
+local function with_fallback(raw, when, els)
+    local c = string.sub(raw or '', 1, 1)
+    local base = ((c == "'") or (c == '"')) and ('{ Name = ' .. raw .. ' }') or raw
+    if string.sub(base or '', 1, 1) ~= '{' then return raw end
+    local fields = scan_table(base, 1)
+    local keep, name = {}, nil
+    for _, f in ipairs(fields) do
+        local k = (f.key ~= nil) and string.lower(f.key) or nil
+        if (k ~= 'when') and (k ~= 'else') then
+            keep[#keep + 1] = string.sub(base, f.start, f.vend - 1)
+            if k == 'name' then name = string.sub(base, f.vstart, f.vend - 1) end
+        end
+    end
+    if (when ~= nil) and (els ~= nil) then
+        keep[#keep + 1] = 'When = ' .. when
+        keep[#keep + 1] = 'Else = ' .. q(els)
+    elseif (#keep == 1) and (name ~= nil) then
+        return name
+    end
+    return '{ ' .. table.concat(keep, ', ') .. ' }'
 end
 
 -- The set's value from scratch, LAC style (only for a set whose entries share lines).
@@ -1409,6 +1438,7 @@ return {
     ChildName = child_name,
     ChildKey = child_key,
     FormatItem = item_text,
+    WithFallback = with_fallback,
     FormatKey = key_text,
     ReadCommentedSlots = ghosts_of,
     AddSlotEdits = set_splices,

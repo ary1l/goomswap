@@ -969,6 +969,22 @@ function R.Holds(rule, phase, api)
     return ok and hit or nil
 end
 
+-- A bare `when` (a set slot's fallback: { Name, When, Else }), compiled once per table: true / false, nil when it
+-- can't be read (a key it doesn't know).
+local tested = setmetatable({}, { __mode = 'k' })
+function R.Test(when, phase, api)
+    if type(when) ~= 'table' then return nil end
+    local test = tested[when]
+    if test == nil then
+        test = compile_when(when, 'fallback') or false
+        tested[when] = test
+    end
+    if test == false then return nil end
+    local ok, hit = pcall(test, context(api, phase))
+    if not ok then return nil end
+    return hit == true
+end
+
 function R.Count(compiled, phase)
     local p = compiled and compiled[phase]
     return (p ~= nil) and (#p.job + #p.top) or 0

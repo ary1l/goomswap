@@ -654,14 +654,46 @@ local function edit(set, slot, v) -- v: an owned piece { name, augs, path } or n
         editorState.document.edits[set.name][slot] = ((orig ~= nil) or (gh ~= nil)) and { remove = true } or nil
     else
         local text = setFile.FormatItem(v.name, v.augs, v.path)
+        -- the slot's fallback (When / Else) stays with a new piece there
+        local before = current(set, slot)
+        local fb = nil
+        local lname = string.lower(tostring(v.name))
+        if (before ~= nil) and (before.when ~= nil) and (before.els ~= nil) and (lname ~= 'displaced')
+            and (lname ~= 'remove') then
+            fb = { when = before.when, els = before.els }
+            text = setFile.WithFallback(text, fb.when, fb.els)
+        end
         if (orig ~= nil) and (orig.value.raw == text) then
             editorState.document.edits[set.name][slot] = nil
         else
             local augs = ((v.path == nil) and (type(v.augs) == 'table') and (#v.augs > 0))
                     and table.concat(v.augs, ', ') or nil
-            editorState.document.edits[set.name][slot] =
-                { kind = 'item', name = v.name, path = v.path, augs = augs, text = text }
+            editorState.document.edits[set.name][slot] = { kind = 'item', name = v.name, path = v.path, augs = augs,
+                text = text, when = fb and fb.when, els = fb and fb.els }
         end
+    end
+    if next(editorState.document.edits[set.name]) == nil then editorState.document.edits[set.name] = nil end
+    editorState.history.revision = editorState.document.revision
+end
+
+-- A slot's fallback (its item's When / Else: GoomSwap puts Else on when When doesn't hold): fb { when = text,
+-- els = name } sets it, nil takes it out; the piece stays.
+ctx.set_fallback = function(set, slot, fb)
+    local cur = current(set, slot)
+    if (cur == nil) or (cur.kind ~= 'item') then return end
+    editorState.history.entries = editorState.history.entries or {}
+    editorState.history.entries[#editorState.history.entries + 1] = { set = set.name, slot = slot,
+        previous = editorState.document.edits[set.name] and editorState.document.edits[set.name][slot] }
+    if #editorState.history.entries > 100 then table.remove(editorState.history.entries, 1) end
+    editorState.document.revision = editorState.document.revision + 1
+    editorState.document.edits[set.name] = editorState.document.edits[set.name] or {}
+    local text = setFile.WithFallback(cur.text or cur.raw, fb and fb.when, fb and fb.els)
+    local orig = set.slots[slot]
+    if (orig ~= nil) and (orig.value.raw == text) then
+        editorState.document.edits[set.name][slot] = nil
+    else
+        editorState.document.edits[set.name][slot] = { kind = 'item', name = cur.name, path = cur.path,
+            augs = cur.augs, text = text, when = fb and fb.when, els = fb and fb.els }
     end
     if next(editorState.document.edits[set.name]) == nil then editorState.document.edits[set.name] = nil end
     editorState.history.revision = editorState.document.revision
