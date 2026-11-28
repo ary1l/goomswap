@@ -14,6 +14,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
     local LABEL_W = 250 -- the value column
     local function nice(key) return NAMES[key] or key end -- the plain name a setting shows by
     local BOX_W = 340 -- at most: a box takes what is left of the row
+    local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip)
     -- A narrow window keeps every part: names wrap inside their column, boxes shrink, and a pill or button that
     -- doesn't fit goes under the value column instead of off the window's edge.
     local function avail_x() return (W.Vec(imgui.GetContentRegionAvail())) or 400 end
@@ -30,7 +31,6 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         imgui.TextUnformatted(text)
         if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
     end
-    local W = gFunc.LoadFile('common\\gceditwidgets.lua')(imgui, palette, set_tip)
     -- Settings drawn as controls, not Lua text: names as chips, name -> value rows, keybinds. Anything else (or a
     -- value of another shape) keeps its Lua box.
     local LIST = { SIRSkip = true, THSkip = true, MBSkills = true, ElementSkills = true, HoldExempt = true,
