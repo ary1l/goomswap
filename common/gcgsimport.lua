@@ -192,6 +192,7 @@ function G.Name(path)
     if la == 'defense' then
         if lb == 'pdt' or lb == 'dt' then return with('Dt', 3) end
         -- MDT (MagicalDefenseMode) and Selindrile's MEVA (ResistDefenseMode, DefenseMode Resist): GoomSwap's /mdt
+        -- (a file with both: MEVA left out, G.Import)
         if (lb == 'mdt') or (lb == 'meva') then return with('mdt', 3) end
         return 'Dt_' .. join(path, 2)
     end
@@ -238,7 +239,7 @@ function G.Import(text)
     walk(chunk)
     local out = { sets = {}, order = {}, buffs = {}, buffOrder = {}, idleBuffs = {}, idleBuffOrder = {}, notes = {},
         from = {} }
-    local seen = {}
+    local seen, takenNote = {}, {}
     local function visit(t, path)
         if seen[t] then return end
         seen[t] = true
@@ -267,8 +268,8 @@ function G.Import(text)
                     n = n + 1
                     name = base .. '_' .. n
                 end
-                if n > 1 then
-                    out.notes[#out.notes + 1] = 'sets.' .. table.concat(path, '.') .. ' -> ' .. name .. ' (' .. base
+                if n > 1 then -- noted below, unless left out
+                    takenNote[name] = 'sets.' .. table.concat(path, '.') .. ' -> ' .. name .. ' (' .. base
                         .. ' was taken by sets.' .. out.from[base] .. ')'
                 end
                 out.sets[name], out.order[#out.order + 1], out.from[name] = set, name, table.concat(path, '.')
@@ -297,6 +298,54 @@ function G.Import(text)
     table.sort(tops, function(a, b) if at[a] ~= at[b] then return at[a] < at[b] end return a < b end)
     for _, name in ipairs(tops) do
         if type(env.sets[name]) == 'table' then visit(env.sets[name], { name }) end
+    end
+    -- Selindrile's helper sets, put on by its own code: GoomSwap does that itself, or a set by name does. Left out
+    -- with a note, by reason; gear named only where it should go elsewhere (sets.MaxTP['Savage Blade'] too)
+    local MOONSHADE = 'ears for weapon skills at high TP or by time of day (GoomSwap takes Moonshade off at '
+        .. 'MoonshadeTP)'
+    local DROP = { MaxTP = { MOONSHADE }, AccMaxTP = { MOONSHADE }, DayMaxTPWSEars = { MOONSHADE },
+        AccDayMaxTPWSEars = { MOONSHADE }, DayWSEars = { MOONSHADE }, AccDayWSEars = { MOONSHADE },
+        Schere = { 'an ear its WS enmity-down mode puts on' }, Obi = { 'GoomSwap picks obis itself (ElementGear)' },
+        DrainWeapon = { "Drain's weapons: put them in ['Drain'], and Drain in Always swap weapons for "
+            .. '(HoldExempt)', true },
+        DreadWeapon = { "Dread Spikes' weapons: put them in ['Dread Spikes'], and Dread Spikes in Always swap weapons "
+            .. 'for (HoldExempt)', true } }
+    local hasMdt = false -- sets.defense.MDT: /mdt wears it, MEVA left out
+    for _, n in ipairs(out.order) do
+        if string.lower(tostring(out.from[n] or '')) == 'defense.mdt' then hasMdt = true end
+    end
+    local left, byWhy, whyOrder = {}, {}, {}
+    for _, n in ipairs(out.order) do
+        local d = DROP[n] or DROP[string.match(n, '^([^_]+)_') or '']
+        if (d == nil) and hasMdt and (string.lower(tostring(out.from[n] or '')) == 'defense.meva') then
+            d = { 'magic evasion: /mdt wears the file\'s MDT set' }
+        end
+        if d ~= nil then
+            local what = 'sets.' .. out.from[n]
+            if d[2] then
+                local items = {}
+                for _, slot in ipairs(SCREEN) do
+                    local v = out.sets[n][slot]
+                    if v ~= nil then
+                        items[#items + 1] = slot .. ' ' .. tostring((type(v) == 'table') and v.Name or v)
+                    end
+                end
+                what = what .. ' (' .. table.concat(items, ', ') .. ')'
+            end
+            if byWhy[d[1]] == nil then byWhy[d[1]], whyOrder[#whyOrder + 1] = {}, d[1] end
+            table.insert(byWhy[d[1]], what)
+            out.sets[n], out.from[n] = nil, nil
+        else
+            left[#left + 1] = n
+        end
+    end
+    out.order = left
+    for _, n in ipairs(left) do
+        if takenNote[n] ~= nil then out.notes[#out.notes + 1] = takenNote[n] end
+    end
+    for _, w in ipairs(whyOrder) do
+        out.notes[#out.notes + 1] = 'left out, put on by the file\'s own code: ' .. table.concat(byWhy[w], ', ')
+            .. ': ' .. w
     end
     -- SomeAcc / FullAcc (Selindrile's accuracy steps) fold into Acc, GoomSwap's one (/mset acc, /wsset acc): the
     -- file's own Acc set kept where it has one, else the first of them in the file's order becomes it
