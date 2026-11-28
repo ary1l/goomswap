@@ -768,12 +768,13 @@ end
 function gcinclude.IsHoldExempt()
     local action = gData.GetAction()
     if (action == nil) then return false end
-    if (action.ActionType == 'Spell') then
-        if gcinclude.settings.HoldExempt:contains(action.Skill) then return true end
+    local exempt = gcinclude.settings.HoldExempt
+    if (action.ActionType == 'Spell') then -- its skill (Singing) or its name (Dread Spikes)
+        if exempt:contains(action.Skill) or exempt:contains(action.Name) then return true end
         -- held only for Aftermath: a cast still gets its weapons
         return gcinclude.AftermathUp() and not gcinclude.TPHoldActive()
-    elseif (action.ActionType == 'Ability') then
-        return gcinclude.settings.HoldExempt:contains(action.Type)
+    elseif (action.ActionType == 'Ability') then -- its type (Corsair Roll) or its name
+        return exempt:contains(action.Type) or exempt:contains(action.Name)
     end
     return false
 end

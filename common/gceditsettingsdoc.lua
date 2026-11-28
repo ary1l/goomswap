@@ -28,7 +28,8 @@ local settings = {
     WeaponTPGuard = { 'At or above this TP, Main/Sub/Range stay on against automatic swaps; /wm, /mw... still swap. 0 = action sets always get their weapons.', '1000' },
     IdleWeapons = { 'Not engaged: weapons your idle sets name (Idle, Town, Dt...) beat the weapon mode. Off = the weapon mode always.' },
     AftermathHold = { 'Aftermath up: Main/Sub/Range stay on against idle/engaged swaps; spells still get theirs; /wm still swaps.' },
-    HoldExempt = { 'Spell skills and ability types that always get their weapon swaps.', "{ 'Singing', 'Geomancy', 'Corsair Roll' }" },
+    HoldExempt = { 'Spell skills and ability types that always get their weapon swaps; a spell or ability name works '
+        .. 'too (Dread Spikes).', "{ 'Singing', 'Geomancy', 'Corsair Roll', 'Dread Spikes' }" },
     SmartSwap = { 'Keeps Main/Sub/Range on for the KeepWeaponsFor spells instead of losing TP to a swap (/smartswap).' },
     SmartSwapTP = { 'SmartSwap acts only at or above this TP.', '1' },
     KeepWeaponsFor = { 'Spells that keep Main/Sub/Range: a name, or Spells (names they start with) while a Worn item is in Main or Sub.', "{ 'Dia II', { Spells = { 'Cure' }, Worn = { 'Daybreak' } } }" },

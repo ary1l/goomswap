@@ -61,7 +61,8 @@ do
             -- Aftermath up: main/sub/range held against idle/engaged swaps (a weapon change ends it); spells still get
             -- their weapons; /wm still swaps
             AftermathHold = true,
-            -- spell skills and ability types that always get their weapon swaps
+            -- spell skills and ability types (or spell / ability names: 'Dread Spikes') that always get their weapon
+            -- swaps
             HoldExempt = T{ 'Singing', 'Geomancy', 'Healing Magic', 'Enfeebling Magic', 'Enhancing Magic',
                 'Corsair Roll' },
             -- keep main/sub/range on the spells below instead of losing TP to a weapon swap, /smartswap to toggle
