@@ -58,7 +58,7 @@ Most changed:
 | `WeaponTPGuard` | 1000 | TP at which Main/Sub/Range stay on; 0 never hold |
 | `IdleWeapons` | `true` | idle sets' weapons beat the mode out of combat |
 | `MoonshadeTP` | 1750 | Moonshade below this TP; 0 never |
-| `MoonshadeSlot` | `'Ear2'` | Its ear (right); Ear1 when the WS set's Ear2 is a right-ear-only Sortie earring; a WS set's own Moonshade ear wins |
+| `MoonshadeSlot` | `'Ear1'` | Its ear (left); Ear2 when the WS set's Ear1 is a left-ear-only item; a WS set's own Moonshade ear wins |
 | `DisplayBar` | `false` | status bar on load |
 | `EditorIgnoreSuggestions` | `T{}` | exact set names hidden in `/gcedit` → `Related`; e.g. `T{'Singing'}` |
 

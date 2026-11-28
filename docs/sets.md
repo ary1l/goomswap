@@ -57,9 +57,10 @@ and its toggle wears it. Until then it falls back as the table says (`Aminon` â†
 | `XIRoll` | idle with a roll at 11 |
 | `*_Received` | a spell coming at you (`ReceivedSets`, 8s max) |
 
-- **Moonshade:** added below `MoonshadeTP` (not `MoonshadeSkip`) in `MoonshadeSlot`: Ear2 (right ear) by default; Ear1
-  (left) when the WS set's Ear2 is a Sortie or "Right ear:" item. A WS set that has Moonshade in an ear itself keeps it
-  there (imported GearSwap sets: `ear1="Moonshade Earring"`).
+- **Moonshade:** added below `MoonshadeTP` (not `MoonshadeSkip`) in `MoonshadeSlot`: Ear1 (left ear) by default; Ear2
+  when the WS set's Ear1 is a "Left ear:" item (Sortie earrings are right ear: put them in Ear2). So in a WS set, Ear1 is
+  the earring Moonshade replaces and Ear2 the one kept. A WS set that has Moonshade in an ear itself keeps it there
+  (imported GearSwap sets: `ear1="Moonshade Earring"`).
 - **Grips:** a Sub that can't go with the Main is dropped.
 - **Element gear** (`ElementSkills`, ninjutsu, Quick Draw, cures, `ElementalWS`):
   ```lua

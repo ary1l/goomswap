@@ -2861,8 +2861,8 @@ local function isMoonshade(v)
 end
 
 -- Moonshade Earring, every WS: below MoonshadeTP in the ear a WS set put it in itself (ear1="Moonshade Earring", as
--- GearSwap files have it), else settings.MoonshadeSlot (Ear2, the right ear), the other ear when the WS set has a
--- one-ear item there (a Sortie earring in Ear2). At or above MoonshadeTP, an ear the WS sets left on Moonshade goes
+-- GearSwap files have it), else settings.MoonshadeSlot (Ear1, the left ear), the other ear when the WS set has a
+-- one-ear item there (a "Left ear:" item in Ear1). At or above MoonshadeTP, an ear the WS sets left on Moonshade goes
 -- back to the last other earring those sets gave it (or stays as worn).
 function gcinclude.CheckMoonshade(trail)
     local cfg = gcinclude.settings
@@ -2872,7 +2872,7 @@ function gcinclude.CheckMoonshade(trail)
     if (player == nil) or (ws == nil) then return end
     local skip = (type(cfg.MoonshadeSkip) == 'table') and cfg.MoonshadeSkip:contains(ws.Name)
     local want = (player.TP < limit) and (not skip)
-    local slot = string.lower(cfg.MoonshadeSlot or 'Ear2')
+    local slot = string.lower(cfg.MoonshadeSlot or 'Ear1')
     local own = nil -- an ear the WS sets put Moonshade in themselves: it stays there
     for _, ear in ipairs({ 'ear1', 'ear2' }) do
         local list = trail[ear]
@@ -2880,7 +2880,7 @@ function gcinclude.CheckMoonshade(trail)
     end
     if (own ~= nil) then
         slot = own
-    -- the WS set has a one-ear item there (Sortie earring in Ear2): Moonshade takes the other ear
+    -- the WS set has a one-ear item there (a "Left ear:" item in Ear1, a Sortie earring in Ear2): the other ear
     elseif want and (trail[slot] ~= nil) and (#trail[slot] > 0) then
         local last = trail[slot][#trail[slot]]
         if (gcinclude.ItemSide((type(last) == 'table') and last.Name or last) == slot) then

@@ -37,8 +37,10 @@ do
             -- every WS, every job: Moonshade Earring below this TP, never at or above it; 0 = engine leaves Moonshade
             -- alone
             MoonshadeTP = 1750,
-            -- the slot the engine puts it in; the other ear when the WS set has a Sortie (right-ear-only) earring there
-            MoonshadeSlot = 'Ear2',
+            -- the slot the engine puts it in (Ear1, the left ear); the other ear when the WS set has an earring there
+            -- that works in that ear only (a "Left ear:" item; Sortie earrings are right ear). A WS set naming
+            -- Moonshade keeps it in its ear.
+            MoonshadeSlot = 'Ear1',
             MoonshadeSkip = T{}, -- WS names the engine never gives Moonshade, e.g. T{'Myrkr'}
             -- the status bar (job, atk/def, modes and toggles as pills), /gcbar to toggle; the HUD drops under it
             DisplayBar = false,

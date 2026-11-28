@@ -15,8 +15,9 @@ local settings = {
     DTGearHPP = { 'Dt below this HP %, in any status. 0 = never.', '50' },
     PetDTGearHPP = { 'Pet_Dt below this pet HP %. 0 = never.', '50' },
     MoonshadeTP = { 'Moonshade Earring on every weapon skill below this TP, never at or above it. 0 = left alone.', '1750' },
-    MoonshadeSlot = { 'The ear Moonshade goes in (default Ear2, the right ear); the other one when the WS set has a '
-        .. 'right-ear-only Sortie earring there. A WS set with Moonshade in an ear keeps it in that ear.', 'Ear2' },
+    MoonshadeSlot = { 'The ear Moonshade goes in (default Ear1, the left ear); the other one when the WS set has an '
+        .. 'earring there that works in that ear only. A WS set with Moonshade in an ear keeps it in that ear.',
+        'Ear1' },
     MoonshadeSkip = { 'Weapon skills that never get Moonshade.', "{ 'Myrkr' }" },
     DisplayBar = { "The status bar on load. Once /gcbar or a drag saved this character's bar (gcbar\\<name>.txt), its on/off wins." },
     DisplayBarX = { "The bar's x position on screen. Not set: centred at the top, or flush right with the HUD on. A drag or /gcbar pos saves a spot that wins; /gcbar reset.", '400' },
