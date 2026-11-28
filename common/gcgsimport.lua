@@ -902,6 +902,30 @@ function G.Import(text, items)
             .. ((#am > 6) and ', ...' or '') .. '): GoomSwap wears these by buff, Buffs_Tp[\'Aftermath: Lv.3\'] '
             .. '(or the level yours used): rename the one you want in /gcedit'
     end
+    -- engaged sets of two modes at once (Tp_Acc_DT: OffenseMode Acc + HybridMode DT): /mset is one mode
+    local isMode, isWeapon, combos = {}, {}, {}
+    for w in pairs(G.MODE_WORDS) do isMode[w] = true end
+    for _, st in ipairs({ 'OffenseMode', 'HybridMode' }) do
+        for _, m in ipairs(out.modes[st] or {}) do isMode[string.lower(m)] = true end
+    end
+    isMode.normal = nil
+    for _, n in ipairs(out.order) do
+        local w = string.match(n, '^Weapon_(.+)$')
+        if w then isWeapon[string.lower(w)] = true end
+    end
+    for _, n in ipairs(out.order) do
+        local c = 0
+        for t in string.gmatch(string.match(n, '^Tp_(.+)$') or '', '[^_]+') do
+            if isMode[string.lower(t)] and not isWeapon[string.lower(t)] then c = c + 1 end
+        end
+        if c >= 2 then combos[#combos + 1] = n end
+    end
+    if (#combos > 0) and not mirdain then
+        out.notes[#out.notes + 1] = 'not worn, two modes at once (/mset is one): ' .. table.concat(combos, ', ', 1,
+            math.min(#combos, 6)) .. ((#combos > 6) and (' and ' .. (#combos - 6) .. ' more') or '') .. '. GoomSwap '
+            .. 'layers them: /mset acc + /dt wears Tp_Acc, then Dt over it (empty Dt slots keep Tp_Acc\'s). Copy the '
+            .. 'pieces you want into Dt, or delete them'
+    end
     if #wsm > 0 then
         out.notes[#out.notes + 1] = #wsm .. ' WS sets for WeaponskillMode Match: GoomSwap\'s WS variants follow /mset '
             .. '(_Acc) already; rename or delete them'
