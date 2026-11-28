@@ -1,7 +1,7 @@
 -- /gcedit Settings: every GoomSwap setting, its value now and where that comes from (the default, the shared file
 -- every character uses, this character's char.lua, the job file open in the editor); change one for this character,
 -- for every character, or for this job. Below them, the job file's own options (WeaponModes, Packer...).
-return function(imgui, palette, set_tip, files, groups, setFile, editorState, feedback)
+return function(imgui, palette, set_tip, files, groups, setFile, editorState, feedback, version)
     -- Not in the defaults table (nil there) but read when set.
     local OPTIONAL = { 'EditorGroups', 'EditorHidden', 'EditorSort', 'EditorOrder', 'DisplayBarX', 'LockstyleSet',
         'EditorComparePins' }
@@ -879,7 +879,59 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         W.Pill(text, tag_colors((how == 'staged') and 'staged' or ((v ~= nil) and 'job' or 'default')))
     end
     local function editable_how(how) return (how ~= 'code') and not string.match(how or '', '^set in') end
-    local shortcutBox = { name = { '' }, mode = nil } -- the Modes tab's new /wm shortcut, as typed
+    -- the Modes tab's /wm shortcuts as typed: the new one, and each one's rename box
+    local shortcutBox = { name = { '' }, mode = nil, rename = {} }
+    -- Home: what this window is, this file's tools (the Editor menu's, asked of the editor: gcedit toolsAsk), the
+    -- editor's spacing, and where each kind of setting is
+    local CAT_ABOUT = { Common = 'auto idle sets, TP that keeps weapons, Moonshade, chat lines, lockstyle',
+        ['Idle & defense'] = 'Regen / Refresh / DT gear thresholds, idle weapons, roll 11 set, Hoxne',
+        Weapons = 'when weapons swap: TP guard, Aftermath, always / never swap',
+        Casting = 'SIR / TH skips, element gear (obi, Orpheus, Zodiac Ring), magic bursts, received sets',
+        ['Weapon skills'] = 'WS range check, Moonshade',
+        ['Items & Packer'] = 'Packer, enchanted items, warp rings, capacity capes',
+        Keys = 'keybinds', ['Bar & HUD'] = 'the bar, hidden pills, HUD owners, theme',
+        Editor = "this editor's spacing, backups kept, hidden suggestions",
+        Modes = 'every mode list for this job: /wm and its shortcuts, picks, /mset, the built-in ones' }
+    local HOME_TOOLS = {
+        { 'Unused gear', 'cleanup', 'The gear in your Inventory and Wardrobes that none of your job files, char.lua '
+            .. 'or GoomSwap names. Read only.' },
+        { 'Rescan bags', 'rescan', 'Read your bags again (after moving gear). Keeps your unsaved changes.' },
+        { 'Backups', 'backups', 'Every Save keeps a dated copy of the file: see what each changed, and put one back.' },
+        { 'Reload file', 'reload', 'Read the file and your bags again.' } }
+    local function home_tab(jobCat)
+        local ui = editorState.ui
+        imgui.TextColored(palette.blue, job_name())
+        imgui.SameLine()
+        imgui.TextColored(palette.dim, '(the file open in the editor)')
+        for i, t in ipairs(HOME_TOOLS) do
+            if i > 1 then fit_line(pill_w(t[1]) + 8, true) end
+            if W.Button(t[1] .. '##home_' .. t[2], 'ghost') then ui.toolsAsk = t[2] end
+            if imgui.IsItemHovered() then set_tip(t[3]) end
+        end
+        imgui.Spacing()
+        row('EditorSpacing', 'own')
+        imgui.TextColored(palette.dim, "The editor's theme and Diagnostics: its Editor menu (top bar).")
+        imgui.Separator()
+        imgui.TextColored(palette.blue, 'Where things are')
+        local list = {}
+        for _, c in ipairs(CATEGORIES) do list[#list + 1] = { c[1], CAT_ABOUT[c[1]] } end
+        list[#list + 1] = { 'Modes', CAT_ABOUT.Modes }
+        list[#list + 1] = { jobCat, 'what only ' .. job_name() .. ' has (its picks, Packer, lists...)' }
+        list[#list + 1] = { 'All (advanced)', 'every setting, data most never change included' }
+        for _, c in ipairs(list) do
+            if imgui.Selectable(c[1] .. '##home_go_' .. c[1], false) then
+                ui.settingsCat = (c[1] == jobCat) and 'job options' or c[1]
+            end
+            if c[2] ~= nil then
+                imgui.SameLine(LABEL_W - 60)
+                imgui.TextColored(palette.dim, c[2])
+            end
+        end
+        if version ~= nil then
+            imgui.Spacing()
+            imgui.TextColored(palette.dim, 'GoomSwap ' .. version)
+        end
+    end
     local function modes_tab()
         imgui.TextColored(palette.blue, job_abbr() .. ' modes')
         imgui.SameLine()
@@ -919,39 +971,64 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             for _, m in ipairs(wm) do if m ~= 'None' then opts[#opts + 1] = m end end
             imgui.SetCursorPosX(LABEL_W)
             if imgui.PushTextWrapPos ~= nil then imgui.PushTextWrapPos(0) end
-            imgui.TextColored(palette.dim, 'Shortcuts: /wm melee, /wm ranged, /wm caster, /wm tank and any you add '
-                .. 'switch to the mode picked beside them. Use them in macros: they keep working when you rename or '
-                .. 'add modes.')
+            imgui.TextColored(palette.dim, 'Shortcuts: /wm <word> switches to the mode picked beside it (/wm aoe, '
+                .. '/wm melee...). Use them in macros: they keep working when you rename or add modes.')
             if imgui.PopTextWrapPos ~= nil then imgui.PopTextWrapPos() end
-            local function stage(r, mode) -- mode false / nil: that shortcut taken out
-                local t = {}
-                for k, x in pairs((type(roles) == 'table') and roles or {}) do t[k] = x end
-                t[r] = mode or nil
+            local function stage(t)
                 files.StageJob('WeaponRoles', (next(t) ~= nil) and t or files.REMOVE)
             end
-            -- the four built-in ones (/wm says when one has no mode), then yours, A-Z
-            local names, builtin = { 'melee', 'ranged', 'caster', 'tank' }, { melee = true, ranged = true,
-                caster = true, tank = true }
-            local own = {}
-            for k in pairs((type(roles) == 'table') and roles or {}) do
-                if not builtin[k] then own[#own + 1] = k end
+            local function copy()
+                local t = {}
+                for k, x in pairs((type(roles) == 'table') and roles or {}) do t[k] = x end
+                return t
             end
-            table.sort(own)
-            for _, k in ipairs(own) do names[#names + 1] = k end
+            local names = {}
+            for k in pairs((type(roles) == 'table') and roles or {}) do names[#names + 1] = k end
+            table.sort(names)
+            if #names == 0 then
+                imgui.SetCursorPosX(LABEL_W)
+                imgui.TextColored(palette.dim, '(none yet)')
+            end
             for i, r in ipairs(names) do
-                name_cell('/wm ' .. r)
+                -- its word, renamed in place (Set), then its mode, then x
+                local b = shortcutBox.rename[r]
+                if (b == nil) then
+                    b = { r }
+                    shortcutBox.rename[r] = b
+                end
+                imgui.TextUnformatted('/wm')
+                imgui.SameLine()
+                imgui.PushItemWidth(LABEL_W - 60)
+                imgui.InputText('##role_name_' .. r, b, 24)
+                imgui.PopItemWidth()
                 if imgui.IsItemHovered() then
                     set_tip('WeaponRoles\n\nTyping /wm ' .. r .. ' (or a macro with it) switches /wm to the mode '
-                        .. 'picked here.' .. (builtin[r] and (' (none): /wm ' .. r .. ' says it has no mode.') or ''))
+                        .. 'picked here. Type another word and Set to rename it.')
                 end
+                local typed = string.lower(W.Trim(b[1]))
+                local renaming = (typed ~= r) and string.match(typed, '^%a%w*$') and (roles[typed] == nil)
                 imgui.SameLine(LABEL_W)
-                local cur = (type(roles) == 'table') and roles[r] or nil
-                local nv = W.Pick('mode_role_' .. r, (cur ~= nil) and tostring(cur) or '(none)', opts, 200)
-                if nv ~= nil then stage(r, nv) end
-                if not builtin[r] then
+                local nv = W.Pick('mode_role_' .. r, tostring(roles[r]), opts, 200)
+                if nv ~= nil then
+                    local t = copy()
+                    t[r] = nv or nil
+                    stage(t)
+                end
+                imgui.SameLine()
+                if W.Button('x##role_x_' .. r, 'danger') then
+                    local t = copy()
+                    t[r] = nil
+                    stage(t)
+                end
+                if imgui.IsItemHovered() then set_tip('Click to remove /wm ' .. r .. '.') end
+                if renaming then
                     imgui.SameLine()
-                    if W.Button('x##role_x_' .. r, 'danger') then stage(r, nil) end
-                    if imgui.IsItemHovered() then set_tip('Click to remove /wm ' .. r .. '.') end
+                    if W.Button('Set##role_set_' .. r, 'accent') then
+                        local t = copy()
+                        t[typed], t[r] = t[r], nil
+                        shortcutBox.rename[r], shortcutBox.rename[typed] = nil, nil
+                        stage(t)
+                    end
                 end
                 if i == 1 then job_pill(roles, rhow) end
             end
@@ -971,7 +1048,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
             local why = nil
             if word ~= '' then
                 local taken = (word == 'default') or (word == 'none') or (word == 'force')
-                local dup = builtin[word] or ((type(roles) == 'table') and (roles[word] ~= nil))
+                local dup = (type(roles) == 'table') and (roles[word] ~= nil)
                 if not string.match(word, '^%a%w*$') then why = 'one word, letters and digits'
                 elseif taken then why = '/wm ' .. word .. ' is taken'
                 elseif dup then why = 'already a shortcut'
@@ -1034,7 +1111,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         ui.settingsEdit, ui.settingsFind = ui.settingsEdit or {}, ui.settingsFind or { '' }
         ui.settingsAll = ui.settingsAll or { false }
         ui.settingsTarget = ui.settingsTarget or 'own'
-        ui.settingsCat = ui.settingsCat or 'Common'
+        ui.settingsCat = ui.settingsCat or 'Home'
         -- what this window is: GoomSwap's own behaviour, as an include file's settings are; not the editor's look
         imgui.TextColored(palette.text, 'GoomSwap in game, for every job file that loads it')
         if imgui.IsItemHovered() then
@@ -1081,7 +1158,7 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
         local jobCat = job_abbr() .. ' options'
         if find == '' then
             imgui.BeginChild('##set_cats', CAT_W, 0)
-            local cats = {}
+            local cats = { 'Home' }
             for _, c in ipairs(CATEGORIES) do cats[#cats + 1] = c[1] end
             cats[#cats + 1] = 'Modes'
             cats[#cats + 1] = jobCat
@@ -1112,6 +1189,8 @@ return function(imgui, palette, set_tip, files, groups, setFile, editorState, fe
                     job_row(entry)
                 end
             end
+        elseif ui.settingsCat == 'Home' then
+            home_tab(jobCat)
         elseif ui.settingsCat == 'Modes' then
             modes_tab()
         elseif ui.settingsCat == 'job options' then

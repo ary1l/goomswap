@@ -85,7 +85,7 @@ local settings = {
 local job = {
     { 'WeaponModes', 'The /wm cycle: one Weapon_<Name> set each. Add one: + /wm mode (WEAPONS heading); take one out: delete its Weapon_ set (Save does the list); right-click a Weapon_ set to move it earlier or later.', nil, "{ 'None' }", true },
     { 'DefaultWeapons', "What /wm starts on at load and /wm default goes back to: a mode's name, or slots.", "{ Weapons = 'Naegling', Range = 'Anarchy +2' }", 'None' },
-    { 'WeaponRoles', '/wm shortcuts: melee, ranged, caster, tank, or a word of your own (lower case): the mode each one picks. A shortcut wins over a mode of the same name.', "{ melee = 'Savage', ranged = 'Leaden', aoe = 'Club' }" },
+    { 'WeaponRoles', '/wm shortcuts: words of your own (lower case: aoe, melee...), each the /wm mode it picks. A shortcut wins over a mode of the same name.', "{ melee = 'Savage', ranged = 'Leaden', aoe = 'Club' }" },
     { 'MainModes', '/mw picks: these first, in order; every item your Weapon_ sets put in Main follows anyway.', "{ 'None', 'Naegling' }" },
     { 'SubModes', '/subw picks: these first, in order; every item your Weapon_ sets put in Sub follows anyway.', "{ 'None', 'Duban' }" },
     { 'RangeModes', '/rw picks: these first, in order; every item your Weapon_ sets put in Range follows anyway.', "{ 'None', 'Anarchy +2' }" },
