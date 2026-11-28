@@ -405,6 +405,7 @@ local BAR_TOGGLES = { 'SIR', 'TH', 'Kite', 'PROC', 'Burst', 'Death', 'String', '
 local TOGGLE_LABEL = { SIR = 'sir', TH = 'th', Kite = 'kite', PROC = 'proc', Burst = 'burst', Death = 'death',
     String = 'harp', SongLock = 'lock' }
 local DEF_PARTS = { { 'DTset', 'dt' }, { 'MDTset', 'mdt' }, { 'Aminon', 'amin' } }
+-- settings.BarHide: pills left off the bar, by the word on them ('harp', 'lock'), their command or their name
 -- Click a pill: the command that cycles it, as the HUD's cells send (ctrl+click the weapon: /mset).
 local BAR_CMD = { Weapons = 'wm', Main = 'mw', Sub = 'subw', Range = 'rw', Ammo = 'ammoset', MeleeSet = 'mset',
     WsSet = 'wsset', NukeSet = 'nukeset', Weapon = 'weapon', TankSet = 'tankset', Hoxne = 'hoxne',
@@ -578,6 +579,18 @@ local function build_line(cyc, vals, tog, wclass)
                 cmd = BAR_TCMD[k],
                 tip = { (TIP_NAME[k] or k) .. ': ' .. ((on == true) and 'on' or 'off'),
                     'Click: turn ' .. ((on == true) and 'off' or 'on') } }
+        end
+    end
+    local hide = (cfg ~= nil) and cfg.BarHide or nil
+    if (type(hide) == 'table') and (next(hide) ~= nil) then
+        local want = {}
+        for _, h in pairs(hide) do want[string.lower(tostring(h))] = true end
+        for k in pairs(map) do
+            local label = BAR_LABEL[k] or TOGGLE_LABEL[k] or ((k == 'Def') and 'def') or nil
+            local cmd = BAR_CMD[k] or BAR_TCMD[k]
+            if (label ~= nil) and (want[label] or want[string.lower(k)] or ((cmd ~= nil) and want[cmd])) then
+                map[k] = nil
+            end
         end
     end
     return map

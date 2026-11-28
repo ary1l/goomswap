@@ -4,10 +4,12 @@
 local settings = {
     Messages = { 'A chat line on every mode change and /gc toggle (DT, TH, Kite...); some always show.' },
     AutoGear = { 'Master switch for the auto sets: Idle_Regen, Idle_Refresh, Dt, Pet_Dt (by the HP/MP % below). /autogear changes them in game.' },
-    WScheck = { 'Distance check: a weapon skill goes off only within its reach (range 3; Gust Slash, Cyclone, Mistral '
-        .. "Axe and Bora Axe 14; bows and guns 20, at least 21; Blast Arrow, Blast Shot and Numbing Shot 5; past your "
-        .. "and the target's hitboxes, so further on a big mob; at least WSdistance, and as far as your auto-attacks "
-        .. 'have landed on a mob of that name and size). Myrkr, Dagan, Moonlight, Starlight (on you): no check.' },
+    WScheck = { "Cancels a weapon skill when the target is out of its reach, so the TP isn't wasted.\n"
+        .. "Reach, center to center: the weapon skill's range plus your body and the mob's (a big mob reaches "
+        .. 'further). Ranges: most 3; Gust Slash, Cyclone, Mistral Axe, Bora Axe 14; bows and guns 20 (21 at '
+        .. 'least); Blast Arrow, Blast Shot, Numbing Shot 5.\n'
+        .. 'Never less than WS range (yalms), nor than your auto-attacks already reached on that mob.\n'
+        .. 'Not checked: Myrkr, Dagan, Moonlight, Starlight (on you).' },
     WSdistance = { 'The least reach in yalms (center to center) a weapon skill gets, while WScheck is on; '
         .. 'a big mob gets more.', '5' },
     RegenGearHPP = { 'Idle_Regen below this HP %, out of combat only. 0 = never.', '60' },
@@ -29,14 +31,16 @@ local settings = {
     WeaponTPGuard = { 'At or above this TP, Main/Sub/Range stay on against automatic swaps; /wm, /mw... still swap. 0 = action sets always get their weapons.', '1000' },
     IdleWeapons = { 'Not engaged: weapons your idle sets name (Idle, Town, Dt...) beat the weapon mode. Off = the weapon mode always.' },
     AftermathHold = { 'Aftermath up: Main/Sub/Range stay on against idle/engaged swaps; spells still get theirs; /wm still swaps.' },
-    HoldExempt = { 'Spell skills and ability types that always get their weapon swaps; a spell or ability name works '
+    HoldExempt = { 'Spell skills (every spell of it) and ability types (Corsair Roll: every roll, not Corsair\'s Roll '
+        .. 'alone) that always get their weapon swaps; a spell or ability name works '
         .. 'too (Dread Spikes).', "{ 'Singing', 'Geomancy', 'Corsair Roll', 'Dread Spikes' }" },
     SmartSwap = { 'Keeps Main/Sub/Range on for the Never swap weapons for spells instead of losing TP to a swap '
         .. '(/smartswap).' },
     SmartSwapTP = { 'SmartSwap acts only at or above this TP.', '1' },
-    KeepWeaponsFor = { 'With SmartSwap on, at or over SmartSwap from TP: these spells never swap Main/Sub/Range, '
-        .. 'precast or midcast, over Always swap weapons for. A spell name, or "Cure, Cura while Daybreak": spells '
-        .. 'whose name starts with Cure or Cura, only while Daybreak is in Main or Sub.',
+    KeepWeaponsFor = { "Casting these keeps the weapons you hold (Main, Sub, Range), so you don't lose TP. Needs "
+        .. 'SmartSwap on and your TP at least SmartSwap from TP; it wins over Always swap weapons for.\n'
+        .. 'A spell is its exact name. "Cure/Cura... while Daybreak or Bunzi\'s Rod in hand": any spell starting '
+        .. 'with Cure or Cura, only while one of those is in Main or Sub.',
         "{ 'Dia II', { Spells = { 'Cure' }, Worn = { 'Daybreak' } } }" },
     EditorSpacing = { "The set editor's slot cards: Compact (icons; name and stats on hover) or Comfortable (each piece named). Its Editor menu sets it too.", 'Comfortable' },
     EditorIgnoreSuggestions = { 'Exact set names /gcedit no longer suggests (the add list, Related tab), any case.', "{ 'Singing' }" },
@@ -52,7 +56,7 @@ local settings = {
     MyBoxes = { "Your characters that get the Multisend 'received' notice. Only needed when boxes aren't found by the HUD state file.", "{ 'YourMain', 'YourBox' }" },
     ElementReport = { 'A chat line naming the obi/Orpheus/ring/back each nuke or weapon skill got.' },
     OrpheusPoints = { "{ yalms, affinity % } points for Orpheus's Sash, a straight line between; add tested points in order.", '{ { 1.93, 15 }, { 13, 1 } }' },
-    ElementGear = { "Waist (and ring, back) by the spell's element, day and weather: Obis, AnyObi, Distance (Orpheus), DistanceMax, Ring, RingSlot, Back, Cures, BackOnCures, Keep. Replaces the whole table: keep the keys you use.", "{ Obis = { Dark = 'Anrin Obi' }, AnyObi = 'Hachirin-no-Obi', Distance = \"Orpheus's Sash\", RingSlot = 'Ring2', Keep = { 'Oneiros Rope' } }" },
+    ElementGear = { "Waist (and ring, back) by the spell's element, day and weather: Obis, AnyObi, Distance (Orpheus), DistanceMax, Ring (unset: your Zodiac Ring when you have one; false: never), RingSlot, Back, Cures, BackOnCures, Keep. Replaces the whole table: keep the keys you use.", "{ Obis = { Dark = 'Anrin Obi' }, AnyObi = 'Hachirin-no-Obi', Distance = \"Orpheus's Sash\", RingSlot = 'Ring2', Keep = { 'Oneiros Rope' } }" },
     MBWindow = { 'Magic burst window in seconds from the skillchain; another weapon skill on the mob ends it.', '10' },
     MBSkills = { 'Spell skills that wear Burst when they land in a live skillchain.', "{ 'Elemental Magic', 'Dark Magic' }" },
     ElementSkills = { 'Spell skills that get the obi, Orpheus and element ring.', "{ 'Elemental Magic', 'Blue Magic' }" },
@@ -72,20 +76,23 @@ local settings = {
     LockstyleSet = { '/lockstyleset N 4s after load and job change; a job file can set its own.', '3' },
     CapacityCapes = { '/capacity wears the carried one worth most (Mecisto. Mantle by its augment).', "{ 'Aptitude Mantle +1', 'Mecisto. Mantle' }" },
     JubileeSlot = { 'The ring slot /jubilee uses.', 'Ring1' },
+    BarHide = { "Bar pills left off, by the word on them: melee ws idle nuke weapon tank pup hoxne def sir th kite proc "
+        .. "burst death harp lock. The command still works.", "{ 'harp', 'lock' }" },
     SleepCancelStoneskin = { 'Asleep with Stoneskin up: /cancel Stoneskin so damage can wake you.' },
 }
 
 -- { name, what it does, example (Lua; nil: a checkbox), the value when the file sets none, read-only }
 local job = {
-    { 'WeaponModes', 'The /wm cycle: one Weapon_<Name> set each. Save adds new Weapon_ sets to it; right-click a Weapon_ set to move it earlier or later.', nil, "{ 'None' }", true },
+    { 'WeaponModes', 'The /wm cycle: one Weapon_<Name> set each. Add one: + /wm mode (WEAPONS heading); take one out: delete its Weapon_ set (Save does the list); right-click a Weapon_ set to move it earlier or later.', nil, "{ 'None' }", true },
     { 'DefaultWeapons', "What /wm starts on at load and /wm default goes back to: a mode's name, or slots.", "{ Weapons = 'Naegling', Range = 'Anarchy +2' }", 'None' },
     { 'WeaponRoles', '/wm melee, ranged, caster or tank: the mode each one picks.', "{ melee = 'Savage', ranged = 'Leaden' }" },
     { 'MainModes', '/mw picks: these first, in order; every item your Weapon_ sets put in Main follows anyway.', "{ 'None', 'Naegling' }" },
     { 'SubModes', '/subw picks: these first, in order; every item your Weapon_ sets put in Sub follows anyway.', "{ 'None', 'Duban' }" },
     { 'RangeModes', '/rw picks: these first, in order; every item your Weapon_ sets put in Range follows anyway.', "{ 'None', 'Anarchy +2' }" },
+    { 'AmmoModes', '/ammoset picks: ammo by name, None first. The cycle shows with two or more.', "{ 'None', 'Chrono Bullet' }", "{ 'None' }" },
     { 'WeaponItemMap', "A pick's name for one exact item, like an augment path (/mw rostama).", "{ RostamA = { Name = 'Rostam', AugPath = 'A' } }" },
     { 'AlwaysDualWield', 'Counts as able to dual wield whatever the support job (BLU: from its spells), so Weapon_<Mode>_1h is not used.', nil, 'false' },
-    { 'MeleeModes', 'The /mset modes. + /mset mode (MELEE heading, Related tab) adds one.', nil, "{ 'Default', 'SubtleBlow', 'Acc' }", true },
+    { 'MeleeModes', 'The /mset modes, Default first. + /mset mode (MELEE heading, Related tab) adds one too; a mode with no Tp_ set of its own wears Tp_Default.', "{ 'Default', 'SubtleBlow', 'Acc', 'Hybrid' }", "{ 'Default', 'SubtleBlow', 'Acc' }" },
     { 'NukeModes', "The /nukeset modes (RDM BLM SCH GEO WHM DRK).", "{ 'Power', 'Macc', 'OccultAcumen' }", "{ 'Power', 'Macc' } (DRK: { 'Power', 'OccultAcumen' })" },
     { 'profile.Packer', "LuAshitacast's own Packer list for this job: what /lac gear (the Packer plugin) fetches with every set's gear, char.lua's Packer and the items GoomSwap wears. A count, a stack (saved as its size) or all.", "{ 'Echo Drops', { Name = 'Trump Card', Quantity = 99 } }" },
     { 'SIRSkip', 'Spells /sir leaves alone on this job, on top of the SIRSkip setting.', "{ 'Phalanx' }" },
@@ -161,10 +168,10 @@ local names = {
     HoxneLockSlots = 'Hoxne locked slots', HoxneAutoUse = 'Use the Ampulla by itself', Keybinds = 'Keys',
     XIRollSet = 'Set at a roll of 11', HUDOwners = 'HUD owners (your mains)', Theme = 'Colour theme',
     HUDAbbr = 'Short names you can type', WeaponClass = 'Weapon colours', LockstyleSet = 'Lockstyle set',
-    CapacityCapes = 'Capacity capes', JubileeSlot = 'Jubilee Ring slot', SleepCancelStoneskin = 'Cancel Stoneskin when asleep',
+    CapacityCapes = 'Capacity capes', JubileeSlot = 'Jubilee Ring slot', BarHide = 'Hidden on the bar', SleepCancelStoneskin = 'Cancel Stoneskin when asleep',
     -- the job file's own
     WeaponModes = '/wm modes', DefaultWeapons = 'Weapons on load', WeaponRoles = '/wm melee, ranged, caster, tank',
-    MainModes = '/mw picks', SubModes = '/subw picks', RangeModes = '/rw picks', WeaponItemMap = 'Pick names for exact items',
+    MainModes = '/mw picks', SubModes = '/subw picks', RangeModes = '/rw picks', AmmoModes = '/ammoset picks', WeaponItemMap = 'Pick names for exact items',
     AlwaysDualWield = 'Always dual wield', MeleeModes = '/mset modes', NukeModes = '/nukeset modes',
     ['profile.Packer'] = 'Packer', CureObi = 'Obi on cures', SafeAmmo = 'Ammo when a shot is stopped',
     RangeAmmo = 'Ammo per range weapon', CORmsg = 'Lucky / unlucky roll messages',
@@ -173,17 +180,19 @@ local categories = {
     { 'Common', { 'DTGearHPP', 'RefreshGearMPP', 'RegenGearHPP', 'WeaponTPGuard', 'MoonshadeTP', 'Messages', 'LockstyleSet',
         'DisplayBar', 'AutoGear' } },
     { 'Idle & defense', { 'AutoGear', 'RegenGearHPP', 'RefreshGearMPP', 'DTGearHPP', 'PetDTGearHPP', 'IdleWeapons',
-        'CombatWindow', 'XIRollSet', 'SleepCancelStoneskin', 'HoxneItem', 'HoxneLockSlots', 'HoxneAutoUse' } },
+        'CombatWindow', 'XIRollSet', 'SleepCancelStoneskin', 'HoxneAutoUse' } }, -- HoxneItem (always Hoxne Ampulla), HoxneLockSlots: advanced
     { 'Weapons', { 'WeaponTPGuard', 'AftermathHold', 'HoldExempt', 'SmartSwap', 'SmartSwapTP', 'KeepWeaponsFor' } },
-    { 'Casting', { 'SIRSkip', 'THSkip', 'ElementGear', 'ElementSkills', 'OrpheusPoints', 'MBWindow', 'MBSkills',
+    -- OrpheusPoints: BG-Wiki's measured curve, not a preference: All (advanced)
+    { 'Casting', { 'SIRSkip', 'THSkip', 'ElementGear', 'ElementSkills', 'MBWindow', 'MBSkills',
         'ElementReport', 'ReceivedSets', 'ReceivedWindow', 'MyBoxes' } },
-    { 'Weapon skills', { 'WScheck', 'WSdistance', 'MoonshadeTP', 'MoonshadeSlot', 'MoonshadeSkip', 'ElementalWS' } },
+    { 'Weapon skills', { 'WScheck', 'WSdistance', 'MoonshadeTP', 'MoonshadeSlot', 'MoonshadeSkip' } },
     { 'Items & Packer', { 'Packer', 'EnchantDelays', 'EnchantWindow', 'warp_Ring', 'mea_Ring', 'dem_Ring', 'holla_Ring',
         'CapacityCapes', 'JubileeSlot' } },
     { 'Keys', { 'Keybinds' } },
-    { 'Bar & HUD', { 'DisplayBar', 'DisplayBarX', 'DisplayBarY', 'HUDOwners', 'HUDAbbr', 'WeaponClass', 'Theme' } },
-    { 'Editor', { 'EditorSpacing', 'EditorBackupKeep', 'EditorIgnoreSuggestions', 'EditorGroups', 'EditorHidden', 'EditorSort',
-        'EditorOrder' } },
+    { 'Bar & HUD', { 'DisplayBar', 'BarHide', 'DisplayBarX', 'DisplayBarY', 'HUDOwners', 'HUDAbbr', 'WeaponClass',
+        'Theme' } },
+    -- EditorGroups / EditorHidden / EditorSort / EditorOrder: the set list's own (its headings' menus): All (advanced)
+    { 'Editor', { 'EditorSpacing', 'EditorBackupKeep', 'EditorIgnoreSuggestions' } },
 }
 
 return { settings = settings, job = job, advanced = advanced, limits = limits, jobOnly = jobOnly, names = names,

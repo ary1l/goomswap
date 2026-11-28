@@ -19,6 +19,7 @@ return function(imgui, palette, set_tip)
         return (vec(imgui.CalcTextSize(text)))
     end
     local width_of = width
+    W.Width = width
     -- An ImGui vector as two numbers (two numbers or a table, by Ashita version); nil, nil when it is neither. The
     -- editor's one copy (gcedit's xy, the Rules page's vec).
     function W.Vec(a, b)
@@ -187,13 +188,15 @@ return function(imgui, palette, set_tip)
         local out, changed = list_copy(list), false
         local f = flow_start()
         for i, v in ipairs(list or {}) do
-            local label = tostring(v) .. '  x##' .. id .. '_' .. i
-            flow_next(f, width(tostring(v) .. '  x') + 8)
-            if button(label, 'danger') then
+            local text = (opts.label ~= nil) and opts.label(v) or tostring(v)
+            flow_next(f, width(text .. '  x') + 8)
+            if button(text .. '  x##' .. id .. '_' .. i, 'danger') then
                 table.remove(out, i)
                 changed = true
             end
-            if imgui.IsItemHovered() then set_tip('Take ' .. tostring(v) .. ' out.') end
+            if imgui.IsItemHovered() then
+                set_tip(((opts.tip ~= nil) and (opts.tip(v) .. '\n') or '') .. 'Click to remove it.')
+            end
         end
         if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end
         local b = box(id)
@@ -234,7 +237,7 @@ return function(imgui, palette, set_tip)
         if (#row.Spells == 0) or (#row.Worn == 0) then return text end
         return row
     end
-    function W.KeepList(id, list)
+    function W.KeepList(id, list, opts)
         local out, changed = {}, false
         for i, v in ipairs(list or {}) do out[i] = v end
         local f = flow_start()
@@ -247,19 +250,40 @@ return function(imgui, palette, set_tip)
             end
             if imgui.IsItemHovered() then
                 set_tip(((type(v) == 'table') and ('Spells whose name starts with ' .. table.concat(v.Spells or {}, ' or ')
-                    .. ', only while ' .. table.concat(v.Worn or {}, ' or ') .. ' is in Main or Sub. ') or '')
-                    .. 'Take it out.')
+                    .. ', only while ' .. table.concat(v.Worn or {}, ' or ') .. ' is in Main or Sub.\n') or '')
+                    .. 'Click to remove it.')
             end
         end
         if #(list or {}) == 0 then imgui.TextColored(palette.dim, '(none)') end
-        local b = box(id)
-        imgui.PushItemWidth(260)
-        local enter = imgui.InputTextWithHint('##add_' .. id, "a spell, or: Cure, Cura while Daybreak", b.a, 128)
-        imgui.PopItemWidth()
+        -- two plain boxes: the spell (or the start of names: Cure covers Cure IV), then what it needs in hand
+        local b, held = box(id), box(id .. '_held')
+        imgui.TextColored(palette.dim, 'Add a spell')
         imgui.SameLine()
-        local text = trim(b.a[1])
-        if (button('+ Add##' .. id, 'accent') or (enter and (imgui.IsItemActive == nil))) and (text ~= '') then
+        imgui.PushItemWidth(200)
+        imgui.InputTextWithHint('##add_' .. id, 'e.g. Dia II', b.a, 128)
+        imgui.PopItemWidth()
+        if imgui.IsItemHovered() then
+            set_tip('Its exact name. With a weapon in the next box, the start of names works too: Cure covers Cure IV.')
+        end
+        suggestions(id, b, opts and opts.suggest)
+        imgui.TextColored(palette.dim, 'only while holding')
+        imgui.SameLine()
+        imgui.PushItemWidth(200)
+        imgui.InputTextWithHint('##held_' .. id, 'optional, e.g. Daybreak', held.a, 128)
+        imgui.PopItemWidth()
+        if imgui.IsItemHovered() then
+            set_tip('Leave it blank to keep your weapons for that spell always. A weapon here (or several, with '
+                .. 'commas): only while one of them is in Main or Sub.')
+        end
+        imgui.SameLine()
+        local text, hand = trim(b.a[1]), trim(held.a[1])
+        if button('+ Add##' .. id, 'accent') and (text ~= '') then
             local row, dup = W.ParseKeep(text), false
+            if hand ~= '' then -- several names: a comma between
+                row = { Spells = {}, Worn = {} }
+                for x in string.gmatch(text, '[^,]+') do if trim(x) ~= '' then table.insert(row.Spells, trim(x)) end end
+                for x in string.gmatch(hand, '[^,]+') do if trim(x) ~= '' then table.insert(row.Worn, trim(x)) end end
+            end
             for _, v in ipairs(out) do
                 if string.lower(W.KeepText(v)) == string.lower(W.KeepText(row)) then dup = true end
             end
@@ -267,7 +291,7 @@ return function(imgui, palette, set_tip)
                 out[#out + 1] = row
                 changed = true
             end
-            b.a[1] = ''
+            b.a[1], held.a[1] = '', ''
         end
         return changed and out or nil
     end

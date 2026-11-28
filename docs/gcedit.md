@@ -228,6 +228,11 @@ in GearSwap or LuAshitacast. The editor's own look is in **Editor**.
   **Everyone** (the shared file), your character (`char.lua`) or this job.
 - **Applies to** picks where a change goes: all your jobs, this job, or everyone.
 - Categories on the left, **find a setting** to search, and this job's options (weapons, picks, Packer...).
+- **Modes**: every mode list for this job in one place: `/wm` (one per `Weapon_` set), weapons on load, `/wm` roles,
+  the `/mw` `/subw` `/rw` `/ammoset` picks, `/mset` and `/nukeset` modes (chips: add, take out), the fixed ones
+  (`/idleset`, `/wsset`...) and the bar pills you hide (`BarHide`).
+- A setting with a few values (Editor spacing, Moonshade ear, theme...) is a picker; the pills at the top say what
+  each colour of "where it comes from" means. The window is never narrower than a full setting name.
 - `char.lua` and the shared file are written at once. Changes for this job wait for **Save + reload**.
 - A value the engine would refuse is refused here. Details: [Settings](settings.md).
 

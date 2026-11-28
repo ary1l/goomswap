@@ -383,6 +383,7 @@ local function carriedName(name)
     carriedSeen[name] = { os.clock() + 2, first, count }
     return first, count
 end
+gcinclude.CarriedName = carriedName -- ElementGear's Zodiac Ring, when you have one
 
 -- Capacity point bonus (BG-Wiki): Aptitude Mantle +1 30%, Aptitude Mantle 25%; Mecisto. Mantle 10-50% from
 -- its augment, read with LAC's gData.GetAugment ('Cap. Point'). The highest carried cape wins.

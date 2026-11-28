@@ -2558,6 +2558,9 @@ local function render()
         settingsPanel = settingsPanel or gFunc.LoadFile('common\\gceditsettingsui.lua')(imgui, palette, set_tip,
             settingsFiles, editorGroups, setFile, editorState, feedback)
         if imgui.SetNextWindowSize ~= nil then imgui.SetNextWindowSize({ 980, 600 }, ImGuiCond_FirstUseEver or 4) end
+        if (imgui.SetNextWindowSizeConstraints ~= nil) and (settingsPanel.MinWidth ~= nil) then -- every name whole
+            pcall(imgui.SetNextWindowSizeConstraints, { settingsPanel.MinWidth(), 320 }, { 100000, 100000 })
+        end
         local sok, serr = true, nil
         if imgui.Begin('GoomSwap settings###gcedit_settings', editorState.ui.settingsOpen, 0) then
             sok, serr = guarded(settingsPanel.Body)

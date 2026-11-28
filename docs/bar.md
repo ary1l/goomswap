@@ -35,6 +35,8 @@ HUD). Click a line to drive that box.
 - **Click** a pill: cycles it on that box (ctrl+click the weapon: `/mset`). **Right-click** a line's weapon pill:
   that box's weapon modes and Main/Sub/Range/Ammo picks, side by side; any other mode pill: its values. Click one and
   that box takes it. The drop stays open while a menu is. **Hover** a pill: its full value and what each click does.
+- **Hide a pill** you don't use: `BarHide = { 'harp', 'lock' }` (the words on the pills; GoomSwap settings, Modes or
+  Bar & HUD). Its command still works.
 - **Your own line's menus** also add things in `/gcedit`:
   - weapon menu, **+ new mode...**: New weapon mode (asks for the `/wm` name);
   - under each pick list, **+ add...**: GoomSwap settings on that list (`MainModes`...; every item in a `Weapon_` set
